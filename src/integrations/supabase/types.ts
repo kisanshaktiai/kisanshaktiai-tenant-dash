@@ -59,6 +59,116 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          api_key_hash: string
+          api_key_prefix: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+          last_used_at: string | null
+          permissions: Json
+          rate_limit_per_hour: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_hash: string
+          api_key_prefix: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+          last_used_at?: string | null
+          permissions?: Json
+          rate_limit_per_hour?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_hash?: string
+          api_key_prefix?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+          last_used_at?: string | null
+          permissions?: Json
+          rate_limit_per_hour?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_logs: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          endpoint: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          method: string
+          request_body: Json | null
+          request_headers: Json | null
+          response_body: Json | null
+          response_headers: Json | null
+          response_time_ms: number | null
+          status_code: number
+          tenant_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          method: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_headers?: Json | null
+          response_time_ms?: number | null
+          status_code: number
+          tenant_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          method?: string
+          request_body?: Json | null
+          request_headers?: Json | null
+          response_body?: Json | null
+          response_headers?: Json | null
+          response_time_ms?: number | null
+          status_code?: number
+          tenant_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_logs_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crop_health_assessments: {
         Row: {
           alert_level: string | null
@@ -182,6 +292,432 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      data_transformations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          source_format: string
+          target_format: string
+          tenant_id: string
+          transformation_rules: Json
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          source_format: string
+          target_format: string
+          tenant_id: string
+          transformation_rules: Json
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          source_format?: string
+          target_format?: string
+          tenant_id?: string
+          transformation_rules?: Json
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
+      dealer_commissions: {
+        Row: {
+          base_amount: number
+          calculation_details: Json | null
+          commission_amount: number
+          commission_rate: number
+          commission_type: string
+          created_at: string
+          dealer_id: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          payment_status: string | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_amount: number
+          calculation_details?: Json | null
+          commission_amount: number
+          commission_rate: number
+          commission_type: string
+          created_at?: string
+          dealer_id: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          period_end: string
+          period_start: string
+          tenant_id: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_amount?: number
+          calculation_details?: Json | null
+          commission_amount?: number
+          commission_rate?: number
+          commission_type?: string
+          created_at?: string
+          dealer_id?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: string | null
+          period_end?: string
+          period_start?: string
+          tenant_id?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dealer_communications: {
+        Row: {
+          attachments: Json | null
+          communication_type: string
+          content: string | null
+          created_at: string
+          delivery_status: Json | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          priority: string | null
+          read_receipts: Json | null
+          recipient_ids: string[]
+          scheduled_at: string | null
+          sender_id: string
+          sent_at: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          communication_type: string
+          content?: string | null
+          created_at?: string
+          delivery_status?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          priority?: string | null
+          read_receipts?: Json | null
+          recipient_ids: string[]
+          scheduled_at?: string | null
+          sender_id: string
+          sent_at?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          communication_type?: string
+          content?: string | null
+          created_at?: string
+          delivery_status?: Json | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          priority?: string | null
+          read_receipts?: Json | null
+          recipient_ids?: string[]
+          scheduled_at?: string | null
+          sender_id?: string
+          sent_at?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dealer_documents: {
+        Row: {
+          created_at: string
+          dealer_id: string
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_url: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          rejection_reason: string | null
+          tenant_id: string
+          updated_at: string
+          verification_status: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          dealer_id: string
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_url: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          rejection_reason?: string | null
+          tenant_id: string
+          updated_at?: string
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          dealer_id?: string
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_url?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          rejection_reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      dealer_performance: {
+        Row: {
+          achievements: Json | null
+          average_response_time_hours: number | null
+          bonus_earned: number | null
+          commission_earned: number | null
+          created_at: string
+          customer_satisfaction_score: number | null
+          dealer_id: string
+          farmers_acquired: number | null
+          farmers_target: number | null
+          id: string
+          orders_processed: number | null
+          performance_score: number | null
+          period_end: string
+          period_start: string
+          ranking: number | null
+          sales_achieved: number | null
+          sales_target: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          achievements?: Json | null
+          average_response_time_hours?: number | null
+          bonus_earned?: number | null
+          commission_earned?: number | null
+          created_at?: string
+          customer_satisfaction_score?: number | null
+          dealer_id: string
+          farmers_acquired?: number | null
+          farmers_target?: number | null
+          id?: string
+          orders_processed?: number | null
+          performance_score?: number | null
+          period_end: string
+          period_start: string
+          ranking?: number | null
+          sales_achieved?: number | null
+          sales_target?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          achievements?: Json | null
+          average_response_time_hours?: number | null
+          bonus_earned?: number | null
+          commission_earned?: number | null
+          created_at?: string
+          customer_satisfaction_score?: number | null
+          dealer_id?: string
+          farmers_acquired?: number | null
+          farmers_target?: number | null
+          id?: string
+          orders_processed?: number | null
+          performance_score?: number | null
+          period_end?: string
+          period_start?: string
+          ranking?: number | null
+          sales_achieved?: number | null
+          sales_target?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dealer_territories: {
+        Row: {
+          assigned_dealer_id: string | null
+          assignment_date: string | null
+          coverage_status: string | null
+          created_at: string
+          description: string | null
+          geographic_bounds: Json | null
+          id: string
+          is_active: boolean | null
+          market_potential: Json | null
+          performance_metrics: Json | null
+          population_data: Json | null
+          tenant_id: string
+          territory_code: string
+          territory_name: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_dealer_id?: string | null
+          assignment_date?: string | null
+          coverage_status?: string | null
+          created_at?: string
+          description?: string | null
+          geographic_bounds?: Json | null
+          id?: string
+          is_active?: boolean | null
+          market_potential?: Json | null
+          performance_metrics?: Json | null
+          population_data?: Json | null
+          tenant_id: string
+          territory_code: string
+          territory_name: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_dealer_id?: string | null
+          assignment_date?: string | null
+          coverage_status?: string | null
+          created_at?: string
+          description?: string | null
+          geographic_bounds?: Json | null
+          id?: string
+          is_active?: boolean | null
+          market_potential?: Json | null
+          performance_metrics?: Json | null
+          population_data?: Json | null
+          tenant_id?: string
+          territory_code?: string
+          territory_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dealers: {
+        Row: {
+          agreement_signed_at: string | null
+          agreement_url: string | null
+          bank_details: Json | null
+          business_address: Json | null
+          business_name: string
+          business_type: string | null
+          commission_rate: number | null
+          contact_person: string
+          created_at: string
+          credit_limit: number | null
+          dealer_code: string
+          email: string
+          gst_number: string | null
+          id: string
+          is_active: boolean | null
+          kyc_status: string | null
+          metadata: Json | null
+          onboarding_date: string | null
+          pan_number: string | null
+          payment_terms: string | null
+          performance_rating: number | null
+          phone: string
+          product_authorizations: Json | null
+          registration_status: string | null
+          tenant_id: string
+          territory_ids: string[] | null
+          updated_at: string
+          verification_status: string | null
+        }
+        Insert: {
+          agreement_signed_at?: string | null
+          agreement_url?: string | null
+          bank_details?: Json | null
+          business_address?: Json | null
+          business_name: string
+          business_type?: string | null
+          commission_rate?: number | null
+          contact_person: string
+          created_at?: string
+          credit_limit?: number | null
+          dealer_code: string
+          email: string
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          kyc_status?: string | null
+          metadata?: Json | null
+          onboarding_date?: string | null
+          pan_number?: string | null
+          payment_terms?: string | null
+          performance_rating?: number | null
+          phone: string
+          product_authorizations?: Json | null
+          registration_status?: string | null
+          tenant_id: string
+          territory_ids?: string[] | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Update: {
+          agreement_signed_at?: string | null
+          agreement_url?: string | null
+          bank_details?: Json | null
+          business_address?: Json | null
+          business_name?: string
+          business_type?: string | null
+          commission_rate?: number | null
+          contact_person?: string
+          created_at?: string
+          credit_limit?: number | null
+          dealer_code?: string
+          email?: string
+          gst_number?: string | null
+          id?: string
+          is_active?: boolean | null
+          kyc_status?: string | null
+          metadata?: Json | null
+          onboarding_date?: string | null
+          pan_number?: string | null
+          payment_terms?: string | null
+          performance_rating?: number | null
+          phone?: string
+          product_authorizations?: Json | null
+          registration_status?: string | null
+          tenant_id?: string
+          territory_ids?: string[] | null
+          updated_at?: string
+          verification_status?: string | null
+        }
+        Relationships: []
       }
       farmers: {
         Row: {
@@ -340,6 +876,107 @@ export type Database = {
           tenant_id?: string
           transaction_date?: string
           transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_sync_logs: {
+        Row: {
+          completed_at: string | null
+          direction: string
+          error_details: Json | null
+          id: string
+          integration_id: string
+          records_failed: number
+          records_processed: number
+          records_success: number
+          started_at: string
+          status: string
+          sync_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          direction: string
+          error_details?: Json | null
+          id?: string
+          integration_id: string
+          records_failed?: number
+          records_processed?: number
+          records_success?: number
+          started_at?: string
+          status?: string
+          sync_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          direction?: string
+          error_details?: Json | null
+          id?: string
+          integration_id?: string
+          records_failed?: number
+          records_processed?: number
+          records_success?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_sync_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          configuration: Json
+          created_at: string
+          credentials: Json
+          error_log: string | null
+          field_mappings: Json
+          id: string
+          integration_type: string
+          is_active: boolean
+          last_sync_at: string | null
+          name: string
+          sync_settings: Json
+          sync_status: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          credentials?: Json
+          error_log?: string | null
+          field_mappings?: Json
+          id?: string
+          integration_type: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name: string
+          sync_settings?: Json
+          sync_status?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          credentials?: Json
+          error_log?: string | null
+          field_mappings?: Json
+          id?: string
+          integration_type?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          name?: string
+          sync_settings?: Json
+          sync_status?: string | null
+          tenant_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -2319,6 +2956,113 @@ export type Database = {
           longitude?: number
           name?: string
           station_code?: string
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          attempt_number: number
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_time_ms: number | null
+          status_code: number | null
+          webhook_id: string
+        }
+        Insert: {
+          attempt_number?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          webhook_id: string
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_time_ms?: number | null
+          status_code?: number | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          created_at: string
+          custom_headers: Json | null
+          event_filters: Json | null
+          events: string[]
+          failure_count: number
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          name: string
+          retry_attempts: number
+          secret_key: string
+          success_count: number
+          tenant_id: string
+          timeout_seconds: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          custom_headers?: Json | null
+          event_filters?: Json | null
+          events?: string[]
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name: string
+          retry_attempts?: number
+          secret_key: string
+          success_count?: number
+          tenant_id: string
+          timeout_seconds?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          custom_headers?: Json | null
+          event_filters?: Json | null
+          events?: string[]
+          failure_count?: number
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          name?: string
+          retry_attempts?: number
+          secret_key?: string
+          success_count?: number
+          tenant_id?: string
+          timeout_seconds?: number
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
