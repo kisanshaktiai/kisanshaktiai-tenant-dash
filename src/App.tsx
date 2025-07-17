@@ -16,6 +16,8 @@ import NotFound from '@/pages/NotFound';
 import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
+import { IntegrationsPage } from '@/pages/integrations/IntegrationsPage';
+import DealersPage from '@/pages/dealers/DealersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,7 +81,7 @@ const AppContent = () => {
               <Route index element={<Dashboard />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="farmers" element={<FarmersPage />} />
-              <Route path="dealers" element={<div>Dealers Page</div>} />
+              <Route path="dealers" element={<DealersPage />} />
               <Route path="lands" element={<div>Land Management Page</div>} />
               <Route path="crops" element={<div>Crop Monitoring Page</div>} />
               <Route path="products" element={<ProductsPage />} />
@@ -88,6 +90,7 @@ const AppContent = () => {
               <Route path="reports" element={<div>Reports Page</div>} />
               <Route path="messages" element={<div>Messages Page</div>} />
               <Route path="forum" element={<div>Community Forum Page</div>} />
+              <Route path="integrations" element={<IntegrationsPage />} />
               <Route path="notifications" element={<div>Notifications Page</div>} />
               <Route path="settings" element={<div>Settings Page</div>} />
               <Route path="profile" element={<div>Profile Page</div>} />

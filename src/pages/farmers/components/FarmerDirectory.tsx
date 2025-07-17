@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,8 +46,11 @@ export const FarmerDirectory = ({
     verification: ''
   });
 
-  // Sample farmer data - in real app this would come from API
-  const farmers = [
+  // Real-time farmers data
+  const { data: farmers, loading, error } = useRealTimeFarmers();
+
+  // Sample data fallback when no real data
+  const sampleFarmers = [
     {
       id: '1',
       name: 'Ramesh Kumar',
@@ -102,7 +107,10 @@ export const FarmerDirectory = ({
     }
   ];
 
-  const filteredFarmers = farmers.filter(farmer => {
+  // Use real data or fallback to sample data
+  const displayFarmers = farmers.length > 0 ? farmers : sampleFarmers;
+
+  const filteredFarmers = displayFarmers.filter(farmer => {
     const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          farmer.phone.includes(searchQuery) ||
                          farmer.email.toLowerCase().includes(searchQuery.toLowerCase());

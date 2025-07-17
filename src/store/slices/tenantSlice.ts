@@ -36,9 +36,9 @@ interface Tenant {
   id: string;
   name: string;
   slug: string;
-  type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative';
+  type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'dealer' | 'sugar_factory' | 'insurance';
   status: 'trial' | 'active' | 'suspended' | 'cancelled';
-  subscription_plan: 'starter' | 'professional' | 'enterprise';
+  subscription_plan: 'starter' | 'professional' | 'enterprise' | 'growth' | 'custom';
   owner_name?: string;
   owner_email?: string;
   branding?: TenantBranding;
@@ -49,7 +49,7 @@ interface UserTenant {
   id: string;
   user_id: string;
   tenant_id: string;
-  role: 'admin' | 'manager' | 'viewer';
+  role: 'admin' | 'manager' | 'viewer' | 'dealer' | 'super_admin' | 'tenant_owner' | 'tenant_admin' | 'tenant_manager' | 'agent' | 'farmer';
   is_active: boolean;
   is_primary: boolean;
   department?: string;
