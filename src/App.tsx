@@ -9,6 +9,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 
 import { store } from '@/store';
 import { useAppSelector } from '@/store/hooks';
+import { useAuth } from '@/hooks/useAuth';
+import { useTenantData } from '@/hooks/useTenantData';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
@@ -50,6 +52,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // App content with store access
 const AppContent = () => {
   const { theme } = useAppSelector((state) => state.ui);
+  
+  // Initialize authentication and tenant data
+  useAuth();
+  useTenantData();
 
   useEffect(() => {
     // Apply theme to document
