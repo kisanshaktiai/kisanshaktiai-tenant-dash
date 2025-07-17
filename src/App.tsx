@@ -15,6 +15,7 @@ import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
 import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +77,7 @@ const AppContent = () => {
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />
-              <Route path="analytics" element={<div>Analytics Page</div>} />
+              <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="farmers" element={<FarmersPage />} />
               <Route path="dealers" element={<div>Dealers Page</div>} />
               <Route path="lands" element={<div>Land Management Page</div>} />
