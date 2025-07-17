@@ -34,7 +34,13 @@ export const useTenantData = () => {
         // Set current tenant if not set
         if (!currentTenant && userTenantsData && userTenantsData.length > 0) {
           const primaryTenant = userTenantsData.find(ut => ut.is_primary) || userTenantsData[0];
-          dispatch(setCurrentTenant(primaryTenant.tenant));
+          if (primaryTenant?.tenant) {
+            dispatch(setCurrentTenant({
+              ...primaryTenant.tenant,
+              branding: primaryTenant.tenant.branding?.[0] || null,
+              features: primaryTenant.tenant.features?.[0] || null,
+            }));
+          }
         }
       } catch (error) {
         console.error('Error fetching tenant data:', error);

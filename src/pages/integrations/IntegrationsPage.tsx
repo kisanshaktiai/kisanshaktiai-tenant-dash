@@ -7,7 +7,7 @@ import { DataTransformations } from "./components/DataTransformations";
 import { MonitoringDashboard } from "./components/MonitoringDashboard";
 import { DeveloperPortal } from "./components/DeveloperPortal";
 
-export function IntegrationsPage() {
+export default function IntegrationsPage() {
   const [activeTab, setActiveTab] = useState("api-keys");
 
   return (

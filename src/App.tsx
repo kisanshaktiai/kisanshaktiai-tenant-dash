@@ -16,7 +16,7 @@ import NotFound from '@/pages/NotFound';
 import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
-import { IntegrationsPage } from '@/pages/integrations/IntegrationsPage';
+import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import DealersPage from '@/pages/dealers/DealersPage';
 
 const queryClient = new QueryClient({
