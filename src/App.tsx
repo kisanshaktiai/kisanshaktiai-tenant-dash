@@ -1,27 +1,117 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { useEffect } from 'react';
+import { Provider } from 'react-redux';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
-const queryClient = new QueryClient();
+import { store } from '@/store';
+import { useAppSelector } from '@/store/hooks';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
+import NotFound from '@/pages/NotFound';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, initialized } = useAppSelector((state) => state.auth);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// App content with store access
+const AppContent = () => {
+  const { theme } = useAppSelector((state) => state.ui);
+
+  useEffect(() => {
+    // Apply theme to document
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      root.classList.add(systemTheme);
+    } else {
+      root.classList.add(theme);
+    }
+  }, [theme]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/auth" element={<Auth />} />
+            
+            {/* Protected Dashboard Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="analytics" element={<div>Analytics Page</div>} />
+              <Route path="farmers" element={<div>Farmers Page</div>} />
+              <Route path="dealers" element={<div>Dealers Page</div>} />
+              <Route path="lands" element={<div>Land Management Page</div>} />
+              <Route path="crops" element={<div>Crop Monitoring Page</div>} />
+              <Route path="products" element={<div>Product Catalog Page</div>} />
+              <Route path="campaigns" element={<div>Campaigns Page</div>} />
+              <Route path="performance" element={<div>Performance Page</div>} />
+              <Route path="reports" element={<div>Reports Page</div>} />
+              <Route path="messages" element={<div>Messages Page</div>} />
+              <Route path="forum" element={<div>Community Forum Page</div>} />
+              <Route path="notifications" element={<div>Notifications Page</div>} />
+              <Route path="settings" element={<div>Settings Page</div>} />
+              <Route path="profile" element={<div>Profile Page</div>} />
+              <Route path="help" element={<div>Help & Support Page</div>} />
+            </Route>
+
+            {/* Root redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+        
+        <Toaster />
+        <Sonner />
+      </TooltipProvider>
+      
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+};
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <Provider store={store}>
+    <AppContent />
+  </Provider>
 );
 
 export default App;
