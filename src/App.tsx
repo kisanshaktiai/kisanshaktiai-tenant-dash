@@ -14,6 +14,7 @@ import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
 import FarmersPage from '@/pages/farmers/FarmersPage';
+import ProductsPage from '@/pages/products/ProductsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,7 +81,7 @@ const AppContent = () => {
               <Route path="dealers" element={<div>Dealers Page</div>} />
               <Route path="lands" element={<div>Land Management Page</div>} />
               <Route path="crops" element={<div>Crop Monitoring Page</div>} />
-              <Route path="products" element={<div>Product Catalog Page</div>} />
+              <Route path="products" element={<ProductsPage />} />
               <Route path="campaigns" element={<div>Campaigns Page</div>} />
               <Route path="performance" element={<div>Performance Page</div>} />
               <Route path="reports" element={<div>Reports Page</div>} />
