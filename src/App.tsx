@@ -75,7 +75,7 @@ const AppContent = () => {
             }>
               <Route index element={<Dashboard />} />
               <Route path="analytics" element={<div>Analytics Page</div>} />
-              <Route path="farmers" element={<div>Farmers Page</div>} />
+              <Route path="farmers" element={<FarmersPage />} />
               <Route path="dealers" element={<div>Dealers Page</div>} />
               <Route path="lands" element={<div>Land Management Page</div>} />
               <Route path="crops" element={<div>Crop Monitoring Page</div>} />
