@@ -19,7 +19,7 @@ import { FarmerImportModal } from './components/FarmerImportModal';
 import { CreateFarmerModal } from './components/CreateFarmerModal';
 import { FarmerStats } from './components/FarmerStats';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
-import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
+import { useRealTimeFarmers } from '@/hooks/useRealTimeFarmers';
 
 const FarmersPage = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);

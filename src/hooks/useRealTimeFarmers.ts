@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
@@ -86,6 +87,3 @@ export const useRealTimeFarmers = () => {
     error
   };
 };
-
-// Export the new farmers hook
-export { useRealTimeFarmers } from './useRealTimeFarmers';
