@@ -13,6 +13,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
+import FarmersPage from '@/pages/farmers/FarmersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
