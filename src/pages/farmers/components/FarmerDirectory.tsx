@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
 import { supabase } from '@/integrations/supabase/client';

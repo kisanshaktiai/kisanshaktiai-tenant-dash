@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
@@ -15,6 +16,23 @@ interface Farmer {
   has_tractor: boolean;
   irrigation_type: string;
   is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+  // Optional engagement fields
+  total_app_opens?: number;
+  total_queries?: number;
+  last_app_open?: string;
+}
+
+interface Dealer {
+  id: string;
+  tenant_id: string;
+  dealer_code: string;
+  business_name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -87,5 +105,70 @@ export const useRealTimeFarmers = () => {
   };
 };
 
-// Export the new farmers hook
-export { useRealTimeFarmers } from './useRealTimeFarmers';
+export const useRealTimeDealers = () => {
+  const [dealers, setDealers] = useState<Dealer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+
+  useEffect(() => {
+    if (!currentTenant) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchDealers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('dealers')
+          .select('*')
+          .eq('tenant_id', currentTenant.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setDealers(data || []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch dealers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDealers();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('dealers_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dealers',
+          filter: `tenant_id=eq.${currentTenant.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDealers(prev => [payload.new as Dealer, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setDealers(prev => prev.map(dealer => 
+              dealer.id === payload.new.id ? payload.new as Dealer : dealer
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setDealers(prev => prev.filter(dealer => dealer.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentTenant]);
+
+  return {
+    data: dealers,
+    loading,
+    error
+  };
+};

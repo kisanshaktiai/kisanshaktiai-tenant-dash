@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,8 +27,8 @@ export const FarmerStats = () => {
     }).length,
     avgLandSize: farmers.reduce((acc, f) => acc + (f.total_land_acres || 0), 0) / farmers.length || 0,
     topCrops: [...new Set(farmers.flatMap(f => f.primary_crops || []))].slice(0, 3),
-    engagementRate: farmers.length ? (farmers.filter(f => f.total_app_opens > 0).length / farmers.length) * 100 : 0,
-    responseRate: farmers.length ? (farmers.filter(f => f.total_queries > 0).length / farmers.length) * 100 : 0,
+    engagementRate: farmers.length ? (farmers.filter(f => (f.total_app_opens || 0) > 0).length / farmers.length) * 100 : 0,
+    responseRate: farmers.length ? (farmers.filter(f => (f.total_queries || 0) > 0).length / farmers.length) * 100 : 0,
   };
 
   return (

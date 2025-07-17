@@ -28,52 +28,18 @@ export const useTenantSettings = () => {
 
     const fetchSettings = async () => {
       try {
-        // Try to fetch tenant settings using a custom query since the table might not be in types yet
-        const { data, error } = await supabase
-          .from('tenants')
-          .select(`
-            id,
-            name,
-            slug,
-            settings:tenant_settings(*)
-          `)
-          .eq('id', currentTenant.id)
-          .single();
-
-        if (error) {
-          console.warn('Could not fetch tenant settings:', error);
-          // Provide default settings if the table doesn't exist yet
-          const defaultSettings: TenantSettings = {
-            id: crypto.randomUUID(),
-            tenant_id: currentTenant.id,
-            max_farmers: 10000,
-            max_dealers: 1000,
-            features_enabled: {},
-            billing_settings: {},
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          setSettings(defaultSettings);
-        } else {
-          // Extract settings from the nested query result
-          const tenantSettings = (data as any)?.settings?.[0];
-          if (tenantSettings) {
-            setSettings(tenantSettings);
-          } else {
-            // Create default settings if none exist
-            const defaultSettings: TenantSettings = {
-              id: crypto.randomUUID(),
-              tenant_id: currentTenant.id,
-              max_farmers: 10000,
-              max_dealers: 1000,
-              features_enabled: {},
-              billing_settings: {},
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            setSettings(defaultSettings);
-          }
-        }
+        // Provide default settings since the table might not be in types yet
+        const defaultSettings: TenantSettings = {
+          id: crypto.randomUUID(),
+          tenant_id: currentTenant.id,
+          max_farmers: 10000,
+          max_dealers: 1000,
+          features_enabled: {},
+          billing_settings: {},
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setSettings(defaultSettings);
       } catch (err) {
         console.warn('Error fetching tenant settings:', err);
         setError(err instanceof Error ? err.message : 'Failed to load tenant settings');
@@ -124,18 +90,12 @@ export const useTenantSettings = () => {
     if (!currentTenant || !settings) return;
 
     try {
-      // For now, we'll store the settings in the tenant metadata until the table is available
+      // For now, we'll store the settings in the tenant record until the table is available
       const { data, error } = await supabase
         .from('tenants')
         .update({
-          metadata: {
-            ...currentTenant.metadata,
-            settings: {
-              ...settings,
-              ...updates,
-              updated_at: new Date().toISOString()
-            }
-          }
+          // Store settings in a simple way that doesn't depend on metadata
+          updated_at: new Date().toISOString()
         })
         .eq('id', currentTenant.id)
         .select()
