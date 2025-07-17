@@ -49,79 +49,22 @@ export const FarmerDirectory = ({
   // Real-time farmers data
   const { data: farmers, loading, error } = useRealTimeFarmers();
 
-  // Sample data fallback when no real data
-  const sampleFarmers = [
-    {
-      id: '1',
-      name: 'Ramesh Kumar',
-      phone: '+91 9876543210',
-      email: 'ramesh.kumar@example.com',
-      village: 'Kharkhoda',
-      district: 'Sonipat',
-      state: 'Haryana',
-      landSize: 5.2,
-      crops: ['Wheat', 'Rice'],
-      status: 'active',
-      verified: true,
-      lastActive: '2024-01-15',
-      engagementScore: 85,
-      churnRisk: 'low',
-      avatar: null,
-      tags: ['Premium', 'Organic']
-    },
-    {
-      id: '2',
-      name: 'Priya Sharma',
-      phone: '+91 9876543211',
-      email: 'priya.sharma@example.com',
-      village: 'Mandkola',
-      district: 'Sonipat',
-      state: 'Haryana',
-      landSize: 3.8,
-      crops: ['Cotton', 'Sugarcane'],
-      status: 'active',
-      verified: true,
-      lastActive: '2024-01-14',
-      engagementScore: 72,
-      churnRisk: 'medium',
-      avatar: null,
-      tags: ['New']
-    },
-    {
-      id: '3',
-      name: 'Suresh Patel',
-      phone: '+91 9876543212',
-      email: 'suresh.patel@example.com',
-      village: 'Rai',
-      district: 'Sonipat',
-      state: 'Haryana',
-      landSize: 7.5,
-      crops: ['Wheat', 'Mustard'],
-      status: 'inactive',
-      verified: false,
-      lastActive: '2024-01-10',
-      engagementScore: 45,
-      churnRisk: 'high',
-      avatar: null,
-      tags: ['Needs Attention']
-    }
-  ];
-
-  // Use real data or fallback to sample data
-  const displayFarmers = farmers.length > 0 ? farmers : sampleFarmers;
+  // Use real farmers data directly
+  const displayFarmers = farmers || [];
 
   const filteredFarmers = displayFarmers.filter(farmer => {
-    const matchesSearch = farmer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         farmer.phone.includes(searchQuery) ||
-                         farmer.email.toLowerCase().includes(searchQuery.toLowerCase());
+    // Handle search with actual database fields
+    const farmerName = farmer.id || ''; // We'll need to add a name field or use farmer_code
+    const farmerPhone = '';  // These will be added to profiles table
+    const farmerEmail = '';
+    
+    const matchesSearch = searchQuery === '' || 
+                         farmer.farmer_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         farmer.id.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesFilters = 
-      (!filters.state || farmer.state === filters.state) &&
-      (!filters.district || farmer.district === filters.district) &&
-      (!filters.cropType || farmer.crops.includes(filters.cropType)) &&
-      (!filters.status || farmer.status === filters.status) &&
       (!filters.verification || 
-        (filters.verification === 'verified' ? farmer.verified : !farmer.verified));
+        (filters.verification === 'verified' ? farmer.is_verified : !farmer.is_verified));
     
     return matchesSearch && matchesFilters;
   });
@@ -270,19 +213,17 @@ export const FarmerDirectory = ({
                 />
                 
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={farmer.avatar} />
                   <AvatarFallback className="bg-primary text-primary-foreground">
-                    {farmer.name.split(' ').map(n => n[0]).join('')}
+                    {farmer.farmer_code ? farmer.farmer_code.slice(0, 2).toUpperCase() : 'F'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">{farmer.name}</h3>
-                    <Badge variant={getStatusColor(farmer.status)}>
-                      {farmer.status}
-                    </Badge>
-                    {farmer.verified && (
+                    <h3 className="font-semibold truncate">
+                      {farmer.farmer_code || `Farmer ${farmer.id.slice(0, 8)}`}
+                    </h3>
+                    {farmer.is_verified && (
                       <Badge variant="outline" className="text-xs">
                         Verified
                       </Badge>
@@ -291,40 +232,47 @@ export const FarmerDirectory = ({
                   
                   <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {farmer.phone}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {farmer.village}, {farmer.district}
+                      <Calendar className="h-3 w-3" />
+                      Joined: {new Date(farmer.created_at).toLocaleDateString()}
                     </span>
                     <span className="flex items-center gap-1">
                       <Sprout className="h-3 w-3" />
-                      {farmer.landSize} acres
+                      {farmer.total_land_acres || 0} acres
                     </span>
+                    {farmer.farming_experience_years && (
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        {farmer.farming_experience_years} yrs exp
+                      </span>
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2 mt-2">
-                    {farmer.crops.map(crop => (
+                    {farmer.primary_crops && farmer.primary_crops.map(crop => (
                       <Badge key={crop} variant="secondary" className="text-xs">
                         {crop}
                       </Badge>
                     ))}
-                    {farmer.tags.map(tag => (
-                      <Badge key={tag} variant="outline" className="text-xs">
-                        {tag}
+                    {farmer.farm_type && (
+                      <Badge variant="outline" className="text-xs">
+                        {farmer.farm_type}
                       </Badge>
-                    ))}
+                    )}
                   </div>
                 </div>
                 
                 <div className="text-right">
                   <div className="text-sm font-medium">
-                    Score: {farmer.engagementScore}
+                    Opens: {farmer.total_app_opens || 0}
                   </div>
-                  <Badge variant={getRiskColor(farmer.churnRisk)} className="text-xs">
-                    {farmer.churnRisk} risk
-                  </Badge>
+                  <div className="text-xs text-muted-foreground">
+                    Queries: {farmer.total_queries || 0}
+                  </div>
+                  {farmer.last_app_open && (
+                    <div className="text-xs text-muted-foreground">
+                      Last: {new Date(farmer.last_app_open).toLocaleDateString()}
+                    </div>
+                  )}
                 </div>
                 
                 <DropdownMenu>

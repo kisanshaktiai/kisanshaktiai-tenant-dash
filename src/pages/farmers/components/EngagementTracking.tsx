@@ -1,20 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   TrendingUp, Users, MessageSquare, Eye, 
   Calendar, Phone, Mail, Activity
 } from 'lucide-react';
+import { useEngagementData } from '@/hooks/useEngagementData';
 
 export const EngagementTracking = () => {
-  // Sample engagement data
-  const engagementStats = {
-    activeUsers: 1892,
-    avgSessionTime: '8.5 min',
-    featureAdoption: 73.2,
-    responseRate: 68.5,
-    churnRate: 4.8,
-    npsScore: 8.2
-  };
+  const { stats: engagementStats, loading } = useEngagementData();
 
   const topFeatures = [
     { name: 'Weather Updates', usage: 94.2, trend: 'up' },
@@ -40,8 +34,12 @@ export const EngagementTracking = () => {
             <CardTitle className="text-sm font-medium">Active Users (30d)</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
             <div className="text-2xl font-bold">{engagementStats.activeUsers.toLocaleString()}</div>
+          )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+12%</span> from last month
             </p>
@@ -53,8 +51,12 @@ export const EngagementTracking = () => {
             <CardTitle className="text-sm font-medium">Avg Session Time</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
             <div className="text-2xl font-bold">{engagementStats.avgSessionTime}</div>
+          )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+0.8 min</span> from last month
             </p>
@@ -66,8 +68,12 @@ export const EngagementTracking = () => {
             <CardTitle className="text-sm font-medium">Feature Adoption</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
             <div className="text-2xl font-bold">{engagementStats.featureAdoption}%</div>
+          )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+5.2%</span> from last month
             </p>
@@ -79,8 +85,12 @@ export const EngagementTracking = () => {
             <CardTitle className="text-sm font-medium">Response Rate</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
+        <CardContent>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
             <div className="text-2xl font-bold">{engagementStats.responseRate}%</div>
+          )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+3.1%</span> from last month
             </p>
@@ -93,7 +103,11 @@ export const EngagementTracking = () => {
             <Users className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{engagementStats.churnRate}%</div>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold text-destructive">{engagementStats.churnRate}%</div>
+            )}
             <p className="text-xs text-muted-foreground">
               <span className="text-destructive">-0.3%</span> from last month
             </p>
@@ -106,7 +120,11 @@ export const EngagementTracking = () => {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{engagementStats.npsScore}/10</div>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold text-primary">{engagementStats.npsScore}/10</div>
+            )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+0.4</span> from last month
             </p>

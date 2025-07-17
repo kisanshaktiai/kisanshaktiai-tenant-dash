@@ -1,21 +1,33 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Users, UserCheck, UserX, TrendingUp, 
   MapPin, Sprout, AlertTriangle, Clock
 } from 'lucide-react';
+import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
 
 export const FarmerStats = () => {
-  // Sample stats - in real app this would come from API
+  const { data: farmers, loading } = useRealTimeFarmers();
+
+  // Calculate stats from real data
   const stats = {
-    totalFarmers: 2847,
-    activeFarmers: 2134,
-    newThisMonth: 156,
-    churnRisk: 43,
-    avgLandSize: 3.2,
-    topCrops: ['Rice', 'Wheat', 'Cotton'],
-    engagementRate: 78.5,
-    responseRate: 62.3,
+    totalFarmers: farmers.length,
+    activeFarmers: farmers.filter(f => f.is_verified).length,
+    newThisMonth: farmers.filter(f => {
+      const monthAgo = new Date();
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return new Date(f.created_at) > monthAgo;
+    }).length,
+    churnRisk: farmers.filter(f => {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return f.last_app_open && new Date(f.last_app_open) < weekAgo;
+    }).length,
+    avgLandSize: farmers.reduce((acc, f) => acc + (f.total_land_acres || 0), 0) / farmers.length || 0,
+    topCrops: [...new Set(farmers.flatMap(f => f.primary_crops || []))].slice(0, 3),
+    engagementRate: farmers.length ? (farmers.filter(f => f.total_app_opens > 0).length / farmers.length) * 100 : 0,
+    responseRate: farmers.length ? (farmers.filter(f => f.total_queries > 0).length / farmers.length) * 100 : 0,
   };
 
   return (
@@ -26,7 +38,11 @@ export const FarmerStats = () => {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.totalFarmers.toLocaleString()}</div>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
+            <div className="text-2xl font-bold">{stats.totalFarmers.toLocaleString()}</div>
+          )}
           <p className="text-xs text-muted-foreground">
             <span className="text-success">+{stats.newThisMonth}</span> this month
           </p>
@@ -39,9 +55,13 @@ export const FarmerStats = () => {
           <UserCheck className="h-4 w-4 text-success" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.activeFarmers.toLocaleString()}</div>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
+            <div className="text-2xl font-bold">{stats.activeFarmers.toLocaleString()}</div>
+          )}
           <p className="text-xs text-muted-foreground">
-            {((stats.activeFarmers / stats.totalFarmers) * 100).toFixed(1)}% of total
+            {stats.totalFarmers ? ((stats.activeFarmers / stats.totalFarmers) * 100).toFixed(1) : 0}% of total
           </p>
         </CardContent>
       </Card>
@@ -52,9 +72,13 @@ export const FarmerStats = () => {
           <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.engagementRate}%</div>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
+            <div className="text-2xl font-bold">{stats.engagementRate.toFixed(1)}%</div>
+          )}
           <p className="text-xs text-muted-foreground">
-            <span className="text-success">+5.2%</span> from last month
+            App usage rate
           </p>
         </CardContent>
       </Card>
@@ -65,9 +89,13 @@ export const FarmerStats = () => {
           <AlertTriangle className="h-4 w-4 text-warning" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-warning">{stats.churnRisk}</div>
+          {loading ? (
+            <Skeleton className="h-8 w-20" />
+          ) : (
+            <div className="text-2xl font-bold text-warning">{stats.churnRisk}</div>
+          )}
           <p className="text-xs text-muted-foreground">
-            Require immediate attention
+            Inactive for 7+ days
           </p>
         </CardContent>
       </Card>
