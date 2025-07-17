@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,19 +22,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  User, MapPin, Sprout, FileText, X
+  User, MapPin, Sprout, FileText, X, Loader2, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { useFarmerManagement, CreateFarmerData } from '@/hooks/useFarmerManagement';
+import { useAppSelector } from '@/store/hooks';
 
 interface CreateFarmerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: (result: any) => void;
 }
 
-export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps) => {
+export const CreateFarmerModal = ({ open, onOpenChange, onSuccess }: CreateFarmerModalProps) => {
   const [activeTab, setActiveTab] = useState('personal');
   const [selectedCrops, setSelectedCrops] = useState<string[]>([]);
-  const [formData, setFormData] = useState({
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdFarmer, setCreatedFarmer] = useState<any>(null);
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { createFarmer, loading, error, clearError } = useFarmerManagement();
+
+  const [formData, setFormData] = useState<CreateFarmerData>({
     // Personal Information
     fullName: '',
     phone: '',
@@ -54,40 +64,151 @@ export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps
     irrigationSource: '',
     hasStorage: false,
     hasTractor: false,
+    primaryCrops: [],
     
     // Additional Information
-    notes: '',
-    tags: []
+    notes: ''
   });
 
   const availableCrops = [
     'Rice', 'Wheat', 'Corn', 'Cotton', 'Sugarcane', 
-    'Mustard', 'Soybean', 'Vegetables', 'Fruits'
+    'Mustard', 'Soybean', 'Vegetables', 'Fruits', 'Pulses'
+  ];
+
+  const indianStates = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
   ];
 
   const handleCropToggle = (crop: string) => {
-    setSelectedCrops(prev => 
-      prev.includes(crop)
-        ? prev.filter(c => c !== crop)
-        : [...prev, crop]
-    );
+    const newCrops = selectedCrops.includes(crop)
+      ? selectedCrops.filter(c => c !== crop)
+      : [...selectedCrops, crop];
+    
+    setSelectedCrops(newCrops);
+    setFormData({ ...formData, primaryCrops: newCrops });
   };
 
-  const handleSubmit = () => {
-    // In real app, this would call API to create farmer
-    console.log('Creating farmer:', { ...formData, crops: selectedCrops });
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (!formData.fullName.trim()) errors.push('Full name is required');
+    if (!formData.phone.trim()) errors.push('Phone number is required');
+    if (!formData.email.trim()) errors.push('Email is required');
+    if (!formData.village.trim()) errors.push('Village is required');
+    if (!formData.district.trim()) errors.push('District is required');
+    if (!formData.state.trim()) errors.push('State is required');
+    if (!formData.totalLandSize.trim()) errors.push('Total land size is required');
+    
+    // Phone validation
+    if (formData.phone && !/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
+      errors.push('Please enter a valid 10-digit Indian mobile number');
+    }
+    
+    // Email validation
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push('Please enter a valid email address');
+    }
+    
+    return errors;
+  };
+
+  const handleSubmit = async () => {
+    clearError();
+    
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      alert(validationErrors.join('\n'));
+      return;
+    }
+
+    if (!currentTenant) {
+      alert('No tenant selected. Please refresh the page and try again.');
+      return;
+    }
+
+    try {
+      const result = await createFarmer(formData);
+      setCreatedFarmer(result);
+      setShowSuccess(true);
+      
+      if (onSuccess) {
+        onSuccess(result);
+      }
+      
+      // Reset form after success
+      setTimeout(() => {
+        handleClose();
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Failed to create farmer:', err);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData({
+      fullName: '', phone: '', email: '', dateOfBirth: '', gender: '',
+      village: '', taluka: '', district: '', state: '', pincode: '',
+      farmingExperience: '', totalLandSize: '', irrigationSource: '',
+      hasStorage: false, hasTractor: false, primaryCrops: [], notes: ''
+    });
+    setSelectedCrops([]);
+    setActiveTab('personal');
+    setShowSuccess(false);
+    setCreatedFarmer(null);
+    clearError();
     onOpenChange(false);
   };
 
+  if (showSuccess && createdFarmer) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-md">
+          <div className="text-center space-y-4">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <div>
+              <h2 className="text-xl font-semibold">Farmer Created Successfully!</h2>
+              <p className="text-muted-foreground mt-2">
+                Farmer ID: <span className="font-mono font-semibold">{createdFarmer.farmerCode}</span>
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Temporary Password: <span className="font-mono bg-muted px-2 py-1 rounded">
+                  {createdFarmer.tempPassword}
+                </span>
+              </p>
+              <p className="text-xs text-orange-600 mt-2">
+                Please share these credentials securely with the farmer
+              </p>
+            </div>
+            <Button onClick={handleClose} className="w-full">
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Farmer</DialogTitle>
           <DialogDescription>
-            Register a new farmer in your network
+            Register a new farmer in {currentTenant?.name} network
           </DialogDescription>
         </DialogHeader>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
@@ -133,12 +254,12 @@ export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      placeholder="+91 9876543210"
+                      placeholder="9876543210"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">Email *</Label>
                     <Input
                       id="email"
                       type="email"
@@ -220,10 +341,9 @@ export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="haryana">Haryana</SelectItem>
-                        <SelectItem value="punjab">Punjab</SelectItem>
-                        <SelectItem value="uttar-pradesh">Uttar Pradesh</SelectItem>
-                        <SelectItem value="rajasthan">Rajasthan</SelectItem>
+                        {indianStates.map(state => (
+                          <SelectItem key={state} value={state}>{state}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -282,6 +402,8 @@ export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps
                         <SelectItem value="canal">Canal</SelectItem>
                         <SelectItem value="borewell">Borewell</SelectItem>
                         <SelectItem value="rainwater">Rainwater</SelectItem>
+                        <SelectItem value="river">River</SelectItem>
+                        <SelectItem value="tank">Tank</SelectItem>
                         <SelectItem value="mixed">Mixed</SelectItem>
                       </SelectContent>
                     </Select>
@@ -368,10 +490,11 @@ export const CreateFarmerModal = ({ open, onOpenChange }: CreateFarmerModalProps
         </Tabs>
 
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Farmer
           </Button>
         </div>

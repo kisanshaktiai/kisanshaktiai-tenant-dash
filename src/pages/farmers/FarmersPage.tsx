@@ -1,13 +1,13 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Search, Filter, Download, Upload, Plus, Users, 
-  MapPin, Phone, Mail, Calendar, MoreHorizontal,
-  Eye, Edit, MessageSquare, UserCheck, TrendingUp
+  Upload, Plus, Users, TrendingUp, UserCheck, MessageSquare, 
+  AlertCircle, CheckCircle, Settings
 } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { FarmerDirectory } from './components/FarmerDirectory';
@@ -18,6 +18,8 @@ import { LeadManagement } from './components/LeadManagement';
 import { FarmerImportModal } from './components/FarmerImportModal';
 import { CreateFarmerModal } from './components/CreateFarmerModal';
 import { FarmerStats } from './components/FarmerStats';
+import { useTenantSettings } from '@/hooks/useTenantSettings';
+import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
 
 const FarmersPage = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
@@ -26,6 +28,19 @@ const FarmersPage = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const { settings: tenantSettings, loading: settingsLoading } = useTenantSettings();
+  const { data: farmers, loading: farmersLoading } = useRealTimeFarmers();
+
+  const handleFarmerCreated = (result: any) => {
+    console.log('Farmer created successfully:', result);
+    // The real-time subscription will automatically update the farmers list
+  };
+
+  const currentFarmerCount = farmers?.filter(f => f.is_verified)?.length || 0;
+  const maxFarmers = tenantSettings?.max_farmers || 10000;
+  const isNearLimit = currentFarmerCount > maxFarmers * 0.8;
+  const isAtLimit = currentFarmerCount >= maxFarmers;
 
   return (
     <div className="space-y-6">
@@ -36,21 +51,61 @@ const FarmersPage = () => {
           <p className="text-muted-foreground">
             Manage your farmer network, track engagement, and optimize operations
           </p>
+          {currentTenant && (
+            <Badge variant="outline" className="mt-2">
+              {currentTenant.name} • {currentFarmerCount}/{maxFarmers} farmers
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
+          {isNearLimit && (
+            <Alert className="max-w-sm">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {isAtLimit 
+                  ? 'Farmer limit reached. Contact support to increase limit.'
+                  : `Approaching farmer limit (${currentFarmerCount}/${maxFarmers})`
+                }
+              </AlertDescription>
+            </Alert>
+          )}
           <Button 
             variant="outline" 
             onClick={() => setShowImportModal(true)}
+            disabled={isAtLimit}
           >
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button 
+            onClick={() => setShowCreateModal(true)}
+            disabled={isAtLimit}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Add Farmer
           </Button>
         </div>
       </div>
+
+      {/* Tenant Status Alert */}
+      {!currentTenant && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            No tenant selected. Please contact support if you continue to see this message.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {currentTenant && !settingsLoading && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            Connected to <strong>{currentTenant.name}</strong> tenant. 
+            All farmer data will be associated with this organization.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Overview */}
       <FarmerStats />
@@ -128,6 +183,7 @@ const FarmersPage = () => {
       <CreateFarmerModal 
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
+        onSuccess={handleFarmerCreated}
       />
 
       {/* Farmer Profile Sidebar */}
