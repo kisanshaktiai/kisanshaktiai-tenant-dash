@@ -131,24 +131,42 @@ export default function ProductForm({ productId, onCancel, onSuccess }: ProductF
         is_featured: product.is_featured ?? false,
         discount_percentage: product.discount_percentage || undefined,
         tags: product.tags || [],
-        specifications: product.specifications || {},
-        bulk_pricing: product.bulk_pricing || [],
-        dealer_locations: product.dealer_locations || [],
+        specifications: (product.specifications as Record<string, string>) || {},
+        bulk_pricing: (product.bulk_pricing as Array<{quantity: number, price: number, discount: number}>) || [],
+        dealer_locations: (product.dealer_locations as Array<{dealer_id: string, region: string, price_modifier: number}>) || [],
       });
       setImages(product.images || []);
-      setBulkPricingTiers(product.bulk_pricing || []);
+      setBulkPricingTiers((product.bulk_pricing as Array<{quantity: number, price: number, discount: number}>) || []);
     }
   }, [product, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      const insertData = {
+        name: data.name,
+        sku: data.sku,
+        brand: data.brand,
+        category_id: data.category_id,
+        description: data.description,
+        price_per_unit: data.price_per_unit,
+        unit_type: data.unit_type,
+        min_order_quantity: data.min_order_quantity,
+        max_order_quantity: data.max_order_quantity,
+        stock_quantity: data.stock_quantity,
+        availability_status: data.availability_status,
+        is_active: data.is_active,
+        is_featured: data.is_featured,
+        discount_percentage: data.discount_percentage,
+        tags: data.tags,
+        specifications: data.specifications as any,
+        bulk_pricing: bulkPricingTiers as any,
+        dealer_locations: data.dealer_locations as any,
+        images,
+        tenant_id: '00000000-0000-0000-0000-000000000000' // TODO: Get from auth context
+      };
       const { error } = await supabase
         .from('products')
-        .insert([{ 
-          ...data, 
-          images,
-          bulk_pricing: bulkPricingTiers
-        }]);
+        .insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -167,13 +185,30 @@ export default function ProductForm({ productId, onCancel, onSuccess }: ProductF
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      const updateData = {
+        name: data.name,
+        sku: data.sku,
+        brand: data.brand,
+        category_id: data.category_id,
+        description: data.description,
+        price_per_unit: data.price_per_unit,
+        unit_type: data.unit_type,
+        min_order_quantity: data.min_order_quantity,
+        max_order_quantity: data.max_order_quantity,
+        stock_quantity: data.stock_quantity,
+        availability_status: data.availability_status,
+        is_active: data.is_active,
+        is_featured: data.is_featured,
+        discount_percentage: data.discount_percentage,
+        tags: data.tags,
+        specifications: data.specifications as any,
+        bulk_pricing: bulkPricingTiers as any,
+        dealer_locations: data.dealer_locations as any,
+        images
+      };
       const { error } = await supabase
         .from('products')
-        .update({ 
-          ...data, 
-          images,
-          bulk_pricing: bulkPricingTiers
-        })
+        .update(updateData)
         .eq('id', productId);
       if (error) throw error;
     },

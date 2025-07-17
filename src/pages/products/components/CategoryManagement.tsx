@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Tree, 
+  Trees, 
   Plus, 
   Edit, 
   Trash2, 
@@ -251,7 +251,7 @@ export default function CategoryManagement() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Tree className="h-5 w-5" />
+              <Trees className="h-5 w-5" />
               Product Categories
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -359,7 +359,7 @@ export default function CategoryManagement() {
               renderCategoryTree(categoryTree)
             ) : (
               <div className="text-center py-12">
-                <Tree className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <Trees className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No categories found</h3>
                 <p className="text-muted-foreground mb-4">
                   Create your first category to organize your products.

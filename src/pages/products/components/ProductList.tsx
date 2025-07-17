@@ -28,7 +28,8 @@ import {
   Trash2,
   Package,
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Plus
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
