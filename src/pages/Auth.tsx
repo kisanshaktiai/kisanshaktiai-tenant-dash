@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -131,8 +132,8 @@ const Auth = () => {
         throw new Error('User creation failed');
       }
 
-      // Create tenant record using the create_tenant_with_validation function
-      const { data: functionResult, error: functionError } = await supabase
+      // Create tenant record using the create_tenant_with_validation function with type assertion
+      const { data: functionResult, error: functionError } = await (supabase as any)
         .rpc('create_tenant_with_validation', {
           p_name: organizationName.trim(),
           p_slug: slug,
