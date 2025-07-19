@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,9 @@ const DealersPage = () => {
     totalDealers: dealers.length,
     activeDealers: dealers.filter(d => d.is_active).length,
     territories: 45,
-    pendingOnboarding: dealers.filter(d => d.verification_status === 'pending').length
+    // Since verification_status doesn't exist in the basic Dealer type, 
+    // we'll count inactive dealers as pending onboarding
+    pendingOnboarding: dealers.filter(d => !d.is_active).length
   };
 
   return (
