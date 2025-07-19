@@ -33,17 +33,52 @@ interface TenantFeatures {
   webhook_support: boolean;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description?: string;
+  price_monthly: number;
+  price_annually: number;
+  max_farmers: number;
+  max_dealers: number;
+  max_products: number;
+  max_storage_gb: number;
+  max_api_calls_per_day: number;
+  features: Record<string, any>;
+  is_active: boolean;
+}
+
+interface TenantSubscription {
+  id: string;
+  tenant_id: string;
+  plan_id?: string;
+  status: 'trial' | 'active' | 'canceled' | 'past_due';
+  billing_interval: 'monthly' | 'annually';
+  current_period_start: string;
+  current_period_end?: string;
+  trial_end?: string;
+  canceled_at?: string;
+  plan?: SubscriptionPlan;
+}
+
 interface Tenant {
   id: string;
   name: string;
   slug: string;
   type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'dealer' | 'sugar_factory' | 'insurance';
-  status: 'trial' | 'active' | 'suspended' | 'cancelled';
+  status: 'pending' | 'active' | 'suspended' | 'cancelled';
   subscription_plan: 'kisan' | 'shakti' | 'ai';
   owner_name?: string;
   owner_email?: string;
   branding?: TenantBranding;
   features?: TenantFeatures;
+  subscription?: TenantSubscription;
+  trial_ends_at?: string;
+  max_farmers?: number;
+  max_dealers?: number;
+  max_products?: number;
+  max_storage_gb?: number;
+  max_api_calls_per_day?: number;
 }
 
 interface UserTenant {
@@ -61,6 +96,7 @@ interface TenantState {
   currentTenant: Tenant | null;
   userTenants: UserTenant[];
   tenants: Tenant[];
+  subscriptionPlans: SubscriptionPlan[];
   loading: boolean;
   error: string | null;
 }
@@ -69,6 +105,7 @@ const initialState: TenantState = {
   currentTenant: null,
   userTenants: [],
   tenants: [],
+  subscriptionPlans: [],
   loading: false,
   error: null,
 };
@@ -86,6 +123,9 @@ const tenantSlice = createSlice({
     setTenants: (state, action: PayloadAction<Tenant[]>) => {
       state.tenants = action.payload;
     },
+    setSubscriptionPlans: (state, action: PayloadAction<SubscriptionPlan[]>) => {
+      state.subscriptionPlans = action.payload;
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -96,6 +136,7 @@ const tenantSlice = createSlice({
       state.currentTenant = null;
       state.userTenants = [];
       state.tenants = [];
+      state.subscriptionPlans = [];
       state.error = null;
     },
   },
@@ -105,6 +146,7 @@ export const {
   setCurrentTenant,
   setUserTenants,
   setTenants,
+  setSubscriptionPlans,
   setLoading,
   setError,
   clearTenantData,
