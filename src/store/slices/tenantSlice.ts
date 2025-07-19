@@ -90,6 +90,7 @@ interface UserTenant {
   is_primary: boolean;
   department?: string;
   designation?: string;
+  tenant?: Tenant;
 }
 
 interface TenantState {

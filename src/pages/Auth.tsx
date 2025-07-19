@@ -33,41 +33,6 @@ const Auth = () => {
     }
   }, [user, navigate]);
 
-  // Generate slug from organization name
-  const generateSlug = (name: string): string => {
-    return name
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  };
-
-  // Check if slug is unique
-  const isSlugUnique = async (slug: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('subdomain', slug)
-      .single();
-    
-    return error && error.code === 'PGRST116'; // No rows found
-  };
-
-  // Generate unique slug
-  const generateUniqueSlug = async (baseName: string): Promise<string> => {
-    let slug = generateSlug(baseName);
-    let counter = 1;
-    
-    while (!(await isSlugUnique(slug))) {
-      slug = `${generateSlug(baseName)}-${counter}`;
-      counter++;
-    }
-    
-    return slug;
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -115,9 +80,6 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Generate unique slug
-      const slug = await generateUniqueSlug(organizationName);
-
       // First, create the Supabase Auth user
       const { data: authData, error: authError } = await signUp(email, password, {
         organization_name: organizationName,
@@ -132,34 +94,22 @@ const Auth = () => {
         throw new Error('User creation failed');
       }
 
-      // Create tenant record using the create_tenant_with_validation function with type assertion
-      const { data: functionResult, error: functionError } = await (supabase as any)
-        .rpc('create_tenant_with_validation', {
-          p_name: organizationName.trim(),
-          p_slug: slug,
-          p_type: organizationType,
-          p_owner_email: email,
-          p_status: 'pending',
-          p_subscription_plan: 'kisan',
-          p_trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          p_max_farmers: 1000,
-          p_max_dealers: 50,
-          p_max_products: 100,
-          p_max_storage_gb: 10,
-          p_max_api_calls_per_day: 10000,
-          p_subdomain: slug
-        });
+      // Call the registerTenant Edge Function for auto-provisioning
+      const { data: tenantResult, error: tenantError } = await supabase.functions.invoke('registerTenant', {
+        body: {
+          organizationName: organizationName.trim(),
+          organizationType,
+          email,
+        },
+      });
 
-      if (functionError) {
-        console.error('Tenant creation function error:', functionError);
-        throw new Error('Failed to create organization record');
+      if (tenantError) {
+        console.error('Tenant registration error:', tenantError);
+        throw new Error('Failed to register organization');
       }
 
-      // Parse the function result
-      const result = functionResult as { success: boolean; error?: string; tenant_id?: string };
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create organization');
+      if (!tenantResult.success) {
+        throw new Error(tenantResult.error || 'Failed to register organization');
       }
 
       // Create user-tenant association
@@ -167,7 +117,7 @@ const Auth = () => {
         .from('user_tenants')
         .insert({
           user_id: authData.user.id,
-          tenant_id: result.tenant_id,
+          tenant_id: tenantResult.tenant.id,
           role: 'tenant_owner',
           is_active: true,
           is_primary: true,
@@ -225,7 +175,7 @@ const Auth = () => {
               <div className="p-4 bg-success/10 rounded-lg border border-success/20">
                 <h3 className="font-semibold text-success mb-2">What happens next?</h3>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Your registration is under review</li>
+                  <li>• Your organization has been provisioned with default features</li>
                   <li>• You'll receive a confirmation email shortly</li>
                   <li>• Our team will contact you within 24-48 hours</li>
                   <li>• You'll get access to your 14-day free trial once approved</li>
@@ -454,7 +404,7 @@ const Auth = () => {
                     </Button>
                     <div className="text-xs text-muted-foreground text-center">
                       By signing up, you agree to our terms of service and privacy policy.
-                      Your registration will be reviewed within 24-48 hours.
+                      Your organization will be provisioned with default features and a 14-day trial.
                     </div>
                   </form>
                 </TabsContent>

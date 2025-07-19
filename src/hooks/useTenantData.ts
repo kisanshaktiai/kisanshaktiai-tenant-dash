@@ -58,12 +58,42 @@ export const useTenantData = () => {
             };
 
             const tenant = primaryTenant.tenant;
+            
+            // Process subscription data with proper type mapping
+            let processedSubscription = null;
+            if (tenant.subscription) {
+              const sub = Array.isArray(tenant.subscription) ? tenant.subscription[0] : tenant.subscription;
+              if (sub) {
+                // Map subscription status to match our interface
+                const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
+                  switch (status) {
+                    case 'trial':
+                      return 'trial';
+                    case 'active':
+                      return 'active';
+                    case 'canceled':
+                    case 'cancelled':
+                      return 'canceled';
+                    case 'past_due':
+                      return 'past_due';
+                    default:
+                      return 'trial';
+                  }
+                };
+
+                processedSubscription = {
+                  ...sub,
+                  status: mapSubscriptionStatus(sub.status),
+                };
+              }
+            }
+
             dispatch(setCurrentTenant({
               ...tenant,
               subscription_plan: mapSubscriptionPlan(tenant.subscription_plan),
               branding: Array.isArray(tenant.branding) ? tenant.branding[0] : tenant.branding,
               features: Array.isArray(tenant.features) ? tenant.features[0] : tenant.features,
-              subscription: Array.isArray(tenant.subscription) ? tenant.subscription[0] : tenant.subscription,
+              subscription: processedSubscription,
             }));
           }
         }
@@ -82,7 +112,23 @@ export const useTenantData = () => {
 
         if (plansError) throw plansError;
 
-        dispatch(setSubscriptionPlans(plansData || []));
+        // Map the data to match our interface structure
+        const mappedPlans = (plansData || []).map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          price_monthly: plan.price_monthly || 0,
+          price_annually: plan.price_annually || 0,
+          max_farmers: plan.max_farmers || 0,
+          max_dealers: plan.max_dealers || 0,
+          max_products: plan.max_products || 0,
+          max_storage_gb: plan.max_storage_gb || 0,
+          max_api_calls_per_day: plan.max_api_calls_per_day || 0,
+          features: plan.features || {},
+          is_active: plan.is_active,
+        }));
+
+        dispatch(setSubscriptionPlans(mappedPlans));
       } catch (error) {
         console.error('Error fetching subscription plans:', error);
       }
