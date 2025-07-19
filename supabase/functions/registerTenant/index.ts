@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
     const slug = await generateUniqueSlug(organizationName);
     const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Step 1: Insert tenant
+    // Step 1: Insert tenant with 'trial' status instead of 'pending'
     const { data: tenantData, error: tenantError } = await supabaseClient
       .from('tenants')
       .insert({
@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
         owner_email: email,
         owner_phone: phone,
         subdomain: slug,
-        status: 'pending',
+        status: 'trial', // Changed from 'pending' to 'trial'
         trial_ends_at: trialEndsAt,
         subscription_plan: 'kisan',
         max_farmers: 1000,
@@ -183,7 +183,7 @@ const handler = async (req: Request): Promise<Response> => {
           id: tenantId,
           slug,
           name: organizationName,
-          status: 'pending'
+          status: 'trial' // Updated to reflect the actual status
         }
       }),
       {
