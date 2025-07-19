@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -49,7 +48,7 @@ const Auth = () => {
     const { data, error } = await supabase
       .from('tenants')
       .select('id')
-      .eq('slug', slug)
+      .eq('subdomain', slug)
       .single();
     
     return error && error.code === 'PGRST116'; // No rows found
@@ -132,11 +131,12 @@ const Auth = () => {
         throw new Error('User creation failed');
       }
 
-      // Create tenant record directly in the database
+      // Create tenant record directly in the database using correct column names
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
         .insert({
-          slug: slug,
+          name: organizationName.trim(),
+          subdomain: slug,
           type: organizationType,
           owner_email: email,
           status: 'pending',
@@ -147,8 +147,6 @@ const Auth = () => {
           max_products: 100,
           max_storage_gb: 10,
           max_api_calls_per_day: 10000,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
         })
         .select()
         .single();
