@@ -131,33 +131,34 @@ const Auth = () => {
         throw new Error('User creation failed');
       }
 
-      // Create tenant record directly in the database using correct column names
-      const { data: tenantData, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: organizationName.trim(),
-          subdomain: slug,
-          type: organizationType,
-          owner_email: email,
-          status: 'pending',
-          subscription_plan: 'kisan',
-          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          max_farmers: 1000,
-          max_dealers: 50,
-          max_products: 100,
-          max_storage_gb: 10,
-          max_api_calls_per_day: 10000,
-        })
-        .select()
-        .single();
+      // Create tenant record using the create_tenant_with_validation function
+      const { data: functionResult, error: functionError } = await supabase
+        .rpc('create_tenant_with_validation', {
+          p_name: organizationName.trim(),
+          p_slug: slug,
+          p_type: organizationType,
+          p_owner_email: email,
+          p_status: 'pending',
+          p_subscription_plan: 'kisan',
+          p_trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          p_max_farmers: 1000,
+          p_max_dealers: 50,
+          p_max_products: 100,
+          p_max_storage_gb: 10,
+          p_max_api_calls_per_day: 10000,
+          p_subdomain: slug
+        });
 
-      if (tenantError) {
-        console.error('Tenant creation error:', tenantError);
+      if (functionError) {
+        console.error('Tenant creation function error:', functionError);
         throw new Error('Failed to create organization record');
       }
 
-      if (!tenantData) {
-        throw new Error('Failed to create organization');
+      // Parse the function result
+      const result = functionResult as { success: boolean; error?: string; tenant_id?: string };
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create organization');
       }
 
       // Create user-tenant association
@@ -165,7 +166,7 @@ const Auth = () => {
         .from('user_tenants')
         .insert({
           user_id: authData.user.id,
-          tenant_id: tenantData.id,
+          tenant_id: result.tenant_id,
           role: 'tenant_owner',
           is_active: true,
           is_primary: true,
