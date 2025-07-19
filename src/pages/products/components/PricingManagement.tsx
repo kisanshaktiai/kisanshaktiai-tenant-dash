@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +25,52 @@ import {
   Percent
 } from 'lucide-react';
 
+// Subscription plan pricing information
+const SUBSCRIPTION_PLANS = {
+  kisan: {
+    name: 'Kisan (Basic)',
+    description: 'Essential farming tools for small farmers',
+    monthly: 99,
+    quarterly: 267.30,
+    annually: 950.40,
+    features: [
+      'AI Chat (100 queries/month)',
+      'Real-time weather forecast',
+      'Soil reports (2 per month)',
+      'Basic AI crop recommendations',
+      'Up to 3 land plots'
+    ]
+  },
+  shakti: {
+    name: 'Shakti (Growth)',
+    description: 'Complete farming solution for growing operations',
+    monthly: 199,
+    quarterly: 537.30,
+    annually: 1910.40,
+    features: [
+      'AI Chat (500 queries/month)',
+      'Satellite NDVI analysis',
+      'Marketplace access',
+      'Unlimited soil reports',
+      'Up to 10 land plots'
+    ]
+  },
+  ai: {
+    name: 'AI (Premium)',
+    description: 'Enterprise-grade farming intelligence',
+    monthly: 299,
+    quarterly: 807.30,
+    annually: 2870.40,
+    features: [
+      'Unlimited AI Chat',
+      'Daily satellite imagery',
+      'IoT sensor integration',
+      'API access',
+      'Unlimited land plots'
+    ]
+  }
+};
+
 export default function PricingManagement() {
   const [selectedProduct, setSelectedProduct] = useState<string>('');
 
@@ -48,13 +95,17 @@ export default function PricingManagement() {
             Pricing Management
           </CardTitle>
           <CardDescription>
-            Configure dynamic pricing rules, bulk pricing, and dealer-specific pricing
+            Configure dynamic pricing rules, bulk pricing, and subscription plans
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="dynamic" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="subscription" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="subscription" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Subscription Plans
+          </TabsTrigger>
           <TabsTrigger value="dynamic" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Dynamic Pricing
@@ -72,6 +123,69 @@ export default function PricingManagement() {
             Seasonal Pricing
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="subscription" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Subscription Plans</CardTitle>
+              <CardDescription>
+                Manage the three-tier subscription system for farmers
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {Object.entries(SUBSCRIPTION_PLANS).map(([planKey, plan]) => (
+                  <Card key={planKey} className={planKey === 'shakti' ? 'border-primary' : ''}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{plan.name}</CardTitle>
+                        {planKey === 'shakti' && (
+                          <Badge variant="default">Popular</Badge>
+                        )}
+                      </div>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold">₹{plan.monthly}</span>
+                            <span className="text-sm text-muted-foreground">/month</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            <div>Quarterly: ₹{plan.quarterly} (10% off)</div>
+                            <div>Annually: ₹{plan.annually} (20% off)</div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">Key Features:</h4>
+                          <ul className="space-y-1">
+                            {plan.features.slice(0, 3).map((feature, index) => (
+                              <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
+                                <div className="w-1 h-1 bg-primary rounded-full" />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+                          {plan.features.length > 3 && (
+                            <div className="text-sm text-muted-foreground">
+                              +{plan.features.length - 3} more features
+                            </div>
+                          )}
+                        </div>
+                        
+                        <Button variant="outline" size="sm" className="w-full">
+                          Edit Plan
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="dynamic" className="space-y-6">
           <Card>
