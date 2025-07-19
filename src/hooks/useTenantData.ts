@@ -34,67 +34,29 @@ export const useTenantData = () => {
 
         if (userTenantsError) throw userTenantsError;
 
-        dispatch(setUserTenants(userTenantsData || []));
+        // Transform the data to match our interfaces
+        const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
+          ...userTenant,
+          tenant: userTenant.tenant ? {
+            ...userTenant.tenant,
+            // Handle status mapping
+            status: mapTenantStatus(userTenant.tenant.status),
+            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
+            branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
+            features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
+            subscription: userTenant.tenant.subscription ? processSubscription(
+              Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
+            ) : null,
+          } : undefined
+        }));
+
+        dispatch(setUserTenants(transformedUserTenants));
 
         // Set current tenant if not set
-        if (!currentTenant && userTenantsData && userTenantsData.length > 0) {
-          const primaryTenant = userTenantsData.find(ut => ut.is_primary) || userTenantsData[0];
+        if (!currentTenant && transformedUserTenants && transformedUserTenants.length > 0) {
+          const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
           if (primaryTenant?.tenant) {
-            // Map old subscription plan values to new ones
-            const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
-              switch (plan) {
-                case 'starter':
-                case 'basic':
-                  return 'kisan';
-                case 'professional':
-                case 'growth':
-                  return 'shakti';
-                case 'enterprise':
-                case 'custom':
-                  return 'ai';
-                default:
-                  return 'kisan';
-              }
-            };
-
-            const tenant = primaryTenant.tenant;
-            
-            // Process subscription data with proper type mapping
-            let processedSubscription = null;
-            if (tenant.subscription) {
-              const sub = Array.isArray(tenant.subscription) ? tenant.subscription[0] : tenant.subscription;
-              if (sub) {
-                // Map subscription status to match our interface
-                const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
-                  switch (status) {
-                    case 'trial':
-                      return 'trial';
-                    case 'active':
-                      return 'active';
-                    case 'canceled':
-                    case 'cancelled':
-                      return 'canceled';
-                    case 'past_due':
-                      return 'past_due';
-                    default:
-                      return 'trial';
-                  }
-                };
-
-                processedSubscription = {
-                  ...sub,
-                  status: mapSubscriptionStatus(sub.status),
-                };
-              }
-            }
-
-            dispatch(setCurrentTenant({
-              ...tenant,
-              subscription_plan: mapSubscriptionPlan(tenant.subscription_plan),
-              branding: Array.isArray(tenant.branding) ? tenant.branding[0] : tenant.branding,
-              features: Array.isArray(tenant.features) ? tenant.features[0] : tenant.features,
-              subscription: processedSubscription,
-            }));
+            dispatch(setCurrentTenant(primaryTenant.tenant));
           }
         }
       } catch (error) {
@@ -124,7 +86,7 @@ export const useTenantData = () => {
           max_products: plan.max_products || 0,
           max_storage_gb: plan.max_storage_gb || 0,
           max_api_calls_per_day: plan.max_api_calls_per_day || 0,
-          features: plan.features || {},
+          features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
           is_active: plan.is_active,
         }));
 
@@ -198,4 +160,64 @@ export const useTenantData = () => {
     subscriptionPlans,
     isMultiTenant: userTenants.length > 1,
   };
+};
+
+// Helper functions
+const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
+  switch (status) {
+    case 'pending':
+      return 'pending';
+    case 'active':
+      return 'active';
+    case 'suspended':
+      return 'suspended';
+    case 'cancelled':
+    case 'canceled':
+      return 'cancelled';
+    case 'trial':
+      return 'trial';
+    default:
+      return 'pending';
+  }
+};
+
+const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
+  switch (plan) {
+    case 'starter':
+    case 'basic':
+      return 'kisan';
+    case 'professional':
+    case 'growth':
+      return 'shakti';
+    case 'enterprise':
+    case 'custom':
+      return 'ai';
+    default:
+      return 'kisan';
+  }
+};
+
+const processSubscription = (subscription: any) => {
+  if (!subscription) return null;
+  
+  return {
+    ...subscription,
+    status: mapSubscriptionStatus(subscription.status),
+  };
+};
+
+const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
+  switch (status) {
+    case 'trial':
+      return 'trial';
+    case 'active':
+      return 'active';
+    case 'canceled':
+    case 'cancelled':
+      return 'canceled';
+    case 'past_due':
+      return 'past_due';
+    default:
+      return 'trial';
+  }
 };

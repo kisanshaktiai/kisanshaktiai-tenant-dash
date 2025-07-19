@@ -66,7 +66,7 @@ interface Tenant {
   name: string;
   slug: string;
   type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'dealer' | 'sugar_factory' | 'insurance';
-  status: 'pending' | 'active' | 'suspended' | 'cancelled';
+  status: 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial';
   subscription_plan: 'kisan' | 'shakti' | 'ai';
   owner_name?: string;
   owner_email?: string;

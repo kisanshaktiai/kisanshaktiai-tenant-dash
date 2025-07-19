@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -89,6 +90,7 @@ const DashboardLayout = () => {
                     <Badge 
                       variant={
                         currentTenant.status === 'active' ? 'default' : 
+                        currentTenant.status === 'pending' ? 'secondary' :
                         currentTenant.status === 'trial' ? 'secondary' : 'destructive'
                       }
                       className="text-xs"
