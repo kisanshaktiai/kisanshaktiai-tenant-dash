@@ -75,20 +75,25 @@ export const useTenantData = () => {
         if (plansError) throw plansError;
 
         // Map the data to match our interface structure
-        const mappedPlans = (plansData || []).map(plan => ({
-          id: plan.id,
-          name: plan.name,
-          description: plan.description,
-          price_monthly: plan.price_monthly || 0,
-          price_annually: plan.price_annually || 0,
-          max_farmers: plan.max_farmers || 0,
-          max_dealers: plan.max_dealers || 0,
-          max_products: plan.max_products || 0,
-          max_storage_gb: plan.max_storage_gb || 0,
-          max_api_calls_per_day: plan.max_api_calls_per_day || 0,
-          features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
-          is_active: plan.is_active,
-        }));
+        const mappedPlans = (plansData || []).map(plan => {
+          // Extract limits from the limits JSON field
+          const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
+          
+          return {
+            id: plan.id,
+            name: plan.name,
+            description: plan.description,
+            price_monthly: plan.price_monthly || 0,
+            price_annually: plan.price_annually || 0,
+            max_farmers: limits.max_farmers || 0,
+            max_dealers: limits.max_dealers || 0,
+            max_products: limits.max_products || 0,
+            max_storage_gb: limits.max_storage_gb || 0,
+            max_api_calls_per_day: limits.max_api_calls_per_day || 0,
+            features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
+            is_active: plan.is_active,
+          };
+        });
 
         dispatch(setSubscriptionPlans(mappedPlans));
       } catch (error) {
