@@ -1,13 +1,16 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Sprout, Users, BarChart3, Target } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Sprout, Users, BarChart3, Target, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
@@ -18,6 +21,7 @@ const Auth = () => {
   const [organizationType, setOrganizationType] = useState<'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative'>('agri_company');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -28,6 +32,41 @@ const Auth = () => {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  // Generate slug from organization name
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Check if slug is unique
+  const isSlugUnique = async (slug: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+    
+    return error && error.code === 'PGRST116'; // No rows found
+  };
+
+  // Generate unique slug
+  const generateUniqueSlug = async (baseName: string): Promise<string> => {
+    let slug = generateSlug(baseName);
+    let counter = 1;
+    
+    while (!(await isSlugUnique(slug))) {
+      slug = `${generateSlug(baseName)}-${counter}`;
+      counter++;
+    }
+    
+    return slug;
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +96,12 @@ const Auth = () => {
     e.preventDefault();
     setError(null);
 
+    // Validation
+    if (!organizationName.trim()) {
+      setError("Organization name is required");
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       return;
@@ -69,27 +114,139 @@ const Auth = () => {
 
     setIsLoading(true);
 
-    const { error } = await signUp(email, password, {
-      organization_name: organizationName,
-      organization_type: organizationType,
-    });
-    
-    if (error) {
-      setError(error.message);
+    try {
+      // Generate unique slug
+      const slug = await generateUniqueSlug(organizationName);
+
+      // First, create the Supabase Auth user
+      const { data: authData, error: authError } = await signUp(email, password, {
+        organization_name: organizationName,
+        organization_type: organizationType,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      if (!authData.user) {
+        throw new Error('User creation failed');
+      }
+
+      // Create tenant record
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .insert({
+          name: organizationName.trim(),
+          slug: slug,
+          type: organizationType,
+          owner_email: email,
+          status: 'pending',
+          subscription_plan: 'kisan',
+          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
+          max_farmers: 1000,
+          max_dealers: 50,
+          max_products: 100,
+          max_storage_gb: 10,
+          max_api_calls_per_day: 10000,
+        })
+        .select()
+        .single();
+
+      if (tenantError) {
+        console.error('Tenant creation error:', tenantError);
+        throw new Error('Failed to create organization record');
+      }
+
+      // Create user-tenant association
+      const { error: userTenantError } = await supabase
+        .from('user_tenants')
+        .insert({
+          user_id: authData.user.id,
+          tenant_id: tenantData.id,
+          role: 'tenant_owner',
+          is_active: true,
+          is_primary: true,
+        });
+
+      if (userTenantError) {
+        console.error('User-tenant association error:', userTenantError);
+        // Don't throw here as the tenant was created successfully
+      }
+
+      setRegistrationSuccess(true);
+      toast({
+        title: "Registration submitted!",
+        description: "Your organization registration is under review. You'll receive an email confirmation shortly.",
+      });
+
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
       toast({
         variant: "destructive",
-        title: "Sign up failed",
-        description: error.message,
-      });
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
+        title: "Registration failed",
+        description: error.message || 'Please try again',
       });
     }
     
     setIsLoading(false);
   };
+
+  const organizationTypes = [
+    { value: 'agri_company', label: 'Agricultural Company' },
+    { value: 'ngo', label: 'NGO' },
+    { value: 'university', label: 'University/Research' },
+    { value: 'government', label: 'Government Agency' },
+    { value: 'cooperative', label: 'Cooperative' },
+  ];
+
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
+        <div className="w-full max-w-md mx-auto">
+          <Card className="shadow-medium">
+            <CardHeader className="text-center space-y-4">
+              <div className="flex justify-center">
+                <CheckCircle className="h-16 w-16 text-success" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-success">
+                Registration Submitted!
+              </CardTitle>
+              <CardDescription>
+                Thank you for registering with AgriTenant Hub
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                <h3 className="font-semibold text-success mb-2">What happens next?</h3>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Your registration is under review</li>
+                  <li>• You'll receive a confirmation email shortly</li>
+                  <li>• Our team will contact you within 24-48 hours</li>
+                  <li>• You'll get access to your 14-day free trial once approved</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-medium mb-2">Organization Details:</h4>
+                <div className="text-sm space-y-1 text-muted-foreground">
+                  <p><strong>Name:</strong> {organizationName}</p>
+                  <p><strong>Type:</strong> {organizationTypes.find(t => t.value === organizationType)?.label}</p>
+                  <p><strong>Email:</strong> {email}</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setRegistrationSuccess(false)} 
+                variant="outline" 
+                className="w-full"
+              >
+                Back to Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
@@ -218,7 +375,7 @@ const Auth = () => {
                 <TabsContent value="signup" className="space-y-4">
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="org-name">Organization Name</Label>
+                      <Label htmlFor="org-name">Organization Name *</Label>
                       <Input
                         id="org-name"
                         type="text"
@@ -229,22 +386,22 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="org-type">Organization Type</Label>
-                      <select
-                        id="org-type"
-                        className="w-full p-2 border rounded-md bg-background"
-                        value={organizationType}
-                        onChange={(e) => setOrganizationType(e.target.value as any)}
-                      >
-                        <option value="agri_company">Agricultural Company</option>
-                        <option value="ngo">NGO</option>
-                        <option value="university">University/Research</option>
-                        <option value="government">Government Agency</option>
-                        <option value="cooperative">Cooperative</option>
-                      </select>
+                      <Label htmlFor="org-type">Organization Type *</Label>
+                      <Select value={organizationType} onValueChange={(value: any) => setOrganizationType(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select organization type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {organizationTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-email">Email</Label>
+                      <Label htmlFor="signup-email">Email *</Label>
                       <Input
                         id="signup-email"
                         type="email"
@@ -255,18 +412,19 @@ const Auth = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="signup-password">Password</Label>
+                      <Label htmlFor="signup-password">Password *</Label>
                       <Input
                         id="signup-password"
                         type="password"
-                        placeholder="Create a password"
+                        placeholder="Create a password (min 6 characters)"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        minLength={6}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Label htmlFor="confirm-password">Confirm Password *</Label>
                       <Input
                         id="confirm-password"
                         type="password"
@@ -289,6 +447,10 @@ const Auth = () => {
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Create Organization
                     </Button>
+                    <div className="text-xs text-muted-foreground text-center">
+                      By signing up, you agree to our terms of service and privacy policy.
+                      Your registration will be reviewed within 24-48 hours.
+                    </div>
                   </form>
                 </TabsContent>
               </Tabs>
