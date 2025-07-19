@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ const DealersPage = () => {
     totalDealers: dealers.length,
     activeDealers: dealers.filter(d => d.is_active).length,
     territories: 45,
-    pendingOnboarding: dealers.filter(d => d.registration_status === 'pending').length
+    pendingOnboarding: dealers.filter(d => d.verification_status === 'pending').length
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -35,8 +36,26 @@ export const useTenantData = () => {
         if (!currentTenant && userTenantsData && userTenantsData.length > 0) {
           const primaryTenant = userTenantsData.find(ut => ut.is_primary) || userTenantsData[0];
           if (primaryTenant?.tenant) {
+            // Map old subscription plan values to new ones
+            const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
+              switch (plan) {
+                case 'starter':
+                case 'basic':
+                  return 'kisan';
+                case 'professional':
+                case 'growth':
+                  return 'shakti';
+                case 'enterprise':
+                case 'custom':
+                  return 'ai';
+                default:
+                  return 'kisan';
+              }
+            };
+
             dispatch(setCurrentTenant({
               ...primaryTenant.tenant,
+              subscription_plan: mapSubscriptionPlan(primaryTenant.tenant.subscription_plan),
               branding: primaryTenant.tenant.branding?.[0] || null,
               features: primaryTenant.tenant.features?.[0] || null,
             }));
