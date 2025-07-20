@@ -77,8 +77,8 @@ export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
         return;
       }
 
-      // Type assertion for the RPC response
-      const response = result as TenantCreationResponse;
+      // Safe type conversion through unknown
+      const response = result as unknown as TenantCreationResponse;
       
       if (response && !response.success) {
         toast.error(response.error || 'Failed to create organization');

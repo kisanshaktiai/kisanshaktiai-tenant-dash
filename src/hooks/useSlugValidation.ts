@@ -47,8 +47,8 @@ export const useSlugValidation = () => {
             code: 'VALIDATION_ERROR'
           });
         } else {
-          // Type assertion for the returned data
-          setValidationResult(data as SlugValidationResult);
+          // Safe type conversion through unknown
+          setValidationResult(data as unknown as SlugValidationResult);
         }
       } catch (error) {
         console.error('Error validating slug:', error);
@@ -80,8 +80,8 @@ export const useSlugValidation = () => {
         console.error('Error generating suggestions:', error);
         setSuggestions([]);
       } else {
-        // Type assertion for the returned data
-        const result = data as SlugSuggestionsResult;
+        // Safe type conversion through unknown
+        const result = data as unknown as SlugSuggestionsResult;
         setSuggestions(result.suggestions || []);
       }
     } catch (error) {
