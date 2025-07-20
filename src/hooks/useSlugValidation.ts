@@ -47,6 +47,7 @@ export const useSlugValidation = () => {
             code: 'VALIDATION_ERROR'
           });
         } else {
+          // Type assertion for the returned data
           setValidationResult(data as SlugValidationResult);
         }
       } catch (error) {
@@ -79,6 +80,7 @@ export const useSlugValidation = () => {
         console.error('Error generating suggestions:', error);
         setSuggestions([]);
       } else {
+        // Type assertion for the returned data
         const result = data as SlugSuggestionsResult;
         setSuggestions(result.suggestions || []);
       }

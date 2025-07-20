@@ -30,6 +30,13 @@ interface TenantRegistrationFormProps {
   onCancel?: () => void;
 }
 
+// Define the expected response structure from the RPC call
+interface TenantCreationResponse {
+  success: boolean;
+  error?: string;
+  data?: any;
+}
+
 export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
   onSuccess,
   onCancel
@@ -70,15 +77,18 @@ export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
         return;
       }
 
-      if (result && !result.success) {
-        toast.error(result.error || 'Failed to create organization');
+      // Type assertion for the RPC response
+      const response = result as TenantCreationResponse;
+      
+      if (response && !response.success) {
+        toast.error(response.error || 'Failed to create organization');
         return;
       }
 
       toast.success('Organization created successfully!');
       
-      if (onSuccess && result) {
-        onSuccess(result.data);
+      if (onSuccess && response?.data) {
+        onSuccess(response.data);
       }
     } catch (error) {
       console.error('Error creating tenant:', error);
