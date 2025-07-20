@@ -5148,6 +5148,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_tenant_admin: {
         Args: { _tenant_id: string }
         Returns: boolean
@@ -6468,6 +6472,10 @@ export type Database = {
           new_srid_in: number
         }
         Returns: string
+      }
+      user_has_tenant_access: {
+        Args: { tenant_uuid: string }
+        Returns: boolean
       }
     }
     Enums: {
