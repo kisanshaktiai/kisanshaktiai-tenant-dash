@@ -4585,6 +4585,10 @@ export type Database = {
         Args: { land_uuid: string }
         Returns: number
       }
+      check_slug_availability: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -4870,6 +4874,10 @@ export type Database = {
       gbtreekey8_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      generate_slug_suggestions: {
+        Args: { p_organization_name: string }
+        Returns: Json
       }
       geography: {
         Args: { "": string } | { "": unknown }
