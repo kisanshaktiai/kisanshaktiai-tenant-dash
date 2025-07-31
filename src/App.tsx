@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -15,7 +16,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
-import FarmersPage from '@/pages/farmers/FarmersPage';
+import { FarmersPage } from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage';

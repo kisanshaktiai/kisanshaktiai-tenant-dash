@@ -50,7 +50,7 @@ export const useCreateFarmerMutation = () => {
   const { handleError } = useErrorHandler();
 
   return useMutation({
-    mutationFn: async (data: Omit<CreateFarmerData, 'tenant_id'>) => {
+    mutationFn: async (data: Omit<CreateFarmerData, 'tenant_id' | 'farmer_code'>) => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
       }

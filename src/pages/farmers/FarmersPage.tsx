@@ -13,6 +13,7 @@ import { BulkOperations } from './components/BulkOperations';
 import { EngagementTracking } from './components/EngagementTracking';
 import { LeadManagement } from './components/LeadManagement';
 import { FarmerImportModal } from './components/FarmerImportModal';
+import type { Farmer } from '@/services/FarmersService';
 
 export const FarmersPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -31,8 +32,8 @@ export const FarmersPage = () => {
     limit: 50,
   });
 
-  const farmers = farmersData?.data || [];
-  const totalCount = farmersData?.count || 0;
+  const farmers = (farmersData as any)?.data || [];
+  const totalCount = (farmersData as any)?.count || 0;
 
   const handleCreateSuccess = () => {
     // No need to manually refetch - React Query handles this automatically
@@ -107,14 +108,34 @@ export const FarmersPage = () => {
 
         <TabsContent value="directory" className="space-y-4">
           <FarmerStats />
-          <FarmerDirectory
-            farmers={farmers}
-            loading={isLoading}
-            error={error?.message}
-            totalCount={totalCount}
-            selectedFarmers={selectedFarmers}
-            onSelectionChange={setSelectedFarmers}
-          />
+          <div className="bg-white rounded-lg p-4">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="text-red-500 text-center py-8">
+                Error loading farmers: {error.message}
+              </div>
+            ) : (
+              <div>
+                <p className="mb-4">Total Farmers: {totalCount}</p>
+                <div className="grid gap-4">
+                  {farmers.map((farmer: Farmer) => (
+                    <div key={farmer.id} className="border rounded p-4">
+                      <h3 className="font-semibold">{farmer.farmer_code}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Experience: {farmer.farming_experience_years} years
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Land: {farmer.total_land_acres} acres
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="analytics">
@@ -142,10 +163,13 @@ export const FarmersPage = () => {
       />
 
       <FarmerImportModal
-        isOpen={isImportModalOpen}
+        open={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={handleImportSuccess}
       />
     </div>
   );
 };
+
+// Default export for App.tsx compatibility
+export default FarmersPage;

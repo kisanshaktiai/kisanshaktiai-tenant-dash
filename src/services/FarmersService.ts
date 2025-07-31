@@ -1,6 +1,15 @@
 
-import { BaseApiService, FilterOptions, PaginationOptions, SortOptions } from './core/BaseApiService';
+import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
+
+export interface FarmersListOptions {
+  search?: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, any>;
+}
 
 export interface Farmer {
   id: string;
@@ -15,11 +24,10 @@ export interface Farmer {
   has_tractor: boolean;
   irrigation_type: string | null;
   is_verified: boolean;
+  total_app_opens: number;
+  total_queries: number;
   created_at: string;
   updated_at: string;
-  total_app_opens?: number;
-  total_queries?: number;
-  last_app_open?: string;
 }
 
 export interface CreateFarmerData {
@@ -32,124 +40,167 @@ export interface CreateFarmerData {
   has_irrigation: boolean;
   has_storage: boolean;
   has_tractor: boolean;
+  irrigation_type: string | null;
+  is_verified: boolean;
+}
+
+export interface UpdateFarmerData {
+  farming_experience_years?: number;
+  total_land_acres?: number;
+  primary_crops?: string[];
+  farm_type?: string;
+  has_irrigation?: boolean;
+  has_storage?: boolean;
+  has_tractor?: boolean;
   irrigation_type?: string | null;
   is_verified?: boolean;
 }
 
-export interface UpdateFarmerData extends Partial<CreateFarmerData> {
-  updated_at?: string;
-}
-
-export interface FarmersListOptions extends PaginationOptions {
-  filters?: FilterOptions;
-  sort?: SortOptions;
-  search?: string;
+export interface FarmersListResponse {
+  data: Farmer[];
+  count: number;
+  error?: string;
 }
 
 class FarmersService extends BaseApiService {
-  async getFarmers(tenantId: string, options: FarmersListOptions = {}) {
-    const { filters = {}, sort, search, ...paginationOptions } = options;
-    
-    let query = supabase
-      .from('farmers')
-      .select('*', { count: 'exact' })
-      .eq('tenant_id', tenantId);
+  protected basePath = '/farmers';
 
-    // Apply search
-    if (search) {
-      query = query.or(`farmer_code.ilike.%${search}%,primary_crops.cs.{${search}}`);
+  async getFarmers(tenantId: string, options: FarmersListOptions = {}): Promise<FarmersListResponse> {
+    try {
+      let query = supabase
+        .from('farmers')
+        .select('*', { count: 'exact' })
+        .eq('tenant_id', tenantId);
+
+      if (options.search) {
+        query = query.or(`farmer_code.ilike.%${options.search}%,primary_crops.cs.{${options.search}}`);
+      }
+
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      if (options.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        data: data || [],
+        count: count || 0,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch farmers: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    // Apply filters
-    query = this.buildFilters(query, filters);
-
-    // Apply sorting
-    if (sort) {
-      query = this.applySorting(query, sort);
-    } else {
-      query = query.order('created_at', { ascending: false });
-    }
-
-    // Apply pagination
-    query = this.applyPagination(query, paginationOptions);
-
-    return this.executeQuery(() => query);
   }
 
-  async getFarmer(id: string, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
+  async getFarmer(farmerId: string, tenantId: string): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
         .from('farmers')
         .select('*')
-        .eq('id', id)
+        .eq('id', farmerId)
         .eq('tenant_id', tenantId)
-        .single()
-    );
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to fetch farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async createFarmer(data: CreateFarmerData) {
-    const farmerData = {
-      ...data,
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    return this.executeQuery(() =>
-      supabase
+  async createFarmer(farmerData: CreateFarmerData): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
         .from('farmers')
-        .insert(farmerData)
+        .insert({
+          ...farmerData,
+          id: crypto.randomUUID(),
+          total_app_opens: 0,
+          total_queries: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .select()
-        .single()
-    );
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async updateFarmer(id: string, tenantId: string, data: UpdateFarmerData) {
-    const updateData = {
-      ...data,
-      updated_at: new Date().toISOString(),
-    };
-
-    return this.executeQuery(() =>
-      supabase
+  async updateFarmer(farmerId: string, tenantId: string, updates: UpdateFarmerData): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
         .from('farmers')
-        .update(updateData)
-        .eq('id', id)
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', farmerId)
         .eq('tenant_id', tenantId)
         .select()
-        .single()
-    );
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to update farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async deleteFarmer(id: string, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
+  async deleteFarmer(farmerId: string, tenantId: string): Promise<void> {
+    try {
+      const { error } = await supabase
         .from('farmers')
         .delete()
-        .eq('id', id)
-        .eq('tenant_id', tenantId)
-    );
-  }
+        .eq('id', farmerId)
+        .eq('tenant_id', tenantId);
 
-  async getFarmerCount(tenantId: string, filters: FilterOptions = {}) {
-    let query = supabase
-      .from('farmers')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId);
-
-    query = this.buildFilters(query, filters);
-
-    const { count, error } = await query;
-    
-    if (error) {
-      throw this.handleError(error);
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      throw new Error(`Failed to delete farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    return count || 0;
   }
 
-  async generateFarmerCode(tenantSlug: string, existingCount: number) {
-    const farmerNumber = existingCount + 1;
+  async getFarmerCount(tenantId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('farmers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return count || 0;
+    } catch (error) {
+      throw new Error(`Failed to get farmer count: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async generateFarmerCode(tenantSlug: string, count: number): Promise<string> {
+    const farmerNumber = count + 1;
     const tenantPrefix = tenantSlug.substring(0, 3).toUpperCase();
     return `${tenantPrefix}${farmerNumber.toString().padStart(6, '0')}`;
   }

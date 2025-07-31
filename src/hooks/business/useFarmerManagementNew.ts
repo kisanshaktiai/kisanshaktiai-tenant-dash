@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useCreateFarmerMutation, useUpdateFarmerMutation } from '@/hooks/data/useFarmersQuery';
 import { useFarmerValidation, type FarmerFormData } from './useFarmerValidation';
 import { useErrorHandler } from '@/hooks/core/useErrorHandler';
-import type { CreateFarmerData, UpdateFarmerData } from '@/services/FarmersService';
+import type { CreateFarmerData, UpdateFarmerData, Farmer } from '@/services/FarmersService';
 
 export const useFarmerManagementNew = () => {
   const { validateForm } = useFarmerValidation();
@@ -39,10 +39,11 @@ export const useFarmerManagementNew = () => {
     
     return handleAsyncError(async () => {
       const result = await createFarmerMutation.mutateAsync(createData);
+      const farmer = result as Farmer;
       return {
         success: true,
-        farmerId: result.id,
-        farmerCode: result.farmer_code,
+        farmerId: farmer.id,
+        farmerCode: farmer.farmer_code,
       };
     }, 'Failed to create farmer');
   }, [validateForm, transformFormDataToCreateData, createFarmerMutation, handleAsyncError]);
