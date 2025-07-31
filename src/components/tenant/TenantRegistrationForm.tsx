@@ -1,18 +1,16 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SlugInput } from './SlugInput';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useTenantRegistration } from '@/hooks/business/useTenantRegistration';
 
 const tenantRegistrationSchema = z.object({
   organizationName: z.string().min(3, 'Organization name must be at least 3 characters'),
@@ -30,18 +28,11 @@ interface TenantRegistrationFormProps {
   onCancel?: () => void;
 }
 
-// Define the expected response structure from the RPC call
-interface TenantCreationResponse {
-  success: boolean;
-  error?: string;
-  data?: any;
-}
-
 export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { createTenant, isSubmitting } = useTenantRegistration();
 
   const form = useForm<TenantRegistrationData>({
     resolver: zodResolver(tenantRegistrationSchema),
@@ -56,46 +47,9 @@ export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
   });
 
   const organizationName = form.watch('organizationName');
-  const slug = form.watch('slug');
 
   const onSubmit = async (data: TenantRegistrationData) => {
-    setIsSubmitting(true);
-    
-    try {
-      const { data: result, error } = await supabase.rpc('create_tenant_with_validation', {
-        p_name: data.organizationName,
-        p_slug: data.slug,
-        p_type: data.organizationType,
-        p_owner_email: data.email,
-        p_owner_phone: data.phone || null,
-        p_owner_name: data.ownerName || null,
-      });
-
-      if (error) {
-        console.error('Error creating tenant:', error);
-        toast.error('Failed to create organization. Please try again.');
-        return;
-      }
-
-      // Safe type conversion through unknown
-      const response = result as unknown as TenantCreationResponse;
-      
-      if (response && !response.success) {
-        toast.error(response.error || 'Failed to create organization');
-        return;
-      }
-
-      toast.success('Organization created successfully!');
-      
-      if (onSuccess && response?.data) {
-        onSuccess(response.data);
-      }
-    } catch (error) {
-      console.error('Error creating tenant:', error);
-      toast.error('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    await createTenant(data, onSuccess);
   };
 
   return (
