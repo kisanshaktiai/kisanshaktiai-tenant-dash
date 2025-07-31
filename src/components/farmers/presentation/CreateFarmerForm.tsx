@@ -10,22 +10,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Form } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { FarmerFormData } from '@/hooks/business/useFarmerValidation';
 import type { ValidationErrors } from '@/hooks/core/useFormValidation';
+import { PersonalInfoFields } from './forms/PersonalInfoFields';
+import { AddressFields } from './forms/AddressFields';
+import { FarmingInfoFields } from './forms/FarmingInfoFields';
 
 interface CreateFarmerFormProps {
   isOpen: boolean;
@@ -36,12 +28,6 @@ interface CreateFarmerFormProps {
   onSubmit: (data: FarmerFormData) => void;
   onClose: () => void;
 }
-
-const cropOptions = [
-  'Rice', 'Wheat', 'Maize', 'Sugarcane', 'Cotton', 'Soybean',
-  'Groundnut', 'Sunflower', 'Mustard', 'Barley', 'Gram', 'Tur',
-  'Tomato', 'Potato', 'Onion', 'Chili', 'Brinjal', 'Okra'
-];
 
 const formSchema = z.object({
   fullName: z.string().min(1, 'Name is required'),
@@ -82,15 +68,6 @@ export const CreateFarmerForm: React.FC<CreateFarmerFormProps> = ({
     onSubmit(data);
   };
 
-  const toggleCrop = (crop: string) => {
-    const currentCrops = formData.primaryCrops;
-    const newCrops = currentCrops.includes(crop)
-      ? currentCrops.filter(c => c !== crop)
-      : [...currentCrops, crop];
-    
-    onFormChange('primaryCrops', newCrops);
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -105,277 +82,23 @@ export const CreateFarmerForm: React.FC<CreateFarmerFormProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Personal Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('fullName', e.target.value);
-                          }}
-                          placeholder="Enter full name"
-                        />
-                      </FormControl>
-                      {errors.fullName && <FormMessage>{errors.fullName}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('phone', e.target.value);
-                          }}
-                          placeholder="Enter phone number"
-                          maxLength={10}
-                        />
-                      </FormControl>
-                      {errors.phone && <FormMessage>{errors.phone}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('email', e.target.value);
-                          }}
-                          placeholder="Enter email address"
-                        />
-                      </FormControl>
-                      {errors.email && <FormMessage>{errors.email}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="dateOfBirth"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date of Birth</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="date"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('dateOfBirth', e.target.value);
-                          }}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Address Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="village"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Village *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('village', e.target.value);
-                          }}
-                          placeholder="Enter village name"
-                        />
-                      </FormControl>
-                      {errors.village && <FormMessage>{errors.village}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="district"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>District *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('district', e.target.value);
-                          }}
-                          placeholder="Enter district"
-                        />
-                      </FormControl>
-                      {errors.district && <FormMessage>{errors.district}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>State *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('state', e.target.value);
-                          }}
-                          placeholder="Enter state"
-                        />
-                      </FormControl>
-                      {errors.state && <FormMessage>{errors.state}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Farming Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Farming Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="farmingExperience"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Farming Experience (years) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('farmingExperience', e.target.value);
-                          }}
-                          placeholder="Enter years of experience"
-                          min="0"
-                        />
-                      </FormControl>
-                      {errors.farmingExperience && <FormMessage>{errors.farmingExperience}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="totalLandSize"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Land Size (acres) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          step="0.1"
-                          onChange={(e) => {
-                            field.onChange(e);
-                            onFormChange('totalLandSize', e.target.value);
-                          }}
-                          placeholder="Enter land size in acres"
-                          min="0"
-                        />
-                      </FormControl>
-                      {errors.totalLandSize && <FormMessage>{errors.totalLandSize}</FormMessage>}
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Primary Crops */}
-              <div className="space-y-2">
-                <FormLabel>Primary Crops *</FormLabel>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {cropOptions.map((crop) => (
-                    <label key={crop} className="flex items-center space-x-2 cursor-pointer">
-                      <Checkbox
-                        checked={formData.primaryCrops.includes(crop)}
-                        onCheckedChange={() => toggleCrop(crop)}
-                      />
-                      <span className="text-sm">{crop}</span>
-                    </label>
-                  ))}
-                </div>
-                {errors.primaryCrops && <FormMessage>{errors.primaryCrops}</FormMessage>}
-              </div>
-
-              {/* Farm Equipment */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Farm Equipment</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={formData.hasStorage}
-                      onCheckedChange={(checked) => onFormChange('hasStorage', checked)}
-                    />
-                    <span>Has Storage Facility</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={formData.hasTractor}
-                      onCheckedChange={(checked) => onFormChange('hasTractor', checked)}
-                    />
-                    <span>Owns Tractor</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <FormField
+            <PersonalInfoFields
               control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Additional Notes</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      onChange={(e) => {
-                        field.onChange(e);
-                        onFormChange('notes', e.target.value);
-                      }}
-                      placeholder="Any additional information about the farmer"
-                      rows={3}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
+              errors={errors}
+              onFormChange={onFormChange}
+            />
+
+            <AddressFields
+              control={form.control}
+              errors={errors}
+              onFormChange={onFormChange}
+            />
+
+            <FarmingInfoFields
+              control={form.control}
+              errors={errors}
+              formData={formData}
+              onFormChange={onFormChange}
             />
 
             {/* Form Actions */}
