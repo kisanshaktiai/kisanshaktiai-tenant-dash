@@ -142,6 +142,60 @@ export class InvitationService {
       };
     }
   }
+
+  async setupPassword(
+    token: string,
+    password: string,
+    confirmPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (password !== confirmPassword) {
+        return {
+          success: false,
+          error: 'Passwords do not match'
+        };
+      }
+
+      if (password.length < 8) {
+        return {
+          success: false,
+          error: 'Password must be at least 8 characters long'
+        };
+      }
+
+      // Validate the token first
+      const tokenValidation = await this.validateInvitationToken(token);
+      if (!tokenValidation.valid) {
+        return {
+          success: false,
+          error: 'Invalid or expired invitation token'
+        };
+      }
+
+      // Update user password
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        console.error('Error updating password:', error);
+        return {
+          success: false,
+          error: error.message
+        };
+      }
+
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('Unexpected error setting up password:', error);
+      return {
+        success: false,
+        error: 'An unexpected error occurred while setting up your password'
+      };
+    }
+  }
 }
 
 export const invitationService = new InvitationService();

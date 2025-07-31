@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface OnboardingWorkflow {
@@ -47,7 +48,7 @@ export class OnboardingService {
       const { data: workflowData, error: workflowError } = await supabase
         .from('onboarding_workflows')
         .insert({
-          tenant_id,
+          tenant_id: tenantId,
           status: 'in_progress',
           current_step: 1,
           total_steps: 5, // Example: 5 steps in the workflow
@@ -78,7 +79,7 @@ export class OnboardingService {
         workflow_id: workflowData.id,
         step_number: step.step_number,
         step_name: step.step_name,
-        step_status: 'pending',
+        step_status: 'pending' as const,
       }));
 
       const { error: stepsError } = await supabase
@@ -127,7 +128,7 @@ export class OnboardingService {
         total_steps: data.total_steps,
         started_at: data.started_at,
         completed_at: data.completed_at,
-        metadata: data.metadata || {},
+        metadata: (data.metadata && typeof data.metadata === 'object') ? data.metadata as Record<string, any> : {},
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -135,6 +136,10 @@ export class OnboardingService {
       console.error('Unexpected error fetching workflow:', error);
       return null;
     }
+  }
+
+  async getWorkflowByTenantId(tenantId: string): Promise<OnboardingWorkflow | null> {
+    return this.getOnboardingWorkflow(tenantId);
   }
 
   async getWorkflowSteps(workflowId: string): Promise<OnboardingStep[]> {
@@ -166,7 +171,7 @@ export class OnboardingService {
           : step.step_status as 'pending' | 'in_progress' | 'completed' | 'skipped',
         is_required: true, // Default value since column doesn't exist
         estimated_time_minutes: 30, // Default value since column doesn't exist
-        step_data: step.step_data || {},
+        step_data: (step.step_data && typeof step.step_data === 'object') ? step.step_data as Record<string, any> : {},
         started_at: null, // Default value since column doesn't exist
         completed_at: step.completed_at,
         created_at: step.created_at,
@@ -178,11 +183,14 @@ export class OnboardingService {
     }
   }
 
-  async updateStepStatus(stepId: string, stepStatus: OnboardingStep['step_status']): Promise<boolean> {
+  async updateStepStatus(stepId: string, stepStatus: OnboardingStep['step_status'], stepData?: any): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('onboarding_steps')
-        .update({ step_status })
+        .update({ 
+          step_status: stepStatus,
+          step_data: stepData || null
+        })
         .eq('id', stepId);
 
       if (error) {
@@ -195,6 +203,10 @@ export class OnboardingService {
       console.error('Unexpected error updating step status:', error);
       return false;
     }
+  }
+
+  async completeStep(stepId: string, stepData?: any): Promise<boolean> {
+    return this.updateStepStatus(stepId, 'completed', stepData);
   }
 
   async completeOnboardingWorkflow(tenantId: string): Promise<boolean> {
@@ -215,6 +227,16 @@ export class OnboardingService {
       return true;
     } catch (error) {
       console.error('Unexpected error completing workflow:', error);
+      return false;
+    }
+  }
+
+  async isOnboardingComplete(tenantId: string): Promise<boolean> {
+    try {
+      const workflow = await this.getOnboardingWorkflow(tenantId);
+      return workflow?.status === 'completed' || false;
+    } catch (error) {
+      console.error('Error checking onboarding completion:', error);
       return false;
     }
   }

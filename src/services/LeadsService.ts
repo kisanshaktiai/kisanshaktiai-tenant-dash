@@ -68,7 +68,15 @@ export class LeadsService {
         return { success: false, error: 'Failed to submit inquiry. Please try again.' };
       }
 
-      return { success: true, lead: data };
+      // Cast the data to Lead type with proper type assertions
+      const leadResult: Lead = {
+        ...data,
+        status: data.status as Lead['status'],
+        priority: data.priority as Lead['priority'],
+        metadata: data.metadata || {}
+      };
+
+      return { success: true, lead: leadResult };
     } catch (error) {
       console.error('Unexpected error submitting lead:', error);
       return { success: false, error: 'An unexpected error occurred. Please try again.' };
@@ -87,7 +95,13 @@ export class LeadsService {
         return [];
       }
 
-      return data || [];
+      // Cast the data to Lead[] type with proper type assertions
+      return (data || []).map(lead => ({
+        ...lead,
+        status: lead.status as Lead['status'],
+        priority: lead.priority as Lead['priority'],
+        metadata: lead.metadata || {}
+      }));
     } catch (error) {
       console.error('Unexpected error fetching leads:', error);
       return [];
