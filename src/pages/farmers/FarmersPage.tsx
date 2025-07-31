@@ -40,9 +40,12 @@ export const FarmersPage = () => {
     setIsCreateModalOpen(false);
   };
 
-  const handleImportSuccess = () => {
-    setIsImportModalOpen(false);
-    refetch(); // Refresh the list after bulk import
+  const handleImportModalChange = (open: boolean) => {
+    setIsImportModalOpen(open);
+    if (!open) {
+      // Refresh the list when modal is closed (assuming import was successful)
+      refetch();
+    }
   };
 
   const handleSearch = (value: string) => {
@@ -164,8 +167,7 @@ export const FarmersPage = () => {
 
       <FarmerImportModal
         open={isImportModalOpen}
-        onOpenChange={(open) => setIsImportModalOpen(open)}
-        onSuccess={handleImportSuccess}
+        onOpenChange={handleImportModalChange}
       />
     </div>
   );
