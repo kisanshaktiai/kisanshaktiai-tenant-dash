@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +29,7 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     how_did_you_hear: ''
   });
 
+  const [customOrgType, setCustomOrgType] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -41,6 +41,7 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     { value: 'university', label: 'University/Research' },
     { value: 'government', label: 'Government Agency' },
     { value: 'cooperative', label: 'Cooperative' },
+    { value: 'other', label: 'Other' },
   ];
 
   const companySizes = [
@@ -52,10 +53,10 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
   ];
 
   const budgetRanges = [
-    { value: 'under_10k', label: 'Under $10,000' },
-    { value: '10k_50k', label: '$10,000 - $50,000' },
-    { value: '50k_100k', label: '$50,000 - $100,000' },
-    { value: '100k_plus', label: '$100,000+' },
+    { value: 'under_10k', label: 'Under ₹8,00,000' },
+    { value: '10k_50k', label: '₹8,00,000 - ₹40,00,000' },
+    { value: '50k_100k', label: '₹40,00,000 - ₹80,00,000' },
+    { value: '100k_plus', label: '₹80,00,000+' },
   ];
 
   const timelines = [
@@ -74,12 +75,24 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     setError(null);
   };
 
+  const handleOrgTypeChange = (value: string) => {
+    handleInputChange('organization_type', value);
+    if (value !== 'other') {
+      setCustomOrgType('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
-    const result = await leadsService.submitInquiry(formData);
+    const submitData = {
+      ...formData,
+      organization_type: formData.organization_type === 'other' ? customOrgType : formData.organization_type
+    };
+
+    const result = await leadsService.submitInquiry(submitData);
 
     if (result.success) {
       setSuccess(true);
@@ -151,7 +164,7 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
           <Label htmlFor="organization_type">Organization Type *</Label>
           <Select 
             value={formData.organization_type} 
-            onValueChange={(value) => handleInputChange('organization_type', value)}
+            onValueChange={handleOrgTypeChange}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select type" />
@@ -164,6 +177,15 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
               ))}
             </SelectContent>
           </Select>
+          {formData.organization_type === 'other' && (
+            <Input
+              value={customOrgType}
+              onChange={(e) => setCustomOrgType(e.target.value)}
+              placeholder="Please specify your organization type"
+              required
+              className="mt-2"
+            />
+          )}
         </div>
 
         <div className="space-y-2">
