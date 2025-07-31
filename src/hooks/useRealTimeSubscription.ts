@@ -53,7 +53,6 @@ export function useRealTimeSubscription<T>(
 
     // Set up real-time subscription using the correct API format
     const channelName = `${config.table}_changes_${currentTenant.id}`;
-    const events = config.events || ['*'];
     const filter = config.filter || `tenant_id=eq.${currentTenant.id}`;
 
     const channel = supabase
@@ -61,7 +60,7 @@ export function useRealTimeSubscription<T>(
       .on(
         'postgres_changes',
         {
-          event: events.length === 1 ? events[0] : '*',
+          event: '*',
           schema: 'public',
           table: config.table,
           filter: filter,
