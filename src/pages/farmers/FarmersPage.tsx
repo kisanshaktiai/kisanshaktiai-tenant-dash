@@ -163,7 +163,7 @@ export const FarmersPage = () => {
       />
 
       <FarmerImportModal
-        isOpen={isImportModalOpen}
+        open={isImportModalOpen}
         onOpenChange={(open) => setIsImportModalOpen(open)}
         onSuccess={handleImportSuccess}
       />
