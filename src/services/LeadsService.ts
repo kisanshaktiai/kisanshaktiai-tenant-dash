@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LeadData {
@@ -76,6 +77,7 @@ export class LeadsService {
         organization_type: data.organization_type as Lead['organization_type'],
         company_size: data.company_size as Lead['company_size'],
         budget_range: data.budget_range as Lead['budget_range'],
+        timeline: data.timeline as Lead['timeline'],
         metadata: (data.metadata || {}) as Record<string, any>
       };
 
@@ -106,6 +108,7 @@ export class LeadsService {
         organization_type: lead.organization_type as Lead['organization_type'],
         company_size: lead.company_size as Lead['company_size'],
         budget_range: lead.budget_range as Lead['budget_range'],
+        timeline: lead.timeline as Lead['timeline'],
         metadata: (lead.metadata || {}) as Record<string, any>
       }));
     } catch (error) {
@@ -139,3 +142,4 @@ export class LeadsService {
 }
 
 export const leadsService = new LeadsService();
+
