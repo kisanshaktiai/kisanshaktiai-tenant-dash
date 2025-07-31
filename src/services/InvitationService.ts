@@ -14,8 +14,8 @@ class InvitationService {
   async validateInvitationToken(token: string): Promise<InvitationTokenData> {
     try {
       const { data, error } = await supabase
-        .rpc('validate_admin_registration_token', { 
-          p_token: token 
+        .rpc('validate_invite_token', { 
+          token: token 
         });
 
       if (error) {
@@ -30,7 +30,7 @@ class InvitationService {
         };
       }
 
-      if (!data || data.length === 0) {
+      if (!data || !Array.isArray(data) || data.length === 0) {
         return {
           valid: false,
           email: '',
@@ -43,12 +43,12 @@ class InvitationService {
 
       const tokenData = data[0];
       return {
-        valid: tokenData.valid,
-        email: tokenData.email,
-        role: tokenData.role,
-        invite_id: tokenData.invite_id,
-        expires_at: tokenData.expires_at,
-        error: !tokenData.valid ? 'Token has expired or been used' : undefined
+        valid: tokenData.is_valid || false,
+        email: tokenData.email || '',
+        role: tokenData.role || '',
+        invite_id: tokenData.invite_id || '',
+        expires_at: tokenData.expires_at || '',
+        error: !tokenData.is_valid ? 'Token has expired or been used' : undefined
       };
     } catch (error) {
       console.error('Unexpected error validating token:', error);
@@ -91,17 +91,18 @@ class InvitationService {
         };
       }
 
-      // Mark the registration token as used
-      const { error: tokenError } = await supabase
-        .from('admin_registration_tokens')
+      // Mark the invite as accepted using the existing admin_invites table
+      const { error: inviteError } = await supabase
+        .from('admin_invites')
         .update({ 
-          used_at: new Date().toISOString() 
+          status: 'accepted',
+          accepted_at: new Date().toISOString()
         })
-        .eq('token', token);
+        .eq('invite_token', token);
 
-      if (tokenError) {
-        console.error('Error marking token as used:', tokenError);
-        // Don't fail the process if we can't mark token as used
+      if (inviteError) {
+        console.error('Error marking invite as accepted:', inviteError);
+        // Don't fail the process if we can't mark invite as accepted
       }
 
       // Create admin user record

@@ -45,7 +45,21 @@ class OnboardingService {
       return null;
     }
 
-    return data;
+    // Map database response to interface, providing default values
+    return {
+      id: data.id,
+      tenant_id: data.tenant_id,
+      workflow_name: data.workflow_name || 'Default Workflow',
+      status: data.status || 'not_started',
+      progress_percentage: data.progress_percentage || 0,
+      current_step: data.current_step || 1,
+      total_steps: data.total_steps || 1,
+      started_at: data.started_at,
+      completed_at: data.completed_at,
+      metadata: data.metadata || {},
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
   }
 
   async getWorkflowSteps(workflowId: string): Promise<OnboardingStep[]> {
@@ -60,7 +74,22 @@ class OnboardingService {
       return [];
     }
 
-    return data;
+    // Map database response to interface, providing default values
+    return data.map(step => ({
+      id: step.id,
+      workflow_id: step.workflow_id,
+      step_number: step.step_number,
+      step_name: step.step_name,
+      step_description: step.step_description,
+      step_status: step.step_status,
+      is_required: step.is_required !== undefined ? step.is_required : true,
+      estimated_time_minutes: step.estimated_time_minutes,
+      step_data: step.step_data || {},
+      started_at: step.started_at,
+      completed_at: step.completed_at,
+      created_at: step.created_at,
+      updated_at: step.updated_at
+    }));
   }
 
   async updateStepStatus(stepId: string, status: OnboardingStep['step_status'], stepData?: any): Promise<boolean> {
