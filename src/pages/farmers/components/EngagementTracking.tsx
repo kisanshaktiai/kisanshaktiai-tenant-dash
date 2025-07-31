@@ -1,14 +1,14 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  TrendingUp, Users, MessageSquare, Eye, 
-  Calendar, Phone, Mail, Activity
+  TrendingUp, Users, MessageSquare, Activity
 } from 'lucide-react';
-import { useEngagementData } from '@/hooks/useEngagementData';
+import { useEngagementQuery } from '@/hooks/data/useAnalyticsQuery';
 
 export const EngagementTracking = () => {
-  const { stats: engagementStats, loading } = useEngagementData();
+  const { data: engagementStats, isLoading } = useEngagementQuery();
 
   const topFeatures = [
     { name: 'Weather Updates', usage: 94.2, trend: 'up' },
@@ -35,10 +35,10 @@ export const EngagementTracking = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <div className="text-2xl font-bold">{engagementStats.activeUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{engagementStats?.activeUsers.toLocaleString()}</div>
           )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+12%</span> from last month
@@ -52,10 +52,10 @@ export const EngagementTracking = () => {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <div className="text-2xl font-bold">{engagementStats.avgSessionTime}</div>
+            <div className="text-2xl font-bold">{engagementStats?.avgSessionTime}</div>
           )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+0.8 min</span> from last month
@@ -69,10 +69,10 @@ export const EngagementTracking = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <div className="text-2xl font-bold">{engagementStats.featureAdoption}%</div>
+            <div className="text-2xl font-bold">{engagementStats?.featureAdoption}%</div>
           )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+5.2%</span> from last month
@@ -86,10 +86,10 @@ export const EngagementTracking = () => {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <div className="text-2xl font-bold">{engagementStats.responseRate}%</div>
+            <div className="text-2xl font-bold">{engagementStats?.responseRate}%</div>
           )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+3.1%</span> from last month
@@ -103,10 +103,10 @@ export const EngagementTracking = () => {
             <Users className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold text-destructive">{engagementStats.churnRate}%</div>
+              <div className="text-2xl font-bold text-destructive">{engagementStats?.churnRate}%</div>
             )}
             <p className="text-xs text-muted-foreground">
               <span className="text-destructive">-0.3%</span> from last month
@@ -120,10 +120,10 @@ export const EngagementTracking = () => {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold text-primary">{engagementStats.npsScore}/10</div>
+              <div className="text-2xl font-bold text-primary">{engagementStats?.npsScore}/10</div>
             )}
             <p className="text-xs text-muted-foreground">
               <span className="text-primary">+0.4</span> from last month

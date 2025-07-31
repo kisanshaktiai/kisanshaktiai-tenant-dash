@@ -1,142 +1,79 @@
-import { useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Users, Sprout, TrendingUp, AlertTriangle,
-  Calendar, MapPin, Package, MessageSquare
+import { Badge } from '@/components/ui/badge';
+import { 
+  Users, MapPin, Package, AlertCircle, 
+  TrendingUp, Calendar, CheckCircle, Clock
 } from 'lucide-react';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { addNotification } from '@/store/slices/uiSlice';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useDashboardQuery } from '@/hooks/data/useDashboardQuery';
 
 const Dashboard = () => {
-  const dispatch = useAppDispatch();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { user } = useAppSelector((state) => state.auth);
-  const { stats, loading, error } = useDashboardData();
-
-  useEffect(() => {
-    // Add a welcome notification for new users
-    if (user) {
-      dispatch(addNotification({
-        type: 'success',
-        title: 'Welcome to AgriTenant Hub!',
-        message: `Hello ${user.user_metadata?.full_name || user.email}, your dashboard is ready.`,
-      }));
-    }
-  }, [user, dispatch]);
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'destructive';
-      case 'medium':
-        return 'secondary';
-      case 'low':
-        return 'outline';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getIconForActivity = (iconName: string) => {
-    switch (iconName) {
-      case 'Users':
-        return Users;
-      case 'Sprout':
-        return Sprout;
-      case 'Calendar':
-        return Calendar;
-      default:
-        return Users;
-    }
-  };
+  const { data: stats, isLoading, error } = useDashboardQuery();
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Dashboard</CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="container mx-auto p-6">
+        <div className="text-center py-8">
+          <AlertCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
+          <p className="text-destructive">Failed to load dashboard data</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {user?.user_metadata?.full_name || 'there'}!
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening with {currentTenant?.name || 'your organization'} today.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Schedule Campaign
-          </Button>
-          <Button>
-            <Users className="mr-2 h-4 w-4" />
-            Add Farmer
-          </Button>
-        </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
 
-      {/* Stats Cards */}
+      {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Farmers</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{stats.totalFarmers.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{stats?.totalFarmers.toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              <span className="text-success">+{stats.growthRate}%</span> growth rate
+              <span className="text-success">+{stats?.growthRate || 0}%</span> growth rate
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Lands</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{stats.activeLands.toLocaleString()}</div>
+              <div className="text-2xl font-bold">{stats?.activeLands.toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              Currently being monitored
+              Currently registered
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Products</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold">{stats.totalProducts}</div>
+              <div className="text-2xl font-bold">{stats?.totalProducts.toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
               Available in catalog
@@ -144,16 +81,16 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-warning" />
+            <CardTitle className="text-sm font-medium">Pending Issues</CardTitle>
+            <AlertCircle className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold text-warning">{stats.pendingIssues}</div>
+              <div className="text-2xl font-bold text-warning">{stats?.pendingIssues}</div>
             )}
             <p className="text-xs text-muted-foreground">
               Require attention
@@ -164,125 +101,94 @@ const Dashboard = () => {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Activity */}
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Latest updates from your farmer network
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-              ))
-            ) : stats.recentActivity.length > 0 ? (
-              stats.recentActivity.map((activity) => {
-                const IconComponent = getIconForActivity(activity.icon);
-                return (
-                  <div key={activity.id} className="flex items-center gap-4">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <IconComponent className="h-4 w-4 text-primary" />
+          <CardContent>
+            <div className="space-y-4">
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
                     </div>
-                    <div className="flex-1 space-y-1">
+                  </div>
+                ))
+              ) : (
+                stats?.recentActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium">{activity.message}</p>
                       <p className="text-xs text-muted-foreground">{activity.time}</p>
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No recent activity to display
-              </p>
-            )}
-            <Button variant="outline" className="w-full mt-4">
-              View All Activity
-            </Button>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Upcoming Tasks */}
-        <Card className="shadow-soft">
+        <Card>
           <CardHeader>
-            <CardTitle>Upcoming Tasks</CardTitle>
-            <CardDescription>
-              Important tasks that need your attention
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Upcoming Tasks
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-5 w-16" />
+          <CardContent>
+            <div className="space-y-4">
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-start space-x-3">
+                    <Skeleton className="h-4 w-4 mt-1" />
+                    <div className="space-y-1 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
                   </div>
-                  <Skeleton className="h-3 w-3/4" />
-                  <Skeleton className="h-3 w-1/3" />
-                </div>
-              ))
-            ) : stats.upcomingTasks.length > 0 ? (
-              stats.upcomingTasks.map((task) => (
-                <div key={task.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium">{task.title}</h4>
-                    <Badge variant={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
+                ))
+              ) : (
+                stats?.upcomingTasks.map((task) => (
+                  <div key={task.id} className="flex items-start space-x-3">
+                    <div className="mt-1">
+                      {task.priority === 'high' ? (
+                        <AlertCircle className="h-4 w-4 text-destructive" />
+                      ) : task.priority === 'medium' ? (
+                        <Clock className="h-4 w-4 text-warning" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">{task.title}</p>
+                        <Badge variant={
+                          task.priority === 'high' ? 'destructive' :
+                          task.priority === 'medium' ? 'default' : 'secondary'
+                        }>
+                          {task.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                      <p className="text-xs text-muted-foreground">Due: {task.dueDate}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">{task.description}</p>
-                  <p className="text-xs text-muted-foreground">Due: {task.dueDate}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No upcoming tasks
-              </p>
-            )}
-            <Button variant="outline" className="w-full mt-4">
-              <Calendar className="mr-2 h-4 w-4" />
-              View Task Calendar
-            </Button>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Actions */}
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common tasks to help you manage your operations efficiently
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
-              <Users className="h-6 w-6" />
-              <span className="text-sm">Add Farmers</span>
-            </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
-              <Package className="h-6 w-6" />
-              <span className="text-sm">Manage Products</span>
-            </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
-              <Calendar className="h-6 w-6" />
-              <span className="text-sm">Create Campaign</span>
-            </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
-              <MessageSquare className="h-6 w-6" />
-              <span className="text-sm">Send Advisory</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

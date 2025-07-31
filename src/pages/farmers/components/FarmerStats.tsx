@@ -1,15 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  Users, UserCheck, UserX, TrendingUp, 
-  MapPin, Sprout, AlertTriangle, Clock
+  Users, UserCheck, TrendingUp, AlertTriangle
 } from 'lucide-react';
-import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
+import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
 
 export const FarmerStats = () => {
-  const { data: farmers, loading } = useRealTimeFarmers();
+  const { data: farmersResponse, isLoading } = useRealTimeFarmersQuery();
+  const farmers = farmersResponse?.data || [];
 
   // Calculate stats from real data
   const stats = {
@@ -25,10 +24,7 @@ export const FarmerStats = () => {
       weekAgo.setDate(weekAgo.getDate() - 7);
       return f.last_app_open && new Date(f.last_app_open) < weekAgo;
     }).length,
-    avgLandSize: farmers.reduce((acc, f) => acc + (f.total_land_acres || 0), 0) / farmers.length || 0,
-    topCrops: [...new Set(farmers.flatMap(f => f.primary_crops || []))].slice(0, 3),
     engagementRate: farmers.length ? (farmers.filter(f => (f.total_app_opens || 0) > 0).length / farmers.length) * 100 : 0,
-    responseRate: farmers.length ? (farmers.filter(f => (f.total_queries || 0) > 0).length / farmers.length) * 100 : 0,
   };
 
   return (
@@ -39,7 +35,7 @@ export const FarmerStats = () => {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
             <div className="text-2xl font-bold">{stats.totalFarmers.toLocaleString()}</div>
@@ -56,7 +52,7 @@ export const FarmerStats = () => {
           <UserCheck className="h-4 w-4 text-success" />
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
             <div className="text-2xl font-bold">{stats.activeFarmers.toLocaleString()}</div>
@@ -73,7 +69,7 @@ export const FarmerStats = () => {
           <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
             <div className="text-2xl font-bold">{stats.engagementRate.toFixed(1)}%</div>
@@ -90,7 +86,7 @@ export const FarmerStats = () => {
           <AlertTriangle className="h-4 w-4 text-warning" />
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <Skeleton className="h-8 w-20" />
           ) : (
             <div className="text-2xl font-bold text-warning">{stats.churnRisk}</div>
