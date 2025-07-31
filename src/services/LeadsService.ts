@@ -73,7 +73,7 @@ export class LeadsService {
         ...data,
         status: data.status as Lead['status'],
         priority: data.priority as Lead['priority'],
-        metadata: data.metadata || {}
+        metadata: (data.metadata || {}) as Record<string, any>
       };
 
       return { success: true, lead: leadResult };
@@ -100,7 +100,7 @@ export class LeadsService {
         ...lead,
         status: lead.status as Lead['status'],
         priority: lead.priority as Lead['priority'],
-        metadata: lead.metadata || {}
+        metadata: (lead.metadata || {}) as Record<string, any>
       }));
     } catch (error) {
       console.error('Unexpected error fetching leads:', error);
