@@ -56,32 +56,28 @@ export function useRealTimeSubscription<T>(
     const events = config.events || ['*'];
     const filter = config.filter || `tenant_id=eq.${currentTenant.id}`;
 
-    const channel = supabase.channel(channelName);
-    
-    // Add postgres_changes listener with correct syntax
-    channel.on(
-      'postgres_changes',
-      {
-        event: events.length === 1 ? events[0] : '*',
-        schema: 'public',
-        table: config.table,
-        filter: filter,
-      },
-      (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setData(prev => [payload.new as T, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setData(prev => prev.map(item => 
-            (item as any).id === payload.new.id ? payload.new as T : item
-          ));
-        } else if (payload.eventType === 'DELETE') {
-          setData(prev => prev.filter(item => (item as any).id !== payload.old.id));
+    const channel = supabase.channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: events.length === 1 ? events[0] : '*',
+          schema: 'public',
+          table: config.table,
+          filter: filter,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setData(prev => [payload.new as T, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setData(prev => prev.map(item => 
+              (item as any).id === payload.new.id ? payload.new as T : item
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setData(prev => prev.filter(item => (item as any).id !== payload.old.id));
+          }
         }
-      }
-    );
-
-    // Subscribe to the channel
-    channel.subscribe();
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
