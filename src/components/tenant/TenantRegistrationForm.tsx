@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,7 +48,17 @@ export const TenantRegistrationForm: React.FC<TenantRegistrationFormProps> = ({
   const organizationName = form.watch('organizationName');
 
   const onSubmit = async (data: TenantRegistrationData) => {
-    await createTenant(data, onSuccess);
+    // Ensure all required fields are present
+    const completeData = {
+      organizationName: data.organizationName,
+      organizationType: data.organizationType,
+      slug: data.slug,
+      email: data.email,
+      phone: data.phone || '',
+      ownerName: data.ownerName || '',
+    };
+    
+    await createTenant(completeData, onSuccess);
   };
 
   return (

@@ -33,56 +33,61 @@ export interface FarmerCreateResult {
 
 class FarmersApiService extends ApiService {
   async getFarmers(tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
-        .from('farmers')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-    );
+    const { data, error } = await supabase
+      .from('farmers')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw this.handleError(error);
+    return data || [];
   }
 
   async getFarmer(farmerId: string, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
-        .from('farmers')
-        .select('*')
-        .eq('id', farmerId)
-        .eq('tenant_id', tenantId)
-        .single()
-    );
+    const { data, error } = await supabase
+      .from('farmers')
+      .select('*')
+      .eq('id', farmerId)
+      .eq('tenant_id', tenantId)
+      .single();
+    
+    if (error) throw this.handleError(error);
+    return data;
   }
 
   async createFarmer(farmerData: any, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
-        .from('farmers')
-        .insert({ ...farmerData, tenant_id: tenantId })
-        .select()
-        .single()
-    );
+    const { data, error } = await supabase
+      .from('farmers')
+      .insert({ ...farmerData, tenant_id: tenantId })
+      .select()
+      .single();
+    
+    if (error) throw this.handleError(error);
+    return data;
   }
 
   async updateFarmer(farmerId: string, updates: any, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
-        .from('farmers')
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', farmerId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single()
-    );
+    const { data, error } = await supabase
+      .from('farmers')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', farmerId)
+      .eq('tenant_id', tenantId)
+      .select()
+      .single();
+    
+    if (error) throw this.handleError(error);
+    return data;
   }
 
   async deleteFarmer(farmerId: string, tenantId: string) {
-    return this.executeQuery(() =>
-      supabase
-        .from('farmers')
-        .delete()
-        .eq('id', farmerId)
-        .eq('tenant_id', tenantId)
-    );
+    const { error } = await supabase
+      .from('farmers')
+      .delete()
+      .eq('id', farmerId)
+      .eq('tenant_id', tenantId);
+    
+    if (error) throw this.handleError(error);
+    return { success: true };
   }
 
   async getFarmerCount(tenantId: string) {

@@ -64,8 +64,8 @@ export const useFarmerManagement = () => {
 
       return {
         success: true,
-        farmerId: newFarmer.id,
-        userId: newFarmer.id,
+        farmerId: (newFarmer as any).id,
+        userId: (newFarmer as any).id,
         farmerCode,
         tempPassword: 'Manual registration - contact admin'
       };
