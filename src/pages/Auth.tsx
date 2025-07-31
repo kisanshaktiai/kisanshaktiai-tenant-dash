@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -26,12 +25,31 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle state from navigation (e.g., from password setup)
+  const locationState = location.state as { email?: string; message?: string } | null;
 
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    // Set email from location state if available
+    if (locationState?.email) {
+      setEmail(locationState.email);
+    }
+
+    // Show message from location state if available
+    if (locationState?.message) {
+      toast({
+        title: 'Account Ready',
+        description: locationState.message,
+      });
+    }
+  }, [locationState, toast]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

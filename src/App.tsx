@@ -22,6 +22,7 @@ import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import DealersPage from '@/pages/dealers/DealersPage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
+import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,6 +80,9 @@ const AppContent = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Invitation Route */}
+            <Route path="/invite/:token" element={<PasswordSetupPage />} />
             
             {/* Onboarding Route */}
             <Route path="/onboarding" element={
