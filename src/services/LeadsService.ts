@@ -9,7 +9,7 @@ export interface LeadData {
   phone?: string;
   company_size?: '1-10' | '11-50' | '51-200' | '201-1000' | '1000+';
   expected_farmers?: number;
-  budget_range?: 'under_25k' | '25k_50k' | '50k_100k' | '100k_plus';
+  budget_range?: 'under_50k' | '50k_100k' | '100k_1000k' | '1000k_plus';
   timeline?: 'immediate' | '1_month' | '3_months' | '6_months' | 'flexible';
   requirements?: string;
   current_solution?: string;
