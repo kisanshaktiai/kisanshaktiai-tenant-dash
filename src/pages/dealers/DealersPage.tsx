@@ -84,7 +84,7 @@ export const DealersPage = () => {
         </TabsList>
 
         <TabsContent value="directory">
-          <DealerDirectory />
+          <DealerDirectory dealers={dealers} loading={isLoading} />
         </TabsContent>
 
         <TabsContent value="onboarding">

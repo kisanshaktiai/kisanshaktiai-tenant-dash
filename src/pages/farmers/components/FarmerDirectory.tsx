@@ -12,7 +12,7 @@ import type { Farmer } from '@/services/FarmersService';
 
 export const FarmerDirectory = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFarmer, setSelectedFarmer] = useState<string | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
   const {
@@ -26,8 +26,8 @@ export const FarmerDirectory = () => {
 
   const farmers = farmersResponse?.data || [];
 
-  const handleViewProfile = (farmerId: string) => {
-    setSelectedFarmer(farmerId);
+  const handleViewProfile = (farmer: Farmer) => {
+    setSelectedFarmer(farmer);
     setShowProfile(true);
   };
 
@@ -79,7 +79,7 @@ export const FarmerDirectory = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleViewProfile(farmer.id)}>
+                  <DropdownMenuItem onClick={() => handleViewProfile(farmer)}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Profile
                   </DropdownMenuItem>
@@ -142,7 +142,7 @@ export const FarmerDirectory = () => {
       {/* Profile Modal */}
       {showProfile && selectedFarmer && (
         <FarmerProfile
-          farmerId={selectedFarmer}
+          farmer={selectedFarmer}
           onClose={() => {
             setShowProfile(false);
             setSelectedFarmer(null);

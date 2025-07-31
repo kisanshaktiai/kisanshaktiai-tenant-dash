@@ -5,12 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { queryKeys } from '@/lib/queryClient';
 import { useDealersQuery } from './useDealersQuery';
-import type { Dealer } from '@/services/DealersService';
+import type { Dealer, DealersListOptions } from '@/services/DealersService';
 
-export const useRealTimeDealersQuery = () => {
+export const useRealTimeDealersQuery = (options: DealersListOptions = {}) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
-  const dealersQuery = useDealersQuery();
+  const dealersQuery = useDealersQuery(options);
 
   useEffect(() => {
     if (!currentTenant) return;
