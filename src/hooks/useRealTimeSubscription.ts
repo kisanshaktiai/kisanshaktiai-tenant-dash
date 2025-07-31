@@ -58,7 +58,7 @@ export function useRealTimeSubscription<T>(
 
     const channel = supabase.channel(channelName);
     
-    // Add postgres_changes listener
+    // Add postgres_changes listener with correct syntax
     channel.on(
       'postgres_changes',
       {
