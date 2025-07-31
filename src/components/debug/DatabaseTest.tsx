@@ -28,7 +28,7 @@ export const DatabaseTest = () => {
       }
 
       // Test 2: Test RLS policies for anonymous users (INSERT)
-      addResult('Testing anonymous lead submission...');
+      addResult('Testing anonymous lead submission with new RLS policies...');
       const testLead = {
         organization_name: 'Test Organization',
         organization_type: 'Agri_Company',
@@ -48,8 +48,9 @@ export const DatabaseTest = () => {
 
       if (insertError) {
         addResult(`❌ Insert failed: ${insertError.message} (Code: ${insertError.code})`);
+        addResult('⚠️ This indicates RLS policies are still blocking anonymous submissions');
       } else {
-        addResult('✅ Anonymous lead submission successful - RLS policies working correctly');
+        addResult('✅ Anonymous lead submission successful - RLS policies working correctly!');
         
         // Clean up test data
         if (insertData?.id) {
@@ -119,7 +120,7 @@ export const DatabaseTest = () => {
             </AlertDescription>
           </Alert>
         )}
-      </Content>
+      </CardContent>
     </Card>
   );
 };
