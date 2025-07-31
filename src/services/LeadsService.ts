@@ -1,10 +1,9 @@
 
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LeadData {
   organization_name: string;
-  organization_type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative';
+  organization_type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'other';
   contact_name: string;
   email: string;
   phone?: string;
@@ -142,4 +141,3 @@ export class LeadsService {
 }
 
 export const leadsService = new LeadsService();
-

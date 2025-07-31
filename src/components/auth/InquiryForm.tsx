@@ -76,7 +76,7 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
   };
 
   const handleOrgTypeChange = (value: string) => {
-    handleInputChange('organization_type', value);
+    handleInputChange('organization_type', value as LeadData['organization_type']);
     if (value !== 'other') {
       setCustomOrgType('');
     }
@@ -87,10 +87,18 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     setError(null);
     setIsLoading(true);
 
-    const submitData = {
+    const submitData: LeadData = {
       ...formData,
-      organization_type: formData.organization_type === 'other' ? customOrgType : formData.organization_type
+      organization_type: formData.organization_type === 'other' 
+        ? (customOrgType || 'other') as LeadData['organization_type']
+        : formData.organization_type
     };
+
+    if (formData.organization_type === 'other' && !customOrgType.trim()) {
+      setError('Please specify your organization type');
+      setIsLoading(false);
+      return;
+    }
 
     const result = await leadsService.submitInquiry(submitData);
 
