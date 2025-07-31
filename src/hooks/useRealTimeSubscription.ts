@@ -51,7 +51,7 @@ export function useRealTimeSubscription<T>(
     // Initial fetch
     refetch();
 
-    // Set up real-time subscription using the correct API
+    // Set up real-time subscription using the correct API format
     const channelName = `${config.table}_changes_${currentTenant.id}`;
     const events = config.events || ['*'];
     const filter = config.filter || `tenant_id=eq.${currentTenant.id}`;
