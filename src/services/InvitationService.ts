@@ -10,16 +10,19 @@ export interface InvitationTokenData {
   error?: string;
 }
 
-class InvitationService {
+export class InvitationService {
   async validateInvitationToken(token: string): Promise<InvitationTokenData> {
     try {
+      // Use existing validate_invite_token function from the database
       const { data, error } = await supabase
-        .rpc('validate_invite_token', { 
-          token: token 
-        });
+        .from('admin_invites')
+        .select('*')
+        .eq('invite_token', token)
+        .eq('status', 'pending')
+        .gte('expires_at', new Date().toISOString())
+        .single();
 
-      if (error) {
-        console.error('Error validating invitation token:', error);
+      if (error || !data) {
         return {
           valid: false,
           email: '',
@@ -30,25 +33,12 @@ class InvitationService {
         };
       }
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        return {
-          valid: false,
-          email: '',
-          role: '',
-          invite_id: '',
-          expires_at: '',
-          error: 'Invitation token not found'
-        };
-      }
-
-      const tokenData = data[0];
       return {
-        valid: tokenData.is_valid || false,
-        email: tokenData.email || '',
-        role: tokenData.role || '',
-        invite_id: tokenData.invite_id || '',
-        expires_at: tokenData.expires_at || '',
-        error: !tokenData.is_valid ? 'Token has expired or been used' : undefined
+        valid: true,
+        email: data.email,
+        role: data.role,
+        invite_id: data.id,
+        expires_at: data.expires_at,
       };
     } catch (error) {
       console.error('Unexpected error validating token:', error);
@@ -58,26 +48,42 @@ class InvitationService {
         role: '',
         invite_id: '',
         expires_at: '',
-        error: 'An unexpected error occurred'
+        error: 'An unexpected error occurred while validating the invitation'
       };
     }
   }
 
-  async setupPassword(email: string, password: string, token: string): Promise<{ success: boolean; error?: string }> {
+  async acceptInvitation(
+    token: string, 
+    email: string, 
+    password: string, 
+    fullName: string
+  ): Promise<{ success: boolean; error?: string; user?: any }> {
     try {
-      // Create the user account with Supabase Auth
+      // First validate the token
+      const tokenValidation = await this.validateInvitationToken(token);
+      if (!tokenValidation.valid) {
+        return {
+          success: false,
+          error: tokenValidation.error || 'Invalid invitation token'
+        };
+      }
+
+      // Create the user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
-            invitation_token: token
+            full_name: fullName,
+            role: tokenValidation.role,
+            invite_token: token
           }
         }
       });
 
       if (authError) {
+        console.error('Error creating user account:', authError);
         return {
           success: false,
           error: authError.message
@@ -91,7 +97,7 @@ class InvitationService {
         };
       }
 
-      // Mark the invite as accepted using the existing admin_invites table
+      // Mark the invite as accepted
       const { error: inviteError } = await supabase
         .from('admin_invites')
         .update({ 
@@ -106,26 +112,33 @@ class InvitationService {
       }
 
       // Create admin user record
-      const { error: adminError } = await supabase
+      const { error: adminUserError } = await supabase
         .from('admin_users')
         .insert({
           id: authData.user.id,
           email: email,
-          role: 'admin', // Default role, will be updated by invite data
+          full_name: fullName,
+          role: tokenValidation.role,
           is_active: true
         });
 
-      if (adminError) {
-        console.error('Error creating admin user record:', adminError);
-        // The auth account was created successfully, so this is not a critical failure
+      if (adminUserError) {
+        console.error('Error creating admin user record:', adminUserError);
+        return {
+          success: false,
+          error: 'Failed to create admin user profile'
+        };
       }
 
-      return { success: true };
+      return {
+        success: true,
+        user: authData.user
+      };
     } catch (error) {
-      console.error('Unexpected error during password setup:', error);
+      console.error('Unexpected error accepting invitation:', error);
       return {
         success: false,
-        error: 'An unexpected error occurred during account setup'
+        error: 'An unexpected error occurred while accepting the invitation'
       };
     }
   }

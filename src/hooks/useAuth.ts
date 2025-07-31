@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -41,24 +42,6 @@ export const useAuth = () => {
     return { data, error };
   };
 
-  const signUp = async (email: string, password: string, metadata?: any) => {
-    dispatch(setLoading(true));
-    
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: metadata,
-      },
-    });
-
-    dispatch(setLoading(false));
-    return { data, error };
-  };
-
   const signOut = async () => {
     dispatch(setLoading(true));
     
@@ -84,7 +67,6 @@ export const useAuth = () => {
     loading,
     initialized,
     signIn,
-    signUp,
     signOut,
     resetPassword,
   };
