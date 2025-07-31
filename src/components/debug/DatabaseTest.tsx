@@ -27,7 +27,7 @@ export const DatabaseTest = () => {
         addResult('✅ Database connection successful');
       }
 
-      // Test 2: Test RLS policies
+      // Test 2: Test RLS policies for anonymous users
       addResult('Testing RLS policies for anonymous users...');
       const testLead = {
         organization_name: 'Test Organization',
@@ -47,6 +47,9 @@ export const DatabaseTest = () => {
 
       if (insertError) {
         addResult(`❌ Insert failed: ${insertError.message} (Code: ${insertError.code})`);
+        if (insertError.code === '42501') {
+          addResult('❌ RLS Policy Error: Anonymous users cannot submit leads');
+        }
       } else {
         addResult('✅ Insert successful - RLS policies working correctly');
         
@@ -57,15 +60,17 @@ export const DatabaseTest = () => {
         }
       }
 
-      // Test 3: Check if helper functions exist
-      addResult('Testing helper functions...');
-      const { data: funcData, error: funcError } = await supabase
-        .rpc('can_submit_lead');
+      // Test 3: Check table permissions
+      addResult('Testing table permissions...');
+      const { data: permissionData, error: permissionError } = await supabase
+        .from('leads')
+        .select('id, organization_name, status')
+        .limit(1);
 
-      if (funcError) {
-        addResult(`❌ Helper function test failed: ${funcError.message}`);
+      if (permissionError) {
+        addResult(`❌ Permission test failed: ${permissionError.message}`);
       } else {
-        addResult('✅ Helper functions working correctly');
+        addResult('✅ Basic read permissions working');
       }
 
     } catch (error) {
