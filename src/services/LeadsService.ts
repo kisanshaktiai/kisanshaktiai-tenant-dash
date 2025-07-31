@@ -51,6 +51,8 @@ export class LeadsService {
         return { success: false, error: 'Please enter a valid email address' };
       }
 
+      console.log('Submitting lead data:', leadData);
+
       // Submit lead to database
       const { data, error } = await supabase
         .from('leads')
@@ -64,7 +66,17 @@ export class LeadsService {
         .single();
 
       if (error) {
-        console.error('Error submitting lead:', error);
+        console.error('Supabase error submitting lead:', error);
+        
+        // Provide more specific error messages based on error type
+        if (error.code === '23514') {
+          return { success: false, error: 'Invalid data format. Please check your selections and try again.' };
+        }
+        
+        if (error.code === '42501') {
+          return { success: false, error: 'Permission denied. Please try again later.' };
+        }
+        
         return { success: false, error: 'Failed to submit inquiry. Please try again.' };
       }
 
@@ -80,6 +92,7 @@ export class LeadsService {
         metadata: (data.metadata || {}) as Record<string, any>
       };
 
+      console.log('Lead submitted successfully:', leadResult);
       return { success: true, lead: leadResult };
     } catch (error) {
       console.error('Unexpected error submitting lead:', error);

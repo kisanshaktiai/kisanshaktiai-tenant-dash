@@ -87,22 +87,32 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     setError(null);
     setIsLoading(true);
 
-    const submitData: LeadData = {
-      ...formData,
-      organization_type: formData.organization_type === 'other' 
-        ? (customOrgType || 'other') as LeadData['organization_type']
-        : formData.organization_type
-    };
+    let submitData: LeadData = { ...formData };
 
-    if (formData.organization_type === 'other' && !customOrgType.trim()) {
-      setError('Please specify your organization type');
-      setIsLoading(false);
-      return;
+    // Handle 'other' organization type
+    if (formData.organization_type === 'other') {
+      if (!customOrgType.trim()) {
+        setError('Please specify your organization type');
+        setIsLoading(false);
+        return;
+      }
+      // Store the custom organization type in the 'other' field but keep type as 'other'
+      submitData = {
+        ...formData,
+        organization_type: 'other',
+        // You might want to store the custom type in metadata or notes
+        requirements: formData.requirements ? 
+          `Organization Type: ${customOrgType}\n\n${formData.requirements}` : 
+          `Organization Type: ${customOrgType}`
+      };
     }
+
+    console.log('Submitting form data:', submitData);
 
     const result = await leadsService.submitInquiry(submitData);
 
     if (result.success) {
+      console.log('Form submitted successfully');
       setSuccess(true);
       toast({
         title: "Inquiry submitted successfully!",
@@ -110,6 +120,7 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
       });
       onSuccess?.();
     } else {
+      console.error('Form submission failed:', result.error);
       setError(result.error || 'Failed to submit inquiry');
       toast({
         variant: "destructive",
