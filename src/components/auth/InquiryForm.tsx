@@ -87,6 +87,9 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
     setError(null);
     setIsLoading(true);
 
+    console.log('Form submission started');
+    console.log('Current form data:', formData);
+
     let submitData: LeadData = { ...formData };
 
     // Handle 'other' organization type
@@ -96,40 +99,53 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
         setIsLoading(false);
         return;
       }
-      // Store the custom organization type in the 'other' field but keep type as 'other'
+      // Store the custom organization type in the requirements field
       submitData = {
         ...formData,
         organization_type: 'other',
-        // You might want to store the custom type in metadata or notes
         requirements: formData.requirements ? 
           `Organization Type: ${customOrgType}\n\n${formData.requirements}` : 
           `Organization Type: ${customOrgType}`
       };
     }
 
-    console.log('Submitting form data:', submitData);
+    console.log('Final submission data:', submitData);
 
-    const result = await leadsService.submitInquiry(submitData);
+    try {
+      const result = await leadsService.submitInquiry(submitData);
+      
+      console.log('Submission result:', result);
 
-    if (result.success) {
-      console.log('Form submitted successfully');
-      setSuccess(true);
-      toast({
-        title: "Inquiry submitted successfully!",
-        description: "Thank you for your interest. Our team will contact you within 24 hours.",
-      });
-      onSuccess?.();
-    } else {
-      console.error('Form submission failed:', result.error);
-      setError(result.error || 'Failed to submit inquiry');
+      if (result.success) {
+        console.log('Form submitted successfully');
+        setSuccess(true);
+        toast({
+          title: "Inquiry submitted successfully!",
+          description: "Thank you for your interest. Our team will contact you within 24 hours.",
+        });
+        onSuccess?.();
+      } else {
+        console.error('Form submission failed:', result.error);
+        const errorMessage = result.error || 'Failed to submit inquiry';
+        setError(errorMessage);
+        toast({
+          variant: "destructive",
+          title: "Submission failed",
+          description: errorMessage,
+        });
+      }
+    } catch (error) {
+      console.error('Unexpected error during submission:', error);
+      const errorMessage = 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
       toast({
         variant: "destructive",
         title: "Submission failed",
-        description: result.error || 'Please try again',
+        description: errorMessage,
       });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   if (success) {

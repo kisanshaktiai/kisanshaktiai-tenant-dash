@@ -53,15 +53,32 @@ export class LeadsService {
 
       console.log('Submitting lead data:', leadData);
 
-      // Submit lead to database
+      // Prepare data for submission - ensure all required fields are present
+      const submissionData = {
+        organization_name: leadData.organization_name.trim(),
+        organization_type: leadData.organization_type,
+        contact_name: leadData.contact_name.trim(),
+        email: leadData.email.trim().toLowerCase(),
+        phone: leadData.phone?.trim() || null,
+        company_size: leadData.company_size || null,
+        expected_farmers: leadData.expected_farmers || null,
+        budget_range: leadData.budget_range || null,
+        timeline: leadData.timeline || null,
+        requirements: leadData.requirements?.trim() || null,
+        current_solution: leadData.current_solution?.trim() || null,
+        how_did_you_hear: leadData.how_did_you_hear?.trim() || null,
+        lead_source: 'website',
+        status: 'new' as const,
+        priority: 'medium' as const,
+        metadata: {}
+      };
+
+      console.log('Prepared submission data:', submissionData);
+
+      // Submit lead to database using the anon key (public access)
       const { data, error } = await supabase
         .from('leads')
-        .insert({
-          ...leadData,
-          lead_source: 'website',
-          status: 'new',
-          priority: 'medium'
-        })
+        .insert(submissionData)
         .select()
         .single();
 
@@ -69,15 +86,26 @@ export class LeadsService {
         console.error('Supabase error submitting lead:', error);
         
         // Provide more specific error messages based on error type
+        if (error.code === '42501') {
+          // This is the row-level security error
+          console.error('RLS Policy violation - checking database policies');
+          return { success: false, error: 'Unable to submit inquiry due to security configuration. Please contact support.' };
+        }
+        
         if (error.code === '23514') {
           return { success: false, error: 'Invalid data format. Please check your selections and try again.' };
         }
         
-        if (error.code === '42501') {
-          return { success: false, error: 'Permission denied. Please try again later.' };
+        if (error.code === '23505') {
+          return { success: false, error: 'An inquiry with this email already exists.' };
         }
         
-        return { success: false, error: 'Failed to submit inquiry. Please try again.' };
+        return { success: false, error: 'Failed to submit inquiry. Please try again or contact support.' };
+      }
+
+      if (!data) {
+        console.error('No data returned after successful insert');
+        return { success: false, error: 'Inquiry submitted but confirmation failed. Please contact support to verify.' };
       }
 
       // Cast the data to Lead type with proper type assertions
@@ -96,6 +124,12 @@ export class LeadsService {
       return { success: true, lead: leadResult };
     } catch (error) {
       console.error('Unexpected error submitting lead:', error);
+      
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return { success: false, error: 'Network error. Please check your connection and try again.' };
+      }
+      
       return { success: false, error: 'An unexpected error occurred. Please try again.' };
     }
   }
