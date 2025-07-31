@@ -1,200 +1,151 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Plus, Search, Filter, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Upload, Plus, Users, TrendingUp, UserCheck, MessageSquare, 
-  AlertCircle, CheckCircle, Settings
-} from 'lucide-react';
-import { useAppSelector } from '@/store/hooks';
+import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
+import { CreateFarmerModal } from './components/CreateFarmerModal';
 import { FarmerDirectory } from './components/FarmerDirectory';
-import { FarmerProfile } from './components/FarmerProfile';
+import { FarmerStats } from './components/FarmerStats';
 import { BulkOperations } from './components/BulkOperations';
 import { EngagementTracking } from './components/EngagementTracking';
 import { LeadManagement } from './components/LeadManagement';
 import { FarmerImportModal } from './components/FarmerImportModal';
-import { CreateFarmerModal } from './components/CreateFarmerModal';
-import { FarmerStats } from './components/FarmerStats';
-import { useTenantSettings } from '@/hooks/useTenantSettings';
-import { useRealTimeFarmers } from '@/hooks/useRealTimeFarmers';
 
-const FarmersPage = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
-  const [activeTab, setActiveTab] = useState('directory');
-  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const { settings: tenantSettings, loading: settingsLoading } = useTenantSettings();
-  const { data: farmers, loading: farmersLoading } = useRealTimeFarmers();
+export const FarmersPage = () => {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFarmers, setSelectedFarmers] = useState<string[]>([]);
 
-  const handleFarmerCreated = (result: any) => {
-    console.log('Farmer created successfully:', result);
-    // The real-time subscription will automatically update the farmers list
+  // Use the new query hook with real-time updates
+  const {
+    data: farmersData,
+    isLoading,
+    error,
+    refetch
+  } = useRealTimeFarmersQuery({
+    search: searchTerm,
+    limit: 50,
+  });
+
+  const farmers = farmersData?.data || [];
+  const totalCount = farmersData?.count || 0;
+
+  const handleCreateSuccess = () => {
+    // No need to manually refetch - React Query handles this automatically
+    setIsCreateModalOpen(false);
   };
 
-  const currentFarmerCount = farmers?.filter(f => f.is_verified)?.length || 0;
-  const maxFarmers = tenantSettings?.max_farmers || 10000;
-  const isNearLimit = currentFarmerCount > maxFarmers * 0.8;
-  const isAtLimit = currentFarmerCount >= maxFarmers;
+  const handleImportSuccess = () => {
+    setIsImportModalOpen(false);
+    refetch(); // Refresh the list after bulk import
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    // The query will automatically refetch with the new search term
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Farmer Management</h1>
           <p className="text-muted-foreground">
-            Manage your farmer network, track engagement, and optimize operations
+            Manage your farmer network and track their engagement
           </p>
-          {currentTenant && (
-            <Badge variant="outline" className="mt-2">
-              {currentTenant.name} • {currentFarmerCount}/{maxFarmers} farmers
-            </Badge>
-          )}
         </div>
-        <div className="flex items-center gap-2">
-          {isNearLimit && (
-            <Alert className="max-w-sm">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                {isAtLimit 
-                  ? 'Farmer limit reached. Contact support to increase limit.'
-                  : `Approaching farmer limit (${currentFarmerCount}/${maxFarmers})`
-                }
-              </AlertDescription>
-            </Alert>
-          )}
-          <Button 
-            variant="outline" 
-            onClick={() => setShowImportModal(true)}
-            disabled={isAtLimit}
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsImportModalOpen(true)}
           >
-            <Upload className="mr-2 h-4 w-4" />
-            Import CSV
+            <Download className="mr-2 h-4 w-4" />
+            Import Farmers
           </Button>
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            disabled={isAtLimit}
-          >
+          <Button onClick={() => setIsCreateModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Farmer
           </Button>
         </div>
       </div>
 
-      {/* Tenant Status Alert */}
-      {!currentTenant && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No tenant selected. Please contact support if you continue to see this message.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {currentTenant && !settingsLoading && (
-        <Alert>
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            Connected to <strong>{currentTenant.name}</strong> tenant. 
-            All farmer data will be associated with this organization.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Stats Overview */}
-      <FarmerStats />
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search farmers by name, code, or crops..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="directory">
-            <Users className="mr-2 h-4 w-4" />
-            Directory
-          </TabsTrigger>
-          <TabsTrigger value="engagement">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Engagement
-          </TabsTrigger>
-          <TabsTrigger value="leads">
-            <UserCheck className="mr-2 h-4 w-4" />
-            Leads
-          </TabsTrigger>
-          <TabsTrigger value="bulk">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Bulk Operations
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Analytics
-          </TabsTrigger>
+      <Tabs defaultValue="directory" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="directory">Directory</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="leads">Leads</TabsTrigger>
+          <TabsTrigger value="bulk-ops">Bulk Operations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="directory" className="space-y-6">
-          <FarmerDirectory 
-            onFarmerSelect={setSelectedFarmer}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
+        <TabsContent value="directory" className="space-y-4">
+          <FarmerStats />
+          <FarmerDirectory
+            farmers={farmers}
+            loading={isLoading}
+            error={error?.message}
+            totalCount={totalCount}
+            selectedFarmers={selectedFarmers}
+            onSelectionChange={setSelectedFarmers}
           />
         </TabsContent>
 
-        <TabsContent value="engagement" className="space-y-6">
+        <TabsContent value="analytics">
+          <FarmerStats />
+        </TabsContent>
+
+        <TabsContent value="engagement">
           <EngagementTracking />
         </TabsContent>
 
-        <TabsContent value="leads" className="space-y-6">
+        <TabsContent value="leads">
           <LeadManagement />
         </TabsContent>
 
-        <TabsContent value="bulk" className="space-y-6">
-          <BulkOperations />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Farmer Analytics</CardTitle>
-              <CardDescription>
-                Comprehensive insights into your farmer network performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  Advanced analytics dashboard coming soon...
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="bulk-ops">
+          <BulkOperations selectedFarmers={selectedFarmers} />
         </TabsContent>
       </Tabs>
 
       {/* Modals */}
-      <FarmerImportModal 
-        open={showImportModal}
-        onOpenChange={setShowImportModal}
-      />
-      
-      <CreateFarmerModal 
-        open={showCreateModal}
-        onOpenChange={setShowCreateModal}
-        onSuccess={handleFarmerCreated}
+      <CreateFarmerModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
       />
 
-      {/* Farmer Profile Sidebar */}
-      {selectedFarmer && (
-        <FarmerProfile 
-          farmer={selectedFarmer}
-          onClose={() => setSelectedFarmer(null)}
-        />
-      )}
+      <FarmerImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={handleImportSuccess}
+      />
     </div>
   );
 };
-
-export default FarmersPage;
