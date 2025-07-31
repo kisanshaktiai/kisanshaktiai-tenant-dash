@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface TenantBranding {
@@ -93,11 +92,20 @@ interface UserTenant {
   tenant?: Tenant;
 }
 
+interface OnboardingState {
+  isComplete: boolean;
+  currentStep: number;
+  totalSteps: number;
+  progressPercentage: number;
+  workflowId?: string;
+}
+
 interface TenantState {
   currentTenant: Tenant | null;
   userTenants: UserTenant[];
   tenants: Tenant[];
   subscriptionPlans: SubscriptionPlan[];
+  onboarding: OnboardingState;
   loading: boolean;
   error: string | null;
 }
@@ -107,6 +115,12 @@ const initialState: TenantState = {
   userTenants: [],
   tenants: [],
   subscriptionPlans: [],
+  onboarding: {
+    isComplete: false,
+    currentStep: 0,
+    totalSteps: 6,
+    progressPercentage: 0
+  },
   loading: false,
   error: null,
 };
@@ -127,6 +141,9 @@ const tenantSlice = createSlice({
     setSubscriptionPlans: (state, action: PayloadAction<SubscriptionPlan[]>) => {
       state.subscriptionPlans = action.payload;
     },
+    setOnboardingState: (state, action: PayloadAction<Partial<OnboardingState>>) => {
+      state.onboarding = { ...state.onboarding, ...action.payload };
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -138,6 +155,7 @@ const tenantSlice = createSlice({
       state.userTenants = [];
       state.tenants = [];
       state.subscriptionPlans = [];
+      state.onboarding = initialState.onboarding;
       state.error = null;
     },
   },
@@ -148,6 +166,7 @@ export const {
   setUserTenants,
   setTenants,
   setSubscriptionPlans,
+  setOnboardingState,
   setLoading,
   setError,
   clearTenantData,

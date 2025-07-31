@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -21,6 +20,8 @@ import ProductsPage from '@/pages/products/ProductsPage';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import DealersPage from '@/pages/dealers/DealersPage';
+import OnboardingPage from '@/pages/onboarding/OnboardingPage';
+import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,10 +80,19 @@ const AppContent = () => {
             {/* Public Routes */}
             <Route path="/auth" element={<Auth />} />
             
-            {/* Protected Dashboard Routes */}
+            {/* Onboarding Route */}
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Protected Dashboard Routes with Onboarding Guard */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <DashboardLayout />
+                <OnboardingGuard>
+                  <DashboardLayout />
+                </OnboardingGuard>
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />
