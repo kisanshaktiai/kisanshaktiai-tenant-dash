@@ -51,10 +51,9 @@ export function useRealTimeSubscription<T>(
     // Initial fetch
     refetch();
 
-    // Set up real-time subscription using the correct API format
+    // Set up real-time subscription using the same pattern as other working hooks
     const channelName = `${config.table}_changes_${currentTenant.id}`;
-    const filter = config.filter || `tenant_id=eq.${currentTenant.id}`;
-
+    
     const channel = supabase
       .channel(channelName)
       .on(
@@ -63,7 +62,7 @@ export function useRealTimeSubscription<T>(
           event: '*',
           schema: 'public',
           table: config.table,
-          filter: filter,
+          filter: config.filter || `tenant_id=eq.${currentTenant.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -82,7 +81,7 @@ export function useRealTimeSubscription<T>(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentTenant, config, refetch]);
+  }, [currentTenant, config.table, config.filter, refetch]);
 
   return { data, loading, error, refetch };
 }
