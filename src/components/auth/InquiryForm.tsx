@@ -53,10 +53,10 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
   ];
 
   const budgetRanges = [
-    { value: 'under_10k', label: 'Under ₹8,00,000' },
-    { value: '10k_50k', label: '₹8,00,000 - ₹40,00,000' },
-    { value: '50k_100k', label: '₹40,00,000 - ₹80,00,000' },
-    { value: '100k_plus', label: '₹80,00,000+' },
+    { value: 'under_25k', label: 'Under ₹ 25,000' },
+    { value: '25k_50k', label: '₹ 25,000 - ₹ 50,000' },
+    { value: '50k_100k', label: '₹ 50,000 - ₹ 1,00,000' },
+    { value: '100k_plus', label: '₹ 1,00,000+' },
   ];
 
   const timelines = [
