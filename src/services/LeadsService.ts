@@ -75,6 +75,7 @@ export class LeadsService {
         priority: data.priority as Lead['priority'],
         organization_type: data.organization_type as Lead['organization_type'],
         company_size: data.company_size as Lead['company_size'],
+        budget_range: data.budget_range as Lead['budget_range'],
         metadata: (data.metadata || {}) as Record<string, any>
       };
 
@@ -104,6 +105,7 @@ export class LeadsService {
         priority: lead.priority as Lead['priority'],
         organization_type: lead.organization_type as Lead['organization_type'],
         company_size: lead.company_size as Lead['company_size'],
+        budget_range: lead.budget_range as Lead['budget_range'],
         metadata: (lead.metadata || {}) as Record<string, any>
       }));
     } catch (error) {
