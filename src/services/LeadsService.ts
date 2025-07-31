@@ -74,6 +74,7 @@ export class LeadsService {
         status: data.status as Lead['status'],
         priority: data.priority as Lead['priority'],
         organization_type: data.organization_type as Lead['organization_type'],
+        company_size: data.company_size as Lead['company_size'],
         metadata: (data.metadata || {}) as Record<string, any>
       };
 
@@ -102,6 +103,7 @@ export class LeadsService {
         status: lead.status as Lead['status'],
         priority: lead.priority as Lead['priority'],
         organization_type: lead.organization_type as Lead['organization_type'],
+        company_size: lead.company_size as Lead['company_size'],
         metadata: (lead.metadata || {}) as Record<string, any>
       }));
     } catch (error) {
