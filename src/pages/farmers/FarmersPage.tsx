@@ -151,7 +151,7 @@ export const FarmersPage = () => {
         </TabsContent>
 
         <TabsContent value="bulk-ops">
-          <BulkOperations selectedFarmers={selectedFarmers} />
+          <BulkOperations />
         </TabsContent>
       </Tabs>
 
@@ -163,8 +163,8 @@ export const FarmersPage = () => {
       />
 
       <FarmerImportModal
-        open={isImportModalOpen}
-        onClose={() => setIsImportModalOpen(false)}
+        isOpen={isImportModalOpen}
+        onOpenChange={(open) => setIsImportModalOpen(open)}
         onSuccess={handleImportSuccess}
       />
     </div>

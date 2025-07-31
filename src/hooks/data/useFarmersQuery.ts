@@ -3,12 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { farmersService, type FarmersListOptions, type CreateFarmerData, type UpdateFarmerData } from '@/services/FarmersService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
-import { useErrorHandler } from '@/hooks/core/useErrorHandler';
 import { toast } from 'sonner';
 
 export const useFarmersQuery = (options: FarmersListOptions = {}) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { handleError } = useErrorHandler();
 
   return useQuery({
     queryKey: queryKeys.farmersList(currentTenant?.id || '', options),
@@ -19,15 +17,11 @@ export const useFarmersQuery = (options: FarmersListOptions = {}) => {
       return farmersService.getFarmers(currentTenant.id, options);
     },
     enabled: !!currentTenant,
-    onError: (error) => {
-      handleError(error, 'Failed to fetch farmers');
-    },
   });
 };
 
 export const useFarmerQuery = (farmerId: string) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { handleError } = useErrorHandler();
 
   return useQuery({
     queryKey: queryKeys.farmer(farmerId),
@@ -38,16 +32,12 @@ export const useFarmerQuery = (farmerId: string) => {
       return farmersService.getFarmer(farmerId, currentTenant.id);
     },
     enabled: !!currentTenant && !!farmerId,
-    onError: (error) => {
-      handleError(error, 'Failed to fetch farmer details');
-    },
   });
 };
 
 export const useCreateFarmerMutation = () => {
   const queryClient = useQueryClient();
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { handleError } = useErrorHandler();
 
   return useMutation({
     mutationFn: async (data: Omit<CreateFarmerData, 'tenant_id' | 'farmer_code'>) => {
@@ -76,7 +66,7 @@ export const useCreateFarmerMutation = () => {
       return data;
     },
     onError: (error) => {
-      handleError(error, 'Failed to create farmer');
+      toast.error(error instanceof Error ? error.message : 'Failed to create farmer');
     },
   });
 };
@@ -84,7 +74,6 @@ export const useCreateFarmerMutation = () => {
 export const useUpdateFarmerMutation = () => {
   const queryClient = useQueryClient();
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { handleError } = useErrorHandler();
 
   return useMutation({
     mutationFn: ({ farmerId, data }: { farmerId: string; data: UpdateFarmerData }) => {
@@ -104,7 +93,7 @@ export const useUpdateFarmerMutation = () => {
       return data;
     },
     onError: (error) => {
-      handleError(error, 'Failed to update farmer');
+      toast.error(error instanceof Error ? error.message : 'Failed to update farmer');
     },
   });
 };
@@ -112,7 +101,6 @@ export const useUpdateFarmerMutation = () => {
 export const useDeleteFarmerMutation = () => {
   const queryClient = useQueryClient();
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { handleError } = useErrorHandler();
 
   return useMutation({
     mutationFn: (farmerId: string) => {
@@ -132,7 +120,7 @@ export const useDeleteFarmerMutation = () => {
       toast.success('Farmer deleted successfully');
     },
     onError: (error) => {
-      handleError(error, 'Failed to delete farmer');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete farmer');
     },
   });
 };
