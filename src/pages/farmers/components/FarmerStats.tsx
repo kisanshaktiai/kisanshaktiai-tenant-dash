@@ -20,9 +20,8 @@ export const FarmerStats = () => {
       return new Date(f.created_at) > monthAgo;
     }).length,
     churnRisk: farmers.filter(f => {
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return f.last_app_open && new Date(f.last_app_open) < weekAgo;
+      // Use total_app_opens as a proxy for activity since last_app_open doesn't exist
+      return (f.total_app_opens || 0) === 0;
     }).length,
     engagementRate: farmers.length ? (farmers.filter(f => (f.total_app_opens || 0) > 0).length / farmers.length) * 100 : 0,
   };
@@ -92,7 +91,7 @@ export const FarmerStats = () => {
             <div className="text-2xl font-bold text-warning">{stats.churnRisk}</div>
           )}
           <p className="text-xs text-muted-foreground">
-            Inactive for 7+ days
+            Never opened app
           </p>
         </CardContent>
       </Card>

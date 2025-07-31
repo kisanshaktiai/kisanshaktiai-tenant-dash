@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React, { useState } from 'react';
+import { Plus, Search, Filter, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Plus, Users, MapPin, TrendingUp, MessageSquare, 
-  Settings, Award, Download
-} from 'lucide-react';
-import { useRealTimeDealers } from '@/hooks/useRealTimeData';
+import { useRealTimeDealersQuery } from '@/hooks/data/useRealTimeDealersQuery';
 import { DealerDirectory } from './components/DealerDirectory';
 import { DealerOnboarding } from './components/DealerOnboarding';
 import { TerritoryManagement } from './components/TerritoryManagement';
@@ -14,128 +13,82 @@ import { PerformanceTracking } from './components/PerformanceTracking';
 import { CommunicationTools } from './components/CommunicationTools';
 import { IncentiveManagement } from './components/IncentiveManagement';
 
-const DealersPage = () => {
-  const [activeTab, setActiveTab] = useState('directory');
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
-  const { data: dealers, loading, error } = useRealTimeDealers();
+export const DealersPage = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
 
-  const dealerStats = {
-    totalDealers: dealers.length,
-    activeDealers: dealers.filter(d => d.is_active).length,
-    territories: 45,
-    // Since verification_status doesn't exist in the basic Dealer type, 
-    // we'll count inactive dealers as pending onboarding
-    pendingOnboarding: dealers.filter(d => !d.is_active).length
-  };
+  const {
+    data: dealersData,
+    isLoading,
+    error
+  } = useRealTimeDealersQuery({
+    search: searchTerm,
+    limit: 50,
+  });
+
+  const dealers = dealersData?.data || [];
+  const totalCount = dealersData?.count || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dealer Network</h1>
           <p className="text-muted-foreground">
-            Manage your dealer network, territories, and performance tracking
+            Manage your dealer network and track their performance
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex space-x-2">
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
-            Export Data
+            Export Dealers
           </Button>
-          <Button onClick={() => setShowOnboardingModal(true)}>
+          <Button>
             <Plus className="mr-2 h-4 w-4" />
             Add Dealer
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Dealers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dealerStats.totalDealers}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12%</span> from last month
-            </p>
-          </CardContent>
-        </Card>
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search dealers by name, code, or location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Dealers</CardTitle>
-            <Users className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dealerStats.activeDealers}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+8%</span> from last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Territories</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dealerStats.territories}</div>
-            <p className="text-xs text-muted-foreground">
-              95% coverage achieved
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Settings className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{dealerStats.pendingOnboarding}</div>
-            <p className="text-xs text-muted-foreground">
-              Require onboarding
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="directory">
-            <Users className="mr-2 h-4 w-4" />
-            Directory
-          </TabsTrigger>
-          <TabsTrigger value="territories">
-            <MapPin className="mr-2 h-4 w-4" />
-            Territories
-          </TabsTrigger>
-          <TabsTrigger value="performance">
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Performance
-          </TabsTrigger>
-          <TabsTrigger value="communication">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Communication
-          </TabsTrigger>
-          <TabsTrigger value="incentives">
-            <Award className="mr-2 h-4 w-4" />
-            Incentives
-          </TabsTrigger>
-          <TabsTrigger value="onboarding">
-            <Settings className="mr-2 h-4 w-4" />
-            Onboarding
-          </TabsTrigger>
+      {/* Main Content */}
+      <Tabs defaultValue="directory" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="directory">Directory</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="territories">Territories</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="communication">Communication</TabsTrigger>
+          <TabsTrigger value="incentives">Incentives</TabsTrigger>
         </TabsList>
 
         <TabsContent value="directory">
-          <DealerDirectory dealers={dealers} loading={loading} />
+          <DealerDirectory />
+        </TabsContent>
+
+        <TabsContent value="onboarding">
+          <DealerOnboarding />
         </TabsContent>
 
         <TabsContent value="territories">
@@ -153,19 +106,7 @@ const DealersPage = () => {
         <TabsContent value="incentives">
           <IncentiveManagement />
         </TabsContent>
-
-        <TabsContent value="onboarding">
-          <DealerOnboarding />
-        </TabsContent>
       </Tabs>
-
-      {/* Onboarding Modal */}
-      {showOnboardingModal && (
-        <DealerOnboarding 
-          isModal={true}
-          onClose={() => setShowOnboardingModal(false)}
-        />
-      )}
     </div>
   );
 };

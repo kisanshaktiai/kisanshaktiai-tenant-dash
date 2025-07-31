@@ -1,311 +1,154 @@
 
-import { useState, useEffect } from 'react';
-import { useRealTimeFarmers } from '@/hooks/useRealTimeData';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Search, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Search, Filter, Download, MoreHorizontal, MapPin, 
-  Phone, Mail, Calendar, Edit, Eye, MessageSquare,
-  Users, Sprout, TrendingUp, AlertTriangle
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
+import { FarmerProfile } from './FarmerProfile';
+import type { Farmer } from '@/services/FarmersService';
 
-interface FarmerDirectoryProps {
-  onFarmerSelect: (farmer: any) => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-}
+export const FarmerDirectory = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFarmer, setSelectedFarmer] = useState<string | null>(null);
+  const [showProfile, setShowProfile] = useState(false);
 
-export const FarmerDirectory = ({ 
-  onFarmerSelect, 
-  searchQuery, 
-  onSearchChange 
-}: FarmerDirectoryProps) => {
-  const [selectedFarmers, setSelectedFarmers] = useState<string[]>([]);
-  const [filters, setFilters] = useState({
-    state: '',
-    district: '',
-    cropType: '',
-    status: '',
-    verification: ''
+  const {
+    data: farmersResponse,
+    isLoading,
+    error
+  } = useRealTimeFarmersQuery({
+    search: searchTerm,
+    limit: 50,
   });
 
-  // Real-time farmers data
-  const { data: farmers, loading, error } = useRealTimeFarmers();
+  const farmers = farmersResponse?.data || [];
 
-  // Use real farmers data directly
-  const displayFarmers = farmers || [];
+  const handleViewProfile = (farmerId: string) => {
+    setSelectedFarmer(farmerId);
+    setShowProfile(true);
+  };
 
-  const filteredFarmers = displayFarmers.filter(farmer => {
-    // Handle search with actual database fields
-    const farmerName = farmer.id || ''; // We'll need to add a name field or use farmer_code
-    const farmerPhone = '';  // These will be added to profiles table
-    const farmerEmail = '';
-    
-    const matchesSearch = searchQuery === '' || 
-                         farmer.farmer_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         farmer.id.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilters = 
-      (!filters.verification || 
-        (filters.verification === 'verified' ? farmer.is_verified : !farmer.is_verified));
-    
-    return matchesSearch && matchesFilters;
-  });
-
-  const handleSelectFarmer = (farmerId: string) => {
-    setSelectedFarmers(prev => 
-      prev.includes(farmerId) 
-        ? prev.filter(id => id !== farmerId)
-        : [...prev, farmerId]
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
-  };
+  }
 
-  const handleSelectAll = () => {
-    setSelectedFarmers(
-      selectedFarmers.length === filteredFarmers.length 
-        ? [] 
-        : filteredFarmers.map(f => f.id)
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-destructive">Error loading farmers: {error.message}</p>
+      </div>
     );
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'destructive';
-      default: return 'secondary';
-    }
-  };
-
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'low': return 'default';
-      case 'medium': return 'secondary';
-      case 'high': return 'destructive';
-      default: return 'secondary';
-    }
-  };
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search & Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex-1">
-              <Input
-                placeholder="Search farmers by name, phone, or email..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={filters.state} onValueChange={(value) => setFilters({...filters, state: value})}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="State" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Haryana">Haryana</SelectItem>
-                  <SelectItem value="Punjab">Punjab</SelectItem>
-                  <SelectItem value="Uttar Pradesh">UP</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filters.status} onValueChange={(value) => setFilters({...filters, status: value})}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      <div className="flex gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search farmers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+        <Button variant="outline">
+          <Filter className="mr-2 h-4 w-4" />
+          Filter
+        </Button>
+      </div>
 
-      {/* Bulk Actions */}
-      {selectedFarmers.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">
-                {selectedFarmers.length} farmer(s) selected
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Send Message
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Bulk Edit
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Farmer List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Farmers ({filteredFarmers.length})
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <Checkbox 
-                checked={selectedFarmers.length === filteredFarmers.length}
-                onCheckedChange={handleSelectAll}
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredFarmers.map((farmer) => (
-              <div
-                key={farmer.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <Checkbox
-                  checked={selectedFarmers.includes(farmer.id)}
-                  onCheckedChange={() => handleSelectFarmer(farmer.id)}
-                />
-                
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {farmer.farmer_code ? farmer.farmer_code.slice(0, 2).toUpperCase() : 'F'}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">
-                      {farmer.farmer_code || `Farmer ${farmer.id.slice(0, 8)}`}
-                    </h3>
-                    {farmer.is_verified && (
-                      <Badge variant="outline" className="text-xs">
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Joined: {new Date(farmer.created_at).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Sprout className="h-3 w-3" />
-                      {farmer.total_land_acres || 0} acres
-                    </span>
-                    {farmer.farming_experience_years && (
-                      <span className="flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        {farmer.farming_experience_years} yrs exp
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mt-2">
-                    {farmer.primary_crops && farmer.primary_crops.map(crop => (
-                      <Badge key={crop} variant="secondary" className="text-xs">
-                        {crop}
-                      </Badge>
-                    ))}
-                    {farmer.farm_type && (
-                      <Badge variant="outline" className="text-xs">
-                        {farmer.farm_type}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    Opens: {farmer.total_app_opens || 0}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Queries: {farmer.total_queries || 0}
-                  </div>
-                  {farmer.last_app_open && (
-                    <div className="text-xs text-muted-foreground">
-                      Last: {new Date(farmer.last_app_open).toLocaleDateString()}
-                    </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {farmers.map((farmer: Farmer) => (
+          <Card key={farmer.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {farmer.farmer_code}
+              </CardTitle>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleViewProfile(farmer.id)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Experience: {farmer.farming_experience_years} years
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Land: {farmer.total_land_acres} acres
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {farmer.primary_crops.slice(0, 2).map((crop, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {crop}
+                    </Badge>
+                  ))}
+                  {farmer.primary_crops.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{farmer.primary_crops.length - 2} more
+                    </Badge>
                   )}
                 </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onFarmerSelect(farmer)}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Send Message
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call Farmer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={farmer.is_verified ? "default" : "secondary"}
+                    className="text-xs"
+                  >
+                    {farmer.is_verified ? "Verified" : "Pending"}
+                  </Badge>
+                  {farmer.has_irrigation && (
+                    <Badge variant="outline" className="text-xs">
+                      Irrigation
+                    </Badge>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {farmers.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No farmers found</p>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfile && selectedFarmer && (
+        <FarmerProfile
+          farmerId={selectedFarmer}
+          onClose={() => {
+            setShowProfile(false);
+            setSelectedFarmer(null);
+          }}
+        />
+      )}
     </div>
   );
 };
