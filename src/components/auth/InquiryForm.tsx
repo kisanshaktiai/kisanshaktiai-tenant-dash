@@ -16,7 +16,7 @@ interface InquiryFormProps {
 export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
   const [formData, setFormData] = useState<LeadData>({
     organization_name: '',
-    organization_type: 'agri_company',
+    organization_type: 'Agri_Company',
     contact_name: '',
     email: '',
     phone: '',
@@ -36,11 +36,11 @@ export const InquiryForm = ({ onSuccess }: InquiryFormProps) => {
   const { toast } = useToast();
 
   const organizationTypes = [
-    { value: 'agri_company', label: 'Agricultural Company' },
-    { value: 'ngo', label: 'NGO' },
-    { value: 'university', label: 'University/Research' },
-    { value: 'government', label: 'Government Agency' },
-    { value: 'cooperative', label: 'Cooperative' },
+    { value: 'Agri_Company', label: 'Agricultural Company' },
+    { value: 'NGO', label: 'NGO' },
+    { value: 'University', label: 'University/Research' },
+    { value: 'Government', label: 'Government Agency' },
+    { value: 'Co-Operative', label: 'Cooperative' },
     { value: 'other', label: 'Other' },
   ];
 
