@@ -27,8 +27,8 @@ export const DatabaseTest = () => {
         addResult('✅ Database connection successful');
       }
 
-      // Test 2: Test RLS policies for anonymous users
-      addResult('Testing RLS policies for anonymous users...');
+      // Test 2: Test RLS policies for anonymous users (INSERT)
+      addResult('Testing anonymous lead submission...');
       const testLead = {
         organization_name: 'Test Organization',
         organization_type: 'Agri_Company',
@@ -36,7 +36,8 @@ export const DatabaseTest = () => {
         email: 'test@example.com',
         lead_source: 'website',
         status: 'new',
-        priority: 'medium'
+        priority: 'medium',
+        metadata: {}
       };
 
       const { data: insertData, error: insertError } = await supabase
@@ -47,21 +48,26 @@ export const DatabaseTest = () => {
 
       if (insertError) {
         addResult(`❌ Insert failed: ${insertError.message} (Code: ${insertError.code})`);
-        if (insertError.code === '42501') {
-          addResult('❌ RLS Policy Error: Anonymous users cannot submit leads');
-        }
       } else {
-        addResult('✅ Insert successful - RLS policies working correctly');
+        addResult('✅ Anonymous lead submission successful - RLS policies working correctly');
         
         // Clean up test data
         if (insertData?.id) {
-          await supabase.from('leads').delete().eq('id', insertData.id);
-          addResult('✅ Test data cleaned up');
+          const { error: deleteError } = await supabase
+            .from('leads')
+            .delete()
+            .eq('id', insertData.id);
+          
+          if (deleteError) {
+            addResult(`⚠️ Test data cleanup failed: ${deleteError.message}`);
+          } else {
+            addResult('✅ Test data cleaned up successfully');
+          }
         }
       }
 
-      // Test 3: Check table permissions
-      addResult('Testing table permissions...');
+      // Test 3: Check basic read permissions
+      addResult('Testing basic read permissions...');
       const { data: permissionData, error: permissionError } = await supabase
         .from('leads')
         .select('id, organization_name, status')
@@ -71,6 +77,11 @@ export const DatabaseTest = () => {
         addResult(`❌ Permission test failed: ${permissionError.message}`);
       } else {
         addResult('✅ Basic read permissions working');
+        if (permissionData && permissionData.length > 0) {
+          addResult(`✅ Found ${permissionData.length} existing leads`);
+        } else {
+          addResult('ℹ️ No existing leads found (this is normal for a fresh database)');
+        }
       }
 
     } catch (error) {
@@ -83,7 +94,7 @@ export const DatabaseTest = () => {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Database Connection Test</CardTitle>
+        <CardTitle>Database Connection & RLS Test</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button onClick={testDatabaseConnection} disabled={isLoading}>
@@ -93,15 +104,22 @@ export const DatabaseTest = () => {
         {testResults.length > 0 && (
           <Alert>
             <AlertDescription>
-              <div className="font-mono text-sm space-y-1">
+              <div className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
                 {testResults.map((result, index) => (
-                  <div key={index}>{result}</div>
+                  <div key={index} className={`
+                    ${result.includes('❌') ? 'text-red-600' : ''}
+                    ${result.includes('✅') ? 'text-green-600' : ''}
+                    ${result.includes('⚠️') ? 'text-yellow-600' : ''}
+                    ${result.includes('ℹ️') ? 'text-blue-600' : ''}
+                  `}>
+                    {result}
+                  </div>
                 ))}
               </div>
             </AlertDescription>
           </Alert>
         )}
-      </CardContent>
+      </Content>
     </Card>
   );
 };

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface LeadData {
@@ -86,12 +85,6 @@ export class LeadsService {
         console.error('Supabase error submitting lead:', error);
         
         // Provide more specific error messages based on error type
-        if (error.code === '42501') {
-          // This is the row-level security error
-          console.error('RLS Policy violation - checking database policies');
-          return { success: false, error: 'Unable to submit inquiry due to security configuration. Please contact support.' };
-        }
-        
         if (error.code === '23514') {
           return { success: false, error: 'Invalid data format. Please check your selections and try again.' };
         }
