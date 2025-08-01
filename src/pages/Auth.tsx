@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Sprout, Users, BarChart3, Target } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { InquiryForm } from '@/components/auth/InquiryForm';
+import { AdvancedInquiryForm } from '@/components/lead-capture/AdvancedInquiryForm';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -87,7 +87,7 @@ const Auth = () => {
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-card border shadow-soft">
+            <div className="p-4 rounded-lg bg-card border shadow-soft hover-scale">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-md bg-primary/10">
                   <Users className="h-5 w-5 text-primary" />
@@ -99,7 +99,7 @@ const Auth = () => {
               </p>
             </div>
             
-            <div className="p-4 rounded-lg bg-card border shadow-soft">
+            <div className="p-4 rounded-lg bg-card border shadow-soft hover-scale">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-md bg-accent/10">
                   <BarChart3 className="h-5 w-5 text-accent" />
@@ -111,7 +111,7 @@ const Auth = () => {
               </p>
             </div>
             
-            <div className="p-4 rounded-lg bg-card border shadow-soft">
+            <div className="p-4 rounded-lg bg-card border shadow-soft hover-scale">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-md bg-success/10">
                   <Sprout className="h-5 w-5 text-success" />
@@ -123,7 +123,7 @@ const Auth = () => {
               </p>
             </div>
             
-            <div className="p-4 rounded-lg bg-card border shadow-soft">
+            <div className="p-4 rounded-lg bg-card border shadow-soft hover-scale">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 rounded-md bg-info/10">
                   <Target className="h-5 w-5 text-info" />
@@ -138,21 +138,21 @@ const Auth = () => {
         </div>
 
         {/* Auth Form */}
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-md mx-auto lg:max-w-2xl">
           <Card className="shadow-medium">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl font-bold text-center">
                 Welcome to AgriTenant Hub
               </CardTitle>
               <CardDescription className="text-center">
-                Sign in to your account or submit an inquiry to get started
+                Sign in to your account or request a personalized demo
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="signin" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="inquiry">Request Demo</TabsTrigger>
+                  <TabsTrigger value="demo">Request Demo</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="signin" className="space-y-4">
@@ -186,7 +186,7 @@ const Auth = () => {
                     )}
                     <Button 
                       type="submit" 
-                      className="w-full" 
+                      className="w-full hover-scale" 
                       disabled={isLoading}
                     >
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -195,14 +195,15 @@ const Auth = () => {
                   </form>
                 </TabsContent>
                 
-                <TabsContent value="inquiry" className="space-y-4">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold mb-2">Request a Demo</h3>
+                <TabsContent value="demo" className="space-y-4">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-2">Request Your Personalized Demo</h3>
                     <p className="text-sm text-muted-foreground">
-                      Interested in AgriTenant Hub? Fill out this form and our team will contact you within 24 hours to schedule a personalized demo.
+                      Interested in AgriTenant Hub? Get a customized demonstration of our platform 
+                      tailored to your organization's specific needs.
                     </p>
                   </div>
-                  <InquiryForm />
+                  <AdvancedInquiryForm />
                 </TabsContent>
               </Tabs>
             </CardContent>
