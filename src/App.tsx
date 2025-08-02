@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import DealersPage from '@/pages/dealers/DealersPage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
 import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +82,9 @@ const AppContent = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/auth" element={<Auth />} />
+            
+            {/* Password Reset Route */}
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             
             {/* Invitation Route */}
             <Route path="/invite/:token" element={<PasswordSetupPage />} />

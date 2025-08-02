@@ -8,17 +8,21 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Sprout, Users, BarChart3, Target } from 'lucide-react';
+import { Loader2, Sprout, Users, BarChart3, Target, ArrowLeft, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AdvancedInquiryForm } from '@/components/lead-capture/AdvancedInquiryForm';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { signIn, user } = useAuth();
+  const { signIn, resetPassword, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,6 +73,38 @@ const Auth = () => {
     }
     
     setIsLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsResetting(true);
+
+    const { error } = await resetPassword(resetEmail);
+    
+    if (error) {
+      setError(error.message);
+      toast({
+        variant: "destructive",
+        title: "Reset failed",
+        description: error.message,
+      });
+    } else {
+      setResetSent(true);
+      toast({
+        title: "Reset link sent",
+        description: "Check your email for password reset instructions.",
+      });
+    }
+    
+    setIsResetting(false);
+  };
+
+  const handleBackToSignIn = () => {
+    setShowForgotPassword(false);
+    setResetSent(false);
+    setError(null);
+    setResetEmail('');
   };
 
   return (
@@ -145,67 +181,152 @@ const Auth = () => {
                 Welcome to AgriTenant Hub
               </CardTitle>
               <CardDescription className="text-center">
-                Sign in to your account or request a personalized demo
+                {showForgotPassword 
+                  ? 'Reset your password to regain access'
+                  : 'Sign in to your account or request a personalized demo'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="demo">Request Demo</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="signin" className="space-y-4">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                      />
+              {!showForgotPassword ? (
+                <Tabs defaultValue="signin" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="signin">Sign In</TabsTrigger>
+                    <TabsTrigger value="demo">Request Demo</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="signin" className="space-y-4">
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
+                      <Button 
+                        type="submit" 
+                        className="w-full hover-scale" 
+                        disabled={isLoading}
+                      >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Sign In
+                      </Button>
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Forgot your password?
+                        </button>
+                      </div>
+                    </form>
+                  </TabsContent>
+                  
+                  <TabsContent value="demo" className="space-y-4">
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">Request Your Personalized Demo</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Interested in AgriTenant Hub? Get a customized demonstration of our platform 
+                        tailored to your organization's specific needs.
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
+                    <AdvancedInquiryForm />
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="space-y-4">
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleBackToSignIn}
+                    className="mb-4 p-0 h-auto font-normal text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to sign in
+                  </Button>
+                  
+                  {!resetSent ? (
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                      <div className="text-center mb-4">
+                        <Mail className="h-12 w-12 mx-auto text-primary mb-2" />
+                        <h3 className="text-lg font-semibold">Forgot Password?</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Enter your email address and we'll send you a link to reset your password.
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email Address</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          placeholder="Enter your email address"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isResetting}
+                      >
+                        {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Send Reset Link
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="text-center space-y-4">
+                      <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                        <Mail className="h-12 w-12 mx-auto text-success mb-2" />
+                        <h3 className="text-lg font-semibold text-success mb-2">Check Your Email</h3>
+                        <p className="text-sm text-muted-foreground">
+                          We've sent a password reset link to <strong>{resetEmail}</strong>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Didn't receive the email? Check your spam folder or try again.
+                        </p>
+                      </div>
+                      
+                      <Button 
+                        variant="outline" 
+                        onClick={handleBackToSignIn}
+                        className="w-full"
+                      >
+                        Back to Sign In
+                      </Button>
                     </div>
-                    {error && (
-                      <Alert variant="destructive">
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                    <Button 
-                      type="submit" 
-                      className="w-full hover-scale" 
-                      disabled={isLoading}
-                    >
-                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Sign In
-                    </Button>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="demo" className="space-y-4">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-2">Request Your Personalized Demo</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Interested in AgriTenant Hub? Get a customized demonstration of our platform 
-                      tailored to your organization's specific needs.
-                    </p>
-                  </div>
-                  <AdvancedInquiryForm />
-                </TabsContent>
-              </Tabs>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
