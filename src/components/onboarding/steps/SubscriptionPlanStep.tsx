@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Check } from 'lucide-react';
 import { OnboardingStep } from '@/services/OnboardingService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SubscriptionPlanStepProps {
   step: OnboardingStep;
@@ -14,60 +15,61 @@ interface SubscriptionPlanStepProps {
   isLoading: boolean;
 }
 
-const plans = [
-  {
-    id: 'kisan',
-    name: 'Kisan Basic',
-    price: '₹2,999',
-    period: 'per month',
-    description: 'Perfect for small agricultural businesses',
-    features: [
-      'Up to 1,000 farmers',
-      'Basic analytics',
-      'SMS notifications',
-      'Mobile app access',
-      'Email support'
-    ]
-  },
-  {
-    id: 'shakti',
-    name: 'Shakti Growth',
-    price: '₹9,999',
-    period: 'per month',
-    description: 'For growing agricultural organizations',
-    features: [
-      'Up to 5,000 farmers',
-      'Advanced analytics',
-      'WhatsApp integration',
-      'Weather forecasting',
-      'Priority support',
-      'Custom branding'
-    ],
-    popular: true
-  },
-  {
-    id: 'ai',
-    name: 'AI Enterprise',
-    price: '₹24,999',
-    period: 'per month',
-    description: 'Full-featured solution with AI capabilities',
-    features: [
-      'Unlimited farmers',
-      'AI-powered insights',
-      'Satellite imagery',
-      'API access',
-      'Dedicated support',
-      'White-label solution'
-    ]
-  }
-];
-
 export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
   step,
   onComplete,
   isLoading
 }) => {
+  const { t } = useTranslation();
   const [selectedPlan, setSelectedPlan] = useState(step.step_data?.selectedPlan || 'shakti');
+
+  const plans = [
+    {
+      id: 'kisan',
+      name: t('subscription.kisanBasic'),
+      price: '₹2,999',
+      period: 'per month',
+      description: t('subscription.kisanDesc'),
+      features: [
+        t('subscription.farmers', { count: 1000 }),
+        t('subscription.basicAnalytics'),
+        t('features.smsNotifications'),
+        t('features.mobileApp'),
+        'Email support'
+      ]
+    },
+    {
+      id: 'shakti',
+      name: t('subscription.shaktiGrowth'),
+      price: '₹9,999',
+      period: 'per month',
+      description: t('subscription.shaktiDesc'),
+      features: [
+        t('subscription.farmers', { count: 5000 }),
+        t('subscription.advancedAnalytics'),
+        t('features.whatsappIntegration'),
+        t('features.weatherForecast'),
+        'Priority support',
+        'Custom branding'
+      ],
+      popular: true
+    },
+    {
+      id: 'ai',
+      name: t('subscription.aiEnterprise'),
+      price: '₹24,999',
+      period: 'per month',
+      description: t('subscription.aiDesc'),
+      features: [
+        t('subscription.unlimitedFarmers'),
+        t('subscription.aiInsights'),
+        t('features.satelliteImagery'),
+        'API access',
+        'Dedicated support',
+        'White-label solution'
+      ]
+    }
+  ];
 
   const handleContinue = () => {
     onComplete({ selectedPlan, planName: plans.find(p => p.id === selectedPlan)?.name });
@@ -78,9 +80,9 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
     return (
       <div className="text-center py-8">
         <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Plan Selected</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('subscription.planSelected')}</h3>
         <p className="text-muted-foreground">
-          You've selected the <strong>{selectedPlanData?.name}</strong> plan.
+          {t('subscription.selectedPlan', { planName: selectedPlanData?.name })}
         </p>
       </div>
     );
@@ -89,9 +91,9 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h3 className="text-xl font-semibold mb-2">Choose Your Plan</h3>
+        <h3 className="text-xl font-semibold mb-2">{t('subscription.choosePlan')}</h3>
         <p className="text-muted-foreground">
-          Select the plan that best fits your organization's needs. You can upgrade anytime.
+          {t('subscription.planDescription')}
         </p>
       </div>
 
@@ -108,7 +110,7 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
           >
             {plan.popular && (
               <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                Most Popular
+                {t('subscription.mostPopular')}
               </Badge>
             )}
             
@@ -143,7 +145,7 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        All plans include a 14-day free trial. No credit card required.
+        {t('subscription.freeTrialNote')}
       </div>
 
       <div className="flex justify-end">
@@ -152,7 +154,7 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
           disabled={!selectedPlan || isLoading}
           className="min-w-32"
         >
-          {isLoading ? 'Processing...' : 'Continue with Plan'}
+          {isLoading ? t('subscription.processing') : t('subscription.continueWithPlan')}
         </Button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
@@ -21,51 +22,53 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAppSelector } from '@/store/hooks';
-
-const navigationItems = [
-  {
-    title: 'Overview',
-    items: [
-      { title: 'Dashboard', url: '/dashboard', icon: Home },
-      { title: 'Analytics', url: '/dashboard/analytics', icon: BarChart3 },
-      { title: 'Notifications', url: '/dashboard/notifications', icon: Bell },
-    ]
-  },
-  {
-    title: 'Network Management',
-    items: [
-      { title: 'Farmers', url: '/dashboard/farmers', icon: Users },
-      { title: 'Dealers', url: '/dashboard/dealers', icon: UserCheck },
-      { title: 'Land Management', url: '/dashboard/lands', icon: MapPin },
-      { title: 'Crop Monitoring', url: '/dashboard/crops', icon: Sprout },
-    ]
-  },
-  {
-    title: 'Business Operations',
-    items: [
-      { title: 'Product Catalog', url: '/dashboard/products', icon: Package },
-      { title: 'Campaigns', url: '/dashboard/campaigns', icon: Calendar },
-      { title: 'Performance', url: '/dashboard/performance', icon: TrendingUp },
-      { title: 'Reports', url: '/dashboard/reports', icon: FileText },
-    ]
-  },
-  {
-    title: 'Communication',
-    items: [
-      { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
-      { title: 'Community Forum', url: '/dashboard/forum', icon: Users },
-    ]
-  }
-];
+import { useTranslation } from '@/hooks/useTranslation';
 
 const DashboardSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const { t } = useTranslation();
   
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
   const { unreadNotificationCount } = useAppSelector((state) => state.ui);
+
+  const navigationItems = [
+    {
+      title: 'Overview',
+      items: [
+        { title: t('nav.dashboard'), url: '/dashboard', icon: Home },
+        { title: t('nav.analytics'), url: '/dashboard/analytics', icon: BarChart3 },
+        { title: t('nav.notifications'), url: '/dashboard/notifications', icon: Bell },
+      ]
+    },
+    {
+      title: 'Network Management',
+      items: [
+        { title: t('nav.farmers'), url: '/dashboard/farmers', icon: Users },
+        { title: t('nav.dealers'), url: '/dashboard/dealers', icon: UserCheck },
+        { title: t('nav.landManagement'), url: '/dashboard/lands', icon: MapPin },
+        { title: t('nav.cropMonitoring'), url: '/dashboard/crops', icon: Sprout },
+      ]
+    },
+    {
+      title: 'Business Operations',
+      items: [
+        { title: t('nav.productCatalog'), url: '/dashboard/products', icon: Package },
+        { title: t('nav.campaigns'), url: '/dashboard/campaigns', icon: Calendar },
+        { title: t('nav.performance'), url: '/dashboard/performance', icon: TrendingUp },
+        { title: t('nav.reports'), url: '/dashboard/reports', icon: FileText },
+      ]
+    },
+    {
+      title: 'Communication',
+      items: [
+        { title: t('nav.messages'), url: '/dashboard/messages', icon: MessageSquare },
+        { title: t('nav.communityForum'), url: '/dashboard/forum', icon: Users },
+      ]
+    }
+  ];
 
   const isActive = (path: string) => currentPath === path;
   const getNavClasses = (path: string) => 
@@ -93,10 +96,10 @@ const DashboardSidebar = () => {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-sm truncate">
-                {currentTenant?.name || 'AgriTenant Hub'}
+                {currentTenant?.name || t('dashboard.title')}
               </h2>
               <p className="text-xs text-sidebar-foreground/70 capitalize">
-                {currentTenant?.type?.replace('_', ' ') || 'Dashboard'}
+                {currentTenant?.type?.replace('_', ' ') || t('dashboard.subtitle')}
               </p>
             </div>
           )}
@@ -125,7 +128,7 @@ const DashboardSidebar = () => {
                         {!collapsed && (
                           <span className="flex-1">{item.title}</span>
                         )}
-                        {!collapsed && item.title === 'Notifications' && unreadNotificationCount > 0 && (
+                        {!collapsed && item.title === t('nav.notifications') && unreadNotificationCount > 0 && (
                           <Badge variant="destructive" className="h-5 min-w-5 text-xs">
                             {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
                           </Badge>
@@ -149,7 +152,7 @@ const DashboardSidebar = () => {
                 className={`${getNavClasses('/dashboard/settings')} flex items-center gap-3 px-4 py-2 rounded-md transition-colors`}
               >
                 <Settings className="h-5 w-5" />
-                {!collapsed && <span>Settings</span>}
+                {!collapsed && <span>{t('nav.settings')}</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -160,7 +163,7 @@ const DashboardSidebar = () => {
                 className={`${getNavClasses('/dashboard/help')} flex items-center gap-3 px-4 py-2 rounded-md transition-colors`}
               >
                 <HelpCircle className="h-5 w-5" />
-                {!collapsed && <span>Help & Support</span>}
+                {!collapsed && <span>{t('nav.helpSupport')}</span>}
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

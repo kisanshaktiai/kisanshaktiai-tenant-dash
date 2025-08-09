@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,19 +10,21 @@ import CategoryManagement from './components/CategoryManagement';
 import ProductAnalytics from './components/ProductAnalytics';
 import BulkImport from './components/BulkImport';
 import PricingManagement from './components/PricingManagement';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function ProductsPage() {
   const [selectedTab, setSelectedTab] = useState('products');
   const [isCreating, setIsCreating] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Product Catalog</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t('products.title')}</h1>
           <p className="text-muted-foreground">
-            Manage your agricultural products and services catalog
+            {t('products.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -30,11 +33,11 @@ export default function ProductsPage() {
             onClick={() => setSelectedTab('bulk-import')}
           >
             <Upload className="h-4 w-4 mr-2" />
-            Bulk Import
+            {t('products.bulkImport')}
           </Button>
           <Button onClick={() => setIsCreating(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Product
+            {t('products.addProduct')}
           </Button>
         </div>
       </div>
@@ -43,23 +46,23 @@ export default function ProductsPage() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="products" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Products
+            {t('products.products')}
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Categories
+            {t('products.categories')}
           </TabsTrigger>
           <TabsTrigger value="pricing" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Pricing
+            {t('products.pricing')}
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Analytics
+            {t('products.analytics')}
           </TabsTrigger>
           <TabsTrigger value="bulk-import" className="flex items-center gap-2">
             <Upload className="h-4 w-4" />
-            Import/Export
+            {t('products.importExport')}
           </TabsTrigger>
         </TabsList>
 
@@ -68,10 +71,10 @@ export default function ProductsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {isCreating ? 'Create New Product' : 'Edit Product'}
+                  {isCreating ? t('products.createNew') : t('products.edit')}
                 </CardTitle>
                 <CardDescription>
-                  {isCreating ? 'Add a new product to your catalog' : 'Update product information'}
+                  {isCreating ? t('products.addNewDescription') : t('products.updateDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>

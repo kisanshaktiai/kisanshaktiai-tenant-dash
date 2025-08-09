@@ -1,87 +1,73 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { Suspense } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from '@/store';
-import { queryClient } from '@/lib/queryClient';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { ReactQueryDevtools } from 'react-query/devtools';
+import { Toaster } from '@/components/ui/toaster';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from '@/components/ErrorFallback';
+import Loading from '@/components/Loading';
 import { useAuth } from '@/hooks/useAuth';
-import { useTenantData } from '@/hooks/useTenantData';
-import Dashboard from "./pages/Dashboard";
-import Auth from "./pages/Auth";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import DashboardPage from '@/pages/DashboardPage';
+import FarmersPage from '@/pages/FarmersPage';
+import ProductsPage from '@/pages/products/ProductsPage';
+import CampaignsPage from '@/pages/CampaignsPage';
+import SettingsPage from '@/pages/SettingsPage';
+import OnboardingPage from '@/pages/OnboardingPage';
+import { store } from './store';
+import { IntlProvider } from '@/components/providers/IntlProvider';
 
-// Protected Route Component with proper error handling
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, session, loading, initialized } = useAuth();
-  
-  // Show loading while auth is being initialized
-  if (!initialized || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  // Redirect to auth if not authenticated
-  if (!user || !session) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return <>{children}</>;
-};
-
-// App content with tenant data initialization
-const AppContent = () => {
-  const { user } = useAuth();
-  
-  // Initialize tenant data if user is authenticated
-  if (user) {
-    useTenantData();
-  }
-
+function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-};
-
-const App = () => {
-  return (
-    <ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <BrowserRouter>
-              <AppContent />
-              <Toaster />
-              <Sonner />
-            </BrowserRouter>
-            <ReactQueryDevtools initialIsOpen={false} />
-          </TooltipProvider>
+          <IntlProvider>
+            <Router>
+              <div className="min-h-screen bg-background font-sans antialiased">
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
+                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout><DashboardPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard/farmers" element={<RequireAuth><DashboardLayout><FarmersPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard/products" element={<RequireAuth><DashboardLayout><ProductsPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard/campaigns" element={<RequireAuth><DashboardLayout><CampaignsPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard/settings" element={<RequireAuth><DashboardLayout><SettingsPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/" element={<Navigate to="/dashboard" />} />
+                </Routes>
+                <Toaster />
+              </div>
+            </Router>
+          </IntlProvider>
+          <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </Provider>
     </ErrorBoundary>
   );
-};
+}
+
+const queryClient = new QueryClient();
+
+function RequireAuth({ children }: { children: JSX.Element }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
 
 export default App;

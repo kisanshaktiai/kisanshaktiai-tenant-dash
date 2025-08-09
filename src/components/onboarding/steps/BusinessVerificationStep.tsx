@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileText, CheckCircle } from 'lucide-react';
 import { OnboardingStep } from '@/services/OnboardingService';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface BusinessVerificationStepProps {
   step: OnboardingStep;
@@ -20,6 +21,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
   onComplete,
   isLoading
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     gstNumber: step.step_data?.gstNumber || '',
     panNumber: step.step_data?.panNumber || '',
@@ -38,9 +40,9 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
     return (
       <div className="text-center py-8">
         <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Business Verification Complete</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('onboarding.verificationComplete')}</h3>
         <p className="text-muted-foreground">
-          Your business documents have been verified successfully.
+          {t('onboarding.verificationSuccess')}
         </p>
       </div>
     );
@@ -53,15 +55,15 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Business Information
+              {t('onboarding.businessInfo')}
             </CardTitle>
             <CardDescription>
-              Enter your business registration details
+              {t('onboarding.businessInfoDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="gst">GST Number *</Label>
+              <Label htmlFor="gst">{t('onboarding.gstNumber')} *</Label>
               <Input
                 id="gst"
                 value={formData.gstNumber}
@@ -70,7 +72,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
               />
             </div>
             <div>
-              <Label htmlFor="pan">PAN Number *</Label>
+              <Label htmlFor="pan">{t('onboarding.panNumber')} *</Label>
               <Input
                 id="pan"
                 value={formData.panNumber}
@@ -79,12 +81,12 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
               />
             </div>
             <div>
-              <Label htmlFor="license">Business License Number</Label>
+              <Label htmlFor="license">{t('onboarding.businessLicense')}</Label>
               <Input
                 id="license"
                 value={formData.businessLicense}
                 onChange={(e) => setFormData({...formData, businessLicense: e.target.value})}
-                placeholder="Enter license number"
+                placeholder={t('onboarding.businessLicense')}
               />
             </div>
           </CardContent>
@@ -94,28 +96,28 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="w-5 h-5" />
-              Document Upload
+              {t('onboarding.documentUpload')}
             </CardTitle>
             <CardDescription>
-              Upload required business documents
+              {t('onboarding.documentUploadDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
               <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm text-muted-foreground mb-2">
-                Drop files here or click to upload
+                {t('onboarding.dropFiles')}
               </p>
               <Button variant="outline" size="sm">
-                Choose Files
+                {t('onboarding.chooseFiles')}
               </Button>
             </div>
             <div className="text-xs text-muted-foreground">
-              Accepted formats: PDF, JPG, PNG. Max size: 10MB per file.
+              {t('onboarding.acceptedFormats')}
               <br />
-              Required: GST Certificate, PAN Card
+              {t('onboarding.requiredDocs')}
               <br />
-              Optional: Business License, Registration Certificate
+              {t('onboarding.optionalDocs')}
             </div>
           </CardContent>
         </Card>
@@ -127,7 +129,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
           disabled={!isValid || isLoading}
           className="min-w-32"
         >
-          {isLoading ? 'Verifying...' : 'Verify & Continue'}
+          {isLoading ? t('onboarding.verifyingStep') : t('onboarding.verifyContinue')}
         </Button>
       </div>
     </div>
