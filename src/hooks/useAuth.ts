@@ -52,6 +52,7 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email: string) => {
+    // Use the current portal's URL for password reset redirect
     const redirectUrl = `${window.location.origin}/reset-password`;
     
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {

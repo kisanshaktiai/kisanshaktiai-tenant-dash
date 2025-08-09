@@ -10,7 +10,7 @@ export const usePasswordReset = () => {
   const sendPasswordReset = async (email: string) => {
     setIsLoading(true);
     try {
-      // Use Supabase's built-in password reset with your configured SMTP
+      // Use the current portal's URL for password reset redirect
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
