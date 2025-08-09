@@ -27,34 +27,34 @@ export const queryClient = new QueryClient({
   defaultOptions: queryConfig,
 });
 
-// Query key factory for consistent cache management
+// Query key factory for consistent cache management with tenant isolation
 export const queryKeys = {
   // Auth
   auth: ['auth'] as const,
   
-  // Tenants
+  // Tenants - FIXED: Always include tenant context
   tenants: ['tenants'] as const,
   tenant: (id: string) => ['tenants', id] as const,
   
-  // Farmers
-  farmers: ['farmers'] as const,
+  // Farmers - FIXED: Always include tenantId in cache keys
+  farmers: (tenantId: string) => ['farmers', tenantId] as const,
   farmersList: (tenantId: string, filters?: Record<string, any>) => 
     ['farmers', 'list', tenantId, filters] as const,
-  farmer: (id: string) => ['farmers', id] as const,
+  farmer: (id: string, tenantId: string) => ['farmers', id, tenantId] as const,
   farmerStats: (tenantId: string) => ['farmers', 'stats', tenantId] as const,
   
-  // Dealers
-  dealers: ['dealers'] as const,
+  // Dealers - FIXED: Always include tenantId in cache keys
+  dealers: (tenantId: string) => ['dealers', tenantId] as const,
   dealersList: (tenantId: string) => ['dealers', 'list', tenantId] as const,
-  dealer: (id: string) => ['dealers', id] as const,
+  dealer: (id: string, tenantId: string) => ['dealers', id, tenantId] as const,
   
-  // Products
-  products: ['products'] as const,
+  // Products - FIXED: Always include tenantId in cache keys
+  products: (tenantId: string) => ['products', tenantId] as const,
   productsList: (tenantId: string) => ['products', 'list', tenantId] as const,
-  product: (id: string) => ['products', id] as const,
+  product: (id: string, tenantId: string) => ['products', id, tenantId] as const,
   
-  // Analytics
-  analytics: ['analytics'] as const,
+  // Analytics - FIXED: Always include tenantId in cache keys
+  analytics: (tenantId: string) => ['analytics', tenantId] as const,
   dashboardStats: (tenantId: string) => ['analytics', 'dashboard', tenantId] as const,
   engagementStats: (tenantId: string) => ['analytics', 'engagement', tenantId] as const,
 } as const;

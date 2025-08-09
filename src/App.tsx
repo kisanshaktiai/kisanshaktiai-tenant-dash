@@ -1,149 +1,87 @@
 
-import { useEffect } from 'react';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Provider } from 'react-redux';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-
 import { store } from '@/store';
-import { useAppSelector } from '@/store/hooks';
+import { queryClient } from '@/lib/queryClient';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantData } from '@/hooks/useTenantData';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
-import NotFound from '@/pages/NotFound';
-import { FarmersPage } from '@/pages/farmers/FarmersPage';
-import ProductsPage from '@/pages/products/ProductsPage';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
-import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
-import DealersPage from '@/pages/dealers/DealersPage';
-import OnboardingPage from '@/pages/onboarding/OnboardingPage';
-import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
-import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import Dashboard from "./pages/Dashboard";
+import Auth from "./pages/Auth";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
-// Protected Route component
+// Protected Route Component with proper error handling
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, initialized } = useAppSelector((state) => state.auth);
-
-  if (!initialized) {
+  const { user, session, loading, initialized } = useAuth();
+  
+  // Show loading while auth is being initialized
+  if (!initialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
-
-  if (!user) {
+  
+  // Redirect to auth if not authenticated
+  if (!user || !session) {
     return <Navigate to="/auth" replace />;
   }
-
+  
   return <>{children}</>;
 };
 
-// App content with store access
+// App content with tenant data initialization
 const AppContent = () => {
-  const { theme } = useAppSelector((state) => state.ui);
+  const { user } = useAuth();
   
-  // Initialize authentication and tenant data
-  useAuth();
-  useTenantData();
-
-  useEffect(() => {
-    // Apply theme to document
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
-    }
-  }, [theme]);
+  // Initialize tenant data if user is authenticated
+  if (user) {
+    useTenantData();
+  }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Password Reset Route */}
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            
-            {/* Invitation Route */}
-            <Route path="/invite/:token" element={<PasswordSetupPage />} />
-            
-            {/* Onboarding Route */}
-            <Route path="/onboarding" element={
-              <ProtectedRoute>
-                <OnboardingPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Protected Dashboard Routes with Onboarding Guard */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <OnboardingGuard>
-                  <DashboardLayout />
-                </OnboardingGuard>
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="farmers" element={<FarmersPage />} />
-              <Route path="dealers" element={<DealersPage />} />
-              <Route path="lands" element={<div>Land Management Page</div>} />
-              <Route path="crops" element={<div>Crop Monitoring Page</div>} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="campaigns" element={<div>Campaigns Page</div>} />
-              <Route path="performance" element={<div>Performance Page</div>} />
-              <Route path="reports" element={<div>Reports Page</div>} />
-              <Route path="messages" element={<div>Messages Page</div>} />
-              <Route path="forum" element={<div>Community Forum Page</div>} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="notifications" element={<div>Notifications Page</div>} />
-              <Route path="settings" element={<div>Settings Page</div>} />
-              <Route path="profile" element={<div>Profile Page</div>} />
-              <Route path="help" element={<div>Help & Support Page</div>} />
-            </Route>
-
-            {/* Root redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* 404 Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        
-        <Toaster />
-        <Sonner />
-      </TooltipProvider>
-      
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
-const App = () => (
-  <Provider store={store}>
-    <AppContent />
-  </Provider>
-);
+const App = () => {
+  return (
+    <ErrorBoundary>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <BrowserRouter>
+              <AppContent />
+              <Toaster />
+              <Sonner />
+            </BrowserRouter>
+            <ReactQueryDevtools initialIsOpen={false} />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </Provider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

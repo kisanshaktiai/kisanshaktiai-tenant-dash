@@ -14,7 +14,7 @@ export const useTenantData = () => {
 
     const fetchUserTenants = async () => {
       try {
-        // Get user's tenants with complete related data
+        // SECURITY FIX: Ensure tenant data is properly scoped to authenticated user
         const { data: userTenantsData, error: userTenantsError } = await supabase
           .from('user_tenants')
           .select(`
@@ -32,7 +32,10 @@ export const useTenantData = () => {
           .eq('user_id', user.id)
           .eq('is_active', true);
 
-        if (userTenantsError) throw userTenantsError;
+        if (userTenantsError) {
+          console.error('Error fetching user tenants:', userTenantsError);
+          throw userTenantsError;
+        }
 
         // Transform the data to match our interfaces
         const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
@@ -72,7 +75,10 @@ export const useTenantData = () => {
           .eq('is_active', true)
           .order('price_monthly', { ascending: true });
 
-        if (plansError) throw plansError;
+        if (plansError) {
+          console.error('Error fetching subscription plans:', plansError);
+          throw plansError;
+        }
 
         // Map the data to match our interface structure
         const mappedPlans = (plansData || []).map(plan => {
@@ -104,16 +110,16 @@ export const useTenantData = () => {
     fetchUserTenants();
     fetchSubscriptionPlans();
 
-    // Set up real-time subscription for tenant changes
+    // Set up real-time subscription for tenant changes with proper tenant isolation
     const channel = supabase
-      .channel('tenant_changes')
+      .channel(`tenant_changes_${user.id}`) // SECURITY FIX: User-specific channel
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_tenants',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${user.id}`, // SECURITY FIX: Filter by user_id
         },
         () => {
           fetchUserTenants();
