@@ -10,27 +10,13 @@ export const usePasswordReset = () => {
   const sendPasswordReset = async (email: string) => {
     setIsLoading(true);
     try {
-      // First trigger the Supabase password reset (this will trigger the webhook)
-      const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email, {
+      // Use Supabase's built-in password reset with your configured SMTP
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (supabaseError) {
-        throw supabaseError;
-      }
-
-      // Also call our custom email function as a backup
-      const { error: emailError } = await supabase.functions.invoke('send-auth-email', {
-        body: {
-          email,
-          type: 'password_reset',
-          resetUrl: `${window.location.origin}/reset-password`
-        }
-      });
-
-      if (emailError) {
-        console.warn('Custom email function failed:', emailError);
-        // Don't throw here as Supabase's built-in function might still work
+      if (error) {
+        throw error;
       }
 
       toast({

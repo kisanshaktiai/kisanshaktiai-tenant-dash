@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,12 +18,11 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isResetting, setIsResetting] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { signIn, resetPassword, user } = useAuth();
+  const { signIn, user } = useAuth();
   const { sendPasswordReset, isLoading: isResettingPassword } = usePasswordReset();
   const { toast } = useToast();
   const navigate = useNavigate();

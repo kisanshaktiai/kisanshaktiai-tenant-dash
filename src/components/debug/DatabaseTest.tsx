@@ -1,126 +1,186 @@
-
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
-export const DatabaseTest = () => {
-  const [testResults, setTestResults] = useState<string[]>([]);
+const DatabaseTest = () => {
+  const [testResults, setTestResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const addResult = (message: string) => {
-    setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
-  };
-
-  const testDatabaseConnection = async () => {
+  const runTests = async () => {
     setIsLoading(true);
     setTestResults([]);
-    
-    try {
-      // Test 1: Basic connection
-      addResult('Testing database connection...');
-      const { data, error } = await supabase.from('leads').select('count').limit(0);
-      if (error) {
-        addResult(`❌ Connection failed: ${error.message}`);
-      } else {
-        addResult('✅ Database connection successful');
-      }
+    const results = [];
 
-      // Test 2: Test RLS policies for anonymous users (INSERT)
-      addResult('Testing anonymous lead submission with new RLS policies...');
+    // Test 1: Basic Connection
+    try {
+      const { data, error } = await supabase.from('tenants').select('count').limit(1);
+      results.push({
+        test: 'Database Connection',
+        status: error ? 'error' : 'success',
+        message: error?.message || 'Connected successfully',
+        data: data
+      });
+    } catch (err: any) {
+      results.push({
+        test: 'Database Connection',
+        status: 'error',
+        message: err.message,
+        data: null
+      });
+    }
+
+    // Test 2: Insert Test Lead
+    try {
       const testLead = {
         organization_name: 'Test Organization',
-        organization_type: 'Agri_Company',
-        contact_name: 'Test User',
+        organization_type: 'agri_company',
+        contact_name: 'Test Contact',
         email: 'test@example.com',
+        phone: '+1234567890', // Added required phone field
         lead_source: 'website',
         status: 'new',
         priority: 'medium',
         metadata: {}
       };
 
-      const { data: insertData, error: insertError } = await supabase
+      const { data, error } = await supabase
         .from('leads')
         .insert(testLead)
         .select()
         .single();
 
-      if (insertError) {
-        addResult(`❌ Insert failed: ${insertError.message} (Code: ${insertError.code})`);
-        addResult('⚠️ This indicates RLS policies are still blocking anonymous submissions');
-      } else {
-        addResult('✅ Anonymous lead submission successful - RLS policies working correctly!');
-        
-        // Clean up test data
-        if (insertData?.id) {
-          const { error: deleteError } = await supabase
-            .from('leads')
-            .delete()
-            .eq('id', insertData.id);
-          
-          if (deleteError) {
-            addResult(`⚠️ Test data cleanup failed: ${deleteError.message}`);
-          } else {
-            addResult('✅ Test data cleaned up successfully');
-          }
-        }
+      results.push({
+        test: 'Insert Test Lead',
+        status: error ? 'error' : 'success',
+        message: error?.message || 'Lead inserted successfully',
+        data: data
+      });
+
+      // Clean up - delete the test lead
+      if (data?.id) {
+        await supabase.from('leads').delete().eq('id', data.id);
       }
+    } catch (err: any) {
+      results.push({
+        test: 'Insert Test Lead',
+        status: 'error',
+        message: err.message,
+        data: null
+      });
+    }
 
-      // Test 3: Check basic read permissions
-      addResult('Testing basic read permissions...');
-      const { data: permissionData, error: permissionError } = await supabase
-        .from('leads')
-        .select('id, organization_name, status')
-        .limit(1);
+    // Test 3: Check User Authentication
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      results.push({
+        test: 'User Authentication',
+        status: user ? 'success' : 'error',
+        message: error?.message || (user ? 'User is authenticated' : 'No user session'),
+        data: user
+      });
+    } catch (err: any) {
+      results.push({
+        test: 'User Authentication',
+        status: 'error',
+        message: err.message,
+        data: null
+      });
+    }
 
-      if (permissionError) {
-        addResult(`❌ Permission test failed: ${permissionError.message}`);
-      } else {
-        addResult('✅ Basic read permissions working');
-        if (permissionData && permissionData.length > 0) {
-          addResult(`✅ Found ${permissionData.length} existing leads`);
-        } else {
-          addResult('ℹ️ No existing leads found (this is normal for a fresh database)');
-        }
-      }
+    // Test 4: Check Storage Bucket Access
+    try {
+      const { data, error } = await supabase.storage.from('avatars').list('', {
+        limit: 1,
+        offset: 0,
+        sortBy: { column: 'name', order: 'asc' },
+      });
 
-    } catch (error) {
-      addResult(`❌ Unexpected error: ${error}`);
-    } finally {
-      setIsLoading(false);
+      results.push({
+        test: 'Storage Bucket Access',
+        status: error ? 'error' : 'success',
+        message: error?.message || 'Storage bucket accessed successfully',
+        data: data
+      });
+    } catch (err: any) {
+      results.push({
+        test: 'Storage Bucket Access',
+        status: 'error',
+        message: err.message,
+        data: null
+      });
+    }
+
+    setTestResults(results);
+    setIsLoading(false);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
+      success: "default",
+      error: "destructive",
+      warning: "secondary"
+    };
+    return variants[status] || "outline";
+  };
+
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Database Connection & RLS Test</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Database Connection Tests
+          <Button 
+            onClick={runTests} 
+            disabled={isLoading}
+            size="sm"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Run Tests
+          </Button>
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Button onClick={testDatabaseConnection} disabled={isLoading}>
-          {isLoading ? 'Testing...' : 'Run Database Tests'}
-        </Button>
-        
-        {testResults.length > 0 && (
-          <Alert>
-            <AlertDescription>
-              <div className="font-mono text-sm space-y-1 max-h-96 overflow-y-auto">
-                {testResults.map((result, index) => (
-                  <div key={index} className={`
-                    ${result.includes('❌') ? 'text-red-600' : ''}
-                    ${result.includes('✅') ? 'text-green-600' : ''}
-                    ${result.includes('⚠️') ? 'text-yellow-600' : ''}
-                    ${result.includes('ℹ️') ? 'text-blue-600' : ''}
-                  `}>
-                    {result}
-                  </div>
-                ))}
+      <CardContent>
+        <div className="space-y-4">
+          {testResults.map((result, index) => (
+            <div key={index} className="flex items-start gap-3 p-3 rounded-lg border bg-card">
+              {getStatusIcon(result.status)}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium">{result.test}</span>
+                  <Badge variant={getStatusBadge(result.status)}>
+                    {result.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {result.message}
+                </p>
+                {result.data && (
+                  <pre className="text-xs bg-muted p-2 rounded overflow-auto">
+                    {JSON.stringify(result.data, null, 2)}
+                  </pre>
+                )}
               </div>
-            </AlertDescription>
-          </Alert>
-        )}
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
 };
+
+export default DatabaseTest;
