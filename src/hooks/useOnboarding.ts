@@ -20,7 +20,7 @@ export const useOnboardingQuery = () => {
         return null;
       }
       
-      const steps = await onboardingService.getWorkflowSteps(workflow.id);
+      const steps = await onboardingService.getWorkflowSteps(workflow.id, currentTenant.id);
       console.log('Found workflow with steps:', { workflow, stepCount: steps.length });
       
       return {
@@ -47,9 +47,13 @@ export const useCompleteStep = () => {
   
   return useMutation({
     mutationFn: async ({ stepId, stepData }: { stepId: string; stepData?: any }) => {
-      console.log('Completing step:', { stepId, stepData });
+      if (!currentTenant?.id) {
+        throw new Error('No current tenant available');
+      }
+
+      console.log('Completing step:', { stepId, stepData, tenantId: currentTenant.id });
       
-      const result = await onboardingService.completeStep(stepId, stepData);
+      const result = await onboardingService.completeStep(stepId, stepData, currentTenant.id);
       if (!result) {
         throw new Error('Failed to complete step');
       }
@@ -86,9 +90,13 @@ export const useUpdateStepStatus = () => {
       status: OnboardingStep['step_status']; 
       stepData?: any 
     }) => {
-      console.log('Updating step status:', { stepId, status, stepData });
+      if (!currentTenant?.id) {
+        throw new Error('No current tenant available');
+      }
+
+      console.log('Updating step status:', { stepId, status, stepData, tenantId: currentTenant.id });
       
-      const result = await onboardingService.updateStepStatus(stepId, status, stepData);
+      const result = await onboardingService.updateStepStatus(stepId, status, stepData, currentTenant.id);
       if (!result) {
         throw new Error('Failed to update step status');
       }

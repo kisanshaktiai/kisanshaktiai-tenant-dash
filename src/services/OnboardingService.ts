@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { tenantDataService } from './TenantDataService';
 
 export interface OnboardingWorkflow {
   id: string;
@@ -32,159 +32,37 @@ export interface OnboardingStep {
   updated_at: string;
 }
 
-interface OnboardingStepTemplate {
-  step: number;
-  name: string;
-  description: string;
-  required: boolean;
-  estimated_time: number;
-}
-
 export class OnboardingService {
-  constructor() {}
-
-  private isValidStepsArray(data: any): data is OnboardingStepTemplate[] {
-    return Array.isArray(data) && data.every(step => 
-      typeof step === 'object' &&
-      typeof step.step === 'number' &&
-      typeof step.name === 'string' &&
-      typeof step.description === 'string' &&
-      typeof step.required === 'boolean' &&
-      typeof step.estimated_time === 'number'
-    );
-  }
-
-  async startOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
-    try {
-      // Check if a workflow already exists for this tenant
-      const existingWorkflow = await this.getOnboardingWorkflow(tenantId);
-      if (existingWorkflow) {
-        console.warn(`Onboarding workflow already exists for tenant ${tenantId}`);
-        return existingWorkflow;
-      }
-
-      // Get tenant information to determine workflow type
-      const { data: tenantData } = await supabase
-        .from('tenants')
-        .select('type, subscription_plan')
-        .eq('id', tenantId)
-        .single();
-
-      const tenantType = tenantData?.type || 'agri_company';
-      const subscriptionPlan = tenantData?.subscription_plan || 'Kisan_Basic';
-
-      // Get the appropriate onboarding template based on tenant type and plan
-      const { data: templateData } = await supabase
-        .rpc('get_onboarding_template', {
-          tenant_type: tenantType,
-          subscription_plan: subscriptionPlan
-        });
-
-      let steps: OnboardingStepTemplate[] = [];
-
-      // Validate and parse the template data
-      if (this.isValidStepsArray(templateData)) {
-        steps = templateData;
-      } else {
-        // Fallback to default steps if template data is invalid
-        console.warn('Invalid template data, using default steps');
-        steps = [
-          { step: 1, name: 'Business Verification', description: 'Verify business documents and setup', required: true, estimated_time: 30 },
-          { step: 2, name: 'Subscription Plan', description: 'Configure subscription and billing', required: true, estimated_time: 15 },
-          { step: 3, name: 'Branding Configuration', description: 'Set up your organization branding', required: false, estimated_time: 20 },
-          { step: 4, name: 'Feature Selection', description: 'Choose and configure platform features', required: true, estimated_time: 25 },
-          { step: 5, name: 'Data Import', description: 'Import existing data and setup integrations', required: false, estimated_time: 45 },
-          { step: 6, name: 'Team Invites', description: 'Invite team members and assign roles', required: false, estimated_time: 15 }
-        ];
-      }
-
-      // Create a new onboarding workflow
-      const { data: workflowData, error: workflowError } = await supabase
-        .from('onboarding_workflows')
-        .insert({
-          tenant_id: tenantId,
-          status: 'in_progress',
-          current_step: 1,
-          total_steps: steps.length,
-          started_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (workflowError) {
-        console.error('Error creating onboarding workflow:', workflowError);
-        return null;
-      }
-
-      if (!workflowData) {
-        console.error('No workflow data returned after creation');
-        return null;
-      }
-
-      // Create the onboarding steps
-      const stepsToInsert = steps.map((step, index) => ({
-        workflow_id: workflowData.id,
-        step_number: step.step || index + 1,
-        step_name: step.name,
-        step_description: step.description || `Complete ${step.name}`,
-        step_status: 'pending' as const,
-        is_required: step.required !== false,
-        estimated_time_minutes: step.estimated_time || 15,
-        step_data: {}
-      }));
-
-      const { error: stepsError } = await supabase
-        .from('onboarding_steps')
-        .insert(stepsToInsert);
-
-      if (stepsError) {
-        console.error('Error creating onboarding steps:', stepsError);
-        return null;
-      }
-
-      return this.getOnboardingWorkflow(tenantId);
-    } catch (error) {
-      console.error('Unexpected error starting workflow:', error);
-      return null;
-    }
-  }
-
   async getOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
     try {
-      const { data, error } = await supabase
-        .from('onboarding_workflows')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .maybeSingle(); // Use maybeSingle to avoid 406 when no rows
-
-      if (error) {
-        console.error('Error fetching onboarding workflow:', error);
+      console.log('Fetching onboarding workflow for tenant:', tenantId);
+      
+      const data = await tenantDataService.getOnboardingWorkflow(tenantId);
+      
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        console.log('No workflow found for tenant:', tenantId);
         return null;
       }
 
-      if (!data) {
-        return null;
-      }
+      const workflow = Array.isArray(data) ? data[0] : data;
 
-      // Map database response to interface, providing default values
+      // Map database response to interface
       return {
-        id: data.id,
-        tenant_id: data.tenant_id,
-        workflow_name: 'Onboarding Workflow',
-        status: (data.status === 'not_started' || data.status === 'in_progress' || data.status === 'completed') 
-          ? (data.status as 'not_started' | 'in_progress' | 'completed')
-          : 'not_started',
-        progress_percentage: data.total_steps ? Math.round((data.current_step / data.total_steps) * 100) : 0,
-        current_step: data.current_step ?? 1,
-        total_steps: data.total_steps ?? 0,
-        started_at: data.started_at ?? null,
-        completed_at: data.completed_at ?? null,
-        metadata: (data.metadata && typeof data.metadata === 'object') ? (data.metadata as Record<string, any>) : {},
-        created_at: data.created_at,
-        updated_at: data.updated_at
+        id: workflow.id,
+        tenant_id: workflow.tenant_id,
+        workflow_name: workflow.workflow_name || 'Onboarding Workflow',
+        status: workflow.status || 'not_started',
+        progress_percentage: workflow.progress_percentage || 0,
+        current_step: workflow.current_step || 1,
+        total_steps: workflow.total_steps || 0,
+        started_at: workflow.started_at,
+        completed_at: workflow.completed_at,
+        metadata: workflow.metadata || {},
+        created_at: workflow.created_at,
+        updated_at: workflow.updated_at
       };
     } catch (error) {
-      console.error('Unexpected error fetching workflow:', error);
+      console.error('Error fetching onboarding workflow:', error);
       return null;
     }
   }
@@ -193,93 +71,72 @@ export class OnboardingService {
     return this.getOnboardingWorkflow(tenantId);
   }
 
-  async getWorkflowSteps(workflowId: string): Promise<OnboardingStep[]> {
+  async getWorkflowSteps(workflowId: string, tenantId: string): Promise<OnboardingStep[]> {
     try {
-      const { data, error } = await supabase
-        .from('onboarding_steps')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .order('step_number');
-
-      if (error) {
-        console.error('Error fetching workflow steps:', error);
+      console.log('Fetching workflow steps:', { workflowId, tenantId });
+      
+      const data = await tenantDataService.getOnboardingSteps(tenantId, workflowId);
+      
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        console.log('No steps found for workflow:', workflowId);
         return [];
       }
 
-      if (!data) {
-        return [];
-      }
+      const steps = Array.isArray(data) ? data : [data];
 
-      // Map database response to interface, providing default values
-      return data.map(step => ({
-        id: step.id,
-        workflow_id: step.workflow_id,
-        step_number: step.step_number,
-        step_name: step.step_name,
-        step_description: 'Step description', // Default value since column doesn't exist
-        step_status: (step.step_status === 'failed') 
-          ? 'pending' // Map 'failed' to 'pending' since it's not in our interface
-          : step.step_status as 'pending' | 'in_progress' | 'completed' | 'skipped',
-        is_required: true, // Default value since column doesn't exist
-        estimated_time_minutes: 30, // Default value since column doesn't exist
-        step_data: (step.step_data && typeof step.step_data === 'object') ? step.step_data as Record<string, any> : {},
-        started_at: null, // Default value since column doesn't exist
-        completed_at: step.completed_at,
-        created_at: step.created_at,
-        updated_at: step.updated_at
-      }));
+      // Filter steps that belong to the workflow and map to interface
+      return steps
+        .filter(step => step.workflow_id === workflowId)
+        .map(step => ({
+          id: step.id,
+          workflow_id: step.workflow_id,
+          step_number: step.step_number,
+          step_name: step.step_name,
+          step_description: step.step_description || 'Step description',
+          step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
+          is_required: step.is_required !== false,
+          estimated_time_minutes: step.estimated_time_minutes || 30,
+          step_data: step.step_data || {},
+          started_at: step.started_at,
+          completed_at: step.completed_at,
+          created_at: step.created_at,
+          updated_at: step.updated_at
+        }));
     } catch (error) {
-      console.error('Unexpected error fetching steps:', error);
+      console.error('Error fetching workflow steps:', error);
       return [];
     }
   }
 
-  async updateStepStatus(stepId: string, stepStatus: OnboardingStep['step_status'], stepData?: any): Promise<boolean> {
+  async updateStepStatus(
+    stepId: string, 
+    stepStatus: OnboardingStep['step_status'], 
+    stepData?: any,
+    tenantId?: string
+  ): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('onboarding_steps')
-        .update({ 
-          step_status: stepStatus,
-          step_data: stepData || null
-        })
-        .eq('id', stepId);
-
-      if (error) {
-        console.error('Error updating step status:', error);
+      if (!tenantId) {
+        console.error('Tenant ID is required for updating step status');
         return false;
       }
 
+      console.log('Updating step status:', { stepId, stepStatus, stepData, tenantId });
+      
+      await tenantDataService.updateOnboardingStep(tenantId, stepId, {
+        step_status: stepStatus,
+        step_data: stepData || null,
+        updated_at: new Date().toISOString()
+      });
+
       return true;
     } catch (error) {
-      console.error('Unexpected error updating step status:', error);
+      console.error('Error updating step status:', error);
       return false;
     }
   }
 
-  async completeStep(stepId: string, stepData?: any): Promise<boolean> {
-    return this.updateStepStatus(stepId, 'completed', stepData);
-  }
-
-  async completeOnboardingWorkflow(tenantId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('onboarding_workflows')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('tenant_id', tenantId);
-
-      if (error) {
-        console.error('Error completing onboarding workflow:', error);
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Unexpected error completing workflow:', error);
-      return false;
-    }
+  async completeStep(stepId: string, stepData?: any, tenantId?: string): Promise<boolean> {
+    return this.updateStepStatus(stepId, 'completed', stepData, tenantId);
   }
 
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
