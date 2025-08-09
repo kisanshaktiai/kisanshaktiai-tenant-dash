@@ -28,10 +28,10 @@ export const OnboardingSkeleton: React.FC = () => {
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-2">
             {Array.from({ length: 6 }).map((_, index) => (
-              <React.Fragment key={index}>
+              <div key={index} className="contents">
                 <Skeleton className="h-10 w-32 rounded-lg" />
                 {index < 5 && <div className="w-8 h-px bg-border" />}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </div>

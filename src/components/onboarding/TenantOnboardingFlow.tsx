@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -343,7 +342,7 @@ export const TenantOnboardingFlow: React.FC = () => {
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
           <div className="flex items-center gap-2 min-w-max">
             {allSteps.map((step, index) => (
-              <React.Fragment key={step.id}>
+              <div key={step.id} className="contents">
                 <button
                   onClick={() => handleStepNavigation(index)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
@@ -365,7 +364,7 @@ export const TenantOnboardingFlow: React.FC = () => {
                 {index < allSteps.length - 1 && (
                   <div className="w-8 h-px bg-border" />
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </div>
