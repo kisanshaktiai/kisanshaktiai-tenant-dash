@@ -10,7 +10,7 @@ import { store } from '@/store';
 import { IntlProvider } from '@/components/providers/IntlProvider';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantData } from '@/hooks/useTenantData';
-import OnboardingGuard from '@/components/guards/OnboardingGuard';
+import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
 import { EnhancedDashboardLayout } from '@/components/layout/EnhancedDashboardLayout';
 
 // Pages
@@ -125,3 +125,4 @@ function App() {
 }
 
 export default App;
+
