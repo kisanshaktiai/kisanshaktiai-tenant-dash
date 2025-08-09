@@ -1,8 +1,9 @@
+
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { QueryClient, QueryClientProvider } from 'react-query';
-import { ReactQueryDevtools } from 'react-query/devtools';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/toaster';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
@@ -11,15 +12,16 @@ import { useAuth } from '@/hooks/useAuth';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import DashboardPage from '@/pages/DashboardPage';
-import FarmersPage from '@/pages/FarmersPage';
+import Dashboard from '@/pages/Dashboard';
+import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import SettingsPage from '@/pages/SettingsPage';
-import OnboardingPage from '@/pages/OnboardingPage';
+import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import { store } from './store';
+import { queryClient } from '@/lib/queryClient';
 import { IntlProvider } from '@/components/providers/IntlProvider';
 
 function App() {
@@ -36,7 +38,7 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
-                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout><DashboardPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout><Dashboard /></DashboardLayout></RequireAuth>} />
                   <Route path="/dashboard/farmers" element={<RequireAuth><DashboardLayout><FarmersPage /></DashboardLayout></RequireAuth>} />
                   <Route path="/dashboard/products" element={<RequireAuth><DashboardLayout><ProductsPage /></DashboardLayout></RequireAuth>} />
                   <Route path="/dashboard/campaigns" element={<RequireAuth><DashboardLayout><CampaignsPage /></DashboardLayout></RequireAuth>} />
@@ -54,16 +56,14 @@ function App() {
   );
 }
 
-const queryClient = new QueryClient();
-
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return <Loading />;
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
