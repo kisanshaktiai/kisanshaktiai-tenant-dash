@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, ArrowLeft, ArrowRight, Sparkles, Building2 } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, ArrowRight, Sparkles, Building2, RefreshCw } from 'lucide-react';
 import { useOnboardingQuery, useCompleteStep, useUpdateStepStatus } from '@/hooks/useOnboarding';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useOnboardingAutoProgress } from '@/hooks/useOnboardingAutoProgress';
@@ -29,9 +29,29 @@ const stepComponents = {
   'Summary': OnboardingSummaryStep,
 };
 
+const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+    <Card className="w-full max-w-md">
+      <CardContent className="p-8 text-center">
+        <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Building2 className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Loading Onboarding Steps</h3>
+        <p className="text-muted-foreground text-sm mb-6">
+          We're preparing your onboarding experience. This might take a moment if you just started.
+        </p>
+        <Button onClick={onRetry} variant="outline" className="w-full">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Steps
+        </Button>
+      </CardContent>
+    </Card>
+  </div>
+);
+
 export const TenantOnboardingFlow: React.FC = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
-  const { data: onboardingData, isLoading, error } = useOnboardingQuery();
+  const { data: onboardingData, isLoading, error, refetch } = useOnboardingQuery();
   const completeStepMutation = useCompleteStep();
   const updateStepMutation = useUpdateStepStatus();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -80,7 +100,6 @@ export const TenantOnboardingFlow: React.FC = () => {
       const NextStepComponent = stepComponents[nextStep.step_name as keyof typeof stepComponents];
       
       if (NextStepComponent) {
-        // Preload the component by importing it
         setTimeout(() => {
           setPreloadedSteps(prev => new Set([...prev, nextStepIndex]));
         }, 100);
@@ -106,7 +125,6 @@ export const TenantOnboardingFlow: React.FC = () => {
     if (firstIncompleteIndex !== -1 && firstIncompleteIndex !== currentStepIndex) {
       setCurrentStepIndex(firstIncompleteIndex);
     } else if (firstIncompleteIndex === -1) {
-      // All steps completed, go to summary
       setCurrentStepIndex(allSteps.length - 1);
     }
   }, [allSteps, currentStepIndex]);
@@ -157,7 +175,6 @@ export const TenantOnboardingFlow: React.FC = () => {
           break;
 
         case 'Summary':
-          // Complete the entire workflow
           if (workflow) {
             await completeStepMutation.mutateAsync({
               stepId: workflow.id,
@@ -168,13 +185,11 @@ export const TenantOnboardingFlow: React.FC = () => {
           return;
       }
 
-      // Mark the step as completed
       await completeStepMutation.mutateAsync({
         stepId: currentStep.id,
         stepData
       });
 
-      // Move to next step
       if (currentStepIndex < allSteps.length - 1) {
         setCurrentStepIndex(currentStepIndex + 1);
       }
@@ -223,13 +238,18 @@ export const TenantOnboardingFlow: React.FC = () => {
             <p className="text-muted-foreground text-sm mb-4">
               There was an issue loading your onboarding. Please refresh the page or contact support.
             </p>
-            <Button onClick={() => window.location.reload()}>
+            <Button onClick={() => refetch()}>
               Refresh Page
             </Button>
           </CardContent>
         </Card>
       </div>
     );
+  }
+
+  // Show friendly retry panel if no steps are available
+  if (!isLoading && allSteps.length === 0) {
+    return <MissingStepsPanel onRetry={() => refetch()} />;
   }
 
   // Welcome screen
@@ -278,12 +298,8 @@ export const TenantOnboardingFlow: React.FC = () => {
     );
   }
 
-  if (!currentStep || allSteps.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>No onboarding steps available.</p>
-      </div>
-    );
+  if (!currentStep) {
+    return <MissingStepsPanel onRetry={() => refetch()} />;
   }
 
   const StepComponent = stepComponents[currentStep.step_name as keyof typeof stepComponents];

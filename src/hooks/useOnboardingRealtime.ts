@@ -50,6 +50,12 @@ export const useOnboardingRealtime = () => {
       reconnectAttempts: prev.reconnectAttempts + 1 
     }));
 
+    // Clean up existing channel if any
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     // Setup channel again
     setupChannel();
   }, [currentTenant?.id]);
@@ -178,7 +184,8 @@ export const useOnboardingRealtime = () => {
           isConnected: false, 
           isReconnecting: false 
         }));
-        toast.error('Real-time connection lost. Refreshing...');
+        toast.error('Real-time connection lost. Data may be outdated.');
+        // Invalidate queries to ensure we have fresh data
         setTimeout(invalidateQueries, 1000);
       } else if (channelStatus === 'CLOSED') {
         setStatus(prev => ({ 

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useRetryableMutation } from '@/hooks/core/useRetryableMutation';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -22,6 +23,7 @@ const TenantOnboardingFlow = React.lazy(() =>
 const OnboardingPage = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   
   // Enhanced real-time connection with reconnect capability
   const { isConnected, isReconnecting, reconnectAttempts, reconnect } = useOnboardingRealtime();
@@ -46,10 +48,16 @@ const OnboardingPage = () => {
     {
       onSuccess: (workflowId, tenantId) => {
         console.log('Successfully ensured workflow:', workflowId);
-        // Focus on main content after successful initialization
+        
+        // Invalidate onboarding queries to refetch fresh data
+        queryClient.invalidateQueries({ 
+          queryKey: ['onboarding', tenantId] 
+        });
+        
+        // Small delay to ensure data is available before focusing
         setTimeout(() => {
           mainContentRef.current?.focus();
-        }, 100);
+        }, 200);
       },
       onError: (error) => {
         console.error('Error ensuring onboarding workflow:', error);
