@@ -1,23 +1,18 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AnalyticsPagePresentation } from '../presentation/AnalyticsPagePresentation';
+import { useRealTimeEngagement } from '@/hooks/data/useRealTimeEngagement';
 
-export const AnalyticsPageContainer: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("executive");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsRefreshing(false);
-  };
+export const AnalyticsPageContainer = () => {
+  const { data, isLoading, error, isLive, activeChannels } = useRealTimeEngagement();
 
   return (
-    <AnalyticsPagePresentation
-      activeTab={activeTab}
-      isRefreshing={isRefreshing}
-      onTabChange={setActiveTab}
-      onRefresh={handleRefresh}
+    <AnalyticsPagePresentation 
+      data={data}
+      isLoading={isLoading}
+      error={error}
+      isLive={isLive}
+      activeChannels={activeChannels}
     />
   );
 };

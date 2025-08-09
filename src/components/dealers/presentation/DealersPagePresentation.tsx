@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DealerDirectory } from '@/pages/dealers/components/DealerDirectory';
 import { DealerOnboarding } from '@/pages/dealers/components/DealerOnboarding';
 import { TerritoryManagement } from '@/pages/dealers/components/TerritoryManagement';
@@ -22,6 +23,9 @@ interface DealersPagePresentationProps {
   selectedDealers: string[];
   onSearch: (value: string) => void;
   onSelectedDealersChange: (dealers: string[]) => void;
+  // Real-time props
+  isLive?: boolean;
+  activeChannels?: number;
 }
 
 export const DealersPagePresentation: React.FC<DealersPagePresentationProps> = ({
@@ -33,16 +37,21 @@ export const DealersPagePresentation: React.FC<DealersPagePresentationProps> = (
   selectedDealers,
   onSearch,
   onSelectedDealersChange,
+  isLive = false,
+  activeChannels = 0
 }) => {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dealer Network</h1>
-          <p className="text-muted-foreground">
-            Manage your dealer network and track their performance
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dealer Network</h1>
+            <p className="text-muted-foreground">
+              Manage your dealer network and track their performance
+            </p>
+          </div>
+          <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />
         </div>
         <div className="flex space-x-2">
           <Button variant="outline">

@@ -10,7 +10,9 @@ export const DealersPageContainer: React.FC = () => {
   const {
     data: dealersData,
     isLoading,
-    error
+    error,
+    isLive,
+    activeChannels
   } = useRealTimeDealersQuery({
     search: searchTerm,
     limit: 50,
@@ -33,6 +35,8 @@ export const DealersPageContainer: React.FC = () => {
       selectedDealers={selectedDealers}
       onSearch={handleSearch}
       onSelectedDealersChange={setSelectedDealers}
+      isLive={isLive}
+      activeChannels={activeChannels}
     />
   );
 };

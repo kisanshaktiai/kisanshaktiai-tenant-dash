@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { EnhancedDashboardPresentation } from '@/components/dashboard/presentation/EnhancedDashboardPresentation';
-import { useDashboardQuery } from '@/hooks/data/useDashboardQuery';
+import { useRealTimeDashboard } from '@/hooks/data/useRealTimeDashboard';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 const Dashboard = () => {
-  const { data, isLoading, error } = useDashboardQuery();
+  const { data, isLoading, error, isLive, activeChannels } = useRealTimeDashboard();
 
   // Mock data for demonstration - replace with real data from the query
   const dashboardData = {
@@ -36,6 +37,12 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Live Indicator */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />
+      </div>
+      
       <EnhancedDashboardPresentation 
         data={dashboardData} 
         isLoading={isLoading} 

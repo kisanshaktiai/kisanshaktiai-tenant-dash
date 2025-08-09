@@ -14,7 +14,9 @@ export const FarmersPageContainer: React.FC = () => {
     data: farmersData,
     isLoading,
     error,
-    refetch
+    refetch,
+    isLive,
+    activeChannels
   } = useRealTimeFarmersQuery({
     search: searchTerm,
     limit: 50,
@@ -54,6 +56,8 @@ export const FarmersPageContainer: React.FC = () => {
       onCreateSuccess={handleCreateSuccess}
       onImportModalChange={handleImportModalChange}
       onSelectedFarmersChange={setSelectedFarmers}
+      isLive={isLive}
+      activeChannels={activeChannels}
     />
   );
 };

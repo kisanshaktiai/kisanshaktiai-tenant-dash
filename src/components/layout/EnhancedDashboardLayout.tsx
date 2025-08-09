@@ -5,7 +5,7 @@ import { DashboardSidebar } from './DashboardSidebar';
 import { EnhancedTopbar } from './EnhancedTopbar';
 import NotificationPanel from '../notifications/NotificationPanel';
 import { CommandPalette } from '../ui/command-palette';
-import { useRealTimeConnection } from '@/hooks/data/useRealTimeConnection';
+import { useTenantRealtime } from '@/hooks/data/useTenantRealtime';
 import { cn } from '@/lib/utils';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Minimize2, Maximize2 } from 'lucide-react';
@@ -15,7 +15,7 @@ export const EnhancedDashboardLayout: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const { isConnected, activeChannels } = useRealTimeConnection();
+  const { isConnected, activeChannels } = useTenantRealtime();
 
   return (
     <div className="h-screen bg-gradient-to-br from-background via-background to-muted/20">

@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { Search, Bell, Settings, User, Command, Wifi, WifiOff } from 'lucide-react';
+import { Search, Bell, Settings, User, Command } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { useAppSelector } from '@/store/hooks';
-import { cn } from '@/lib/utils';
 
 interface EnhancedTopbarProps {
   onOpenCommandPalette: () => void;
@@ -61,16 +61,10 @@ export const EnhancedTopbar: React.FC<EnhancedTopbarProps> = ({
         {/* Right Section - Actions */}
         <div className="flex items-center gap-2">
           {/* Real-time Status */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50">
-            {isRealTimeConnected ? (
-              <Wifi className="h-4 w-4 text-success" />
-            ) : (
-              <WifiOff className="h-4 w-4 text-destructive" />
-            )}
-            <span className="text-xs text-muted-foreground">
-              {activeChannels} Live
-            </span>
-          </div>
+          <LiveIndicator 
+            isConnected={isRealTimeConnected} 
+            activeChannels={activeChannels}
+          />
 
           {/* Notifications */}
           <Button

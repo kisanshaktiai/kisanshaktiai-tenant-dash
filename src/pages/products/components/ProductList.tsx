@@ -1,10 +1,10 @@
+
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -32,26 +32,11 @@ import {
   Plus
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRealTimeProductsQuery } from '@/hooks/data/useRealTimeProductsQuery';
 
 interface ProductListProps {
   onEdit: (productId: string) => void;
   onCreate: () => void;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  brand: string;
-  category_id: string;
-  price_per_unit: number;
-  stock_quantity: number;
-  availability_status: string;
-  is_active: boolean;
-  is_featured: boolean;
-  images: string[];
-  unit_type: string;
-  created_at: string;
 }
 
 export default function ProductList({ onEdit, onCreate }: ProductListProps) {
@@ -59,43 +44,18 @@ export default function ProductList({ onEdit, onCreate }: ProductListProps) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products', search, statusFilter, categoryFilter],
-    queryFn: async () => {
-      let query = supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (search) {
-        query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%,brand.ilike.%${search}%`);
-      }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('availability_status', statusFilter);
-      }
-
-      if (categoryFilter !== 'all') {
-        query = query.eq('category_id', categoryFilter);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as Product[];
-    },
+  const { 
+    data: productsData, 
+    isLoading, 
+    isLive, 
+    activeChannels 
+  } = useRealTimeProductsQuery({
+    search,
+    status: statusFilter,
+    category: categoryFilter,
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_categories')
-        .select('*')
-        .eq('is_active', true);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const products = productsData?.data || [];
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -137,10 +97,13 @@ export default function ProductList({ onEdit, onCreate }: ProductListProps) {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Products ({products?.length || 0})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Products ({products?.length || 0})
+            </CardTitle>
+            <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -172,11 +135,6 @@ export default function ProductList({ onEdit, onCreate }: ProductListProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
