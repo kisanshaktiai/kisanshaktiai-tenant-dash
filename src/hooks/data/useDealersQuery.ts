@@ -24,7 +24,7 @@ export const useDealerQuery = (dealerId: string) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.dealer(dealerId),
+    queryKey: queryKeys.dealer(dealerId, currentTenant?.id || ''),
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -59,7 +59,7 @@ export const useCreateDealerMutation = () => {
     },
     onSuccess: (data) => {
       // Invalidate and refetch dealers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.dealers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dealers(currentTenant?.id || '') });
       
       toast.success('Dealer created successfully');
       return data;
@@ -83,10 +83,10 @@ export const useUpdateDealerMutation = () => {
     },
     onSuccess: (data, variables) => {
       // Update the specific dealer in cache
-      queryClient.setQueryData(queryKeys.dealer(variables.dealerId), data);
+      queryClient.setQueryData(queryKeys.dealer(variables.dealerId, currentTenant?.id || ''), data);
       
       // Invalidate dealers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.dealers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dealers(currentTenant?.id || '') });
       
       toast.success('Dealer updated successfully');
       return data;
@@ -110,10 +110,10 @@ export const useDeleteDealerMutation = () => {
     },
     onSuccess: (_, dealerId) => {
       // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.dealer(dealerId) });
+      queryClient.removeQueries({ queryKey: queryKeys.dealer(dealerId, currentTenant?.id || '') });
       
       // Invalidate dealers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.dealers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dealers(currentTenant?.id || '') });
       
       toast.success('Dealer deleted successfully');
     },

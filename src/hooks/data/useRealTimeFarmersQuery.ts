@@ -43,7 +43,7 @@ export const useRealTimeFarmersQuery = (options = {}) => {
             );
             
             // Set individual farmer cache
-            queryClient.setQueryData(queryKeys.farmer(farmer.id), farmer);
+            queryClient.setQueryData(queryKeys.farmer(farmer.id, currentTenant.id), farmer);
             
           } else if (payload.eventType === 'UPDATE') {
             // Update farmers list cache
@@ -61,7 +61,7 @@ export const useRealTimeFarmersQuery = (options = {}) => {
             );
             
             // Update individual farmer cache
-            queryClient.setQueryData(queryKeys.farmer(farmer.id), farmer);
+            queryClient.setQueryData(queryKeys.farmer(farmer.id, currentTenant.id), farmer);
             
           } else if (payload.eventType === 'DELETE') {
             const deletedId = payload.old.id;
@@ -80,7 +80,7 @@ export const useRealTimeFarmersQuery = (options = {}) => {
             );
             
             // Remove individual farmer cache
-            queryClient.removeQueries({ queryKey: queryKeys.farmer(deletedId) });
+            queryClient.removeQueries({ queryKey: queryKeys.farmer(deletedId, currentTenant.id) });
           }
 
           // Invalidate stats queries

@@ -48,7 +48,7 @@ export const useRealTimeDealersQuery = (options: DealersListOptions = {}) => {
           } else if (payload.eventType === 'UPDATE') {
             // Update dealer in cache
             queryClient.setQueryData(
-              queryKeys.dealer(payload.new.id),
+              queryKeys.dealer(payload.new.id, currentTenant.id),
               payload.new as Dealer
             );
             
@@ -69,7 +69,7 @@ export const useRealTimeDealersQuery = (options: DealersListOptions = {}) => {
             );
           } else if (payload.eventType === 'DELETE') {
             // Remove dealer from cache
-            queryClient.removeQueries({ queryKey: queryKeys.dealer(payload.old.id) });
+            queryClient.removeQueries({ queryKey: queryKeys.dealer(payload.old.id, currentTenant.id) });
             
             // Remove from dealers list
             queryClient.setQueryData(

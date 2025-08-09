@@ -24,7 +24,7 @@ export const useFarmerQuery = (farmerId: string) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.farmer(farmerId),
+    queryKey: queryKeys.farmer(farmerId, currentTenant?.id || ''),
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -59,7 +59,7 @@ export const useCreateFarmerMutation = () => {
     },
     onSuccess: (data) => {
       // Invalidate and refetch farmers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.farmers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
       queryClient.invalidateQueries({ queryKey: queryKeys.farmerStats(currentTenant?.id || '') });
       
       toast.success('Farmer created successfully');
@@ -84,10 +84,10 @@ export const useUpdateFarmerMutation = () => {
     },
     onSuccess: (data, variables) => {
       // Update the specific farmer in cache
-      queryClient.setQueryData(queryKeys.farmer(variables.farmerId), data);
+      queryClient.setQueryData(queryKeys.farmer(variables.farmerId, currentTenant?.id || ''), data);
       
       // Invalidate farmers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.farmers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
       
       toast.success('Farmer updated successfully');
       return data;
@@ -111,10 +111,10 @@ export const useDeleteFarmerMutation = () => {
     },
     onSuccess: (_, farmerId) => {
       // Remove from cache
-      queryClient.removeQueries({ queryKey: queryKeys.farmer(farmerId) });
+      queryClient.removeQueries({ queryKey: queryKeys.farmer(farmerId, currentTenant?.id || '') });
       
       // Invalidate farmers list
-      queryClient.invalidateQueries({ queryKey: queryKeys.farmers });
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
       queryClient.invalidateQueries({ queryKey: queryKeys.farmerStats(currentTenant?.id || '') });
       
       toast.success('Farmer deleted successfully');
