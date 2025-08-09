@@ -118,11 +118,11 @@ export const FarmersPagePresentation: React.FC<FarmersPagePresentationProps> = (
         </TabsList>
 
         <TabsContent value="directory">
-          <FarmerDirectory farmers={farmers} loading={isLoading} />
+          <FarmerDirectory />
         </TabsContent>
 
         <TabsContent value="bulk">
-          <BulkOperations selectedFarmers={selectedFarmers} />
+          <BulkOperations />
         </TabsContent>
 
         <TabsContent value="engagement">
@@ -136,8 +136,8 @@ export const FarmersPagePresentation: React.FC<FarmersPagePresentationProps> = (
 
       {/* Modals */}
       <CreateFarmerModal 
-        open={isCreateModalOpen}
-        onOpenChange={onCreateModalClose}
+        isOpen={isCreateModalOpen}
+        onClose={onCreateModalClose}
         onSuccess={onCreateSuccess}
       />
       

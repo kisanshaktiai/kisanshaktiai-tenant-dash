@@ -23,7 +23,7 @@ export const useTenantRealtime = () => {
   });
 
   // Debounced invalidation to prevent excessive re-renders
-  const debouncedInvalidate = useCallback((queryKey: string[], delay = 300) => {
+  const debouncedInvalidate = useCallback((queryKey: readonly string[], delay = 300) => {
     const keyString = JSON.stringify(queryKey);
     
     // Clear existing timer
@@ -61,8 +61,8 @@ export const useTenantRealtime = () => {
           },
           (payload) => {
             console.log('Farmers real-time update:', payload);
-            debouncedInvalidate(queryKeys.farmers(currentTenant.id));
-            debouncedInvalidate(queryKeys.farmerStats(currentTenant.id));
+            debouncedInvalidate([...queryKeys.farmers(currentTenant.id)]);
+            debouncedInvalidate([...queryKeys.farmerStats(currentTenant.id)]);
           }
         ),
 
@@ -79,7 +79,7 @@ export const useTenantRealtime = () => {
           },
           (payload) => {
             console.log('Dealers real-time update:', payload);
-            debouncedInvalidate(queryKeys.dealers(currentTenant.id));
+            debouncedInvalidate([...queryKeys.dealers(currentTenant.id)]);
           }
         ),
 
@@ -96,7 +96,7 @@ export const useTenantRealtime = () => {
           },
           (payload) => {
             console.log('Products real-time update:', payload);
-            debouncedInvalidate(queryKeys.products(currentTenant.id));
+            debouncedInvalidate([...queryKeys.products(currentTenant.id)]);
           }
         ),
 
@@ -113,9 +113,9 @@ export const useTenantRealtime = () => {
           },
           (payload) => {
             console.log('Analytics real-time update:', payload);
-            debouncedInvalidate(queryKeys.analytics(currentTenant.id));
-            debouncedInvalidate(queryKeys.dashboardStats(currentTenant.id));
-            debouncedInvalidate(queryKeys.engagementStats(currentTenant.id));
+            debouncedInvalidate([...queryKeys.analytics(currentTenant.id)]);
+            debouncedInvalidate([...queryKeys.dashboardStats(currentTenant.id)]);
+            debouncedInvalidate([...queryKeys.engagementStats(currentTenant.id)]);
           }
         )
     ];
