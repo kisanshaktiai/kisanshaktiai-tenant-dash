@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
@@ -7,14 +8,15 @@ import ErrorFallback from '@/components/ErrorFallback';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-
-// Enhanced Layout
+import { useAuth } from '@/hooks/useAuth';
+import { useTenantData } from '@/hooks/useTenantData';
+import OnboardingGuard from '@/components/guards/OnboardingGuard';
 import { EnhancedDashboardLayout } from '@/components/layout/EnhancedDashboardLayout';
 
 // Pages
 import Index from '@/pages/Index';
-import Dashboard from '@/pages/Dashboard';
 import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
 import FarmersPage from '@/pages/farmers/FarmersPage';
 import DealersPage from '@/pages/dealers/DealersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
@@ -25,20 +27,22 @@ import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import SubscriptionPage from '@/pages/subscription/SubscriptionPage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import NotFound from '@/pages/NotFound';
-
-// Authentication and Guards
-import { useAuth } from '@/hooks/useAuth';
-import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
-import { useTenantData } from '@/hooks/useTenantData';
+import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: (failureCount, error: any) => {
-        if (error?.status === 404) return false;
-        return failureCount < 2;
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        return failureCount < 3;
       },
     },
   },
@@ -53,26 +57,17 @@ const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-background">
-        <div className="text-center space-y-4">
-          <div className="h-12 w-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-muted-foreground">Loading your workspace...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  return (
-    <OnboardingGuard>
-      <EnhancedDashboardLayout>
-        {children}
-      </EnhancedDashboardLayout>
-    </OnboardingGuard>
-  );
+  return <>{children}</>;
 };
 
 function App() {
@@ -82,86 +77,47 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <IntlProvider>
             <Router>
-              <div className="min-h-screen bg-background">
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  
-                  {/* Onboarding Route */}
-                  <Route path="/onboarding" element={<OnboardingPage />} />
-                  
-                  {/* Protected Routes */}
-                  <Route path="/dashboard" element={
-                    <RequireAuth>
-                      <Dashboard />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/farmers" element={
-                    <RequireAuth>
-                      <FarmersPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/dealers" element={
-                    <RequireAuth>
-                      <DealersPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/products" element={
-                    <RequireAuth>
-                      <ProductsPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/analytics" element={
-                    <RequireAuth>
-                      <AnalyticsPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/campaigns" element={
-                    <RequireAuth>
-                      <CampaignsPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/integrations" element={
-                    <RequireAuth>
-                      <IntegrationsPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/subscription" element={
-                    <RequireAuth>
-                      <SubscriptionPage />
-                    </RequireAuth>
-                  } />
-                  
-                  <Route path="/settings" element={
-                    <RequireAuth>
-                      <SettingsPage />
-                    </RequireAuth>
-                  } />
-                  
-                  {/* 404 Route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/setup-password" element={<PasswordSetupPage />} />
+
+                {/* Protected routes */}
+                <Route path="/dashboard" element={
+                  <RequireAuth>
+                    <OnboardingGuard>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuard>
+                  </RequireAuth>
+                }>
+                  <Route index element={<Dashboard />} />
+                  <Route path="farmers" element={<FarmersPage />} />
+                  <Route path="dealers" element={<DealersPage />} />
+                  <Route path="products" element={<ProductsPage />} />
+                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="campaigns" element={<CampaignsPage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
+                  <Route path="subscription" element={<SubscriptionPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
+
+                <Route path="/onboarding" element={
+                  <RequireAuth>
+                    <OnboardingPage />
+                  </RequireAuth>
+                } />
+
+                {/* Catch all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Toaster />
             </Router>
           </IntlProvider>
-          <Toaster 
-            position="top-right" 
-            toastOptions={{
-              style: {
-                background: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                color: 'hsl(var(--card-foreground))',
-              },
-            }}
-          />
         </QueryClientProvider>
       </Provider>
     </ErrorBoundary>

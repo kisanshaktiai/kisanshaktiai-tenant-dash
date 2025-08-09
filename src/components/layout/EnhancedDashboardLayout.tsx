@@ -79,7 +79,7 @@ export const EnhancedDashboardLayout: React.FC = () => {
               {/* Notification Panel */}
               {showNotifications && (
                 <div className="w-80 border-l bg-card shadow-lg">
-                  <NotificationPanel onClose={() => setShowNotifications(false)} />
+                  <NotificationPanel />
                 </div>
               )}
             </div>
