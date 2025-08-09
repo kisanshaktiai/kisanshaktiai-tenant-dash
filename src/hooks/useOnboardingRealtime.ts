@@ -18,12 +18,21 @@ export const useOnboardingRealtime = () => {
     isConnected: false
   });
 
-  // Invalidate onboarding queries
-  const invalidateOnboarding = useCallback(() => {
+  // Invalidate all tenant-related queries
+  const invalidateQueries = useCallback(() => {
     if (!currentTenant?.id) return;
     
     queryClient.invalidateQueries({ 
       queryKey: ['onboarding', currentTenant.id] 
+    });
+    
+    queryClient.invalidateQueries({ 
+      queryKey: ['tenant-status', currentTenant.id] 
+    });
+
+    // Invalidate tenant data queries
+    queryClient.invalidateQueries({ 
+      queryKey: ['tenants'] 
     });
     
     statusRef.current.lastUpdate = new Date();
@@ -32,13 +41,12 @@ export const useOnboardingRealtime = () => {
   useEffect(() => {
     if (!currentTenant?.id) return;
 
-    console.log('Setting up onboarding real-time for tenant:', currentTenant.id);
+    console.log('Setting up comprehensive real-time for tenant:', currentTenant.id);
 
-    // Create dedicated channel for onboarding
-    const channelName = `onboarding_${currentTenant.id}`;
+    const channelName = `tenant_onboarding_${currentTenant.id}`;
     const channel = supabase.channel(channelName);
 
-    // Listen to workflow changes
+    // Listen to onboarding workflow changes
     channel.on(
       'postgres_changes',
       {
@@ -49,15 +57,15 @@ export const useOnboardingRealtime = () => {
       },
       (payload) => {
         console.log('Onboarding workflow update:', payload);
-        invalidateOnboarding();
+        invalidateQueries();
         
         if (payload.eventType === 'UPDATE' && payload.new?.status === 'completed') {
-          toast.success('Onboarding completed! Welcome aboard! 🎉');
+          toast.success('🎉 Onboarding completed! Welcome aboard!');
         }
       }
     );
 
-    // Listen to step changes
+    // Listen to onboarding step changes
     channel.on(
       'postgres_changes',
       {
@@ -67,24 +75,87 @@ export const useOnboardingRealtime = () => {
       },
       (payload) => {
         console.log('Onboarding step update:', payload);
-        invalidateOnboarding();
+        invalidateQueries();
         
         if (payload.eventType === 'UPDATE' && payload.new?.step_status === 'completed') {
-          toast.success(`Step "${payload.new.step_name}" completed!`);
+          toast.success(`✅ Step "${payload.new.step_name}" completed!`);
         }
+      }
+    );
+
+    // Listen to tenant table changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tenants',
+        filter: `id=eq.${currentTenant.id}`,
+      },
+      (payload) => {
+        console.log('Tenant data update:', payload);
+        invalidateQueries();
+      }
+    );
+
+    // Listen to tenant branding changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tenant_branding',
+        filter: `tenant_id=eq.${currentTenant.id}`,
+      },
+      (payload) => {
+        console.log('Tenant branding update:', payload);
+        invalidateQueries();
+        toast.info('Branding updated successfully');
+      }
+    );
+
+    // Listen to tenant features changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tenant_features',
+        filter: `tenant_id=eq.${currentTenant.id}`,
+      },
+      (payload) => {
+        console.log('Tenant features update:', payload);
+        invalidateQueries();
+        toast.info('Features updated successfully');
+      }
+    );
+
+    // Listen to tenant subscriptions changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tenant_subscriptions',
+        filter: `tenant_id=eq.${currentTenant.id}`,
+      },
+      (payload) => {
+        console.log('Tenant subscription update:', payload);
+        invalidateQueries();
+        toast.info('Subscription updated successfully');
       }
     );
 
     // Subscribe and track connection status
     channel.subscribe((status) => {
-      console.log(`Onboarding channel status:`, status);
+      console.log(`Comprehensive onboarding channel status:`, status);
       
       if (status === 'SUBSCRIBED') {
         statusRef.current.isConnected = true;
       } else if (status === 'CHANNEL_ERROR') {
         statusRef.current.isConnected = false;
         toast.error('Real-time connection lost. Refreshing...');
-        setTimeout(invalidateOnboarding, 1000);
+        setTimeout(invalidateQueries, 1000);
       } else if (status === 'CLOSED') {
         statusRef.current.isConnected = false;
       }
@@ -93,14 +164,14 @@ export const useOnboardingRealtime = () => {
     channelRef.current = channel;
 
     return () => {
-      console.log('Cleaning up onboarding real-time');
+      console.log('Cleaning up comprehensive real-time');
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
       statusRef.current.isConnected = false;
     };
-  }, [currentTenant?.id, invalidateOnboarding]);
+  }, [currentTenant?.id, invalidateQueries]);
 
   return {
     isConnected: statusRef.current.isConnected,
