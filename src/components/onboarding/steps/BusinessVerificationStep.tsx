@@ -1,12 +1,16 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, CheckCircle } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { FileText, CheckCircle, Building2, Shield } from 'lucide-react';
 import { OnboardingStep } from '@/services/OnboardingService';
-import { useTranslation } from '@/hooks/useTranslation';
+import { FileUpload } from '../FileUpload';
+import { toast } from 'sonner';
 
 interface BusinessVerificationStepProps {
   step: OnboardingStep;
@@ -16,122 +20,201 @@ interface BusinessVerificationStepProps {
   isLoading: boolean;
 }
 
+const businessVerificationSchema = z.object({
+  gstNumber: z.string()
+    .min(15, 'GST number must be 15 characters')
+    .max(15, 'GST number must be 15 characters')
+    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST number format'),
+  panNumber: z.string()
+    .min(10, 'PAN number must be 10 characters')
+    .max(10, 'PAN number must be 10 characters')
+    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN number format'),
+  businessLicense: z.string().optional(),
+  documents: z.array(z.string()).min(1, 'Please upload at least one document')
+});
+
+type BusinessVerificationForm = z.infer<typeof businessVerificationSchema>;
+
 export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> = ({
   step,
   onComplete,
   isLoading
 }) => {
-  const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    gstNumber: step.step_data?.gstNumber || '',
-    panNumber: step.step_data?.panNumber || '',
-    businessLicense: step.step_data?.businessLicense || '',
-    documents: step.step_data?.documents || []
+  const form = useForm<BusinessVerificationForm>({
+    resolver: zodResolver(businessVerificationSchema),
+    defaultValues: {
+      gstNumber: step.step_data?.gstNumber || '',
+      panNumber: step.step_data?.panNumber || '',
+      businessLicense: step.step_data?.businessLicense || '',
+      documents: step.step_data?.documents || []
+    }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onComplete(formData);
+  const onSubmit = async (data: BusinessVerificationForm) => {
+    try {
+      await onComplete(data);
+      toast.success('Business verification completed successfully!');
+    } catch (error) {
+      toast.error('Failed to save verification details. Please try again.');
+    }
   };
-
-  const isValid = formData.gstNumber && formData.panNumber;
 
   if (step.step_status === 'completed') {
     return (
-      <div className="text-center py-8">
-        <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">{t('onboarding.verificationComplete')}</h3>
-        <p className="text-muted-foreground">
-          {t('onboarding.verificationSuccess')}
+      <div className="text-center py-12">
+        <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-10 h-10 text-success" />
+        </div>
+        <h3 className="text-2xl font-semibold mb-3">Verification Complete!</h3>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          Your business documents have been verified successfully. You can proceed to the next step.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              {t('onboarding.businessInfo')}
-            </CardTitle>
-            <CardDescription>
-              {t('onboarding.businessInfoDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="gst">{t('onboarding.gstNumber')} *</Label>
-              <Input
-                id="gst"
-                value={formData.gstNumber}
-                onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                placeholder="22AAAAA0000A1Z5"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Business Information */}
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-primary" />
+                </div>
+                Business Information
+              </CardTitle>
+              <CardDescription className="text-base">
+                Provide your business registration details for verification
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="gstNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">GST Number *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="22AAAAA0000A1Z5"
+                        className="text-base"
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase();
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <Label htmlFor="pan">{t('onboarding.panNumber')} *</Label>
-              <Input
-                id="pan"
-                value={formData.panNumber}
-                onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
-                placeholder="AAAAA0000A"
-              />
-            </div>
-            <div>
-              <Label htmlFor="license">{t('onboarding.businessLicense')}</Label>
-              <Input
-                id="license"
-                value={formData.businessLicense}
-                onChange={(e) => setFormData({...formData, businessLicense: e.target.value})}
-                placeholder={t('onboarding.businessLicense')}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              {t('onboarding.documentUpload')}
-            </CardTitle>
-            <CardDescription>
-              {t('onboarding.documentUploadDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
-                {t('onboarding.dropFiles')}
-              </p>
-              <Button variant="outline" size="sm">
-                {t('onboarding.chooseFiles')}
-              </Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {t('onboarding.acceptedFormats')}
-              <br />
-              {t('onboarding.requiredDocs')}
-              <br />
-              {t('onboarding.optionalDocs')}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              <FormField
+                control={form.control}
+                name="panNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">PAN Number *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="AAAAA0000A"
+                        className="text-base"
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase();
+                          field.onChange(value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <div className="flex justify-end">
-        <Button 
-          onClick={handleSubmit} 
-          disabled={!isValid || isLoading}
-          className="min-w-32"
-        >
-          {isLoading ? t('onboarding.verifyingStep') : t('onboarding.verifyContinue')}
-        </Button>
-      </div>
-    </div>
+              <FormField
+                control={form.control}
+                name="businessLicense"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">Business License (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Enter license number"
+                        className="text-base"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Document Upload */}
+          <Card className="border-blue-500/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-blue-500" />
+                </div>
+                Document Upload
+              </CardTitle>
+              <CardDescription className="text-base">
+                Upload supporting documents for verification
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="documents"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-medium">Required Documents *</FormLabel>
+                    <FormControl>
+                      <FileUpload
+                        value={field.value}
+                        onChange={field.onChange}
+                        maxFiles={5}
+                        folder={`business-docs/${Date.now()}`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium mb-2">Required Documents:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• GST Registration Certificate</li>
+                        <li>• PAN Card Copy</li>
+                        <li>• Business License (if applicable)</li>
+                      </ul>
+                      <p className="text-sm font-medium mt-3 mb-1">Optional Documents:</p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Incorporation Certificate</li>
+                        <li>• Address Proof</li>
+                      </ul>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex justify-end pt-6">
+          <Button 
+            type="submit"
+            disabled={isLoading || !form.formState.isValid}
+            className="px-8 py-3 text-base"
+            size="lg"
+          >
+            {isLoading ? 'Verifying...' : 'Verify & Continue'}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };
