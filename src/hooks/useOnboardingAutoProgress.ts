@@ -18,16 +18,18 @@ export const useOnboardingAutoProgress = (steps: any[], workflowId?: string) => 
 
       switch (step.step_name) {
         case 'Business Verification':
+          // Check if branding exists and has required fields (indicating verification setup)
           shouldMarkComplete = !!(
-            currentTenant.metadata?.verification?.gst_number &&
-            currentTenant.metadata?.verification?.pan_number
+            currentTenant.branding?.app_name &&
+            currentTenant.owner_name &&
+            currentTenant.owner_email
           );
           break;
 
         case 'Subscription Plan':
           shouldMarkComplete = !!(
             currentTenant.subscription_plan &&
-            currentTenant.subscription_plan !== 'trial'
+            currentTenant.status !== 'pending'
           );
           break;
 
