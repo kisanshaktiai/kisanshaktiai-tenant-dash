@@ -2,18 +2,28 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setCurrentTenant, setUserTenants, setSubscriptionPlans } from '@/store/slices/tenantSlice';
+import { setCurrentTenant, setUserTenants, setSubscriptionPlans, setLoading, setError } from '@/store/slices/tenantSlice';
 
 export const useTenantData = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, subscriptionPlans } = useAppSelector((state) => state.tenant);
+  const { currentTenant, userTenants, subscriptionPlans, loading } = useAppSelector((state) => state.tenant);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // Clear tenant data when user logs out
+      dispatch(setCurrentTenant(null));
+      dispatch(setUserTenants([]));
+      return;
+    }
 
     const fetchUserTenants = async () => {
       try {
+        dispatch(setLoading(true));
+        dispatch(setError(null));
+        
+        console.log('Fetching tenant data for user:', user.id);
+        
         // SECURITY FIX: Ensure tenant data is properly scoped to authenticated user
         const { data: userTenantsData, error: userTenantsError } = await supabase
           .from('user_tenants')
@@ -34,8 +44,11 @@ export const useTenantData = () => {
 
         if (userTenantsError) {
           console.error('Error fetching user tenants:', userTenantsError);
+          dispatch(setError(userTenantsError.message));
           throw userTenantsError;
         }
+
+        console.log('Fetched user tenants:', userTenantsData);
 
         // Transform the data to match our interfaces
         const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
@@ -55,15 +68,19 @@ export const useTenantData = () => {
 
         dispatch(setUserTenants(transformedUserTenants));
 
-        // Set current tenant if not set
+        // Set current tenant if not set and we have tenants
         if (!currentTenant && transformedUserTenants && transformedUserTenants.length > 0) {
           const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
           if (primaryTenant?.tenant) {
+            console.log('Setting current tenant:', primaryTenant.tenant);
             dispatch(setCurrentTenant(primaryTenant.tenant));
           }
         }
       } catch (error) {
         console.error('Error fetching tenant data:', error);
+        dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
+      } finally {
+        dispatch(setLoading(false));
       }
     };
 
@@ -107,8 +124,11 @@ export const useTenantData = () => {
       }
     };
 
-    fetchUserTenants();
-    fetchSubscriptionPlans();
+    // Only fetch tenant data if we don't have it or if user changed
+    if (userTenants.length === 0 || !loading) {
+      fetchUserTenants();
+      fetchSubscriptionPlans();
+    }
 
     // Set up real-time subscription for tenant changes with proper tenant isolation
     const channel = supabase
@@ -122,6 +142,7 @@ export const useTenantData = () => {
           filter: `user_id=eq.${user.id}`, // SECURITY FIX: Filter by user_id
         },
         () => {
+          console.log('Real-time tenant data change detected');
           fetchUserTenants();
         }
       )
@@ -163,13 +184,14 @@ export const useTenantData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, dispatch, currentTenant]);
+  }, [user, dispatch, currentTenant, userTenants.length, loading]);
 
   return {
     currentTenant,
     userTenants,
     subscriptionPlans,
     isMultiTenant: userTenants.length > 1,
+    loading,
   };
 };
 

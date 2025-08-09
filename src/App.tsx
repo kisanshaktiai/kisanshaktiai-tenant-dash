@@ -9,7 +9,6 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { IntlProvider } from '@/components/providers/IntlProvider';
 import { useAuth } from '@/hooks/useAuth';
-import { useTenantData } from '@/hooks/useTenantData';
 import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
 import { EnhancedDashboardLayout } from '@/components/layout/EnhancedDashboardLayout';
 
@@ -53,9 +52,10 @@ interface RequireAuthProps {
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
 
-  if (loading) {
+  // Show loading while auth is initializing
+  if (!initialized || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -63,6 +63,7 @@ const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
     );
   }
 
+  // Redirect to login if not authenticated
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -87,7 +88,7 @@ function App() {
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/setup-password" element={<PasswordSetupPage />} />
 
-                {/* Protected routes */}
+                {/* Protected routes - wrapped with RequireAuth first, then OnboardingGuard */}
                 <Route path="/dashboard" element={
                   <RequireAuth>
                     <OnboardingGuard>
@@ -106,6 +107,7 @@ function App() {
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
 
+                {/* Onboarding route - only requires authentication, not onboarding completion */}
                 <Route path="/onboarding" element={
                   <RequireAuth>
                     <OnboardingPage />
@@ -125,4 +127,3 @@ function App() {
 }
 
 export default App;
-
