@@ -73,7 +73,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ isMinimized 
       name: 'Subscription',
       href: '/subscription',
       icon: CreditCard,
-      badge: currentTenant?.subscription_plan === 'Kisan_Basic' ? 'Basic' : null
+      badge: currentTenant?.subscription_plan?.includes('Basic') ? 'Basic' : null
     },
     {
       name: 'Settings',

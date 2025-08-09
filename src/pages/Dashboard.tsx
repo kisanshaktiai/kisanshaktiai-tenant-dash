@@ -9,7 +9,7 @@ const Dashboard = () => {
   // Mock data for demonstration - replace with real data from the query
   const dashboardData = {
     farmers: {
-      total: data?.total_farmers || 1234,
+      total: data?.totalFarmers || 1234,
       active: data?.active_farmers || 987,
       new: data?.new_farmers_this_week || 45
     },
@@ -19,7 +19,7 @@ const Dashboard = () => {
       performance: data?.average_dealer_performance || 92
     },
     products: {
-      total: data?.total_products || 456,
+      total: data?.totalProducts || 456,
       categories: data?.product_categories || 12,
       outOfStock: data?.out_of_stock_products || 3
     },

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from '@/components/ErrorFallback';
+import ErrorFallback from '@/components/ErrorFallback';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { IntlProvider } from '@/components/providers/IntlProvider';
@@ -18,7 +18,7 @@ import Auth from '@/pages/Auth';
 import FarmersPage from '@/pages/farmers/FarmersPage';
 import DealersPage from '@/pages/dealers/DealersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
-import AnalyticsPage from '@/pages/analytics/AnalyticsPage';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
@@ -44,9 +44,12 @@ const queryClient = new QueryClient({
   },
 });
 
-const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+interface RequireAuthProps {
+  children: React.ReactNode;
+}
+
+const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   const { user, loading } = useAuth();
-  const { currentTenant } = useTenantData();
 
   if (loading) {
     return (

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { DashboardSidebar } from './DashboardSidebar';
 import { EnhancedTopbar } from './EnhancedTopbar';
-import { NotificationPanel } from '../notifications/NotificationPanel';
+import NotificationPanel from '../notifications/NotificationPanel';
 import { CommandPalette } from '../ui/command-palette';
 import { useRealTimeConnection } from '@/hooks/data/useRealTimeConnection';
 import { cn } from '@/lib/utils';
