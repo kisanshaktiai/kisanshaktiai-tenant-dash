@@ -38,11 +38,13 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
-                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout><Dashboard /></DashboardLayout></RequireAuth>} />
-                  <Route path="/dashboard/farmers" element={<RequireAuth><DashboardLayout><FarmersPage /></DashboardLayout></RequireAuth>} />
-                  <Route path="/dashboard/products" element={<RequireAuth><DashboardLayout><ProductsPage /></DashboardLayout></RequireAuth>} />
-                  <Route path="/dashboard/campaigns" element={<RequireAuth><DashboardLayout><CampaignsPage /></DashboardLayout></RequireAuth>} />
-                  <Route path="/dashboard/settings" element={<RequireAuth><DashboardLayout><SettingsPage /></DashboardLayout></RequireAuth>} />
+                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="farmers" element={<FarmersPage />} />
+                    <Route path="products" element={<ProductsPage />} />
+                    <Route path="campaigns" element={<CampaignsPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
                   <Route path="/" element={<Navigate to="/dashboard" />} />
                 </Routes>
                 <Toaster />
