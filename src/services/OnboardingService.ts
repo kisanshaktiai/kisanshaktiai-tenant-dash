@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface OnboardingWorkflow {
@@ -154,7 +155,7 @@ export class OnboardingService {
         .from('onboarding_workflows')
         .select('*')
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid 406 when no rows
 
       if (error) {
         console.error('Error fetching onboarding workflow:', error);
@@ -169,16 +170,16 @@ export class OnboardingService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: 'Onboarding Workflow', // Default value since column doesn't exist
+        workflow_name: 'Onboarding Workflow',
         status: (data.status === 'not_started' || data.status === 'in_progress' || data.status === 'completed') 
-          ? data.status as 'not_started' | 'in_progress' | 'completed'
+          ? (data.status as 'not_started' | 'in_progress' | 'completed')
           : 'not_started',
-        progress_percentage: Math.round((data.current_step / data.total_steps) * 100), // Calculate from current/total
-        current_step: data.current_step,
-        total_steps: data.total_steps,
-        started_at: data.started_at,
-        completed_at: data.completed_at,
-        metadata: (data.metadata && typeof data.metadata === 'object') ? data.metadata as Record<string, any> : {},
+        progress_percentage: data.total_steps ? Math.round((data.current_step / data.total_steps) * 100) : 0,
+        current_step: data.current_step ?? 1,
+        total_steps: data.total_steps ?? 0,
+        started_at: data.started_at ?? null,
+        completed_at: data.completed_at ?? null,
+        metadata: (data.metadata && typeof data.metadata === 'object') ? (data.metadata as Record<string, any>) : {},
         created_at: data.created_at,
         updated_at: data.updated_at
       };
