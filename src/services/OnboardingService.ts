@@ -31,8 +31,27 @@ export interface OnboardingStep {
   updated_at: string;
 }
 
+interface OnboardingStepTemplate {
+  step: number;
+  name: string;
+  description: string;
+  required: boolean;
+  estimated_time: number;
+}
+
 export class OnboardingService {
   constructor() {}
+
+  private isValidStepsArray(data: any): data is OnboardingStepTemplate[] {
+    return Array.isArray(data) && data.every(step => 
+      typeof step === 'object' &&
+      typeof step.step === 'number' &&
+      typeof step.name === 'string' &&
+      typeof step.description === 'string' &&
+      typeof step.required === 'boolean' &&
+      typeof step.estimated_time === 'number'
+    );
+  }
 
   async startOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
     try {
@@ -60,14 +79,23 @@ export class OnboardingService {
           subscription_plan: subscriptionPlan
         });
 
-      const steps = templateData || [
-        { step: 1, name: 'Business Verification', description: 'Verify business documents and setup', required: true, estimated_time: 30 },
-        { step: 2, name: 'Subscription Plan', description: 'Configure subscription and billing', required: true, estimated_time: 15 },
-        { step: 3, name: 'Branding Configuration', description: 'Set up your organization branding', required: false, estimated_time: 20 },
-        { step: 4, name: 'Feature Selection', description: 'Choose and configure platform features', required: true, estimated_time: 25 },
-        { step: 5, name: 'Data Import', description: 'Import existing data and setup integrations', required: false, estimated_time: 45 },
-        { step: 6, name: 'Team Invites', description: 'Invite team members and assign roles', required: false, estimated_time: 15 }
-      ];
+      let steps: OnboardingStepTemplate[] = [];
+
+      // Validate and parse the template data
+      if (this.isValidStepsArray(templateData)) {
+        steps = templateData;
+      } else {
+        // Fallback to default steps if template data is invalid
+        console.warn('Invalid template data, using default steps');
+        steps = [
+          { step: 1, name: 'Business Verification', description: 'Verify business documents and setup', required: true, estimated_time: 30 },
+          { step: 2, name: 'Subscription Plan', description: 'Configure subscription and billing', required: true, estimated_time: 15 },
+          { step: 3, name: 'Branding Configuration', description: 'Set up your organization branding', required: false, estimated_time: 20 },
+          { step: 4, name: 'Feature Selection', description: 'Choose and configure platform features', required: true, estimated_time: 25 },
+          { step: 5, name: 'Data Import', description: 'Import existing data and setup integrations', required: false, estimated_time: 45 },
+          { step: 6, name: 'Team Invites', description: 'Invite team members and assign roles', required: false, estimated_time: 15 }
+        ];
+      }
 
       // Create a new onboarding workflow
       const { data: workflowData, error: workflowError } = await supabase
