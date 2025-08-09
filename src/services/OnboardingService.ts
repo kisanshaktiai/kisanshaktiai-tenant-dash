@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface OnboardingWorkflow {
@@ -44,6 +43,32 @@ export class OnboardingService {
         return existingWorkflow;
       }
 
+      // Get tenant information to determine workflow type
+      const { data: tenantData } = await supabase
+        .from('tenants')
+        .select('type, subscription_plan')
+        .eq('id', tenantId)
+        .single();
+
+      const tenantType = tenantData?.type || 'agri_company';
+      const subscriptionPlan = tenantData?.subscription_plan || 'Kisan_Basic';
+
+      // Get the appropriate onboarding template based on tenant type and plan
+      const { data: templateData } = await supabase
+        .rpc('get_onboarding_template', {
+          tenant_type: tenantType,
+          subscription_plan: subscriptionPlan
+        });
+
+      const steps = templateData || [
+        { step: 1, name: 'Business Verification', description: 'Verify business documents and setup', required: true, estimated_time: 30 },
+        { step: 2, name: 'Subscription Plan', description: 'Configure subscription and billing', required: true, estimated_time: 15 },
+        { step: 3, name: 'Branding Configuration', description: 'Set up your organization branding', required: false, estimated_time: 20 },
+        { step: 4, name: 'Feature Selection', description: 'Choose and configure platform features', required: true, estimated_time: 25 },
+        { step: 5, name: 'Data Import', description: 'Import existing data and setup integrations', required: false, estimated_time: 45 },
+        { step: 6, name: 'Team Invites', description: 'Invite team members and assign roles', required: false, estimated_time: 15 }
+      ];
+
       // Create a new onboarding workflow
       const { data: workflowData, error: workflowError } = await supabase
         .from('onboarding_workflows')
@@ -51,7 +76,8 @@ export class OnboardingService {
           tenant_id: tenantId,
           status: 'in_progress',
           current_step: 1,
-          total_steps: 5, // Example: 5 steps in the workflow
+          total_steps: steps.length,
+          started_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -67,19 +93,15 @@ export class OnboardingService {
       }
 
       // Create the onboarding steps
-      const steps = [
-        { step_number: 1, step_name: 'Connect Data Sources' },
-        { step_number: 2, step_name: 'Configure Integrations' },
-        { step_number: 3, step_name: 'Set Up User Roles' },
-        { step_number: 4, step_name: 'Customize Branding' },
-        { step_number: 5, step_name: 'Launch Platform' },
-      ];
-
-      const stepsToInsert = steps.map(step => ({
+      const stepsToInsert = steps.map((step, index) => ({
         workflow_id: workflowData.id,
-        step_number: step.step_number,
-        step_name: step.step_name,
+        step_number: step.step || index + 1,
+        step_name: step.name,
+        step_description: step.description || `Complete ${step.name}`,
         step_status: 'pending' as const,
+        is_required: step.required !== false,
+        estimated_time_minutes: step.estimated_time || 15,
+        step_data: {}
       }));
 
       const { error: stepsError } = await supabase

@@ -9,6 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
 import Loading from '@/components/Loading';
 import { useAuth } from '@/hooks/useAuth';
+import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
 import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
@@ -38,7 +39,7 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
-                  <Route path="/dashboard" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
+                  <Route path="/dashboard" element={<RequireAuth><OnboardingGuard><DashboardLayout /></OnboardingGuard></RequireAuth>}>
                     <Route index element={<Dashboard />} />
                     <Route path="farmers" element={<FarmersPage />} />
                     <Route path="products" element={<ProductsPage />} />
