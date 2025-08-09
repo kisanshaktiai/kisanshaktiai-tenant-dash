@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,8 @@ export const TenantOnboardingFlow: React.FC = () => {
   const updateStepMutation = useUpdateStepStatus();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [preloadedSteps, setPreloadedSteps] = useState<Set<number>>(new Set());
+  const currentStepRef = useRef<HTMLDivElement>(null);
 
   // Enable real-time updates
   useOnboardingRealtime();
@@ -69,6 +71,29 @@ export const TenantOnboardingFlow: React.FC = () => {
       updated_at: ''
     });
   }
+
+  // Preload next step component
+  useEffect(() => {
+    const nextStepIndex = currentStepIndex + 1;
+    if (nextStepIndex < allSteps.length && !preloadedSteps.has(nextStepIndex)) {
+      const nextStep = allSteps[nextStepIndex];
+      const NextStepComponent = stepComponents[nextStep.step_name as keyof typeof stepComponents];
+      
+      if (NextStepComponent) {
+        // Preload the component by importing it
+        setTimeout(() => {
+          setPreloadedSteps(prev => new Set([...prev, nextStepIndex]));
+        }, 100);
+      }
+    }
+  }, [currentStepIndex, allSteps, preloadedSteps]);
+
+  // Focus management
+  useEffect(() => {
+    if (currentStepRef.current && !showWelcome) {
+      currentStepRef.current.focus();
+    }
+  }, [currentStepIndex, showWelcome]);
 
   // Update current step index based on progress
   useEffect(() => {
@@ -242,7 +267,7 @@ export const TenantOnboardingFlow: React.FC = () => {
             <Button 
               size="lg" 
               onClick={() => setShowWelcome(false)}
-              className="px-8"
+              className="px-8 focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               Start Setup
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -305,13 +330,14 @@ export const TenantOnboardingFlow: React.FC = () => {
               <React.Fragment key={step.id}>
                 <button
                   onClick={() => handleStepNavigation(index)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                     index === currentStepIndex
                       ? 'bg-primary text-primary-foreground'
                       : step.step_status === 'completed'
                       ? 'bg-success/10 text-success hover:bg-success/20'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
+                  aria-label={`Step ${index + 1}: ${step.step_name} ${step.step_status === 'completed' ? '(completed)' : ''}`}
                 >
                   {step.step_status === 'completed' ? (
                     <CheckCircle className="w-4 h-4" />
@@ -332,14 +358,16 @@ export const TenantOnboardingFlow: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <Card className="border-0 shadow-lg">
             <CardContent className="p-8">
-              <StepComponent
-                step={currentStep}
-                onComplete={handleStepComplete}
-                onNext={() => handleStepNavigation(currentStepIndex + 1)}
-                onPrevious={() => handleStepNavigation(currentStepIndex - 1)}
-                onEditStep={handleStepNavigation}
-                isLoading={completeStepMutation.isPending || updateStepMutation.isPending}
-              />
+              <div ref={currentStepRef} tabIndex={-1} className="focus:outline-none">
+                <StepComponent
+                  step={currentStep}
+                  onComplete={handleStepComplete}
+                  onNext={() => handleStepNavigation(currentStepIndex + 1)}
+                  onPrevious={() => handleStepNavigation(currentStepIndex - 1)}
+                  onEditStep={handleStepNavigation}
+                  isLoading={completeStepMutation.isPending || updateStepMutation.isPending}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -353,6 +381,7 @@ export const TenantOnboardingFlow: React.FC = () => {
               variant="outline"
               onClick={() => handleStepNavigation(currentStepIndex - 1)}
               disabled={currentStepIndex === 0}
+              className="focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
@@ -370,6 +399,7 @@ export const TenantOnboardingFlow: React.FC = () => {
             <Button 
               onClick={() => handleStepNavigation(currentStepIndex + 1)}
               disabled={currentStepIndex === allSteps.length - 1 || currentStep.step_status !== 'completed'}
+              className="focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               Next
               <ArrowRight className="w-4 h-4 ml-2" />

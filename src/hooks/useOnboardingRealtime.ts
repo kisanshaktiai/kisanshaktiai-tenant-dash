@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
@@ -8,14 +8,18 @@ import { toast } from 'sonner';
 export interface OnboardingRealtimeStatus {
   isConnected: boolean;
   lastUpdate?: Date;
+  isReconnecting: boolean;
+  reconnectAttempts: number;
 }
 
 export const useOnboardingRealtime = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
   const channelRef = useRef<any>(null);
-  const statusRef = useRef<OnboardingRealtimeStatus>({
-    isConnected: false
+  const [status, setStatus] = useState<OnboardingRealtimeStatus>({
+    isConnected: false,
+    isReconnecting: false,
+    reconnectAttempts: 0,
   });
 
   // Invalidate all tenant-related queries
@@ -30,15 +34,27 @@ export const useOnboardingRealtime = () => {
       queryKey: ['tenant-status', currentTenant.id] 
     });
 
-    // Invalidate tenant data queries
     queryClient.invalidateQueries({ 
       queryKey: ['tenants'] 
     });
     
-    statusRef.current.lastUpdate = new Date();
+    setStatus(prev => ({ ...prev, lastUpdate: new Date() }));
   }, [queryClient, currentTenant?.id]);
 
-  useEffect(() => {
+  const reconnect = useCallback(() => {
+    if (!currentTenant?.id || channelRef.current) return;
+
+    setStatus(prev => ({ 
+      ...prev, 
+      isReconnecting: true, 
+      reconnectAttempts: prev.reconnectAttempts + 1 
+    }));
+
+    // Setup channel again
+    setupChannel();
+  }, [currentTenant?.id]);
+
+  const setupChannel = useCallback(() => {
     if (!currentTenant?.id) return;
 
     console.log('Setting up comprehensive real-time for tenant:', currentTenant.id);
@@ -147,21 +163,39 @@ export const useOnboardingRealtime = () => {
     );
 
     // Subscribe and track connection status
-    channel.subscribe((status) => {
-      console.log(`Comprehensive onboarding channel status:`, status);
+    channel.subscribe((channelStatus) => {
+      console.log(`Comprehensive onboarding channel status:`, channelStatus);
       
-      if (status === 'SUBSCRIBED') {
-        statusRef.current.isConnected = true;
-      } else if (status === 'CHANNEL_ERROR') {
-        statusRef.current.isConnected = false;
+      if (channelStatus === 'SUBSCRIBED') {
+        setStatus(prev => ({ 
+          ...prev, 
+          isConnected: true, 
+          isReconnecting: false 
+        }));
+      } else if (channelStatus === 'CHANNEL_ERROR') {
+        setStatus(prev => ({ 
+          ...prev, 
+          isConnected: false, 
+          isReconnecting: false 
+        }));
         toast.error('Real-time connection lost. Refreshing...');
         setTimeout(invalidateQueries, 1000);
-      } else if (status === 'CLOSED') {
-        statusRef.current.isConnected = false;
+      } else if (channelStatus === 'CLOSED') {
+        setStatus(prev => ({ 
+          ...prev, 
+          isConnected: false, 
+          isReconnecting: false 
+        }));
       }
     });
 
     channelRef.current = channel;
+  }, [currentTenant?.id, invalidateQueries]);
+
+  useEffect(() => {
+    if (!currentTenant?.id) return;
+
+    setupChannel();
 
     return () => {
       console.log('Cleaning up comprehensive real-time');
@@ -169,12 +203,12 @@ export const useOnboardingRealtime = () => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      statusRef.current.isConnected = false;
+      setStatus(prev => ({ ...prev, isConnected: false }));
     };
-  }, [currentTenant?.id, invalidateQueries]);
+  }, [currentTenant?.id, setupChannel]);
 
   return {
-    isConnected: statusRef.current.isConnected,
-    lastUpdate: statusRef.current.lastUpdate
+    ...status,
+    reconnect,
   };
 };
