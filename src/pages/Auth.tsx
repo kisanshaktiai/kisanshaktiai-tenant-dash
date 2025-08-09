@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ const Auth = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { signIn, resetPassword, user } = useAuth();
+  const { sendPasswordReset, isLoading: isResettingPassword } = usePasswordReset();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -78,26 +79,14 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsResetting(true);
-
-    const { error } = await resetPassword(resetEmail);
     
-    if (error) {
-      setError(error.message);
-      toast({
-        variant: "destructive",
-        title: "Reset failed",
-        description: error.message,
-      });
-    } else {
+    const result = await sendPasswordReset(resetEmail);
+    
+    if (result.success) {
       setResetSent(true);
-      toast({
-        title: "Reset link sent",
-        description: "Check your email for password reset instructions.",
-      });
+    } else {
+      setError(result.error || 'Failed to send password reset email');
     }
-    
-    setIsResetting(false);
   };
 
   const handleBackToSignIn = () => {
@@ -106,7 +95,7 @@ const Auth = () => {
     setError(null);
     setResetEmail('');
   };
-
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
@@ -297,9 +286,9 @@ const Auth = () => {
                       <Button 
                         type="submit" 
                         className="w-full" 
-                        disabled={isResetting}
+                        disabled={isResettingPassword}
                       >
-                        {isResetting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isResettingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Send Reset Link
                       </Button>
                     </form>
