@@ -33,6 +33,16 @@ export interface OnboardingStep {
 }
 
 export class OnboardingService {
+  async getCompleteOnboardingData(tenantId: string) {
+    try {
+      console.log('Getting complete onboarding data for tenant:', tenantId);
+      return await tenantDataService.getCompleteOnboardingData(tenantId);
+    } catch (error) {
+      console.error('Error in OnboardingService.getCompleteOnboardingData:', error);
+      throw error;
+    }
+  }
+
   async getOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
     try {
       console.log('Fetching onboarding workflow for tenant:', tenantId);
@@ -46,7 +56,6 @@ export class OnboardingService {
 
       const workflow = Array.isArray(data) ? data[0] : data;
 
-      // Map database response to interface
       return {
         id: workflow.id,
         tenant_id: workflow.tenant_id,
@@ -84,7 +93,6 @@ export class OnboardingService {
 
       const steps = Array.isArray(data) ? data : [data];
 
-      // Filter steps that belong to the workflow and map to interface
       return steps
         .filter(step => step.workflow_id === workflowId)
         .map(step => ({
@@ -124,8 +132,10 @@ export class OnboardingService {
       
       await tenantDataService.updateOnboardingStep(tenantId, stepId, {
         step_status: stepStatus,
-        step_data: stepData || null,
-        updated_at: new Date().toISOString()
+        step_data: stepData || {},
+        updated_at: new Date().toISOString(),
+        ...(stepStatus === 'completed' && { completed_at: new Date().toISOString() }),
+        ...(stepStatus === 'in_progress' && { started_at: new Date().toISOString() })
       });
 
       return true;
@@ -136,20 +146,27 @@ export class OnboardingService {
   }
 
   async completeStep(stepId: string, stepData?: any, tenantId?: string): Promise<boolean> {
-    return this.updateStepStatus(stepId, 'completed', stepData, tenantId);
+    try {
+      if (!tenantId) {
+        console.error('Tenant ID is required for completing step');
+        return false;
+      }
+
+      console.log('Completing step:', { stepId, stepData, tenantId });
+      
+      await tenantDataService.completeOnboardingStep(tenantId, stepId, stepData);
+      return true;
+    } catch (error) {
+      console.error('Error completing step:', error);
+      return false;
+    }
   }
 
   async completeWorkflow(workflowId: string, tenantId: string): Promise<boolean> {
     try {
       console.log('Completing onboarding workflow:', { workflowId, tenantId });
       
-      await tenantDataService.updateOnboardingWorkflow(tenantId, workflowId, {
-        status: 'completed',
-        progress_percentage: 100,
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
+      await tenantDataService.completeOnboardingWorkflow(tenantId, workflowId);
       return true;
     } catch (error) {
       console.error('Error completing workflow:', error);
@@ -164,6 +181,16 @@ export class OnboardingService {
     } catch (error) {
       console.error('Error checking onboarding completion:', error);
       return false;
+    }
+  }
+
+  async ensureWorkflowExists(tenantId: string): Promise<string> {
+    try {
+      const { workflow_id } = await tenantDataService.ensureOnboardingWorkflow(tenantId);
+      return workflow_id;
+    } catch (error) {
+      console.error('Error ensuring workflow exists:', error);
+      throw error;
     }
   }
 }

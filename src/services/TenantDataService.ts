@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface TenantDataRequest {
   table: string;
-  operation: 'select' | 'insert' | 'update' | 'delete';
+  operation: 'select' | 'insert' | 'update' | 'delete' | 'ensure_workflow' | 'complete_workflow' | 'calculate_progress';
   data?: any;
   filters?: Record<string, any>;
   id?: string;
+  workflow_id?: string;
 }
 
 export interface TenantDataResponse<T = any> {
@@ -24,10 +25,10 @@ class TenantDataService {
       console.log('Calling tenant data API:', { tenantId, request });
 
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: {
+        body: JSON.stringify({
           ...request,
-          tenant_id: tenantId // Always include tenant_id in request body
-        },
+          tenant_id: tenantId
+        }),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -52,7 +53,14 @@ class TenantDataService {
     }
   }
 
-  // Onboarding workflows
+  // Workflow Management
+  async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
+    return this.callTenantDataAPI(tenantId, {
+      table: '',
+      operation: 'ensure_workflow'
+    });
+  }
+
   async getOnboardingWorkflow(tenantId: string) {
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
@@ -70,6 +78,23 @@ class TenantDataService {
     });
   }
 
+  async completeOnboardingWorkflow(tenantId: string, workflowId: string): Promise<{ success: boolean }> {
+    return this.callTenantDataAPI(tenantId, {
+      table: '',
+      operation: 'complete_workflow',
+      workflow_id: workflowId
+    });
+  }
+
+  async calculateWorkflowProgress(tenantId: string, workflowId: string): Promise<{ progress: number }> {
+    return this.callTenantDataAPI(tenantId, {
+      table: '',
+      operation: 'calculate_progress',
+      workflow_id: workflowId
+    });
+  }
+
+  // Steps Management
   async getOnboardingSteps(tenantId: string, workflowId?: string) {
     const filters: Record<string, any> = {};
     if (workflowId) {
@@ -127,11 +152,9 @@ class TenantDataService {
   }
 
   async upsertTenantBranding(tenantId: string, data: any) {
-    // First try to get existing branding
     try {
       const existing = await this.getTenantBranding(tenantId);
       if (existing && Array.isArray(existing) && existing.length > 0) {
-        // Update existing
         return this.callTenantDataAPI(tenantId, {
           table: 'tenant_branding',
           operation: 'update',
@@ -143,7 +166,6 @@ class TenantDataService {
       console.log('No existing branding found, will create new');
     }
 
-    // Create new
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_branding',
       operation: 'insert',
@@ -161,11 +183,9 @@ class TenantDataService {
   }
 
   async upsertTenantFeatures(tenantId: string, data: any) {
-    // First try to get existing features
     try {
       const existing = await this.getTenantFeatures(tenantId);
       if (existing && Array.isArray(existing) && existing.length > 0) {
-        // Update existing
         return this.callTenantDataAPI(tenantId, {
           table: 'tenant_features',
           operation: 'update',
@@ -177,7 +197,6 @@ class TenantDataService {
       console.log('No existing features found, will create new');
     }
 
-    // Create new
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_features',
       operation: 'insert',
@@ -192,6 +211,67 @@ class TenantDataService {
       operation: 'select',
       filters: { tenant_id: tenantId }
     });
+  }
+
+  // Composite Operations for Enhanced UX
+  async getCompleteOnboardingData(tenantId: string) {
+    try {
+      // Ensure workflow exists first
+      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      
+      // Get workflow and steps
+      const [workflow, steps] = await Promise.all([
+        this.getOnboardingWorkflow(tenantId),
+        this.getOnboardingSteps(tenantId, workflow_id)
+      ]);
+
+      return {
+        workflow: Array.isArray(workflow) ? workflow[0] : workflow,
+        steps: Array.isArray(steps) ? steps.sort((a, b) => a.step_number - b.step_number) : []
+      };
+    } catch (error) {
+      console.error('Error getting complete onboarding data:', error);
+      throw error;
+    }
+  }
+
+  async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any) {
+    try {
+      const result = await this.updateOnboardingStep(tenantId, stepId, {
+        step_status: 'completed',
+        step_data: stepData || {},
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      console.log('Step completed successfully:', stepId);
+      return result;
+    } catch (error) {
+      console.error('Error completing step:', error);
+      throw error;
+    }
+  }
+
+  async initializeOnboardingForTenant(tenantId: string) {
+    try {
+      console.log('Initializing onboarding for tenant:', tenantId);
+      
+      // Ensure workflow exists
+      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      
+      // Get complete onboarding data
+      const onboardingData = await this.getCompleteOnboardingData(tenantId);
+      
+      console.log('Onboarding initialized successfully:', { 
+        workflowId: workflow_id, 
+        stepCount: onboardingData.steps.length 
+      });
+      
+      return onboardingData;
+    } catch (error) {
+      console.error('Error initializing onboarding:', error);
+      throw error;
+    }
   }
 }
 

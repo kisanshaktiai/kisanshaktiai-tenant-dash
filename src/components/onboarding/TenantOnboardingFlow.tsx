@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Clock, ArrowLeft, ArrowRight, Sparkles, Building2, RefreshCw } from 'lucide-react';
-import { useOnboardingQuery, useCompleteStep, useUpdateStepStatus } from '@/hooks/useOnboarding';
+import { useOnboardingQuery, useCompleteStep, useUpdateStepStatus, useCompleteWorkflow } from '@/hooks/useOnboarding';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useOnboardingAutoProgress } from '@/hooks/useOnboardingAutoProgress';
 import { useAppSelector } from '@/store/hooks';
@@ -55,6 +54,7 @@ export const TenantOnboardingFlow: React.FC = () => {
   const { data: onboardingData, isLoading, error, refetch } = useOnboardingQuery();
   const completeStepMutation = useCompleteStep();
   const updateStepMutation = useUpdateStepStatus();
+  const completeWorkflowMutation = useCompleteWorkflow();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showWelcome, setShowWelcome] = useState(true);
   const [preloadedSteps, setPreloadedSteps] = useState<Set<number>>(new Set());
@@ -136,8 +136,7 @@ export const TenantOnboardingFlow: React.FC = () => {
     try {
       // Handle Summary step differently - complete the workflow
       if (currentStep.step_name === 'Summary' && workflow) {
-        await onboardingService.completeWorkflow(workflow.id, currentTenant.id);
-        toast.success('🎉 Onboarding completed successfully!');
+        await completeWorkflowMutation.mutateAsync(workflow.id);
         // Refetch onboarding data to reflect completion
         await refetch();
         return;
@@ -190,9 +189,6 @@ export const TenantOnboardingFlow: React.FC = () => {
         stepId: currentStep.id,
         stepData
       });
-
-      // Refetch onboarding data to get updated status
-      await refetch();
 
       // Move to next step if available
       if (currentStepIndex < allSteps.length - 1) {
