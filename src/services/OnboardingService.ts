@@ -139,6 +139,24 @@ export class OnboardingService {
     return this.updateStepStatus(stepId, 'completed', stepData, tenantId);
   }
 
+  async completeWorkflow(workflowId: string, tenantId: string): Promise<boolean> {
+    try {
+      console.log('Completing onboarding workflow:', { workflowId, tenantId });
+      
+      await tenantDataService.updateOnboardingWorkflow(tenantId, workflowId, {
+        status: 'completed',
+        progress_percentage: 100,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error completing workflow:', error);
+      return false;
+    }
+  }
+
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
     try {
       const workflow = await this.getOnboardingWorkflow(tenantId);

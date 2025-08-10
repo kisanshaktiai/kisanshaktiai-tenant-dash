@@ -19,6 +19,7 @@ interface TenantDataRequest {
   data?: any;
   filters?: Record<string, any>;
   id?: string;
+  tenant_id: string; // Now required in request body
 }
 
 async function validateUserAccess(userId: string, tenantId: string) {
@@ -37,7 +38,8 @@ async function validateUserAccess(userId: string, tenantId: string) {
   return userTenant;
 }
 
-async function handleTenantDataRequest(request: TenantDataRequest, userId: string, tenantId: string) {
+async function handleTenantDataRequest(request: TenantDataRequest, userId: string) {
+  const { tenant_id: tenantId } = request;
   console.log('Processing tenant data request:', { table: request.table, operation: request.operation, tenantId });
 
   // Validate user has access to tenant
@@ -68,15 +70,24 @@ async function handleTenantDataRequest(request: TenantDataRequest, userId: strin
       query = query.select('*');
       
       // Add tenant filtering for tenant-specific tables
-      if (['onboarding_workflows', 'onboarding_steps', 'tenant_branding', 'tenant_features', 'tenant_subscriptions'].includes(table)) {
-        if (table === 'onboarding_steps') {
-          // For onboarding_steps, we need to join with workflows first
-          query = query.select(`
-            *,
-            workflow:onboarding_workflows!inner(tenant_id)
-          `);
+      if (['onboarding_workflows', 'tenant_branding', 'tenant_features', 'tenant_subscriptions'].includes(table)) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      // Special handling for onboarding_steps - filter by workflow's tenant_id
+      if (table === 'onboarding_steps') {
+        // Get workflows for this tenant first to filter steps
+        const { data: workflows } = await supabase
+          .from('onboarding_workflows')
+          .select('id')
+          .eq('tenant_id', tenantId);
+        
+        if (workflows && workflows.length > 0) {
+          const workflowIds = workflows.map(w => w.id);
+          query = query.in('workflow_id', workflowIds);
         } else {
-          query = query.eq('tenant_id', tenantId);
+          // No workflows for this tenant, return empty
+          return [];
         }
       }
 
@@ -85,7 +96,7 @@ async function handleTenantDataRequest(request: TenantDataRequest, userId: strin
         query = query.eq('id', tenantId);
       }
 
-      // For subscription_plans, return active plans only
+      // For subscription_plans, return active plans only (no tenant filtering needed)
       if (table === 'subscription_plans') {
         query = query.eq('is_active', true);
       }
@@ -120,21 +131,38 @@ async function handleTenantDataRequest(request: TenantDataRequest, userId: strin
       query = query.update(data).eq('id', id);
       
       // Add tenant filtering for security
-      if (['onboarding_workflows', 'onboarding_steps', 'tenant_branding', 'tenant_features', 'tenant_subscriptions'].includes(table)) {
-        if (table === 'onboarding_steps') {
-          // For onboarding_steps, validate via workflow
-          const { data: workflow } = await supabase
-            .from('onboarding_workflows')
-            .select('tenant_id')
-            .eq('id', data.workflow_id || filters?.workflow_id)
-            .single();
-          
-          if (!workflow || workflow.tenant_id !== tenantId) {
-            throw new Error('Unauthorized access to onboarding step');
-          }
-        } else {
-          query = query.eq('tenant_id', tenantId);
+      if (['onboarding_workflows', 'tenant_branding', 'tenant_features', 'tenant_subscriptions'].includes(table)) {
+        query = query.eq('tenant_id', tenantId);
+      }
+      
+      // Special handling for onboarding_steps - validate via workflow
+      if (table === 'onboarding_steps') {
+        // First get the step to find its workflow
+        const { data: step } = await supabase
+          .from('onboarding_steps')
+          .select('workflow_id')
+          .eq('id', id)
+          .single();
+        
+        if (!step) {
+          throw new Error('Onboarding step not found');
         }
+        
+        // Validate workflow belongs to tenant
+        const { data: workflow } = await supabase
+          .from('onboarding_workflows')
+          .select('tenant_id')
+          .eq('id', step.workflow_id)
+          .single();
+        
+        if (!workflow || workflow.tenant_id !== tenantId) {
+          throw new Error('Unauthorized access to onboarding step');
+        }
+      }
+      
+      // For tenants table, ensure we're only updating the correct tenant
+      if (table === 'tenants') {
+        query = query.eq('id', tenantId);
       }
       
       query = query.select();
@@ -148,6 +176,28 @@ async function handleTenantDataRequest(request: TenantDataRequest, userId: strin
       // Add tenant filtering for security
       if (['onboarding_workflows', 'tenant_branding', 'tenant_features', 'tenant_subscriptions'].includes(table)) {
         query = query.eq('tenant_id', tenantId);
+      }
+      
+      // Special handling for onboarding_steps
+      if (table === 'onboarding_steps') {
+        // Similar validation as update
+        const { data: step } = await supabase
+          .from('onboarding_steps')
+          .select('workflow_id')
+          .eq('id', id)
+          .single();
+        
+        if (step) {
+          const { data: workflow } = await supabase
+            .from('onboarding_workflows')
+            .select('tenant_id')
+            .eq('id', step.workflow_id)
+            .single();
+          
+          if (!workflow || workflow.tenant_id !== tenantId) {
+            throw new Error('Unauthorized access to onboarding step');
+          }
+        }
       }
       
       break;
@@ -189,41 +239,18 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Get tenant ID from request
-    const url = new URL(req.url);
-    const tenantId = url.searchParams.get('tenant_id');
+    // Parse request body
+    const requestData: TenantDataRequest = await req.json();
     
-    if (!tenantId) {
-      throw new Error('tenant_id parameter is required');
-    }
-
-    console.log('Processing request for tenant:', tenantId);
-
-    // Parse request body for POST/PUT requests
-    let requestData: TenantDataRequest;
-    
-    if (req.method === 'GET') {
-      requestData = {
-        table: url.searchParams.get('table') || '',
-        operation: 'select',
-        filters: {}
-      };
-
-      // Parse filters from query parameters
-      url.searchParams.forEach((value, key) => {
-        if (key !== 'table' && key !== 'tenant_id') {
-          requestData.filters![key] = value;
-        }
-      });
-    } else {
-      requestData = await req.json();
-    }
-
     if (!requestData.table) {
       throw new Error('table parameter is required');
     }
+    
+    if (!requestData.tenant_id) {
+      throw new Error('tenant_id parameter is required');
+    }
 
-    const result = await handleTenantDataRequest(requestData, user.id, tenantId);
+    const result = await handleTenantDataRequest(requestData, user.id);
 
     return new Response(JSON.stringify({ 
       success: true, 

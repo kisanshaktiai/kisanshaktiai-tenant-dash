@@ -72,6 +72,11 @@ export const useCompleteStep = () => {
       queryClient.invalidateQueries({ 
         queryKey: ['tenant-status', currentTenant?.id] 
       });
+      
+      // Refetch tenant data to get updated information
+      queryClient.invalidateQueries({ 
+        queryKey: ['tenants'] 
+      });
     },
     onError: (error) => {
       console.error('Failed to complete step:', error);

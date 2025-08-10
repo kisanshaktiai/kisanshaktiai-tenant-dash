@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -16,6 +17,7 @@ import { DataImportStep } from './steps/DataImportStep';
 import { TeamInvitesStep } from './steps/TeamInvitesStep';
 import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 import { tenantProfileService } from '@/services/TenantProfileService';
+import { onboardingService } from '@/services/OnboardingService';
 import { toast } from 'sonner';
 
 const stepComponents = {
@@ -132,6 +134,15 @@ export const TenantOnboardingFlow: React.FC = () => {
     if (!currentStep || !currentTenant?.id) return;
 
     try {
+      // Handle Summary step differently - complete the workflow
+      if (currentStep.step_name === 'Summary' && workflow) {
+        await onboardingService.completeWorkflow(workflow.id, currentTenant.id);
+        toast.success('🎉 Onboarding completed successfully!');
+        // Refetch onboarding data to reflect completion
+        await refetch();
+        return;
+      }
+
       // Save data to appropriate tenant tables based on step
       switch (currentStep.step_name) {
         case 'Business Verification':
@@ -172,23 +183,18 @@ export const TenantOnboardingFlow: React.FC = () => {
             await tenantProfileService.inviteTeamMembers(currentTenant.id, stepData.invites);
           }
           break;
-
-        case 'Summary':
-          if (workflow) {
-            await completeStepMutation.mutateAsync({
-              stepId: workflow.id,
-              stepData: { ...stepData, onboardingCompleted: true }
-            });
-            toast.success('🎉 Onboarding completed successfully!');
-          }
-          return;
       }
 
+      // Complete the step
       await completeStepMutation.mutateAsync({
         stepId: currentStep.id,
         stepData
       });
 
+      // Refetch onboarding data to get updated status
+      await refetch();
+
+      // Move to next step if available
       if (currentStepIndex < allSteps.length - 1) {
         setCurrentStepIndex(currentStepIndex + 1);
       }

@@ -24,7 +24,10 @@ class TenantDataService {
       console.log('Calling tenant data API:', { tenantId, request });
 
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: request,
+        body: {
+          ...request,
+          tenant_id: tenantId // Always include tenant_id in request body
+        },
         headers: {
           'Content-Type': 'application/json',
         },
@@ -55,6 +58,15 @@ class TenantDataService {
       table: 'onboarding_workflows',
       operation: 'select',
       filters: { tenant_id: tenantId }
+    });
+  }
+
+  async updateOnboardingWorkflow(tenantId: string, workflowId: string, data: any) {
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_workflows',
+      operation: 'update',
+      id: workflowId,
+      data
     });
   }
 

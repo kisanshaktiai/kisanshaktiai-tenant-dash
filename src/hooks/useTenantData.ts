@@ -1,8 +1,8 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setSubscriptionPlans, setLoading, setError } from '@/store/slices/tenantSlice';
+import { tenantDataService } from '@/services/TenantDataService';
 
 export const useTenantData = () => {
   const dispatch = useAppDispatch();
@@ -86,39 +86,68 @@ export const useTenantData = () => {
 
     const fetchSubscriptionPlans = async () => {
       try {
-        const { data: plansData, error: plansError } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('is_active', true)
-          .order('price_monthly', { ascending: true });
-
-        if (plansError) {
-          console.error('Error fetching subscription plans:', plansError);
-          throw plansError;
-        }
-
-        // Map the data to match our interface structure
-        const mappedPlans = (plansData || []).map(plan => {
-          // Extract limits from the limits JSON field
-          const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
+        // Use edge function if we have a current tenant, otherwise fall back to direct query
+        if (currentTenant?.id) {
+          const plansData = await tenantDataService.getSubscriptionPlans(currentTenant.id);
           
-          return {
-            id: plan.id,
-            name: plan.name,
-            description: plan.description,
-            price_monthly: plan.price_monthly || 0,
-            price_annually: plan.price_annually || 0,
-            max_farmers: limits.max_farmers || 0,
-            max_dealers: limits.max_dealers || 0,
-            max_products: limits.max_products || 0,
-            max_storage_gb: limits.max_storage_gb || 0,
-            max_api_calls_per_day: limits.max_api_calls_per_day || 0,
-            features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
-            is_active: plan.is_active,
-          };
-        });
+          // Map the data to match our interface structure
+          const mappedPlans = (plansData || []).map(plan => {
+            // Extract limits from the limits JSON field
+            const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
+            
+            return {
+              id: plan.id,
+              name: plan.name,
+              description: plan.description,
+              price_monthly: plan.price_monthly || 0,
+              price_annually: plan.price_annually || 0,
+              max_farmers: limits.max_farmers || 0,
+              max_dealers: limits.max_dealers || 0,
+              max_products: limits.max_products || 0,
+              max_storage_gb: limits.max_storage_gb || 0,
+              max_api_calls_per_day: limits.max_api_calls_per_day || 0,
+              features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
+              is_active: plan.is_active,
+            };
+          });
 
-        dispatch(setSubscriptionPlans(mappedPlans));
+          dispatch(setSubscriptionPlans(mappedPlans));
+        } else {
+          // Fallback to direct query for public subscription plans
+          const { data: plansData, error: plansError } = await supabase
+            .from('subscription_plans')
+            .select('*')
+            .eq('is_active', true)
+            .order('price_monthly', { ascending: true });
+
+          if (plansError) {
+            console.error('Error fetching subscription plans:', plansError);
+            throw plansError;
+          }
+
+          // Map the data to match our interface structure
+          const mappedPlans = (plansData || []).map(plan => {
+            // Extract limits from the limits JSON field
+            const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
+            
+            return {
+              id: plan.id,
+              name: plan.name,
+              description: plan.description,
+              price_monthly: plan.price_monthly || 0,
+              price_annually: plan.price_annually || 0,
+              max_farmers: limits.max_farmers || 0,
+              max_dealers: limits.max_dealers || 0,
+              max_products: limits.max_products || 0,
+              max_storage_gb: limits.max_storage_gb || 0,
+              max_api_calls_per_day: limits.max_api_calls_per_day || 0,
+              features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
+              is_active: plan.is_active,
+            };
+          });
+
+          dispatch(setSubscriptionPlans(mappedPlans));
+        }
       } catch (error) {
         console.error('Error fetching subscription plans:', error);
       }
@@ -127,6 +156,10 @@ export const useTenantData = () => {
     // Only fetch tenant data if we don't have it or if user changed
     if (userTenants.length === 0 || !loading) {
       fetchUserTenants();
+    }
+
+    // Fetch subscription plans when we have a current tenant
+    if (currentTenant?.id) {
       fetchSubscriptionPlans();
     }
 
@@ -184,7 +217,7 @@ export const useTenantData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, dispatch, currentTenant, userTenants.length, loading]);
+  }, [user, dispatch, currentTenant?.id, userTenants.length, loading]);
 
   return {
     currentTenant,
