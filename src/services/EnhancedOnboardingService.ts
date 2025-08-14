@@ -1,4 +1,3 @@
-
 import { tenantDataService } from './TenantDataService';
 import { toast } from 'sonner';
 
@@ -54,7 +53,9 @@ class EnhancedOnboardingService {
         console.error(`${context}: Attempt ${attempt} failed:`, error);
         
         if (attempt < this.retryAttempts) {
-          await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+          const delay = this.retryDelay * Math.pow(2, attempt - 1);
+          console.log(`${context}: Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
@@ -70,15 +71,11 @@ class EnhancedOnboardingService {
         throw new Error('Tenant ID is required for onboarding initialization');
       }
 
-      // First ensure the workflow exists
-      const { workflow_id } = await tenantDataService.ensureOnboardingWorkflow(tenantId);
-      console.log('EnhancedOnboardingService: Workflow ensured with ID:', workflow_id);
-      
-      // Get complete onboarding data
-      const onboardingData = await tenantDataService.getCompleteOnboardingData(tenantId);
+      // Enhanced initialization with automatic workflow creation
+      const onboardingData = await tenantDataService.initializeOnboardingForTenant(tenantId);
       
       if (!onboardingData?.workflow) {
-        throw new Error('Failed to initialize onboarding workflow');
+        throw new Error('Failed to initialize onboarding workflow - no workflow returned');
       }
       
       console.log('EnhancedOnboardingService: Workflow initialized successfully:', {
@@ -106,9 +103,11 @@ class EnhancedOnboardingService {
       } catch (error) {
         console.error('EnhancedOnboardingService: Error getting onboarding data:', error);
         
-        // If we can't get data, try to initialize
-        if (error.message?.includes('workflow') || error.message?.includes('not found')) {
-          console.log('EnhancedOnboardingService: Workflow not found, initializing...');
+        // Enhanced error recovery
+        if (error.message?.includes('workflow') || 
+            error.message?.includes('not found') ||
+            error.message?.includes('Request body is required')) {
+          console.log('EnhancedOnboardingService: Recovering from error by initializing workflow...');
           return await this.initializeOnboardingWorkflow(tenantId);
         }
         
@@ -192,27 +191,39 @@ class EnhancedOnboardingService {
     }, 'getOnboardingProgress');
   }
 
-  // Validation and repair methods
+  // Enhanced validation with automatic repair
   async validateOnboardingIntegrity(tenantId: string): Promise<{ isValid: boolean; issues: string[]; repaired: boolean }> {
     return this.withRetry(async () => {
       const issues: string[] = [];
       let repaired = false;
       
       try {
-        const data = await tenantDataService.getCompleteOnboardingData(tenantId);
+        console.log('EnhancedOnboardingService: Validating onboarding integrity for tenant:', tenantId);
+        
+        let data;
+        try {
+          data = await tenantDataService.getCompleteOnboardingData(tenantId);
+        } catch (error) {
+          console.log('EnhancedOnboardingService: Error getting data, will attempt repair:', error.message);
+          issues.push('Unable to retrieve onboarding data');
+        }
         
         if (!data?.workflow) {
           issues.push('No onboarding workflow found');
-          console.log('Repairing: Creating missing workflow');
-          await this.initializeOnboardingWorkflow(tenantId);
-          repaired = true;
-        } else {
+          console.log('EnhancedOnboardingService: Repairing - Creating missing workflow');
+          try {
+            data = await this.initializeOnboardingWorkflow(tenantId);
+            repaired = true;
+          } catch (repairError) {
+            console.error('EnhancedOnboardingService: Failed to repair workflow:', repairError);
+            issues.push(`Failed to create workflow: ${repairError.message}`);
+          }
+        }
+        
+        if (data?.workflow) {
           if (!data.steps || data.steps.length === 0) {
             issues.push('No onboarding steps found');
-            // Steps would be created by initializeOnboardingWorkflow if needed
-          }
-          
-          if (data.workflow.total_steps !== data.steps.length) {
+          } else if (data.workflow.total_steps !== data.steps.length) {
             issues.push(`Step count mismatch: expected ${data.workflow.total_steps}, found ${data.steps.length}`);
           }
         }
@@ -223,7 +234,7 @@ class EnhancedOnboardingService {
           repaired
         };
       } catch (error) {
-        console.error('Validation failed:', error);
+        console.error('EnhancedOnboardingService: Validation failed:', error);
         return {
           isValid: false,
           issues: [`Validation error: ${error.message}`],

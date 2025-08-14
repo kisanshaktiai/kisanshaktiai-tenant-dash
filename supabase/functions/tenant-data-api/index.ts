@@ -142,6 +142,7 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
       .single();
 
     const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
+    console.log('Creating workflow for subscription plan:', subscriptionPlan);
 
     // Create workflow
     const { data: workflow, error: workflowError } = await supabase
@@ -505,25 +506,32 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Parse request body with enhanced error handling
+    // Enhanced request body parsing
     let requestData: any;
     try {
       const bodyText = await req.text();
-      console.log('Raw request body length:', bodyText?.length || 0);
+      console.log('Raw request body:', bodyText?.substring(0, 500) + (bodyText?.length > 500 ? '...' : ''));
       
       if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined') {
         console.error('Request body is empty or undefined');
-        throw new Error('Request body is required');
+        throw new Error('Request body is required and cannot be empty');
       }
       
       requestData = JSON.parse(bodyText);
-      console.log('Parsed request data:', JSON.stringify(requestData, null, 2));
+      console.log('Parsed request data:', {
+        operation: requestData?.operation,
+        table: requestData?.table,
+        tenant_id: requestData?.tenant_id,
+        hasData: !!requestData?.data,
+        hasFilters: !!requestData?.filters
+      });
       
     } catch (parseError) {
       console.error('Request parsing error:', parseError);
       return new Response(JSON.stringify({ 
         success: false, 
-        error: parseError.message || 'Failed to parse request body' 
+        error: `Failed to parse request: ${parseError.message}`,
+        details: 'Ensure request body is valid JSON'
       }), {
         status: 400,
         headers: { 
@@ -533,23 +541,23 @@ serve(async (req) => {
       });
     }
 
-    // Validate required fields
+    // Enhanced validation
     if (!requestData || typeof requestData !== 'object') {
       console.error('Invalid request data format:', typeof requestData);
-      throw new Error('Request data must be an object');
+      throw new Error('Request data must be a valid JSON object');
     }
 
     if (!requestData.tenant_id) {
       console.error('Missing tenant_id in request:', requestData);
-      throw new Error('tenant_id is required');
+      throw new Error('tenant_id is required in request body');
     }
 
     if (!requestData.operation) {
       console.error('Missing operation in request:', requestData);
-      throw new Error('operation is required');
+      throw new Error('operation is required in request body');
     }
 
-    console.log('Processing request:', {
+    console.log('Processing validated request:', {
       tenant_id: requestData.tenant_id,
       operation: requestData.operation,
       table: requestData.table
@@ -557,7 +565,7 @@ serve(async (req) => {
 
     // Get user context
     const userContext = await getUserContext(user.id, requestData.tenant_id);
-    console.log('User context:', { 
+    console.log('User context established:', { 
       role: userContext.role, 
       isAdmin: userContext.isAdmin, 
       isTenantUser: userContext.isTenantUser 
@@ -580,11 +588,12 @@ serve(async (req) => {
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const statusCode = errorMessage.includes('not have access') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') ? 403 : 
-                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('Invalid') || errorMessage.includes('empty') ? 400 : 500;
+                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('empty') || errorMessage.includes('Invalid') ? 400 : 500;
 
     return new Response(JSON.stringify({ 
       success: false, 
-      error: errorMessage 
+      error: errorMessage,
+      timestamp: new Date().toISOString()
     }), {
       status: statusCode,
       headers: { 

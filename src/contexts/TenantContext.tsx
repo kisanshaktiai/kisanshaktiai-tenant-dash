@@ -62,7 +62,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (userTenantsError) {
         console.error('TenantProvider: Error fetching user tenants:', userTenantsError);
-        dispatch(setError(userTenantsError.message));
+        dispatch(setError(`Failed to load tenant data: ${userTenantsError.message}`));
         throw userTenantsError;
       }
 
@@ -100,7 +100,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, dispatch, currentTenant]);
 
   const initializeOnboarding = useCallback(async (tenantId: string) => {
-    if (initializing) return null;
+    if (initializing) {
+      console.log('TenantProvider: Onboarding initialization already in progress');
+      return null;
+    }
     
     try {
       setInitializing(true);
@@ -108,11 +111,12 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       const onboardingData = await tenantDataService.initializeOnboardingForTenant(tenantId);
       
-      console.log('TenantProvider: Onboarding initialized:', onboardingData);
+      console.log('TenantProvider: Onboarding initialized successfully:', onboardingData);
       return onboardingData;
     } catch (error) {
       console.error('TenantProvider: Error initializing onboarding:', error);
-      throw error;
+      // Don't throw the error, just log it to prevent blocking the UI
+      return null;
     } finally {
       setInitializing(false);
     }

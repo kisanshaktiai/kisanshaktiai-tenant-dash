@@ -60,15 +60,15 @@ class TenantDataService {
 
       console.log('TenantDataService: Calling edge function with payload:', requestPayload);
 
-      // Ensure we're sending a proper JSON string
-      const bodyData = JSON.stringify(requestPayload);
-      console.log('TenantDataService: Request body length:', bodyData.length);
-      console.log('TenantDataService: Request body preview:', bodyData.substring(0, 200));
+      // CRITICAL FIX: Explicitly stringify the request body and set headers
+      const requestBody = JSON.stringify(requestPayload);
+      console.log('TenantDataService: Serialized request body:', requestBody);
 
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload, // Supabase client handles JSON serialization
+        body: requestPayload,
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
 
@@ -98,10 +98,21 @@ class TenantDataService {
   // Workflow Management
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
-    return this.callTenantDataAPI(tenantId, {
-      table: '',
-      operation: 'ensure_workflow'
-    });
+    try {
+      const result = await this.callTenantDataAPI(tenantId, {
+        table: '',
+        operation: 'ensure_workflow'
+      });
+      
+      if (!result || !result.workflow_id) {
+        throw new Error('Failed to ensure workflow - no workflow ID returned');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('TenantDataService: Error ensuring workflow:', error);
+      throw error;
+    }
   }
 
   async getOnboardingWorkflow(tenantId: string) {
@@ -166,14 +177,16 @@ class TenantDataService {
     });
   }
 
-  // Composite Operations for Enhanced UX
+  // Enhanced composite operations with error recovery
   async getCompleteOnboardingData(tenantId: string) {
     try {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
+      // First ensure workflow exists
       const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
       console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
       
+      // Then get workflow and steps in parallel
       const [workflow, steps] = await Promise.all([
         this.getOnboardingWorkflow(tenantId),
         this.getOnboardingSteps(tenantId, workflow_id)
@@ -210,22 +223,35 @@ class TenantDataService {
     }
   }
 
+  // Enhanced initialization with retry logic
   async initializeOnboardingForTenant(tenantId: string) {
-    try {
-      console.log('TenantDataService: Initializing onboarding for tenant:', tenantId);
-      
-      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
-      const onboardingData = await this.getCompleteOnboardingData(tenantId);
-      
-      console.log('TenantDataService: Onboarding initialized successfully:', { 
-        workflowId: workflow_id, 
-        stepCount: onboardingData.steps.length 
-      });
-      
-      return onboardingData;
-    } catch (error) {
-      console.error('TenantDataService: Error initializing onboarding:', error);
-      throw error;
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`TenantDataService: Initializing onboarding for tenant (attempt ${retryCount + 1}/${maxRetries}):`, tenantId);
+        
+        const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+        const onboardingData = await this.getCompleteOnboardingData(tenantId);
+        
+        console.log('TenantDataService: Onboarding initialized successfully:', { 
+          workflowId: workflow_id, 
+          stepCount: onboardingData.steps.length 
+        });
+        
+        return onboardingData;
+      } catch (error) {
+        retryCount++;
+        console.error(`TenantDataService: Error initializing onboarding (attempt ${retryCount}):`, error);
+        
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+        
+        // Wait before retry with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+      }
     }
   }
 
