@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser, setLoading, clearUser } from "@/store/slices/authSlice";
+import { setSession, setLoading, logout } from "@/store/slices/authSlice";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { OnboardingGuard } from "@/components/guards/OnboardingGuard";
 import Index from "./pages/Index";
@@ -27,7 +27,7 @@ function App() {
     
     // Get current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      dispatch(setUser(session?.user ?? null));
+      dispatch(setSession(session));
       dispatch(setLoading(false));
     });
 
@@ -35,7 +35,7 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      dispatch(setUser(session?.user ?? null));
+      dispatch(setSession(session));
       dispatch(setLoading(false));
     });
 
