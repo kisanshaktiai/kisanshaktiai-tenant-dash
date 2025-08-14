@@ -128,8 +128,17 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const workflow = onboardingData.workflow;
         const steps = onboardingData.steps;
         
+        // Improved type guards for workflow ID access
+        const workflowId = workflow && 
+          typeof workflow === 'object' && 
+          workflow !== null && 
+          'id' in workflow && 
+          typeof workflow.id === 'string' 
+            ? workflow.id 
+            : 'unknown';
+        
         console.log('TenantProvider: Enterprise onboarding initialized successfully:', {
-          workflowId: workflow && typeof workflow === 'object' && 'id' in workflow ? workflow.id : 'unknown',
+          workflowId,
           stepCount: Array.isArray(steps) ? steps.length : 0,
           tenantId
         });
