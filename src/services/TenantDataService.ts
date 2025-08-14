@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TenantDataRequest {
@@ -30,7 +29,6 @@ class TenantDataService {
       throw new Error('Table is required for this operation');
     }
 
-    // Validate specific operations
     if (request.operation === 'complete_workflow' && !request.workflow_id) {
       throw new Error('Workflow ID is required for complete_workflow operation');
     }
@@ -53,7 +51,6 @@ class TenantDataService {
     request: TenantDataRequest
   ): Promise<T> {
     try {
-      // Validate request before sending
       this.validateRequest(tenantId, request);
 
       const requestPayload = {
@@ -63,9 +60,13 @@ class TenantDataService {
 
       console.log('TenantDataService: Calling edge function with payload:', requestPayload);
 
-      // Use the correct method to invoke the edge function
+      // Ensure we're sending a proper JSON string
+      const bodyData = JSON.stringify(requestPayload);
+      console.log('TenantDataService: Request body length:', bodyData.length);
+      console.log('TenantDataService: Request body preview:', bodyData.substring(0, 200));
+
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload,
+        body: requestPayload, // Supabase client handles JSON serialization
         headers: {
           'Content-Type': 'application/json',
         },
@@ -78,13 +79,11 @@ class TenantDataService {
         throw new Error(error.message || 'Failed to call tenant data API');
       }
 
-      // Handle the response structure from edge function
       if (data && typeof data === 'object') {
         if (data.success === false) {
           throw new Error(data.error || 'API request failed');
         }
         
-        // Return the data part of successful responses
         return data.success ? data.data : data;
       }
 
@@ -172,11 +171,9 @@ class TenantDataService {
     try {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
-      // Ensure workflow exists first
       const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
       console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
       
-      // Get workflow and steps
       const [workflow, steps] = await Promise.all([
         this.getOnboardingWorkflow(tenantId),
         this.getOnboardingSteps(tenantId, workflow_id)
@@ -217,10 +214,7 @@ class TenantDataService {
     try {
       console.log('TenantDataService: Initializing onboarding for tenant:', tenantId);
       
-      // Ensure workflow exists
       const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
-      
-      // Get complete onboarding data
       const onboardingData = await this.getCompleteOnboardingData(tenantId);
       
       console.log('TenantDataService: Onboarding initialized successfully:', { 

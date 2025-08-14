@@ -1,10 +1,10 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
-import { onboardingService } from '@/services/OnboardingService';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useTenantData } from '@/hooks/useTenantData';
+import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 interface OnboardingGuardProps {
   children: React.ReactNode;
@@ -12,10 +12,8 @@ interface OnboardingGuardProps {
 
 export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
   const { user } = useAppSelector((state) => state.auth);
+  const { currentTenant, userTenants, loading: tenantLoading, initializeOnboarding } = useTenantContext();
   const [initializationComplete, setInitializationComplete] = useState(false);
-  
-  // First, ensure tenant data is loaded
-  const { currentTenant, userTenants, loading: tenantLoading } = useTenantData();
 
   console.log('OnboardingGuard: Current state:', {
     user: user?.id,
@@ -25,7 +23,6 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
     initializationComplete
   });
 
-  // Only check onboarding status after both user and tenant are loaded
   const shouldCheckOnboarding = !!(user && currentTenant?.id && !tenantLoading);
 
   console.log('OnboardingGuard: Should check onboarding:', shouldCheckOnboarding);
@@ -41,26 +38,29 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
       console.log('OnboardingGuard: Checking onboarding status for tenant:', currentTenant.id);
       
       try {
-        // Use the enhanced service to get complete onboarding data
-        const onboardingData = await onboardingService.getCompleteOnboardingData(currentTenant.id);
-        
-        console.log('OnboardingGuard: Retrieved onboarding data:', onboardingData);
-        
-        if (!onboardingData?.workflow) {
-          console.log('OnboardingGuard: No workflow found, onboarding not complete');
-          return false;
-        }
-
-        const isCompleted = onboardingData.workflow.status === 'completed';
+        const isCompleted = await enhancedOnboardingService.isOnboardingComplete(currentTenant.id);
         console.log('OnboardingGuard: Onboarding completion status:', isCompleted);
         return isCompleted;
       } catch (error) {
         console.error('OnboardingGuard: Error in onboarding status check:', error);
+        
+        // If there's an error, try to initialize onboarding
+        if (error.message?.includes('workflow') || error.message?.includes('not found')) {
+          console.log('OnboardingGuard: Initializing onboarding due to error');
+          try {
+            await initializeOnboarding(currentTenant.id);
+            return false; // Newly initialized, so not complete
+          } catch (initError) {
+            console.error('OnboardingGuard: Failed to initialize onboarding:', initError);
+            return false; // Assume not complete on initialization failure
+          }
+        }
+        
         return false;
       }
     },
     enabled: shouldCheckOnboarding,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     retry: (failureCount, err: any) => {
       console.error('OnboardingGuard: Query retry:', { failureCount, error: err });
       if (err && typeof err.message === 'string' && err.message.includes('tenant')) {
@@ -85,22 +85,23 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
 
     if (isComplete === false && !initializationComplete) {
       console.log('OnboardingGuard: Initializing onboarding workflow');
-      onboardingService.ensureWorkflowExists(currentTenant!.id)
+      
+      initializeOnboarding(currentTenant!.id)
         .then(() => {
-          console.log('OnboardingGuard: Onboarding workflow ensured successfully');
+          console.log('OnboardingGuard: Onboarding workflow initialized successfully');
           refetch();
           setInitializationComplete(true);
         })
         .catch((error) => {
-          console.error('OnboardingGuard: Failed to ensure onboarding workflow:', error);
+          console.error('OnboardingGuard: Failed to initialize onboarding workflow:', error);
           setInitializationComplete(true); // Allow through even on error to prevent blocking
         });
     } else {
       setInitializationComplete(true);
     }
-  }, [shouldCheckOnboarding, isComplete, isLoading, initializationComplete, refetch, currentTenant]);
+  }, [shouldCheckOnboarding, isComplete, isLoading, initializationComplete, refetch, currentTenant, initializeOnboarding]);
 
-  // Show loading while we're still checking authentication or loading tenant data
+  // Show loading while we're still checking authentication
   if (!user) {
     console.log('OnboardingGuard: No user, allowing through');
     return <>{children}</>;
@@ -110,7 +111,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
   if (tenantLoading) {
     console.log('OnboardingGuard: Tenant data loading, showing spinner');
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -126,7 +127,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
   if (shouldCheckOnboarding && (isLoading || !initializationComplete)) {
     console.log('OnboardingGuard: Onboarding check in progress, showing spinner');
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );

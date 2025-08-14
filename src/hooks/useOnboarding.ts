@@ -1,11 +1,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { onboardingService, OnboardingWorkflow, OnboardingStep } from '@/services/OnboardingService';
-import { useAppSelector } from '@/store/hooks';
+import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { toast } from 'sonner';
 
 export const useOnboardingQuery = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   
   return useQuery({
     queryKey: ['onboarding', currentTenant?.id],
@@ -18,20 +18,14 @@ export const useOnboardingQuery = () => {
       console.log('useOnboardingQuery: Fetching onboarding data for tenant:', currentTenant.id);
       
       try {
-        // Use the enhanced service to get complete onboarding data
-        const onboardingData = await onboardingService.getCompleteOnboardingData(currentTenant.id);
+        const onboardingData = await enhancedOnboardingService.getOnboardingData(currentTenant.id);
         
         console.log('useOnboardingQuery: Retrieved onboarding data:', onboardingData);
         
         if (!onboardingData?.workflow) {
-          console.log('useOnboardingQuery: No workflow found for tenant:', currentTenant.id);
-          return null;
+          console.log('useOnboardingQuery: No workflow found, initializing...');
+          return await enhancedOnboardingService.initializeOnboardingWorkflow(currentTenant.id);
         }
-        
-        console.log('useOnboardingQuery: Found workflow with steps:', { 
-          workflow: onboardingData.workflow, 
-          stepCount: onboardingData.steps.length 
-        });
         
         return onboardingData;
       } catch (error) {
@@ -40,7 +34,7 @@ export const useOnboardingQuery = () => {
       }
     },
     enabled: !!currentTenant?.id,
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
       console.error('useOnboardingQuery: Retry attempt:', { failureCount, error });
@@ -54,7 +48,7 @@ export const useOnboardingQuery = () => {
 
 export const useCompleteStep = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async ({ stepId, stepData }: { stepId: string; stepData?: any }) => {
@@ -64,7 +58,7 @@ export const useCompleteStep = () => {
 
       console.log('useCompleteStep: Completing step:', { stepId, stepData, tenantId: currentTenant.id });
       
-      const result = await onboardingService.completeStep(stepId, stepData, currentTenant.id);
+      const result = await enhancedOnboardingService.completeStep(stepId, stepData, currentTenant.id);
       if (!result) {
         throw new Error('Failed to complete step');
       }
@@ -74,22 +68,18 @@ export const useCompleteStep = () => {
     onSuccess: () => {
       console.log('useCompleteStep: Step completed successfully, invalidating queries');
       
-      // Invalidate and refetch onboarding queries
       queryClient.invalidateQueries({ 
         queryKey: ['onboarding', currentTenant?.id] 
       });
       
-      // Also invalidate tenant status queries
       queryClient.invalidateQueries({ 
         queryKey: ['tenant-status', currentTenant?.id] 
       });
       
-      // Refetch tenant data
       queryClient.invalidateQueries({ 
         queryKey: ['tenants'] 
       });
       
-      // Force refetch after a short delay to ensure data consistency
       setTimeout(() => {
         queryClient.refetchQueries({ 
           queryKey: ['onboarding', currentTenant?.id] 
@@ -105,12 +95,12 @@ export const useCompleteStep = () => {
 
 export const useUpdateStepStatus = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async ({ stepId, status, stepData }: { 
       stepId: string; 
-      status: OnboardingStep['step_status']; 
+      status: 'pending' | 'in_progress' | 'completed' | 'skipped'; 
       stepData?: any 
     }) => {
       if (!currentTenant?.id) {
@@ -119,7 +109,7 @@ export const useUpdateStepStatus = () => {
 
       console.log('useUpdateStepStatus: Updating step status:', { stepId, status, stepData, tenantId: currentTenant.id });
       
-      const result = await onboardingService.updateStepStatus(stepId, status, stepData, currentTenant.id);
+      const result = await enhancedOnboardingService.updateStepStatus(stepId, status, stepData, currentTenant.id);
       if (!result) {
         throw new Error('Failed to update step status');
       }
@@ -129,17 +119,10 @@ export const useUpdateStepStatus = () => {
     onSuccess: (_, variables) => {
       console.log('useUpdateStepStatus: Step status updated successfully');
       
-      // Invalidate queries for real-time updates
       queryClient.invalidateQueries({ 
         queryKey: ['onboarding', currentTenant?.id] 
       });
       
-      // Show success message for completed steps
-      if (variables.status === 'completed') {
-        toast.success('Step completed successfully!');
-      }
-      
-      // Force refetch to ensure UI synchronization
       setTimeout(() => {
         queryClient.refetchQueries({ 
           queryKey: ['onboarding', currentTenant?.id] 
@@ -153,9 +136,8 @@ export const useUpdateStepStatus = () => {
   });
 };
 
-// Helper hook to check if onboarding is complete
 export const useIsOnboardingComplete = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   
   return useQuery({
     queryKey: ['onboarding-complete', currentTenant?.id],
@@ -166,17 +148,16 @@ export const useIsOnboardingComplete = () => {
       }
       
       console.log('useIsOnboardingComplete: Checking completion for tenant:', currentTenant.id);
-      return await onboardingService.isOnboardingComplete(currentTenant.id);
+      return await enhancedOnboardingService.isOnboardingComplete(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
   });
 };
 
-// Enhanced hook for workflow completion
 export const useCompleteWorkflow = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async (workflowId: string) => {
@@ -186,7 +167,7 @@ export const useCompleteWorkflow = () => {
 
       console.log('useCompleteWorkflow: Completing workflow:', { workflowId, tenantId: currentTenant.id });
       
-      const result = await onboardingService.completeWorkflow(workflowId, currentTenant.id);
+      const result = await enhancedOnboardingService.completeWorkflow(workflowId, currentTenant.id);
       if (!result) {
         throw new Error('Failed to complete workflow');
       }
@@ -196,7 +177,6 @@ export const useCompleteWorkflow = () => {
     onSuccess: () => {
       console.log('useCompleteWorkflow: Workflow completed successfully');
       
-      // Invalidate all relevant queries
       queryClient.invalidateQueries({ 
         queryKey: ['onboarding', currentTenant?.id] 
       });
@@ -208,12 +188,37 @@ export const useCompleteWorkflow = () => {
       queryClient.invalidateQueries({ 
         queryKey: ['tenants'] 
       });
-      
-      toast.success('🎉 Onboarding completed successfully! Welcome aboard!');
     },
     onError: (error) => {
       console.error('useCompleteWorkflow: Failed to complete workflow:', error);
       toast.error('Failed to complete onboarding. Please try again.');
+    }
+  });
+};
+
+export const useOnboardingValidation = () => {
+  const { currentTenant } = useTenantContext();
+  
+  return useMutation({
+    mutationFn: async () => {
+      if (!currentTenant?.id) {
+        throw new Error('No current tenant available');
+      }
+      
+      return await enhancedOnboardingService.validateOnboardingIntegrity(currentTenant.id);
+    },
+    onSuccess: (result) => {
+      if (result.repaired) {
+        toast.success('Onboarding data has been repaired successfully!');
+      } else if (result.isValid) {
+        toast.success('Onboarding data is valid!');
+      } else {
+        toast.warning('Onboarding data has issues that need attention.');
+      }
+    },
+    onError: (error) => {
+      console.error('Onboarding validation failed:', error);
+      toast.error('Failed to validate onboarding data.');
     }
   });
 };

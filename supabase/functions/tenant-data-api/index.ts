@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -85,12 +86,10 @@ function canAccessTable(userContext: UserContext, table: string, operation: stri
     return false;
   }
 
-  // Admins can access everything
   if (userContext.isAdmin) {
     return true;
   }
 
-  // Tenant users can access their tenant data
   if (userContext.isTenantUser) {
     const adminOperations = ['insert', 'update', 'delete'];
     const isAdminRole = ['tenant_owner', 'tenant_admin'].includes(userContext.role);
@@ -108,55 +107,80 @@ function canAccessTable(userContext: UserContext, table: string, operation: stri
 async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   console.log('Ensuring onboarding workflow for tenant:', tenantId);
 
-  // Check if workflow already exists
-  const { data: existingWorkflow } = await supabase
-    .from('onboarding_workflows')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .single();
+  try {
+    // Check if workflow already exists
+    const { data: existingWorkflow } = await supabase
+      .from('onboarding_workflows')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .single();
 
-  if (existingWorkflow) {
-    console.log('Workflow already exists:', existingWorkflow.id);
-    return existingWorkflow.id;
+    if (existingWorkflow) {
+      console.log('Workflow already exists:', existingWorkflow.id);
+      
+      // Ensure all steps exist for this workflow
+      const { data: existingSteps } = await supabase
+        .from('onboarding_steps')
+        .select('id, step_name')
+        .eq('workflow_id', existingWorkflow.id);
+      
+      console.log('Existing steps count:', existingSteps?.length || 0);
+      
+      // If no steps exist, create them
+      if (!existingSteps || existingSteps.length === 0) {
+        await createDefaultSteps(existingWorkflow.id, 'Kisan_Basic');
+      }
+      
+      return existingWorkflow.id;
+    }
+
+    // Get tenant details for plan-based template
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('subscription_plan, type')
+      .eq('id', tenantId)
+      .single();
+
+    const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
+
+    // Create workflow
+    const { data: workflow, error: workflowError } = await supabase
+      .from('onboarding_workflows')
+      .insert({
+        tenant_id: tenantId,
+        workflow_name: 'Tenant Onboarding',
+        status: 'in_progress',
+        progress_percentage: 0,
+        current_step: 1,
+        total_steps: 0,
+        started_at: new Date().toISOString(),
+        metadata: { subscription_plan: subscriptionPlan }
+      })
+      .select()
+      .single();
+
+    if (workflowError) {
+      console.error('Error creating workflow:', workflowError);
+      throw workflowError;
+    }
+
+    console.log('Created workflow:', workflow.id);
+
+    // Create steps based on subscription plan
+    await createDefaultSteps(workflow.id, subscriptionPlan);
+
+    return workflow.id;
+  } catch (error) {
+    console.error('Error in ensureOnboardingWorkflow:', error);
+    throw error;
   }
+}
 
-  // Get tenant details for plan-based template
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('subscription_plan, type')
-    .eq('id', tenantId)
-    .single();
-
-  const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
-
-  // Create workflow
-  const { data: workflow, error: workflowError } = await supabase
-    .from('onboarding_workflows')
-    .insert({
-      tenant_id: tenantId,
-      workflow_name: 'Tenant Onboarding',
-      status: 'in_progress',
-      progress_percentage: 0,
-      current_step: 1,
-      total_steps: 0,
-      started_at: new Date().toISOString(),
-      metadata: { subscription_plan: subscriptionPlan }
-    })
-    .select()
-    .single();
-
-  if (workflowError) {
-    console.error('Error creating workflow:', workflowError);
-    throw workflowError;
-  }
-
-  console.log('Created workflow:', workflow.id);
-
-  // Create steps based on subscription plan
+async function createDefaultSteps(workflowId: string, subscriptionPlan: string) {
   const steps = getStepsForPlan(subscriptionPlan);
   
   const stepsToInsert = steps.map((step, index) => ({
-    workflow_id: workflow.id,
+    workflow_id: workflowId,
     step_number: index + 1,
     step_name: step.name,
     step_description: step.description,
@@ -179,10 +203,9 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   await supabase
     .from('onboarding_workflows')
     .update({ total_steps: steps.length })
-    .eq('id', workflow.id);
+    .eq('id', workflowId);
 
-  console.log('Created', steps.length, 'steps for workflow:', workflow.id);
-  return workflow.id;
+  console.log('Created', steps.length, 'steps for workflow:', workflowId);
 }
 
 function getStepsForPlan(subscriptionPlan: string) {
@@ -248,28 +271,6 @@ async function completeWorkflow(workflowId: string, tenantId: string): Promise<v
     .eq('tenant_id', tenantId);
 
   console.log('Workflow completed successfully');
-}
-
-function validateRequestData(requestData: any): TenantDataRequest {
-  console.log('Validating request data:', requestData);
-  
-  if (!requestData || typeof requestData !== 'object') {
-    throw new Error('Request data must be an object');
-  }
-
-  if (!requestData.tenant_id) {
-    throw new Error('tenant_id is required');
-  }
-
-  if (!requestData.operation) {
-    throw new Error('operation is required');
-  }
-
-  if (!['ensure_workflow', 'complete_workflow', 'calculate_progress'].includes(requestData.operation) && !requestData.table) {
-    throw new Error('table is required for this operation');
-  }
-
-  return requestData as TenantDataRequest;
 }
 
 async function handleTenantDataRequest(request: TenantDataRequest, userContext: UserContext) {
@@ -340,7 +341,6 @@ async function handleTenantDataRequest(request: TenantDataRequest, userContext: 
       // For tenants table, only return the specific tenant
       if (table === 'tenants') {
         if (userContext.isAdmin) {
-          // Admins can see all tenants or filter by tenant_id
           if (tenantId !== 'all') {
             query = query.eq('id', tenantId);
           }
@@ -508,24 +508,16 @@ serve(async (req) => {
     // Parse request body with enhanced error handling
     let requestData: any;
     try {
-      // Get the raw body text first
       const bodyText = await req.text();
       console.log('Raw request body length:', bodyText?.length || 0);
-      console.log('Raw request body (first 500 chars):', bodyText?.substring(0, 500) || 'EMPTY');
       
       if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined') {
         console.error('Request body is empty or undefined');
-        throw new Error('Request body is empty');
+        throw new Error('Request body is required');
       }
       
-      try {
-        requestData = JSON.parse(bodyText);
-        console.log('Parsed request data:', JSON.stringify(requestData, null, 2));
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        console.error('Failed to parse body:', bodyText);
-        throw new Error(`Invalid JSON in request body: ${parseError.message}`);
-      }
+      requestData = JSON.parse(bodyText);
+      console.log('Parsed request data:', JSON.stringify(requestData, null, 2));
       
     } catch (parseError) {
       console.error('Request parsing error:', parseError);

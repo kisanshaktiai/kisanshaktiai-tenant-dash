@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,8 +11,7 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { Building2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { onboardingService } from '@/services/OnboardingService';
-import { useTenantData } from '@/hooks/useTenantData';
+import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -42,7 +42,7 @@ const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading } = useTenantData();
+  const { currentTenant, loading: tenantLoading, initializeOnboarding } = useTenantContext();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
@@ -60,9 +60,9 @@ const OnboardingPage = () => {
     if (currentTenant?.id && !tenantLoading) {
       console.log('OnboardingPage: Ensuring onboarding workflow for tenant:', currentTenant.id);
       
-      onboardingService.ensureWorkflowExists(currentTenant.id)
-        .then((workflowId) => {
-          console.log('OnboardingPage: Onboarding workflow ensured:', workflowId);
+      initializeOnboarding(currentTenant.id)
+        .then((onboardingData) => {
+          console.log('OnboardingPage: Onboarding workflow ensured:', onboardingData);
           
           // Invalidate queries to refetch fresh data
           queryClient.invalidateQueries({ 
@@ -78,7 +78,7 @@ const OnboardingPage = () => {
           console.error('OnboardingPage: Error ensuring onboarding workflow:', error);
         });
     }
-  }, [currentTenant?.id, tenantLoading, queryClient]);
+  }, [currentTenant?.id, tenantLoading, queryClient, initializeOnboarding]);
 
   // Loading state with skeleton and accessibility
   if (!user) {
@@ -123,6 +123,9 @@ const OnboardingPage = () => {
       queryClient.invalidateQueries({ 
         queryKey: ['onboarding', currentTenant.id] 
       });
+      
+      // Also try to reinitialize onboarding
+      initializeOnboarding(currentTenant.id).catch(console.error);
     }
   };
 
