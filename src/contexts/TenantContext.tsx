@@ -123,10 +123,14 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       const onboardingData = await tenantDataService.initializeOnboardingForTenant(tenantId);
       
-      if (onboardingData) {
+      // Add proper type checking and null safety
+      if (onboardingData && typeof onboardingData === 'object') {
+        const workflow = onboardingData.workflow;
+        const steps = onboardingData.steps;
+        
         console.log('TenantProvider: Enterprise onboarding initialized successfully:', {
-          workflowId: onboardingData.workflow?.id,
-          stepCount: onboardingData.steps?.length || 0,
+          workflowId: workflow && typeof workflow === 'object' && 'id' in workflow ? workflow.id : 'unknown',
+          stepCount: Array.isArray(steps) ? steps.length : 0,
           tenantId
         });
         
@@ -135,19 +139,20 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         return onboardingData;
       } else {
-        console.warn('TenantProvider: Onboarding initialization returned null data');
+        console.warn('TenantProvider: Onboarding initialization returned invalid data');
         return null;
       }
     } catch (error) {
       console.error('TenantProvider: Error initializing enterprise onboarding:', {
         tenantId,
         attempt: initializationAttempts + 1,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
       
       // Only show user-facing errors for repeated failures
       if (initializationAttempts >= 2) {
-        dispatch(setError(`Failed to initialize onboarding: ${error.message}`));
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        dispatch(setError(`Failed to initialize onboarding: ${errorMessage}`));
       }
       
       return null;
