@@ -12,6 +12,8 @@ interface TenantContextValue {
   error: string | null;
   initializeOnboarding: (tenantId: string) => Promise<any>;
   refreshTenantData: () => Promise<void>;
+  isInitializing: boolean;
+  initializationAttempts: number;
 }
 
 const TenantContext = createContext<TenantContextValue | undefined>(undefined);
@@ -28,7 +30,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants, loading, error } = useAppSelector((state) => state.tenant);
-  const [initializing, setInitializing] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [initializationAttempts, setInitializationAttempts] = useState(0);
+  const [lastInitializationAttempt, setLastInitializationAttempt] = useState<string | null>(null);
 
   const fetchUserTenants = useCallback(async () => {
     if (!user) {
@@ -62,8 +66,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (userTenantsError) {
         console.error('TenantProvider: Error fetching user tenants:', userTenantsError);
-        dispatch(setError(`Failed to load tenant data: ${userTenantsError.message}`));
-        throw userTenantsError;
+        const errorMessage = `Failed to load tenant data: ${userTenantsError.message}`;
+        dispatch(setError(errorMessage));
+        throw new Error(errorMessage);
       }
 
       console.log('TenantProvider: Fetched user tenants:', userTenantsData);
@@ -93,47 +98,80 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } catch (error) {
       console.error('TenantProvider: Error fetching tenant data:', error);
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load tenant data';
+      dispatch(setError(errorMessage));
     } finally {
       dispatch(setLoading(false));
     }
   }, [user, dispatch, currentTenant]);
 
   const initializeOnboarding = useCallback(async (tenantId: string) => {
-    if (initializing) {
-      console.log('TenantProvider: Onboarding initialization already in progress');
+    // Prevent multiple simultaneous initializations for the same tenant
+    const attemptKey = `${tenantId}-${Date.now()}`;
+    if (isInitializing && lastInitializationAttempt && 
+        Date.now() - parseInt(lastInitializationAttempt.split('-')[1]) < 5000) {
+      console.log('TenantProvider: Onboarding initialization already in progress, skipping');
       return null;
     }
     
     try {
-      setInitializing(true);
-      console.log('TenantProvider: Initializing onboarding for tenant:', tenantId);
+      setIsInitializing(true);
+      setLastInitializationAttempt(attemptKey);
+      setInitializationAttempts(prev => prev + 1);
+      
+      console.log('TenantProvider: Initializing enterprise onboarding for tenant:', tenantId, 'attempt:', initializationAttempts + 1);
       
       const onboardingData = await tenantDataService.initializeOnboardingForTenant(tenantId);
       
-      console.log('TenantProvider: Onboarding initialized successfully:', onboardingData);
-      return onboardingData;
+      if (onboardingData) {
+        console.log('TenantProvider: Enterprise onboarding initialized successfully:', {
+          workflowId: onboardingData.workflow?.id,
+          stepCount: onboardingData.steps?.length || 0,
+          tenantId
+        });
+        
+        // Reset attempt counter on success
+        setInitializationAttempts(0);
+        
+        return onboardingData;
+      } else {
+        console.warn('TenantProvider: Onboarding initialization returned null data');
+        return null;
+      }
     } catch (error) {
-      console.error('TenantProvider: Error initializing onboarding:', error);
-      // Don't throw the error, just log it to prevent blocking the UI
+      console.error('TenantProvider: Error initializing enterprise onboarding:', {
+        tenantId,
+        attempt: initializationAttempts + 1,
+        error: error.message
+      });
+      
+      // Only show user-facing errors for repeated failures
+      if (initializationAttempts >= 2) {
+        dispatch(setError(`Failed to initialize onboarding: ${error.message}`));
+      }
+      
       return null;
     } finally {
-      setInitializing(false);
+      setIsInitializing(false);
     }
-  }, [initializing]);
+  }, [isInitializing, lastInitializationAttempt, initializationAttempts, dispatch]);
 
   const refreshTenantData = useCallback(async () => {
+    console.log('TenantProvider: Refreshing tenant data...');
     await fetchUserTenants();
   }, [fetchUserTenants]);
 
   useEffect(() => {
     if (user && userTenants.length === 0 && !loading) {
+      console.log('TenantProvider: User authenticated, fetching tenants...');
       fetchUserTenants();
     }
   }, [user, userTenants.length, loading, fetchUserTenants]);
 
   useEffect(() => {
     if (!user) return;
+
+    console.log('TenantProvider: Setting up real-time subscriptions for user:', user.id);
 
     const channel = supabase
       .channel(`tenant_changes_${user.id}`)
@@ -145,25 +183,49 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           table: 'user_tenants',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          console.log('TenantProvider: Real-time tenant data change detected');
-          fetchUserTenants();
+        (payload) => {
+          console.log('TenantProvider: Real-time tenant data change detected:', payload.eventType);
+          // Debounce rapid changes
+          setTimeout(() => {
+            fetchUserTenants();
+          }, 1000);
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tenants',
+        },
+        (payload) => {
+          console.log('TenantProvider: Real-time tenant table change detected:', payload.eventType);
+          if (currentTenant && payload.new && payload.new.id === currentTenant.id) {
+            setTimeout(() => {
+              fetchUserTenants();
+            }, 500);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('TenantProvider: Real-time subscription status:', status);
+      });
 
     return () => {
+      console.log('TenantProvider: Cleaning up real-time subscriptions');
       supabase.removeChannel(channel);
     };
-  }, [user, fetchUserTenants]);
+  }, [user, fetchUserTenants, currentTenant]);
 
   const value: TenantContextValue = {
     currentTenant,
     userTenants,
-    loading: loading || initializing,
+    loading: loading || isInitializing,
     error,
     initializeOnboarding,
     refreshTenantData,
+    isInitializing,
+    initializationAttempts,
   };
 
   return (

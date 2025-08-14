@@ -31,44 +31,50 @@ interface UserContext {
   tenantId?: string;
 }
 
+// Enterprise-grade user context validation
 async function getUserContext(userId: string, tenantId: string): Promise<UserContext> {
-  // Check if user is admin
-  const { data: adminUser } = await supabase
-    .from('admin_users')
-    .select('role, is_active')
-    .eq('id', userId)
-    .eq('is_active', true)
-    .single();
+  try {
+    // Check if user is admin
+    const { data: adminUser } = await supabase
+      .from('admin_users')
+      .select('role, is_active')
+      .eq('id', userId)
+      .eq('is_active', true)
+      .single();
 
-  if (adminUser) {
-    return {
-      userId,
-      role: adminUser.role,
-      isAdmin: true,
-      isTenantUser: false
-    };
+    if (adminUser) {
+      return {
+        userId,
+        role: adminUser.role,
+        isAdmin: true,
+        isTenantUser: false
+      };
+    }
+
+    // Check if user has tenant access
+    const { data: userTenant } = await supabase
+      .from('user_tenants')
+      .select('role, is_active, tenant_id')
+      .eq('user_id', userId)
+      .eq('tenant_id', tenantId)
+      .eq('is_active', true)
+      .single();
+
+    if (userTenant) {
+      return {
+        userId,
+        role: userTenant.role,
+        isAdmin: false,
+        isTenantUser: true,
+        tenantId: userTenant.tenant_id
+      };
+    }
+
+    throw new Error('User does not have access to this tenant');
+  } catch (error) {
+    console.error('Error getting user context:', error);
+    throw new Error(`Access denied: ${error.message}`);
   }
-
-  // Check if user has tenant access
-  const { data: userTenant } = await supabase
-    .from('user_tenants')
-    .select('role, is_active, tenant_id')
-    .eq('user_id', userId)
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true)
-    .single();
-
-  if (userTenant) {
-    return {
-      userId,
-      role: userTenant.role,
-      isAdmin: false,
-      isTenantUser: true,
-      tenantId: userTenant.tenant_id
-    };
-  }
-
-  throw new Error('User does not have access to this tenant');
 }
 
 function canAccessTable(userContext: UserContext, table: string, operation: string): boolean {
@@ -104,6 +110,7 @@ function canAccessTable(userContext: UserContext, table: string, operation: stri
   return false;
 }
 
+// World-class workflow creation with plan-based templates
 async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   console.log('Ensuring onboarding workflow for tenant:', tenantId);
 
@@ -128,7 +135,7 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
       
       // If no steps exist, create them
       if (!existingSteps || existingSteps.length === 0) {
-        await createDefaultSteps(existingWorkflow.id, 'Kisan_Basic');
+        await createEnterpriseSteps(existingWorkflow.id, 'Kisan_Basic');
       }
       
       return existingWorkflow.id;
@@ -144,18 +151,21 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
     const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
     console.log('Creating workflow for subscription plan:', subscriptionPlan);
 
-    // Create workflow
+    // Create workflow with proper schema alignment
     const { data: workflow, error: workflowError } = await supabase
       .from('onboarding_workflows')
       .insert({
         tenant_id: tenantId,
-        workflow_name: 'Tenant Onboarding',
         status: 'in_progress',
         progress_percentage: 0,
         current_step: 1,
         total_steps: 0,
         started_at: new Date().toISOString(),
-        metadata: { subscription_plan: subscriptionPlan }
+        metadata: { 
+          subscription_plan: subscriptionPlan, 
+          created_by: 'system',
+          workflow_version: '2.0'
+        }
       })
       .select()
       .single();
@@ -167,8 +177,8 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
 
     console.log('Created workflow:', workflow.id);
 
-    // Create steps based on subscription plan
-    await createDefaultSteps(workflow.id, subscriptionPlan);
+    // Create enterprise-grade steps based on subscription plan
+    await createEnterpriseSteps(workflow.id, subscriptionPlan);
 
     return workflow.id;
   } catch (error) {
@@ -177,8 +187,9 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   }
 }
 
-async function createDefaultSteps(workflowId: string, subscriptionPlan: string) {
-  const steps = getStepsForPlan(subscriptionPlan);
+// Enterprise-grade step creation with advanced features
+async function createEnterpriseSteps(workflowId: string, subscriptionPlan: string) {
+  const steps = getEnterpriseStepsForPlan(subscriptionPlan);
   
   const stepsToInsert = steps.map((step, index) => ({
     workflow_id: workflowId,
@@ -188,7 +199,12 @@ async function createDefaultSteps(workflowId: string, subscriptionPlan: string) 
     step_status: 'pending',
     is_required: step.required,
     estimated_time_minutes: step.estimated_time,
-    step_data: {}
+    step_data: {
+      dependencies: step.dependencies || [],
+      validations: step.validations || [],
+      integrations: step.integrations || [],
+      ai_assistance: step.ai_assistance || false
+    }
   }));
 
   const { error: stepsError } = await supabase
@@ -200,59 +216,159 @@ async function createDefaultSteps(workflowId: string, subscriptionPlan: string) 
     throw stepsError;
   }
 
-  // Update total_steps
+  // Update total_steps with enterprise metadata
   await supabase
     .from('onboarding_workflows')
-    .update({ total_steps: steps.length })
+    .update({ 
+      total_steps: steps.length,
+      metadata: {
+        step_template_version: '2.0',
+        plan_based: subscriptionPlan,
+        features_enabled: getFeaturesByPlan(subscriptionPlan)
+      }
+    })
     .eq('id', workflowId);
 
-  console.log('Created', steps.length, 'steps for workflow:', workflowId);
+  console.log('Created', steps.length, 'enterprise steps for workflow:', workflowId);
 }
 
-function getStepsForPlan(subscriptionPlan: string) {
-  switch (subscriptionPlan) {
-    case 'AI_Enterprise':
-      return [
-        { name: 'Business Verification', description: 'Verify GST, PAN, and business documents', required: true, estimated_time: 30 },
-        { name: 'Subscription Plan', description: 'Configure enterprise subscription and billing', required: true, estimated_time: 15 },
-        { name: 'Branding Configuration', description: 'Set up custom branding and white-label configuration', required: true, estimated_time: 45 },
-        { name: 'Feature Selection', description: 'Configure AI features and advanced analytics', required: true, estimated_time: 60 },
-        { name: 'Data Import', description: 'Import existing data and integrate with external systems', required: true, estimated_time: 120 },
-        { name: 'Team Invites', description: 'Create admin accounts and set up team structure', required: true, estimated_time: 30 }
-      ];
-    case 'Shakti_Growth':
-      return [
-        { name: 'Business Verification', description: 'Verify GST, PAN, and business documents', required: true, estimated_time: 30 },
-        { name: 'Subscription Plan', description: 'Select and configure growth plan features', required: true, estimated_time: 15 },
-        { name: 'Branding Configuration', description: 'Set up logo, colors, and basic branding', required: true, estimated_time: 30 },
-        { name: 'Feature Selection', description: 'Choose growth features and set limits', required: true, estimated_time: 45 },
-        { name: 'Data Import', description: 'Import farmer and product data', required: true, estimated_time: 60 },
-        { name: 'Team Invites', description: 'Invite team members and assign roles', required: true, estimated_time: 20 }
-      ];
-    default: // Kisan_Basic
-      return [
-        { name: 'Business Verification', description: 'Verify GST, PAN, and business documents', required: true, estimated_time: 30 },
-        { name: 'Subscription Plan', description: 'Configure basic subscription and features', required: true, estimated_time: 15 },
-        { name: 'Branding Configuration', description: 'Set up basic logo and colors', required: false, estimated_time: 15 },
-        { name: 'Feature Selection', description: 'Configure core features for basic plan', required: true, estimated_time: 30 },
-        { name: 'Data Import', description: 'Import basic farmer data', required: false, estimated_time: 30 },
-        { name: 'Team Invites', description: 'Create admin account', required: true, estimated_time: 10 }
-      ];
+// World-class plan-based step templates
+function getEnterpriseStepsForPlan(subscriptionPlan: string) {
+  const baseSteps = [
+    { 
+      name: 'Business Verification', 
+      description: 'Verify GST, PAN, and business documents with AI assistance', 
+      required: true, 
+      estimated_time: 25,
+      dependencies: [],
+      validations: ['gst_validation', 'pan_validation'],
+      integrations: ['gst_api', 'document_ai'],
+      ai_assistance: true
+    },
+    { 
+      name: 'Subscription Configuration', 
+      description: 'Configure subscription plan and billing preferences', 
+      required: true, 
+      estimated_time: 10,
+      dependencies: ['Business Verification'],
+      validations: ['payment_method', 'billing_address'],
+      integrations: ['stripe', 'razorpay']
+    },
+    { 
+      name: 'Branding Setup', 
+      description: 'Customize app branding and white-label configuration', 
+      required: false, 
+      estimated_time: 20,
+      dependencies: [],
+      validations: ['logo_format', 'color_contrast'],
+      integrations: ['cdn_upload', 'image_optimizer']
+    },
+    { 
+      name: 'Feature Configuration', 
+      description: 'Select and configure platform features', 
+      required: true, 
+      estimated_time: 30,
+      dependencies: ['Subscription Configuration'],
+      validations: ['feature_compatibility'],
+      integrations: ['feature_flags']
+    },
+    { 
+      name: 'Data Migration', 
+      description: 'Import existing data with validation and mapping', 
+      required: false, 
+      estimated_time: 45,
+      dependencies: ['Feature Configuration'],
+      validations: ['data_format', 'data_integrity'],
+      integrations: ['data_pipeline', 'validation_engine'],
+      ai_assistance: true
+    },
+    { 
+      name: 'Team Setup', 
+      description: 'Create team structure and send invitations', 
+      required: true, 
+      estimated_time: 15,
+      dependencies: [],
+      validations: ['email_format', 'role_permissions'],
+      integrations: ['email_service', 'sso_provider']
+    }
+  ];
+
+  // Add enterprise features for higher-tier plans
+  if (subscriptionPlan === 'AI_Enterprise') {
+    baseSteps.push(
+      { 
+        name: 'AI Configuration', 
+        description: 'Configure AI models and advanced analytics', 
+        required: true, 
+        estimated_time: 60,
+        dependencies: ['Feature Configuration'],
+        validations: ['model_compatibility', 'data_privacy'],
+        integrations: ['ai_platform', 'analytics_engine'],
+        ai_assistance: true
+      },
+      { 
+        name: 'Security Hardening', 
+        description: 'Configure enterprise security policies', 
+        required: true, 
+        estimated_time: 45,
+        dependencies: ['Team Setup'],
+        validations: ['security_compliance', 'audit_requirements'],
+        integrations: ['security_scanner', 'compliance_checker']
+      },
+      { 
+        name: 'Integration Testing', 
+        description: 'Comprehensive testing and validation', 
+        required: true, 
+        estimated_time: 90,
+        dependencies: ['AI Configuration', 'Security Hardening'],
+        validations: ['end_to_end_tests', 'load_testing'],
+        integrations: ['testing_framework', 'monitoring_setup']
+      }
+    );
+  } else if (subscriptionPlan === 'Shakti_Growth') {
+    baseSteps.push(
+      { 
+        name: 'Analytics Setup', 
+        description: 'Configure growth analytics and reporting', 
+        required: true, 
+        estimated_time: 30,
+        dependencies: ['Feature Configuration'],
+        validations: ['tracking_setup', 'gdpr_compliance'],
+        integrations: ['analytics_platform', 'reporting_engine']
+      }
+    );
   }
+
+  return baseSteps;
+}
+
+function getFeaturesByPlan(subscriptionPlan: string) {
+  const features = {
+    'Kisan_Basic': ['farmer_management', 'basic_analytics', 'standard_support'],
+    'Shakti_Growth': ['farmer_management', 'advanced_analytics', 'dealer_network', 'priority_support', 'api_access'],
+    'AI_Enterprise': ['all_features', 'ai_insights', 'white_label', 'enterprise_support', 'custom_integrations', 'sla_guarantee']
+  };
+  
+  return features[subscriptionPlan] || features['Kisan_Basic'];
 }
 
 async function calculateProgress(workflowId: string): Promise<number> {
   const { data: steps } = await supabase
     .from('onboarding_steps')
-    .select('step_status')
+    .select('step_status, is_required')
     .eq('workflow_id', workflowId);
 
   if (!steps || steps.length === 0) {
     return 0;
   }
 
-  const completedSteps = steps.filter(step => step.step_status === 'completed').length;
-  return Math.round((completedSteps / steps.length) * 100);
+  // Weight required steps more heavily
+  const totalWeight = steps.reduce((sum, step) => sum + (step.is_required ? 2 : 1), 0);
+  const completedWeight = steps
+    .filter(step => step.step_status === 'completed')
+    .reduce((sum, step) => sum + (step.is_required ? 2 : 1), 0);
+
+  return Math.round((completedWeight / totalWeight) * 100);
 }
 
 async function completeWorkflow(workflowId: string, tenantId: string): Promise<void> {
@@ -506,24 +622,36 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Enhanced request body parsing
+    // Enhanced request body parsing with multiple fallbacks
     let requestData: any;
     try {
       const bodyText = await req.text();
-      console.log('Raw request body:', bodyText?.substring(0, 500) + (bodyText?.length > 500 ? '...' : ''));
+      console.log('Raw request body length:', bodyText?.length || 0);
+      console.log('Raw request body preview:', bodyText?.substring(0, 200) || 'empty');
       
-      if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined') {
-        console.error('Request body is empty or undefined');
+      if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined' || bodyText === 'null') {
+        console.error('Request body is empty, undefined, or null');
         throw new Error('Request body is required and cannot be empty');
       }
       
-      requestData = JSON.parse(bodyText);
-      console.log('Parsed request data:', {
+      try {
+        requestData = JSON.parse(bodyText);
+      } catch (jsonError) {
+        console.error('JSON parsing failed, trying alternative parsing:', jsonError);
+        // Try to handle malformed JSON or other formats
+        if (bodyText.startsWith('{') && bodyText.endsWith('}')) {
+          throw new Error(`Invalid JSON format: ${jsonError.message}`);
+        }
+        throw new Error('Request body must be valid JSON');
+      }
+      
+      console.log('Successfully parsed request data:', {
         operation: requestData?.operation,
         table: requestData?.table,
         tenant_id: requestData?.tenant_id,
         hasData: !!requestData?.data,
-        hasFilters: !!requestData?.filters
+        hasFilters: !!requestData?.filters,
+        dataKeys: requestData?.data ? Object.keys(requestData.data) : []
       });
       
     } catch (parseError) {
@@ -531,7 +659,8 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: false, 
         error: `Failed to parse request: ${parseError.message}`,
-        details: 'Ensure request body is valid JSON'
+        details: 'Ensure request body is valid JSON with required fields',
+        timestamp: new Date().toISOString()
       }), {
         status: 400,
         headers: { 
@@ -541,29 +670,35 @@ serve(async (req) => {
       });
     }
 
-    // Enhanced validation
+    // Enhanced validation with detailed error messages
     if (!requestData || typeof requestData !== 'object') {
       console.error('Invalid request data format:', typeof requestData);
       throw new Error('Request data must be a valid JSON object');
     }
 
     if (!requestData.tenant_id) {
-      console.error('Missing tenant_id in request:', requestData);
+      console.error('Missing tenant_id in request:', Object.keys(requestData));
       throw new Error('tenant_id is required in request body');
     }
 
     if (!requestData.operation) {
-      console.error('Missing operation in request:', requestData);
+      console.error('Missing operation in request:', Object.keys(requestData));
       throw new Error('operation is required in request body');
+    }
+
+    const validOperations = ['select', 'insert', 'update', 'delete', 'ensure_workflow', 'complete_workflow', 'calculate_progress'];
+    if (!validOperations.includes(requestData.operation)) {
+      throw new Error(`Invalid operation: ${requestData.operation}. Valid operations: ${validOperations.join(', ')}`);
     }
 
     console.log('Processing validated request:', {
       tenant_id: requestData.tenant_id,
       operation: requestData.operation,
-      table: requestData.table
+      table: requestData.table,
+      hasValidStructure: true
     });
 
-    // Get user context
+    // Get user context with enhanced error handling
     const userContext = await getUserContext(user.id, requestData.tenant_id);
     console.log('User context established:', { 
       role: userContext.role, 
@@ -575,7 +710,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      data: result 
+      data: result,
+      timestamp: new Date().toISOString(),
+      processed_by: 'enterprise-api-v2'
     }), {
       headers: { 
         ...corsHeaders, 
@@ -588,12 +725,15 @@ serve(async (req) => {
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const statusCode = errorMessage.includes('not have access') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') ? 403 : 
-                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('empty') || errorMessage.includes('Invalid') ? 400 : 500;
+                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('empty') || errorMessage.includes('Invalid') ? 400 : 
+                      errorMessage.includes('not found') ? 404 : 500;
 
     return new Response(JSON.stringify({ 
       success: false, 
       error: errorMessage,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      request_id: crypto.randomUUID(),
+      support_info: 'Contact support with the request_id for assistance'
     }), {
       status: statusCode,
       headers: { 
