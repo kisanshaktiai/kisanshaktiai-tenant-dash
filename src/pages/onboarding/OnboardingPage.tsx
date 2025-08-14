@@ -49,14 +49,20 @@ const OnboardingPage = () => {
   // Enhanced real-time connection with reconnect capability
   const { isConnected, isReconnecting, reconnectAttempts, reconnect } = useOnboardingRealtime();
 
+  console.log('OnboardingPage: Current state:', {
+    user: user?.id,
+    currentTenant: currentTenant?.id,
+    tenantLoading
+  });
+
   // Initialize onboarding workflow when tenant is available
   useEffect(() => {
     if (currentTenant?.id && !tenantLoading) {
-      console.log('Ensuring onboarding workflow for tenant:', currentTenant.id);
+      console.log('OnboardingPage: Ensuring onboarding workflow for tenant:', currentTenant.id);
       
       onboardingService.ensureWorkflowExists(currentTenant.id)
         .then((workflowId) => {
-          console.log('Onboarding workflow ensured:', workflowId);
+          console.log('OnboardingPage: Onboarding workflow ensured:', workflowId);
           
           // Invalidate queries to refetch fresh data
           queryClient.invalidateQueries({ 
@@ -69,13 +75,14 @@ const OnboardingPage = () => {
           }, 200);
         })
         .catch((error) => {
-          console.error('Error ensuring onboarding workflow:', error);
+          console.error('OnboardingPage: Error ensuring onboarding workflow:', error);
         });
     }
   }, [currentTenant?.id, tenantLoading, queryClient]);
 
   // Loading state with skeleton and accessibility
-  if (!user || tenantLoading || !currentTenant) {
+  if (!user) {
+    console.log('OnboardingPage: No user, showing skeleton');
     return (
       <div role="main" aria-live="polite" aria-label="Setting up your onboarding">
         <OnboardingSkeleton />
@@ -86,13 +93,40 @@ const OnboardingPage = () => {
     );
   }
 
+  if (tenantLoading) {
+    console.log('OnboardingPage: Tenant loading, showing skeleton');
+    return (
+      <div role="main" aria-live="polite" aria-label="Loading tenant data">
+        <OnboardingSkeleton />
+        <div className="sr-only">
+          Loading tenant data...
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentTenant) {
+    console.log('OnboardingPage: No current tenant, showing skeleton');
+    return (
+      <div role="main" aria-live="polite" aria-label="Setting up tenant">
+        <OnboardingSkeleton />
+        <div className="sr-only">
+          Setting up tenant...
+        </div>
+      </div>
+    );
+  }
+
   const handleRetry = () => {
+    console.log('OnboardingPage: Retry requested');
     if (currentTenant?.id) {
       queryClient.invalidateQueries({ 
         queryKey: ['onboarding', currentTenant.id] 
       });
     }
   };
+
+  console.log('OnboardingPage: Rendering main content');
 
   return (
     <div className="relative" role="main">

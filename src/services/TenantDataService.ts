@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TenantDataRequest {
@@ -60,37 +61,44 @@ class TenantDataService {
         tenant_id: tenantId
       };
 
-      console.log('Calling tenant data API:', { tenantId, request: requestPayload });
+      console.log('TenantDataService: Calling edge function with payload:', requestPayload);
 
+      // Use the correct method to invoke the edge function
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload, // Don't JSON.stringify here - supabase client handles it
+        body: requestPayload,
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('TenantDataService: Edge function response:', { data, error });
+
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('TenantDataService: Edge function error:', error);
         throw new Error(error.message || 'Failed to call tenant data API');
       }
 
-      const response = data as TenantDataResponse<T>;
-      
-      if (!response || !response.success) {
-        const errorMessage = response?.error || 'API request failed';
-        throw new Error(errorMessage);
+      // Handle the response structure from edge function
+      if (data && typeof data === 'object') {
+        if (data.success === false) {
+          throw new Error(data.error || 'API request failed');
+        }
+        
+        // Return the data part of successful responses
+        return data.success ? data.data : data;
       }
 
-      console.log('Tenant data API response:', response);
-      return response.data as T;
+      console.log('TenantDataService: Successful response:', data);
+      return data as T;
     } catch (error) {
-      console.error('Tenant data service error:', error);
+      console.error('TenantDataService: Error in callTenantDataAPI:', error);
       throw error;
     }
   }
 
   // Workflow Management
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
+    console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: '',
       operation: 'ensure_workflow'
@@ -98,6 +106,7 @@ class TenantDataService {
   }
 
   async getOnboardingWorkflow(tenantId: string) {
+    console.log('TenantDataService: Getting onboarding workflow for tenant:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
       operation: 'select',
@@ -106,6 +115,7 @@ class TenantDataService {
   }
 
   async updateOnboardingWorkflow(tenantId: string, workflowId: string, data: any) {
+    console.log('TenantDataService: Updating onboarding workflow:', { tenantId, workflowId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
       operation: 'update',
@@ -115,6 +125,7 @@ class TenantDataService {
   }
 
   async completeOnboardingWorkflow(tenantId: string, workflowId: string): Promise<{ success: boolean }> {
+    console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
     return this.callTenantDataAPI(tenantId, {
       table: '',
       operation: 'complete_workflow',
@@ -123,6 +134,7 @@ class TenantDataService {
   }
 
   async calculateWorkflowProgress(tenantId: string, workflowId: string): Promise<{ progress: number }> {
+    console.log('TenantDataService: Calculating workflow progress:', { tenantId, workflowId });
     return this.callTenantDataAPI(tenantId, {
       table: '',
       operation: 'calculate_progress',
@@ -132,6 +144,7 @@ class TenantDataService {
 
   // Steps Management
   async getOnboardingSteps(tenantId: string, workflowId?: string) {
+    console.log('TenantDataService: Getting onboarding steps:', { tenantId, workflowId });
     const filters: Record<string, any> = {};
     if (workflowId) {
       filters.workflow_id = workflowId;
@@ -145,6 +158,7 @@ class TenantDataService {
   }
 
   async updateOnboardingStep(tenantId: string, stepId: string, data: any) {
+    console.log('TenantDataService: Updating onboarding step:', { tenantId, stepId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_steps',
       operation: 'update',
@@ -156,8 +170,11 @@ class TenantDataService {
   // Composite Operations for Enhanced UX
   async getCompleteOnboardingData(tenantId: string) {
     try {
+      console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
+      
       // Ensure workflow exists first
       const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
       
       // Get workflow and steps
       const [workflow, steps] = await Promise.all([
@@ -165,18 +182,22 @@ class TenantDataService {
         this.getOnboardingSteps(tenantId, workflow_id)
       ]);
 
+      console.log('TenantDataService: Retrieved workflow and steps:', { workflow, steps });
+
       return {
         workflow: Array.isArray(workflow) ? workflow[0] : workflow,
         steps: Array.isArray(steps) ? steps.sort((a, b) => a.step_number - b.step_number) : []
       };
     } catch (error) {
-      console.error('Error getting complete onboarding data:', error);
+      console.error('TenantDataService: Error getting complete onboarding data:', error);
       throw error;
     }
   }
 
   async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any) {
     try {
+      console.log('TenantDataService: Completing onboarding step:', { tenantId, stepId, stepData });
+      
       const result = await this.updateOnboardingStep(tenantId, stepId, {
         step_status: 'completed',
         step_data: stepData || {},
@@ -184,17 +205,17 @@ class TenantDataService {
         updated_at: new Date().toISOString()
       });
 
-      console.log('Step completed successfully:', stepId);
+      console.log('TenantDataService: Step completed successfully:', stepId);
       return result;
     } catch (error) {
-      console.error('Error completing step:', error);
+      console.error('TenantDataService: Error completing step:', error);
       throw error;
     }
   }
 
   async initializeOnboardingForTenant(tenantId: string) {
     try {
-      console.log('Initializing onboarding for tenant:', tenantId);
+      console.log('TenantDataService: Initializing onboarding for tenant:', tenantId);
       
       // Ensure workflow exists
       const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
@@ -202,20 +223,21 @@ class TenantDataService {
       // Get complete onboarding data
       const onboardingData = await this.getCompleteOnboardingData(tenantId);
       
-      console.log('Onboarding initialized successfully:', { 
+      console.log('TenantDataService: Onboarding initialized successfully:', { 
         workflowId: workflow_id, 
         stepCount: onboardingData.steps.length 
       });
       
       return onboardingData;
     } catch (error) {
-      console.error('Error initializing onboarding:', error);
+      console.error('TenantDataService: Error initializing onboarding:', error);
       throw error;
     }
   }
 
   // Subscription plans
   async getSubscriptionPlans(tenantId: string) {
+    console.log('TenantDataService: Getting subscription plans for tenant:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'subscription_plans',
       operation: 'select'
@@ -224,6 +246,7 @@ class TenantDataService {
 
   // Tenant data
   async getTenant(tenantId: string) {
+    console.log('TenantDataService: Getting tenant data:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenants',
       operation: 'select'
@@ -231,6 +254,7 @@ class TenantDataService {
   }
 
   async updateTenant(tenantId: string, data: any) {
+    console.log('TenantDataService: Updating tenant:', { tenantId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'tenants',
       operation: 'update',
@@ -241,6 +265,7 @@ class TenantDataService {
 
   // Tenant branding
   async getTenantBranding(tenantId: string) {
+    console.log('TenantDataService: Getting tenant branding:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_branding',
       operation: 'select',
@@ -250,6 +275,7 @@ class TenantDataService {
 
   async upsertTenantBranding(tenantId: string, data: any) {
     try {
+      console.log('TenantDataService: Upserting tenant branding:', { tenantId, data });
       const existing = await this.getTenantBranding(tenantId);
       if (existing && Array.isArray(existing) && existing.length > 0) {
         return this.callTenantDataAPI(tenantId, {
@@ -260,7 +286,7 @@ class TenantDataService {
         });
       }
     } catch (error) {
-      console.log('No existing branding found, will create new');
+      console.log('TenantDataService: No existing branding found, will create new');
     }
 
     return this.callTenantDataAPI(tenantId, {
@@ -272,6 +298,7 @@ class TenantDataService {
 
   // Tenant features
   async getTenantFeatures(tenantId: string) {
+    console.log('TenantDataService: Getting tenant features:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_features',
       operation: 'select',
@@ -281,6 +308,7 @@ class TenantDataService {
 
   async upsertTenantFeatures(tenantId: string, data: any) {
     try {
+      console.log('TenantDataService: Upserting tenant features:', { tenantId, data });
       const existing = await this.getTenantFeatures(tenantId);
       if (existing && Array.isArray(existing) && existing.length > 0) {
         return this.callTenantDataAPI(tenantId, {
@@ -291,7 +319,7 @@ class TenantDataService {
         });
       }
     } catch (error) {
-      console.log('No existing features found, will create new');
+      console.log('TenantDataService: No existing features found, will create new');
     }
 
     return this.callTenantDataAPI(tenantId, {
@@ -303,6 +331,7 @@ class TenantDataService {
 
   // Tenant subscriptions
   async getTenantSubscription(tenantId: string) {
+    console.log('TenantDataService: Getting tenant subscription:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_subscriptions',
       operation: 'select',

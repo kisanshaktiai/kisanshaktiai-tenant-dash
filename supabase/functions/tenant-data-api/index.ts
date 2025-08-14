@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -492,6 +491,7 @@ serve(async (req) => {
     // Get user from JWT
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       throw new Error('Missing authorization header');
     }
 
@@ -499,30 +499,33 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('Authentication failed:', authError);
       throw new Error('Invalid or expired token');
     }
 
     console.log('User authenticated:', user.id);
 
     // Parse request body with enhanced error handling
-    let requestData: TenantDataRequest;
+    let requestData: any;
     try {
+      // Get the raw body text first
       const bodyText = await req.text();
-      console.log('Raw request body:', bodyText);
+      console.log('Raw request body length:', bodyText?.length || 0);
+      console.log('Raw request body (first 500 chars):', bodyText?.substring(0, 500) || 'EMPTY');
       
-      if (!bodyText || bodyText.trim() === '') {
+      if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined') {
+        console.error('Request body is empty or undefined');
         throw new Error('Request body is empty');
       }
       
       try {
         requestData = JSON.parse(bodyText);
+        console.log('Parsed request data:', JSON.stringify(requestData, null, 2));
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
+        console.error('Failed to parse body:', bodyText);
         throw new Error(`Invalid JSON in request body: ${parseError.message}`);
       }
-      
-      // Validate the parsed data
-      requestData = validateRequestData(requestData);
       
     } catch (parseError) {
       console.error('Request parsing error:', parseError);
@@ -537,6 +540,28 @@ serve(async (req) => {
         },
       });
     }
+
+    // Validate required fields
+    if (!requestData || typeof requestData !== 'object') {
+      console.error('Invalid request data format:', typeof requestData);
+      throw new Error('Request data must be an object');
+    }
+
+    if (!requestData.tenant_id) {
+      console.error('Missing tenant_id in request:', requestData);
+      throw new Error('tenant_id is required');
+    }
+
+    if (!requestData.operation) {
+      console.error('Missing operation in request:', requestData);
+      throw new Error('operation is required');
+    }
+
+    console.log('Processing request:', {
+      tenant_id: requestData.tenant_id,
+      operation: requestData.operation,
+      table: requestData.table
+    });
 
     // Get user context
     const userContext = await getUserContext(user.id, requestData.tenant_id);
@@ -563,7 +588,7 @@ serve(async (req) => {
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const statusCode = errorMessage.includes('not have access') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') ? 403 : 
-                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('Invalid') ? 400 : 500;
+                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('Invalid') || errorMessage.includes('empty') ? 400 : 500;
 
     return new Response(JSON.stringify({ 
       success: false, 

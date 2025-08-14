@@ -11,29 +11,31 @@ export const useOnboardingQuery = () => {
     queryKey: ['onboarding', currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant?.id) {
-        console.log('No current tenant available for onboarding query');
+        console.log('useOnboardingQuery: No current tenant available for onboarding query');
         return null;
       }
       
-      console.log('Fetching onboarding data for tenant:', currentTenant.id);
+      console.log('useOnboardingQuery: Fetching onboarding data for tenant:', currentTenant.id);
       
       try {
         // Use the enhanced service to get complete onboarding data
         const onboardingData = await onboardingService.getCompleteOnboardingData(currentTenant.id);
         
+        console.log('useOnboardingQuery: Retrieved onboarding data:', onboardingData);
+        
         if (!onboardingData?.workflow) {
-          console.log('No workflow found for tenant:', currentTenant.id);
+          console.log('useOnboardingQuery: No workflow found for tenant:', currentTenant.id);
           return null;
         }
         
-        console.log('Found workflow with steps:', { 
+        console.log('useOnboardingQuery: Found workflow with steps:', { 
           workflow: onboardingData.workflow, 
           stepCount: onboardingData.steps.length 
         });
         
         return onboardingData;
       } catch (error) {
-        console.error('Error in useOnboardingQuery:', error);
+        console.error('useOnboardingQuery: Error in query:', error);
         throw error;
       }
     },
@@ -41,7 +43,7 @@ export const useOnboardingQuery = () => {
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
-      console.error('Onboarding query error:', error);
+      console.error('useOnboardingQuery: Retry attempt:', { failureCount, error });
       if (error && typeof error.message === 'string' && error.message.includes('tenant')) {
         return false;
       }
@@ -60,7 +62,7 @@ export const useCompleteStep = () => {
         throw new Error('No current tenant available');
       }
 
-      console.log('Completing step:', { stepId, stepData, tenantId: currentTenant.id });
+      console.log('useCompleteStep: Completing step:', { stepId, stepData, tenantId: currentTenant.id });
       
       const result = await onboardingService.completeStep(stepId, stepData, currentTenant.id);
       if (!result) {
@@ -70,7 +72,7 @@ export const useCompleteStep = () => {
       return result;
     },
     onSuccess: () => {
-      console.log('Step completed successfully, invalidating queries');
+      console.log('useCompleteStep: Step completed successfully, invalidating queries');
       
       // Invalidate and refetch onboarding queries
       queryClient.invalidateQueries({ 
@@ -95,7 +97,7 @@ export const useCompleteStep = () => {
       }, 500);
     },
     onError: (error) => {
-      console.error('Failed to complete step:', error);
+      console.error('useCompleteStep: Failed to complete step:', error);
       toast.error('Failed to save progress. Please try again.');
     }
   });
@@ -115,7 +117,7 @@ export const useUpdateStepStatus = () => {
         throw new Error('No current tenant available');
       }
 
-      console.log('Updating step status:', { stepId, status, stepData, tenantId: currentTenant.id });
+      console.log('useUpdateStepStatus: Updating step status:', { stepId, status, stepData, tenantId: currentTenant.id });
       
       const result = await onboardingService.updateStepStatus(stepId, status, stepData, currentTenant.id);
       if (!result) {
@@ -125,7 +127,7 @@ export const useUpdateStepStatus = () => {
       return result;
     },
     onSuccess: (_, variables) => {
-      console.log('Step status updated successfully');
+      console.log('useUpdateStepStatus: Step status updated successfully');
       
       // Invalidate queries for real-time updates
       queryClient.invalidateQueries({ 
@@ -145,7 +147,7 @@ export const useUpdateStepStatus = () => {
       }, 300);
     },
     onError: (error) => {
-      console.error('Failed to update step status:', error);
+      console.error('useUpdateStepStatus: Failed to update step status:', error);
       toast.error('Failed to update step. Please try again.');
     }
   });
@@ -158,7 +160,12 @@ export const useIsOnboardingComplete = () => {
   return useQuery({
     queryKey: ['onboarding-complete', currentTenant?.id],
     queryFn: async () => {
-      if (!currentTenant?.id) return false;
+      if (!currentTenant?.id) {
+        console.log('useIsOnboardingComplete: No tenant ID available');
+        return false;
+      }
+      
+      console.log('useIsOnboardingComplete: Checking completion for tenant:', currentTenant.id);
       return await onboardingService.isOnboardingComplete(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
@@ -177,7 +184,7 @@ export const useCompleteWorkflow = () => {
         throw new Error('No current tenant available');
       }
 
-      console.log('Completing workflow:', { workflowId, tenantId: currentTenant.id });
+      console.log('useCompleteWorkflow: Completing workflow:', { workflowId, tenantId: currentTenant.id });
       
       const result = await onboardingService.completeWorkflow(workflowId, currentTenant.id);
       if (!result) {
@@ -187,7 +194,7 @@ export const useCompleteWorkflow = () => {
       return result;
     },
     onSuccess: () => {
-      console.log('Workflow completed successfully');
+      console.log('useCompleteWorkflow: Workflow completed successfully');
       
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ 
@@ -205,7 +212,7 @@ export const useCompleteWorkflow = () => {
       toast.success('🎉 Onboarding completed successfully! Welcome aboard!');
     },
     onError: (error) => {
-      console.error('Failed to complete workflow:', error);
+      console.error('useCompleteWorkflow: Failed to complete workflow:', error);
       toast.error('Failed to complete onboarding. Please try again.');
     }
   });
