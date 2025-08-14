@@ -26,6 +26,17 @@ export const useTenantContext = () => {
   return context;
 };
 
+// Helper function to safely extract workflow ID
+const getWorkflowId = (workflow: any): string => {
+  return workflow && 
+    typeof workflow === 'object' && 
+    workflow !== null && 
+    'id' in workflow && 
+    typeof workflow.id === 'string' 
+      ? workflow.id 
+      : 'unknown';
+};
+
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
@@ -128,14 +139,8 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const workflow = onboardingData.workflow;
         const steps = onboardingData.steps;
         
-        // Improved type guards for workflow ID access
-        const workflowId = workflow && 
-          typeof workflow === 'object' && 
-          workflow !== null && 
-          'id' in workflow && 
-          typeof workflow.id === 'string' 
-            ? workflow.id 
-            : 'unknown';
+        // Use helper function for safe workflow ID access
+        const workflowId = getWorkflowId(workflow);
         
         console.log('TenantProvider: Enterprise onboarding initialized successfully:', {
           workflowId,
