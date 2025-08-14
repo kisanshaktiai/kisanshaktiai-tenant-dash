@@ -251,6 +251,28 @@ async function completeWorkflow(workflowId: string, tenantId: string): Promise<v
   console.log('Workflow completed successfully');
 }
 
+function validateRequestData(requestData: any): TenantDataRequest {
+  console.log('Validating request data:', requestData);
+  
+  if (!requestData || typeof requestData !== 'object') {
+    throw new Error('Request data must be an object');
+  }
+
+  if (!requestData.tenant_id) {
+    throw new Error('tenant_id is required');
+  }
+
+  if (!requestData.operation) {
+    throw new Error('operation is required');
+  }
+
+  if (!['ensure_workflow', 'complete_workflow', 'calculate_progress'].includes(requestData.operation) && !requestData.table) {
+    throw new Error('table is required for this operation');
+  }
+
+  return requestData as TenantDataRequest;
+}
+
 async function handleTenantDataRequest(request: TenantDataRequest, userContext: UserContext) {
   const { tenant_id: tenantId } = request;
   console.log('Processing tenant data request:', { 
@@ -482,25 +504,38 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Parse request body with better error handling
+    // Parse request body with enhanced error handling
     let requestData: TenantDataRequest;
     try {
       const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      
       if (!bodyText || bodyText.trim() === '') {
         throw new Error('Request body is empty');
       }
-      requestData = JSON.parse(bodyText);
+      
+      try {
+        requestData = JSON.parse(bodyText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+      }
+      
+      // Validate the parsed data
+      requestData = validateRequestData(requestData);
+      
     } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error('Invalid JSON in request body');
-    }
-    
-    if (!requestData.table && !['ensure_workflow', 'complete_workflow', 'calculate_progress'].includes(requestData.operation)) {
-      throw new Error('table parameter is required');
-    }
-    
-    if (!requestData.tenant_id) {
-      throw new Error('tenant_id parameter is required');
+      console.error('Request parsing error:', parseError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: parseError.message || 'Failed to parse request body' 
+      }), {
+        status: 400,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+      });
     }
 
     // Get user context
@@ -528,7 +563,7 @@ serve(async (req) => {
     
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     const statusCode = errorMessage.includes('not have access') || errorMessage.includes('Unauthorized') || errorMessage.includes('Access denied') ? 403 : 
-                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('Invalid JSON') ? 400 : 500;
+                      errorMessage.includes('Missing') || errorMessage.includes('required') || errorMessage.includes('Invalid') ? 400 : 500;
 
     return new Response(JSON.stringify({ 
       success: false, 

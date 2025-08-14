@@ -10,7 +10,10 @@ export const useOnboardingQuery = () => {
   return useQuery({
     queryKey: ['onboarding', currentTenant?.id],
     queryFn: async () => {
-      if (!currentTenant?.id) return null;
+      if (!currentTenant?.id) {
+        console.log('No current tenant available for onboarding query');
+        return null;
+      }
       
       console.log('Fetching onboarding data for tenant:', currentTenant.id);
       

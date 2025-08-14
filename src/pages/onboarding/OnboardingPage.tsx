@@ -11,6 +11,7 @@ import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { Building2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { onboardingService } from '@/services/OnboardingService';
+import { useTenantData } from '@/hooks/useTenantData';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -19,8 +20,29 @@ const TenantOnboardingFlow = React.lazy(() =>
   }))
 );
 
+const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+    <Card className="w-full max-w-md">
+      <CardContent className="p-8 text-center">
+        <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Building2 className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">Loading Onboarding Steps</h3>
+        <p className="text-muted-foreground text-sm mb-6">
+          We're preparing your onboarding experience. This might take a moment if you just started.
+        </p>
+        <Button onClick={onRetry} variant="outline" className="w-full">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh Steps
+        </Button>
+      </CardContent>
+    </Card>
+  </div>
+);
+
 const OnboardingPage = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { user } = useAppSelector((state) => state.auth);
+  const { currentTenant, loading: tenantLoading } = useTenantData();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
@@ -29,7 +51,7 @@ const OnboardingPage = () => {
 
   // Initialize onboarding workflow when tenant is available
   useEffect(() => {
-    if (currentTenant?.id) {
+    if (currentTenant?.id && !tenantLoading) {
       console.log('Ensuring onboarding workflow for tenant:', currentTenant.id);
       
       onboardingService.ensureWorkflowExists(currentTenant.id)
@@ -50,10 +72,10 @@ const OnboardingPage = () => {
           console.error('Error ensuring onboarding workflow:', error);
         });
     }
-  }, [currentTenant?.id, queryClient]);
+  }, [currentTenant?.id, tenantLoading, queryClient]);
 
   // Loading state with skeleton and accessibility
-  if (!currentTenant) {
+  if (!user || tenantLoading || !currentTenant) {
     return (
       <div role="main" aria-live="polite" aria-label="Setting up your onboarding">
         <OnboardingSkeleton />
@@ -63,6 +85,14 @@ const OnboardingPage = () => {
       </div>
     );
   }
+
+  const handleRetry = () => {
+    if (currentTenant?.id) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['onboarding', currentTenant.id] 
+      });
+    }
+  };
 
   return (
     <div className="relative" role="main">
