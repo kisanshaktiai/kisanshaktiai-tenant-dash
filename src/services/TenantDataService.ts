@@ -69,8 +69,12 @@ class TenantDataService {
         hasData: !!requestPayload.data,
       });
 
+      // Ensure we have a proper JSON string
+      const bodyContent = JSON.stringify(requestPayload);
+      console.log('TenantDataService: Request body length:', bodyContent.length);
+
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: JSON.stringify(requestPayload),
+        body: requestPayload, // Let Supabase handle JSON stringification
         headers: {
           'Content-Type': 'application/json',
         },
@@ -121,18 +125,6 @@ class TenantDataService {
     
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
     
-    // Check if workflow already exists for this tenant
-    const { data: existingWorkflow } = await supabase
-      .from('onboarding_workflows')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .single();
-    
-    if (existingWorkflow) {
-      console.log('TenantDataService: Workflow already exists for tenant:', tenantId, 'workflow ID:', existingWorkflow.id);
-      return { workflow_id: existingWorkflow.id };
-    }
-    
     try {
       const result = await this.callTenantDataAPI(tenantId, {
         table: 'onboarding_workflows',
@@ -143,7 +135,7 @@ class TenantDataService {
         throw new Error('Failed to ensure workflow - no workflow ID returned');
       }
       
-      console.log('TenantDataService: Created new workflow for tenant:', tenantId, 'workflow ID:', result.workflow_id);
+      console.log('TenantDataService: Ensured workflow for tenant:', tenantId, 'workflow ID:', result.workflow_id);
       return result;
     } catch (error) {
       console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);

@@ -31,7 +31,7 @@ interface UserContext {
   tenantId?: string;
 }
 
-// Enterprise-grade user context validation
+// Enhanced user context validation
 async function getUserContext(userId: string, tenantId: string): Promise<UserContext> {
   try {
     // Check if user is admin
@@ -110,7 +110,7 @@ function canAccessTable(userContext: UserContext, table: string, operation: stri
   return false;
 }
 
-// FIXED: Align with actual database schema - removed non-existent columns
+// Simplified workflow creation that works with current schema
 async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   console.log('Ensuring onboarding workflow for tenant:', tenantId);
 
@@ -135,7 +135,7 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
       
       // If no steps exist, create them
       if (!existingSteps || existingSteps.length === 0) {
-        await createEnterpriseSteps(existingWorkflow.id, 'Kisan_Basic');
+        await createBasicSteps(existingWorkflow.id);
       }
       
       return existingWorkflow.id;
@@ -151,7 +151,7 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
     const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
     console.log('Creating workflow for subscription plan:', subscriptionPlan);
 
-    // FIXED: Only use columns that actually exist in the database
+    // Create new workflow with only required fields
     const { data: workflow, error: workflowError } = await supabase
       .from('onboarding_workflows')
       .insert({
@@ -176,8 +176,8 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
 
     console.log('Created workflow:', workflow.id);
 
-    // Create enterprise-grade steps based on subscription plan
-    await createEnterpriseSteps(workflow.id, subscriptionPlan);
+    // Create basic steps based on subscription plan
+    await createBasicSteps(workflow.id);
 
     return workflow.id;
   } catch (error) {
@@ -186,11 +186,42 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   }
 }
 
-// FIXED: Align step creation with actual database schema
-async function createEnterpriseSteps(workflowId: string, subscriptionPlan: string) {
-  const steps = getEnterpriseStepsForPlan(subscriptionPlan);
+// Create basic steps that work with current schema
+async function createBasicSteps(workflowId: string) {
+  const steps = [
+    { 
+      name: 'Business Verification', 
+      description: 'Verify GST, PAN, and business documents', 
+      required: true, 
+      estimated_time: 25
+    },
+    { 
+      name: 'Subscription Configuration', 
+      description: 'Configure subscription plan and billing preferences', 
+      required: true, 
+      estimated_time: 10
+    },
+    { 
+      name: 'Branding Setup', 
+      description: 'Customize app branding and white-label configuration', 
+      required: false, 
+      estimated_time: 20
+    },
+    { 
+      name: 'Feature Configuration', 
+      description: 'Select and configure platform features', 
+      required: true, 
+      estimated_time: 30
+    },
+    { 
+      name: 'Team Setup', 
+      description: 'Create team structure and send invitations', 
+      required: true, 
+      estimated_time: 15
+    }
+  ];
   
-  // FIXED: Only use columns that exist in onboarding_steps table
+  // Create steps with only required fields that exist in schema
   const stepsToInsert = steps.map((step, index) => ({
     workflow_id: workflowId,
     step_number: index + 1,
@@ -199,11 +230,7 @@ async function createEnterpriseSteps(workflowId: string, subscriptionPlan: strin
     step_data: {
       description: step.description,
       required: step.required,
-      estimated_time: step.estimated_time,
-      dependencies: step.dependencies || [],
-      validations: step.validations || [],
-      integrations: step.integrations || [],
-      ai_assistance: step.ai_assistance || false
+      estimated_time: step.estimated_time
     }
   }));
 
@@ -216,140 +243,19 @@ async function createEnterpriseSteps(workflowId: string, subscriptionPlan: strin
     throw stepsError;
   }
 
-  // Update total_steps with enterprise metadata
+  // Update total_steps
   await supabase
     .from('onboarding_workflows')
     .update({ 
       total_steps: steps.length,
       metadata: {
         step_template_version: '2.0',
-        plan_based: subscriptionPlan,
-        features_enabled: getFeaturesByPlan(subscriptionPlan)
+        plan_based: 'basic'
       }
     })
     .eq('id', workflowId);
 
-  console.log('Created', steps.length, 'enterprise steps for workflow:', workflowId);
-}
-
-// World-class plan-based step templates
-function getEnterpriseStepsForPlan(subscriptionPlan: string) {
-  const baseSteps = [
-    { 
-      name: 'Business Verification', 
-      description: 'Verify GST, PAN, and business documents with AI assistance', 
-      required: true, 
-      estimated_time: 25,
-      dependencies: [],
-      validations: ['gst_validation', 'pan_validation'],
-      integrations: ['gst_api', 'document_ai'],
-      ai_assistance: true
-    },
-    { 
-      name: 'Subscription Configuration', 
-      description: 'Configure subscription plan and billing preferences', 
-      required: true, 
-      estimated_time: 10,
-      dependencies: ['Business Verification'],
-      validations: ['payment_method', 'billing_address'],
-      integrations: ['stripe', 'razorpay']
-    },
-    { 
-      name: 'Branding Setup', 
-      description: 'Customize app branding and white-label configuration', 
-      required: false, 
-      estimated_time: 20,
-      dependencies: [],
-      validations: ['logo_format', 'color_contrast'],
-      integrations: ['cdn_upload', 'image_optimizer']
-    },
-    { 
-      name: 'Feature Configuration', 
-      description: 'Select and configure platform features', 
-      required: true, 
-      estimated_time: 30,
-      dependencies: ['Subscription Configuration'],
-      validations: ['feature_compatibility'],
-      integrations: ['feature_flags']
-    },
-    { 
-      name: 'Data Migration', 
-      description: 'Import existing data with validation and mapping', 
-      required: false, 
-      estimated_time: 45,
-      dependencies: ['Feature Configuration'],
-      validations: ['data_format', 'data_integrity'],
-      integrations: ['data_pipeline', 'validation_engine'],
-      ai_assistance: true
-    },
-    { 
-      name: 'Team Setup', 
-      description: 'Create team structure and send invitations', 
-      required: true, 
-      estimated_time: 15,
-      dependencies: [],
-      validations: ['email_format', 'role_permissions'],
-      integrations: ['email_service', 'sso_provider']
-    }
-  ];
-
-  // Add enterprise features for higher-tier plans
-  if (subscriptionPlan === 'AI_Enterprise') {
-    baseSteps.push(
-      { 
-        name: 'AI Configuration', 
-        description: 'Configure AI models and advanced analytics', 
-        required: true, 
-        estimated_time: 60,
-        dependencies: ['Feature Configuration'],
-        validations: ['model_compatibility', 'data_privacy'],
-        integrations: ['ai_platform', 'analytics_engine'],
-        ai_assistance: true
-      },
-      { 
-        name: 'Security Hardening', 
-        description: 'Configure enterprise security policies', 
-        required: true, 
-        estimated_time: 45,
-        dependencies: ['Team Setup'],
-        validations: ['security_compliance', 'audit_requirements'],
-        integrations: ['security_scanner', 'compliance_checker']
-      },
-      { 
-        name: 'Integration Testing', 
-        description: 'Comprehensive testing and validation', 
-        required: true, 
-        estimated_time: 90,
-        dependencies: ['AI Configuration', 'Security Hardening'],
-        validations: ['end_to_end_tests', 'load_testing'],
-        integrations: ['testing_framework', 'monitoring_setup']
-      }
-    );
-  } else if (subscriptionPlan === 'Shakti_Growth') {
-    baseSteps.push(
-      { 
-        name: 'Analytics Setup', 
-        description: 'Configure growth analytics and reporting', 
-        required: true, 
-        estimated_time: 30,
-        dependencies: ['Feature Configuration'],
-        validations: ['tracking_setup', 'gdpr_compliance'],
-        integrations: ['analytics_platform', 'reporting_engine']
-      }
-    );
-  }
-
-  return baseSteps;
-}
-
-function getFeaturesByPlan(subscriptionPlan: string) {
-  const features = {
-    'Kisan_Basic': ['farmer_management', 'basic_analytics', 'standard_support'],
-    'Shakti_Growth': ['farmer_management', 'advanced_analytics', 'dealer_network', 'priority_support', 'api_access'],
-    'AI_Enterprise': ['all_features', 'ai_insights', 'white_label', 'enterprise_support', 'custom_integrations', 'sla_guarantee']
-  };
-  
-  return features[subscriptionPlan] || features['Kisan_Basic'];
+  console.log('Created', steps.length, 'basic steps for workflow:', workflowId);
 }
 
 async function calculateProgress(workflowId: string): Promise<number> {
@@ -368,8 +274,6 @@ async function calculateProgress(workflowId: string): Promise<number> {
 
 async function completeWorkflow(workflowId: string, tenantId: string): Promise<void> {
   console.log('Completing workflow:', workflowId);
-
-  const progress = await calculateProgress(workflowId);
 
   await supabase
     .from('onboarding_workflows')
@@ -615,19 +519,14 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // FIXED: Enhanced request body parsing with comprehensive error handling
+    // Enhanced request body parsing with better error handling
     let requestData: any;
     try {
       const contentType = req.headers.get('content-type') || '';
       console.log('Request Content-Type:', contentType);
       
-      if (!contentType.includes('application/json')) {
-        console.warn('Non-JSON content type detected:', contentType);
-      }
-
       const bodyText = await req.text();
       console.log('Raw request body length:', bodyText?.length || 0);
-      console.log('Raw request body preview:', bodyText?.substring(0, 500) || 'empty');
       
       if (!bodyText || bodyText.trim() === '') {
         console.error('Request body is empty');
@@ -706,7 +605,7 @@ serve(async (req) => {
       success: true, 
       data: result,
       timestamp: new Date().toISOString(),
-      processed_by: 'enterprise-api-v2'
+      processed_by: 'tenant-data-api-v2'
     }), {
       headers: { 
         ...corsHeaders, 
