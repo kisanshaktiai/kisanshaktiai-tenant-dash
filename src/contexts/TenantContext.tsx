@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setLoading, setError } from '@/store/slices/tenantSlice';
@@ -71,12 +70,12 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       console.log('TenantProvider: Fetching tenant data for user:', user.id);
       
-      // FIXED: Specify exact relationship path to avoid ambiguity
+      // FIXED: Use explicit foreign key relationship to avoid ambiguity
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
           *,
-          tenant:tenant_id(
+          tenants!user_tenants_tenant_id_fkey(
             *,
             branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
             features:tenant_features!tenant_features_tenant_id_fkey(*),
@@ -100,14 +99,14 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
         ...userTenant,
-        tenant: userTenant.tenant ? {
-          ...userTenant.tenant,
-          status: mapTenantStatus(userTenant.tenant.status),
-          subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
-          branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
-          features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
-          subscription: userTenant.tenant.subscription ? processSubscription(
-            Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
+        tenant: userTenant.tenants ? {
+          ...userTenant.tenants,
+          status: mapTenantStatus(userTenant.tenants.status),
+          subscription_plan: mapSubscriptionPlan(userTenant.tenants.subscription_plan),
+          branding: Array.isArray(userTenant.tenants.branding) ? userTenant.tenants.branding[0] : userTenant.tenants.branding,
+          features: Array.isArray(userTenant.tenants.features) ? userTenant.tenants.features[0] : userTenant.tenants.features,
+          subscription: userTenant.tenants.subscription ? processSubscription(
+            Array.isArray(userTenant.tenants.subscription) ? userTenant.tenants.subscription[0] : userTenant.tenants.subscription
           ) : null,
         } : undefined
       }));
