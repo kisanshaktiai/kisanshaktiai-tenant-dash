@@ -217,7 +217,7 @@ class TenantDataService {
       
       let workflow_id: string;
       let retryCount = 0;
-      const maxRetries = 3;
+      const maxRetries = 2;
       
       while (retryCount < maxRetries) {
         try {
@@ -280,7 +280,7 @@ class TenantDataService {
   async initializeOnboardingForTenant(tenantId: string) {
     this.validateTenantAccess(tenantId);
     
-    const maxRetries = 3;
+    const maxRetries = 2;
     let retryCount = 0;
     
     while (retryCount < maxRetries) {
@@ -304,7 +304,7 @@ class TenantDataService {
           throw new Error(`Failed to initialize onboarding for tenant ${tenantId}: ${error.message}`);
         }
         
-        const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 30000);
+        const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 10000);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
