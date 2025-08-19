@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
 import { useTenantAuth } from '@/hooks/useTenantAuth';
-import { useTenantContext as useOriginalTenantContext } from '@/contexts/TenantContext';
 
 interface TenantContextValue {
   currentTenant: any;
@@ -36,7 +35,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isMultiTenant: tenantAuth.isMultiTenant,
     switchTenant: tenantAuth.switchTenant,
     refreshTenantData: tenantAuth.refreshTenantData,
-    clearTenantSession: tenantAuth.clearTenantSession,
+    clearTenantSession: () => {
+      tenantAuth.clearTenantSession();
+    },
     isInitialized: tenantAuth.isInitialized,
   };
 
@@ -45,10 +46,4 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </TenantContext.Provider>
   );
-};
-
-// Legacy support - remove the old context gradually
-export const LegacyTenantProvider = ({ children }: { children: React.ReactNode }) => {
-  console.warn('LegacyTenantProvider is deprecated. Use TenantProvider instead.');
-  return <TenantProvider>{children}</TenantProvider>;
 };

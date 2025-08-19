@@ -78,7 +78,7 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading, initializeOnboarding } = useTenantContext();
+  const { currentTenant, loading: tenantLoading } = useTenantContext();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
@@ -113,7 +113,7 @@ const OnboardingPage = () => {
     if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData) {
       console.log('OnboardingPage: Auto-initializing onboarding for tenant:', currentTenant.id);
       
-      initializeOnboarding(currentTenant.id)
+      enhancedOnboardingService.ensureOnboardingWorkflow(currentTenant.id)
         .then((result) => {
           console.log('OnboardingPage: Auto-initialization result:', result);
           if (result) {
@@ -127,7 +127,7 @@ const OnboardingPage = () => {
           console.error('OnboardingPage: Auto-initialization failed:', error);
         });
     }
-  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch]);
+  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, refetch]);
 
   // Loading state with skeleton and accessibility
   if (!user) {

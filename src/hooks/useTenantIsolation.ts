@@ -2,6 +2,10 @@
 import { useCallback } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+// Define a more constrained type for table names to avoid infinite recursion
+type TableName = keyof Database['public']['Tables'];
 
 export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
@@ -27,7 +31,7 @@ export const useTenantIsolation = () => {
     };
   }, [user, currentTenant]);
 
-  const createTenantQuery = useCallback((table: string) => {
+  const createTenantQuery = useCallback(<T extends TableName>(table: T) => {
     const tenantId = getTenantId();
     return supabase
       .from(table)
@@ -35,7 +39,7 @@ export const useTenantIsolation = () => {
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantInsert = useCallback((table: string, data: any) => {
+  const createTenantInsert = useCallback(<T extends TableName>(table: T, data: any) => {
     const tenantId = getTenantId();
     return supabase
       .from(table)
@@ -45,7 +49,7 @@ export const useTenantIsolation = () => {
       });
   }, [getTenantId]);
 
-  const createTenantUpdate = useCallback((table: string, id: string, data: any) => {
+  const createTenantUpdate = useCallback(<T extends TableName>(table: T, id: string, data: any) => {
     const tenantId = getTenantId();
     return supabase
       .from(table)
@@ -54,7 +58,7 @@ export const useTenantIsolation = () => {
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantDelete = useCallback((table: string, id: string) => {
+  const createTenantDelete = useCallback(<T extends TableName>(table: T, id: string) => {
     const tenantId = getTenantId();
     return supabase
       .from(table)

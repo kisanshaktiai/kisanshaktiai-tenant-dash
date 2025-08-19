@@ -105,6 +105,12 @@ export const useTenantAuth = () => {
     }
   }, [userTenants, dispatch]);
 
+  const refreshTenantData = useCallback(async () => {
+    if (user?.id) {
+      await fetchUserTenants(user.id);
+    }
+  }, [user?.id, fetchUserTenants]);
+
   const clearTenantSession = useCallback(() => {
     console.log('useTenantAuth: Clearing tenant session');
     dispatch(clearTenantData());
@@ -164,7 +170,11 @@ export const useTenantAuth = () => {
         },
         (payload) => {
           console.log('useTenantAuth: Real-time tenant update detected:', payload.eventType);
-          const payloadId = payload.new?.id || payload.old?.id;
+          // Type-safe payload handling
+          const payloadNew = payload.new as Record<string, any> | null;
+          const payloadOld = payload.old as Record<string, any> | null;
+          const payloadId = payloadNew?.id || payloadOld?.id;
+          
           if (currentTenant && payloadId && payloadId === currentTenant.id) {
             setTimeout(() => {
               fetchUserTenants(user.id);
@@ -186,7 +196,7 @@ export const useTenantAuth = () => {
     loading: loading || !isInitialized,
     isMultiTenant: userTenants.length > 1,
     switchTenant,
-    refreshTenantData: user ? () => fetchUserTenants(user.id) : () => {},
+    refreshTenantData,
     clearTenantSession,
     isInitialized,
   };
