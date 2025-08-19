@@ -12,20 +12,19 @@ interface OnboardingGuardProps {
 
 export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, loading: tenantLoading, initializeOnboarding } = useTenantContext();
+  const { currentTenant, loading: tenantLoading, isInitialized } = useTenantContext();
   const [initializationComplete, setInitializationComplete] = useState(false);
 
   console.log('OnboardingGuard: Current state:', {
     user: user?.id,
     currentTenant: currentTenant?.id,
     tenantLoading,
-    userTenantsCount: userTenants.length,
+    isInitialized,
     initializationComplete
   });
 
-  const shouldCheckOnboarding = !!(user && currentTenant?.id && !tenantLoading);
-
-  console.log('OnboardingGuard: Should check onboarding:', shouldCheckOnboarding);
+  // Only check onboarding if user is authenticated and tenant is loaded
+  const shouldCheckOnboarding = !!(user && currentTenant?.id && isInitialized && !tenantLoading);
 
   const { data: isComplete, isLoading, refetch, error } = useQuery({
     queryKey: ['onboarding-status', currentTenant?.id],
@@ -39,76 +38,43 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
       
       try {
         const isCompleted = await enhancedOnboardingService.isOnboardingComplete(currentTenant.id);
-        console.log('OnboardingGuard: Onboarding completion status:', isCompleted);
+        console.log('OnboardingGuard: Onboarding completion status for tenant', currentTenant.id, ':', isCompleted);
         return isCompleted;
       } catch (error) {
-        console.error('OnboardingGuard: Error in onboarding status check:', error);
-        
-        // If there's an error, try to initialize onboarding
-        if (error.message?.includes('workflow') || error.message?.includes('not found')) {
-          console.log('OnboardingGuard: Initializing onboarding due to error');
-          try {
-            await initializeOnboarding(currentTenant.id);
-            return false; // Newly initialized, so not complete
-          } catch (initError) {
-            console.error('OnboardingGuard: Failed to initialize onboarding:', initError);
-            return false; // Assume not complete on initialization failure
-          }
-        }
-        
-        return false;
+        console.error('OnboardingGuard: Error checking onboarding status for tenant', currentTenant.id, ':', error);
+        return false; // Assume not complete on error
       }
     },
     enabled: shouldCheckOnboarding,
     staleTime: 30000,
     retry: (failureCount, err: any) => {
-      console.error('OnboardingGuard: Query retry:', { failureCount, error: err });
-      if (err && typeof err.message === 'string' && err.message.includes('tenant')) {
-        return false;
-      }
+      console.error('OnboardingGuard: Query retry for tenant', currentTenant?.id, ':', { failureCount, error: err });
       return failureCount < 2;
     },
   });
 
   // Handle initialization when needed
   useEffect(() => {
-    console.log('OnboardingGuard: useEffect triggered:', {
-      shouldCheckOnboarding,
-      isLoading,
-      isComplete,
-      initializationComplete
-    });
-
-    if (!shouldCheckOnboarding || isLoading) {
+    if (!shouldCheckOnboarding || isLoading || initializationComplete) {
       return;
     }
 
-    if (isComplete === false && !initializationComplete) {
-      console.log('OnboardingGuard: Initializing onboarding workflow');
-      
-      initializeOnboarding(currentTenant!.id)
-        .then(() => {
-          console.log('OnboardingGuard: Onboarding workflow initialized successfully');
-          refetch();
-          setInitializationComplete(true);
-        })
-        .catch((error) => {
-          console.error('OnboardingGuard: Failed to initialize onboarding workflow:', error);
-          setInitializationComplete(true); // Allow through even on error to prevent blocking
-        });
-    } else {
+    if (isComplete === false) {
+      console.log('OnboardingGuard: Onboarding not complete for tenant:', currentTenant?.id);
+      setInitializationComplete(true);
+    } else if (isComplete === true) {
+      console.log('OnboardingGuard: Onboarding complete for tenant:', currentTenant?.id);
       setInitializationComplete(true);
     }
-  }, [shouldCheckOnboarding, isComplete, isLoading, initializationComplete, refetch, currentTenant, initializeOnboarding]);
+  }, [shouldCheckOnboarding, isComplete, isLoading, initializationComplete, currentTenant?.id]);
 
-  // Show loading while we're still checking authentication
+  // Show loading while authentication or tenant data is loading
   if (!user) {
     console.log('OnboardingGuard: No user, allowing through');
     return <>{children}</>;
   }
 
-  // Show loading while tenant data is loading
-  if (tenantLoading) {
+  if (tenantLoading || !isInitialized) {
     console.log('OnboardingGuard: Tenant data loading, showing spinner');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
@@ -117,15 +83,15 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
     );
   }
 
-  // If no tenant data available, let them through (this might be a new user)
-  if (!currentTenant && userTenants.length === 0) {
-    console.warn('OnboardingGuard: User has no tenants, allowing through');
-    return <>{children}</>;
+  // If no tenant available, redirect to tenant selection or registration
+  if (!currentTenant) {
+    console.warn('OnboardingGuard: User has no current tenant, redirecting to setup');
+    return <Navigate to="/tenant-setup" replace />;
   }
 
-  // Show loading while onboarding data is being fetched or initialized
+  // Show loading while onboarding data is being checked
   if (shouldCheckOnboarding && (isLoading || !initializationComplete)) {
-    console.log('OnboardingGuard: Onboarding check in progress, showing spinner');
+    console.log('OnboardingGuard: Onboarding check in progress for tenant:', currentTenant.id);
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -134,16 +100,16 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
   }
 
   if (error) {
-    console.error('OnboardingGuard error:', error);
+    console.error('OnboardingGuard error for tenant', currentTenant.id, ':', error);
     // Allow through on persistent errors to prevent blocking
     return <>{children}</>;
   }
 
   if (isComplete === false) {
-    console.log('OnboardingGuard: Redirecting to onboarding - not complete');
+    console.log('OnboardingGuard: Redirecting to onboarding for tenant:', currentTenant.id);
     return <Navigate to="/onboarding" replace />;
   }
 
-  console.log('OnboardingGuard: Allowing through, onboarding status:', isComplete);
+  console.log('OnboardingGuard: Allowing through for tenant:', currentTenant.id, 'onboarding status:', isComplete);
   return <>{children}</>;
 };

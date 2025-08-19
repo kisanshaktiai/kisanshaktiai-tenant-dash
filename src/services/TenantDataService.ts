@@ -16,11 +16,15 @@ export interface TenantDataResponse<T = any> {
 }
 
 class TenantDataService {
-  private validateRequest(tenantId: string, request: TenantDataRequest): void {
+  private validateTenantAccess(tenantId: string): void {
     if (!tenantId || tenantId.trim() === '') {
-      throw new Error('Tenant ID is required');
+      throw new Error('Tenant ID is required for data isolation');
     }
+  }
 
+  private validateRequest(tenantId: string, request: TenantDataRequest): void {
+    this.validateTenantAccess(tenantId);
+    
     if (!request.operation) {
       throw new Error('Operation is required');
     }
@@ -58,15 +62,13 @@ class TenantDataService {
         tenant_id: tenantId
       };
 
-      console.log('TenantDataService: Calling edge function with payload:', {
+      console.log('TenantDataService: Calling edge function with tenant isolation:', {
         operation: requestPayload.operation,
         table: requestPayload.table,
         tenant_id: requestPayload.tenant_id,
         hasData: !!requestPayload.data,
-        payloadSize: JSON.stringify(requestPayload).length
       });
 
-      // FIXED: Ensure proper request body serialization and headers
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
         body: JSON.stringify(requestPayload),
         headers: {
@@ -74,19 +76,12 @@ class TenantDataService {
         },
       });
 
-      console.log('TenantDataService: Edge function response:', { 
-        hasData: !!data, 
-        hasError: !!error,
-        dataType: typeof data 
-      });
-
       if (error) {
-        console.error('TenantDataService: Edge function error:', error);
+        console.error('TenantDataService: Edge function error for tenant:', tenantId, error);
         
-        // FIXED: Categorize errors for proper retry behavior
         const errorMessage = error.message || 'Failed to call tenant data API';
         
-        // 400 errors are client errors - don't retry
+        // Categorize errors for proper retry behavior
         if (errorMessage.includes('400') || errorMessage.includes('Bad Request') || 
             errorMessage.includes('required') || errorMessage.includes('Invalid')) {
           const clientError = new Error(errorMessage);
@@ -94,14 +89,12 @@ class TenantDataService {
           throw clientError;
         }
         
-        // Other errors can be retried
         throw new Error(errorMessage);
       }
 
       if (data && typeof data === 'object') {
         if (data.success === false) {
           const apiError = new Error(data.error || 'API request failed');
-          // Mark client errors based on API response
           if (data.error && (data.error.includes('required') || data.error.includes('Invalid'))) {
             (apiError as any).isClientError = true;
           }
@@ -111,45 +104,33 @@ class TenantDataService {
         return data.success ? data.data : data;
       }
 
-      console.log('TenantDataService: Successful response received');
       return data as T;
     } catch (error) {
-      console.error('TenantDataService: Error in callTenantDataAPI:', error);
+      console.error('TenantDataService: Error in tenant-isolated API call:', {
+        tenantId,
+        operation: request.operation,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
 
-  // FIXED: Add idempotency check for workflow creation
-  private async isWorkflowCreationNeeded(tenantId: string): Promise<boolean> {
-    try {
-      const { data: existingWorkflow } = await supabase
-        .from('onboarding_workflows')
-        .select('id')
-        .eq('tenant_id', tenantId)
-        .single();
-      
-      return !existingWorkflow;
-    } catch (error) {
-      // If we can't check, assume we need to create
-      return true;
-    }
-  }
-
-  // Workflow Management with Enterprise Features
+  // Enhanced workflow creation with tenant isolation
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
+    this.validateTenantAccess(tenantId);
+    
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
     
-    // FIXED: Add idempotency check
-    const needsCreation = await this.isWorkflowCreationNeeded(tenantId);
-    if (!needsCreation) {
-      const { data: existingWorkflow } = await supabase
-        .from('onboarding_workflows')
-        .select('id')
-        .eq('tenant_id', tenantId)
-        .single();
-      
-      console.log('TenantDataService: Workflow already exists:', existingWorkflow?.id);
-      return { workflow_id: existingWorkflow!.id };
+    // Check if workflow already exists for this tenant
+    const { data: existingWorkflow } = await supabase
+      .from('onboarding_workflows')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .single();
+    
+    if (existingWorkflow) {
+      console.log('TenantDataService: Workflow already exists for tenant:', tenantId, 'workflow ID:', existingWorkflow.id);
+      return { workflow_id: existingWorkflow.id };
     }
     
     try {
@@ -162,14 +143,16 @@ class TenantDataService {
         throw new Error('Failed to ensure workflow - no workflow ID returned');
       }
       
+      console.log('TenantDataService: Created new workflow for tenant:', tenantId, 'workflow ID:', result.workflow_id);
       return result;
     } catch (error) {
-      console.error('TenantDataService: Error ensuring workflow:', error);
+      console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);
       throw error;
     }
   }
 
   async getOnboardingWorkflow(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting onboarding workflow for tenant:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
@@ -179,6 +162,7 @@ class TenantDataService {
   }
 
   async updateOnboardingWorkflow(tenantId: string, workflowId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Updating onboarding workflow:', { tenantId, workflowId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
@@ -189,6 +173,7 @@ class TenantDataService {
   }
 
   async completeOnboardingWorkflow(tenantId: string, workflowId: string): Promise<{ success: boolean }> {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
@@ -198,6 +183,7 @@ class TenantDataService {
   }
 
   async calculateWorkflowProgress(tenantId: string, workflowId: string): Promise<{ progress: number }> {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Calculating workflow progress:', { tenantId, workflowId });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_workflows',
@@ -206,10 +192,10 @@ class TenantDataService {
     });
   }
 
-  // Steps Management
   async getOnboardingSteps(tenantId: string, workflowId?: string) {
-    console.log('TenantDataService: Getting onboarding steps:', { tenantId, workflowId });
-    const filters: Record<string, any> = {};
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting onboarding steps for tenant:', tenantId, 'workflow:', workflowId);
+    const filters: Record<string, any> = { tenant_id: tenantId };
     if (workflowId) {
       filters.workflow_id = workflowId;
     }
@@ -222,6 +208,7 @@ class TenantDataService {
   }
 
   async updateOnboardingStep(tenantId: string, stepId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Updating onboarding step:', { tenantId, stepId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'onboarding_steps',
@@ -231,12 +218,11 @@ class TenantDataService {
     });
   }
 
-  // Enhanced composite operations with robust error recovery
   async getCompleteOnboardingData(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     try {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
-      // First ensure workflow exists with improved retry logic
       let workflow_id: string;
       let retryCount = 0;
       const maxRetries = 3;
@@ -251,17 +237,14 @@ class TenantDataService {
           retryCount++;
           console.error(`TenantDataService: Workflow ensure attempt ${retryCount} failed:`, error);
           
-          // FIXED: Don't retry client errors (400s)
           if (error.isClientError || retryCount >= maxRetries) {
             throw error;
           }
           
-          // Wait before retry with exponential backoff
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
         }
       }
       
-      // Then get workflow and steps in parallel
       const [workflow, steps] = await Promise.all([
         this.getOnboardingWorkflow(tenantId),
         this.getOnboardingSteps(tenantId, workflow_id)
@@ -283,6 +266,7 @@ class TenantDataService {
   }
 
   async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any) {
+    this.validateTenantAccess(tenantId);
     try {
       console.log('TenantDataService: Completing onboarding step:', { tenantId, stepId, stepData });
       
@@ -301,9 +285,10 @@ class TenantDataService {
     }
   }
 
-  // FIXED: Enhanced initialization with better error handling
   async initializeOnboardingForTenant(tenantId: string) {
-    const maxRetries = 3; // Reduced from 5 since client errors shouldn't be retried
+    this.validateTenantAccess(tenantId);
+    
+    const maxRetries = 3;
     let retryCount = 0;
     
     while (retryCount < maxRetries) {
@@ -313,7 +298,7 @@ class TenantDataService {
         const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
         const onboardingData = await this.getCompleteOnboardingData(tenantId);
         
-        console.log('TenantDataService: Onboarding initialized successfully:', { 
+        console.log('TenantDataService: Onboarding initialized successfully for tenant:', tenantId, {
           workflowId: workflow_id, 
           stepCount: onboardingData.steps.length 
         });
@@ -321,22 +306,20 @@ class TenantDataService {
         return onboardingData;
       } catch (error: any) {
         retryCount++;
-        console.error(`TenantDataService: Error initializing onboarding (attempt ${retryCount}):`, error);
+        console.error(`TenantDataService: Error initializing onboarding for tenant ${tenantId} (attempt ${retryCount}):`, error);
         
-        // FIXED: Don't retry client errors
         if (error.isClientError || retryCount >= maxRetries) {
-          throw new Error(`Failed to initialize onboarding: ${error.message}`);
+          throw new Error(`Failed to initialize onboarding for tenant ${tenantId}: ${error.message}`);
         }
         
-        // Wait before retry with exponential backoff and jitter
         const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 30000);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
 
-  // Subscription plans
   async getSubscriptionPlans(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting subscription plans for tenant:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'subscription_plans',
@@ -344,8 +327,8 @@ class TenantDataService {
     });
   }
 
-  // Tenant data
   async getTenant(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting tenant data:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenants',
@@ -354,6 +337,7 @@ class TenantDataService {
   }
 
   async updateTenant(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Updating tenant:', { tenantId, data });
     return this.callTenantDataAPI(tenantId, {
       table: 'tenants',
@@ -363,8 +347,8 @@ class TenantDataService {
     });
   }
 
-  // Tenant branding
   async getTenantBranding(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting tenant branding:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_branding',
@@ -374,6 +358,7 @@ class TenantDataService {
   }
 
   async upsertTenantBranding(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     try {
       console.log('TenantDataService: Upserting tenant branding:', { tenantId, data });
       const existing = await this.getTenantBranding(tenantId);
@@ -396,8 +381,8 @@ class TenantDataService {
     });
   }
 
-  // Tenant features
   async getTenantFeatures(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting tenant features:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_features',
@@ -407,6 +392,7 @@ class TenantDataService {
   }
 
   async upsertTenantFeatures(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     try {
       console.log('TenantDataService: Upserting tenant features:', { tenantId, data });
       const existing = await this.getTenantFeatures(tenantId);
@@ -429,8 +415,8 @@ class TenantDataService {
     });
   }
 
-  // Tenant subscriptions
   async getTenantSubscription(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Getting tenant subscription:', tenantId);
     return this.callTenantDataAPI(tenantId, {
       table: 'tenant_subscriptions',
