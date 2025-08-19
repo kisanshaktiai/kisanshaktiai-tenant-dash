@@ -14,40 +14,9 @@ export interface ValidationResult {
 }
 
 class EnhancedOnboardingService {
-  private async withRetry<T>(
-    operation: () => Promise<T>,
-    maxRetries: number = 2, // Reduced from 3 to 2
-    baseDelay: number = 1000
-  ): Promise<T> {
-    let lastError: Error;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`${operation.name || 'Operation'}: Attempt ${attempt}/${maxRetries}`);
-        return await operation();
-      } catch (error: any) {
-        lastError = error;
-        console.error(`${operation.name || 'Operation'}: Attempt ${attempt} failed:`, error);
-        
-        // Don't retry client errors (400 level)
-        if (error.isClientError || error.message?.includes('400')) {
-          throw error;
-        }
-        
-        if (attempt < maxRetries) {
-          const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000;
-          console.info(`${operation.name || 'Operation'}: Retrying in ${delay.toFixed(1)}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
-    
-    throw new Error(`${operation.name || 'Operation'} failed after ${maxRetries} attempts: ${lastError.message}`);
-  }
-
   async getOnboardingData(tenantId: string): Promise<OnboardingData> {
-    return this.withRetry(async () => {
-      console.log('EnhancedOnboardingService: Getting enterprise onboarding data for tenant:', tenantId);
+    try {
+      console.log('EnhancedOnboardingService: Getting onboarding data for tenant:', tenantId);
       
       // Get complete onboarding data with workflow creation if needed
       const data = await tenantDataService.getCompleteOnboardingData(tenantId);
@@ -62,11 +31,14 @@ class EnhancedOnboardingService {
         workflow: data.workflow,
         steps: data.steps || []
       };
-    }, 2, 1500); // Reduced retries and base delay
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error getting onboarding data:', error);
+      throw error;
+    }
   }
 
   async initializeOnboardingWorkflow(tenantId: string): Promise<OnboardingData> {
-    return this.withRetry(async () => {
+    try {
       console.log('EnhancedOnboardingService: Initializing onboarding workflow for tenant:', tenantId);
       
       const data = await tenantDataService.initializeOnboardingForTenant(tenantId);
@@ -80,7 +52,10 @@ class EnhancedOnboardingService {
         workflow: data.workflow,
         steps: data.steps || []
       };
-    }, 2, 2000); // Reduced retries
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error initializing workflow:', error);
+      throw error;
+    }
   }
 
   async completeStep(stepId: string, stepData?: any, tenantId?: string): Promise<boolean> {
@@ -88,14 +63,17 @@ class EnhancedOnboardingService {
       throw new Error('Tenant ID is required for completing step');
     }
 
-    return this.withRetry(async () => {
+    try {
       console.log('EnhancedOnboardingService: Completing step:', { stepId, tenantId });
       
       await tenantDataService.completeOnboardingStep(tenantId, stepId, stepData);
       
       console.log('EnhancedOnboardingService: Step completed successfully');
       return true;
-    }, 2, 1000); // Reduced retries
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error completing step:', error);
+      throw error;
+    }
   }
 
   async updateStepStatus(
@@ -108,7 +86,7 @@ class EnhancedOnboardingService {
       throw new Error('Tenant ID is required for updating step status');
     }
 
-    return this.withRetry(async () => {
+    try {
       console.log('EnhancedOnboardingService: Updating step status:', { stepId, status, tenantId });
       
       await tenantDataService.updateOnboardingStep(tenantId, stepId, {
@@ -121,11 +99,14 @@ class EnhancedOnboardingService {
       
       console.log('EnhancedOnboardingService: Step status updated successfully');
       return true;
-    }, 2, 1000); // Reduced retries
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error updating step status:', error);
+      throw error;
+    }
   }
 
   async completeWorkflow(workflowId: string, tenantId: string): Promise<boolean> {
-    return this.withRetry(async () => {
+    try {
       console.log('EnhancedOnboardingService: Completing workflow:', { workflowId, tenantId });
       
       const result = await tenantDataService.completeOnboardingWorkflow(tenantId, workflowId);
@@ -136,7 +117,10 @@ class EnhancedOnboardingService {
       
       console.log('EnhancedOnboardingService: Workflow completed successfully');
       return true;
-    }, 2, 1000); // Reduced retries
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error completing workflow:', error);
+      throw error;
+    }
   }
 
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
@@ -176,7 +160,7 @@ class EnhancedOnboardingService {
       return {
         isValid,
         issues,
-        repaired: false // No auto-repair in this implementation
+        repaired: false
       };
     } catch (error) {
       console.error('EnhancedOnboardingService: Error during validation:', error);

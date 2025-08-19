@@ -35,43 +35,41 @@ export interface OnboardingStep {
 export class OnboardingService {
   async getCompleteOnboardingData(tenantId: string) {
     try {
-      console.log('Getting complete onboarding data for tenant:', tenantId);
+      console.log('OnboardingService: Getting complete onboarding data for tenant:', tenantId);
       return await tenantDataService.getCompleteOnboardingData(tenantId);
     } catch (error) {
-      console.error('Error in OnboardingService.getCompleteOnboardingData:', error);
+      console.error('OnboardingService: Error getting complete onboarding data:', error);
       throw error;
     }
   }
 
   async getOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
     try {
-      console.log('Fetching onboarding workflow for tenant:', tenantId);
+      console.log('OnboardingService: Fetching onboarding workflow for tenant:', tenantId);
       
       const data = await tenantDataService.getOnboardingWorkflow(tenantId);
       
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.log('No workflow found for tenant:', tenantId);
+      if (!data) {
+        console.log('OnboardingService: No workflow found for tenant:', tenantId);
         return null;
       }
 
-      const workflow = Array.isArray(data) ? data[0] : data;
-
       return {
-        id: workflow.id,
-        tenant_id: workflow.tenant_id,
-        workflow_name: workflow.workflow_name || 'Onboarding Workflow',
-        status: workflow.status || 'not_started',
-        progress_percentage: workflow.progress_percentage || 0,
-        current_step: workflow.current_step || 1,
-        total_steps: workflow.total_steps || 0,
-        started_at: workflow.started_at,
-        completed_at: workflow.completed_at,
-        metadata: workflow.metadata || {},
-        created_at: workflow.created_at,
-        updated_at: workflow.updated_at
+        id: data.id,
+        tenant_id: data.tenant_id,
+        workflow_name: data.workflow_name || 'Onboarding Workflow',
+        status: data.status || 'not_started',
+        progress_percentage: data.progress_percentage || 0,
+        current_step: data.current_step || 1,
+        total_steps: data.total_steps || 0,
+        started_at: data.started_at,
+        completed_at: data.completed_at,
+        metadata: data.metadata || {},
+        created_at: data.created_at,
+        updated_at: data.updated_at
       };
     } catch (error) {
-      console.error('Error fetching onboarding workflow:', error);
+      console.error('OnboardingService: Error fetching onboarding workflow:', error);
       return null;
     }
   }
@@ -82,36 +80,32 @@ export class OnboardingService {
 
   async getWorkflowSteps(workflowId: string, tenantId: string): Promise<OnboardingStep[]> {
     try {
-      console.log('Fetching workflow steps:', { workflowId, tenantId });
+      console.log('OnboardingService: Fetching workflow steps:', { workflowId, tenantId });
       
       const data = await tenantDataService.getOnboardingSteps(tenantId, workflowId);
       
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.log('No steps found for workflow:', workflowId);
+      if (!data || data.length === 0) {
+        console.log('OnboardingService: No steps found for workflow:', workflowId);
         return [];
       }
 
-      const steps = Array.isArray(data) ? data : [data];
-
-      return steps
-        .filter(step => step.workflow_id === workflowId)
-        .map(step => ({
-          id: step.id,
-          workflow_id: step.workflow_id,
-          step_number: step.step_number,
-          step_name: step.step_name,
-          step_description: step.step_description || 'Step description',
-          step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
-          is_required: step.is_required !== false,
-          estimated_time_minutes: step.estimated_time_minutes || 30,
-          step_data: step.step_data || {},
-          started_at: step.started_at,
-          completed_at: step.completed_at,
-          created_at: step.created_at,
-          updated_at: step.updated_at
-        }));
+      return data.map(step => ({
+        id: step.id,
+        workflow_id: step.workflow_id,
+        step_number: step.step_number,
+        step_name: step.step_name,
+        step_description: step.step_description || 'Step description',
+        step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
+        is_required: step.is_required !== false,
+        estimated_time_minutes: step.estimated_time_minutes || 30,
+        step_data: step.step_data || {},
+        started_at: step.started_at,
+        completed_at: step.completed_at,
+        created_at: step.created_at,
+        updated_at: step.updated_at
+      }));
     } catch (error) {
-      console.error('Error fetching workflow steps:', error);
+      console.error('OnboardingService: Error fetching workflow steps:', error);
       return [];
     }
   }
@@ -124,11 +118,11 @@ export class OnboardingService {
   ): Promise<boolean> {
     try {
       if (!tenantId) {
-        console.error('Tenant ID is required for updating step status');
+        console.error('OnboardingService: Tenant ID is required for updating step status');
         return false;
       }
 
-      console.log('Updating step status:', { stepId, stepStatus, stepData, tenantId });
+      console.log('OnboardingService: Updating step status:', { stepId, stepStatus, stepData, tenantId });
       
       await tenantDataService.updateOnboardingStep(tenantId, stepId, {
         step_status: stepStatus,
@@ -140,7 +134,7 @@ export class OnboardingService {
 
       return true;
     } catch (error) {
-      console.error('Error updating step status:', error);
+      console.error('OnboardingService: Error updating step status:', error);
       return false;
     }
   }
@@ -148,28 +142,28 @@ export class OnboardingService {
   async completeStep(stepId: string, stepData?: any, tenantId?: string): Promise<boolean> {
     try {
       if (!tenantId) {
-        console.error('Tenant ID is required for completing step');
+        console.error('OnboardingService: Tenant ID is required for completing step');
         return false;
       }
 
-      console.log('Completing step:', { stepId, stepData, tenantId });
+      console.log('OnboardingService: Completing step:', { stepId, stepData, tenantId });
       
       await tenantDataService.completeOnboardingStep(tenantId, stepId, stepData);
       return true;
     } catch (error) {
-      console.error('Error completing step:', error);
+      console.error('OnboardingService: Error completing step:', error);
       return false;
     }
   }
 
   async completeWorkflow(workflowId: string, tenantId: string): Promise<boolean> {
     try {
-      console.log('Completing onboarding workflow:', { workflowId, tenantId });
+      console.log('OnboardingService: Completing onboarding workflow:', { workflowId, tenantId });
       
-      await tenantDataService.completeOnboardingWorkflow(tenantId, workflowId);
-      return true;
+      const result = await tenantDataService.completeOnboardingWorkflow(tenantId, workflowId);
+      return result?.success || false;
     } catch (error) {
-      console.error('Error completing workflow:', error);
+      console.error('OnboardingService: Error completing workflow:', error);
       return false;
     }
   }
@@ -179,7 +173,7 @@ export class OnboardingService {
       const workflow = await this.getOnboardingWorkflow(tenantId);
       return workflow?.status === 'completed' || false;
     } catch (error) {
-      console.error('Error checking onboarding completion:', error);
+      console.error('OnboardingService: Error checking onboarding completion:', error);
       return false;
     }
   }
@@ -189,7 +183,7 @@ export class OnboardingService {
       const { workflow_id } = await tenantDataService.ensureOnboardingWorkflow(tenantId);
       return workflow_id;
     } catch (error) {
-      console.error('Error ensuring workflow exists:', error);
+      console.error('OnboardingService: Error ensuring workflow exists:', error);
       throw error;
     }
   }

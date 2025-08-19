@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -3605,6 +3605,45 @@ export type Database = {
           },
         ]
       }
+      onboarding_step_templates: {
+        Row: {
+          created_at: string | null
+          default_data: Json
+          help_text: string | null
+          id: string
+          is_required: boolean
+          step_name: string
+          step_number: number
+          updated_at: string | null
+          validation_schema: Json | null
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          default_data?: Json
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          step_name: string
+          step_number: number
+          updated_at?: string | null
+          validation_schema?: Json | null
+          version?: number
+        }
+        Update: {
+          created_at?: string | null
+          default_data?: Json
+          help_text?: string | null
+          id?: string
+          is_required?: boolean
+          step_name?: string
+          step_number?: number
+          updated_at?: string | null
+          validation_schema?: Json | null
+          version?: number
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           completed_at: string | null
@@ -5270,6 +5309,45 @@ export type Database = {
           },
         ]
       }
+      system_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_system_role: boolean | null
+          permissions: Json | null
+          role_code: string
+          role_description: string | null
+          role_level: number
+          role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_role?: boolean | null
+          permissions?: Json | null
+          role_code: string
+          role_description?: string | null
+          role_level?: number
+          role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system_role?: boolean | null
+          permissions?: Json | null
+          role_code?: string
+          role_description?: string | null
+          role_level?: number
+          role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       team_invitations: {
         Row: {
           accepted_at: string | null
@@ -5661,6 +5739,84 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_legal_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: Database["public"]["Enums"]["legal_document_type"]
+          expiry_date: string | null
+          file_size: number
+          file_url: string
+          id: string
+          is_required: boolean
+          metadata: Json | null
+          mime_type: string
+          original_filename: string
+          rejection_reason: string | null
+          tenant_id: string
+          updated_at: string
+          upload_order: number
+          verification_status: Database["public"]["Enums"]["verification_status"]
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: Database["public"]["Enums"]["legal_document_type"]
+          expiry_date?: string | null
+          file_size: number
+          file_url: string
+          id?: string
+          is_required?: boolean
+          metadata?: Json | null
+          mime_type?: string
+          original_filename: string
+          rejection_reason?: string | null
+          tenant_id: string
+          updated_at?: string
+          upload_order?: number
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: Database["public"]["Enums"]["legal_document_type"]
+          expiry_date?: string | null
+          file_size?: number
+          file_url?: string
+          id?: string
+          is_required?: boolean
+          metadata?: Json | null
+          mime_type?: string
+          original_filename?: string
+          rejection_reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+          upload_order?: number
+          verification_status?: Database["public"]["Enums"]["verification_status"]
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_legal_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_legal_documents_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
             referencedColumns: ["id"]
           },
         ]
@@ -6256,11 +6412,12 @@ export type Database = {
           is_active: boolean | null
           is_primary: boolean | null
           joined_at: string | null
+          metadata: Json | null
           permissions: Json | null
           role: Database["public"]["Enums"]["user_role"]
-          tenant_id: string | null
+          tenant_id: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
@@ -6273,11 +6430,12 @@ export type Database = {
           is_active?: boolean | null
           is_primary?: boolean | null
           joined_at?: string | null
+          metadata?: Json | null
           permissions?: Json | null
           role: Database["public"]["Enums"]["user_role"]
-          tenant_id?: string | null
+          tenant_id: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
@@ -6290,13 +6448,21 @@ export type Database = {
           is_active?: boolean | null
           is_primary?: boolean | null
           joined_at?: string | null
+          metadata?: Json | null
           permissions?: Json | null
           role?: Database["public"]["Enums"]["user_role"]
-          tenant_id?: string | null
+          tenant_id?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_user_tenants_tenant_id"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_tenants_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -7116,11 +7282,11 @@ export type Database = {
     }
     Functions: {
       _postgis_deprecate: {
-        Args: { oldname: string; newname: string; version: string }
+        Args: { newname: string; oldname: string; version: string }
         Returns: undefined
       }
       _postgis_index_extent: {
-        Args: { tbl: unknown; col: string }
+        Args: { col: string; tbl: unknown }
         Returns: unknown
       }
       _postgis_pgsql_version: {
@@ -7132,7 +7298,7 @@ export type Database = {
         Returns: string
       }
       _postgis_selectivity: {
-        Args: { tbl: unknown; att_name: string; geom: unknown; mode?: string }
+        Args: { att_name: string; geom: unknown; mode?: string; tbl: unknown }
         Returns: number
       }
       _st_3dintersects: {
@@ -7218,10 +7384,10 @@ export type Database = {
       }
       _st_voronoi: {
         Args: {
-          g1: unknown
           clip?: unknown
-          tolerance?: number
+          g1: unknown
           return_polygons?: boolean
+          tolerance?: number
         }
         Returns: unknown
       }
@@ -7237,38 +7403,46 @@ export type Database = {
         Args:
           | {
               catalog_name: string
-              schema_name: string
-              table_name: string
               column_name: string
+              new_dim: number
               new_srid_in: number
               new_type: string
-              new_dim: number
-              use_typmod?: boolean
-            }
-          | {
               schema_name: string
               table_name: string
-              column_name: string
-              new_srid: number
-              new_type: string
-              new_dim: number
               use_typmod?: boolean
             }
           | {
-              table_name: string
               column_name: string
+              new_dim: number
               new_srid: number
               new_type: string
+              schema_name: string
+              table_name: string
+              use_typmod?: boolean
+            }
+          | {
+              column_name: string
               new_dim: number
+              new_srid: number
+              new_type: string
+              table_name: string
               use_typmod?: boolean
             }
         Returns: string
       }
+      advance_onboarding_step: {
+        Args: {
+          p_new_status: Database["public"]["Enums"]["onboarding_step_status"]
+          p_step_data?: Json
+          p_step_id: string
+        }
+        Returns: Json
+      }
       archive_tenant_data: {
         Args: {
-          p_tenant_id: string
           p_archive_location: string
           p_encryption_key_id: string
+          p_tenant_id: string
         }
         Returns: Json
       }
@@ -7318,15 +7492,15 @@ export type Database = {
       }
       calculate_evapotranspiration: {
         Args: {
-          temp_celsius: number
           humidity_percent: number
-          wind_speed_kmh: number
           solar_radiation?: number
+          temp_celsius: number
+          wind_speed_kmh: number
         }
         Returns: number
       }
       calculate_growing_degree_days: {
-        Args: { temp_max: number; temp_min: number; base_temp?: number }
+        Args: { base_temp?: number; temp_max: number; temp_min: number }
         Returns: number
       }
       calculate_land_health_score: {
@@ -7357,6 +7531,14 @@ export type Database = {
         Args: { required_role?: string }
         Returns: boolean
       }
+      check_bootstrap_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      check_registration_status: {
+        Args: { p_email?: string; p_token?: string }
+        Returns: Json
+      }
       check_slug_availability: {
         Args: { p_slug: string } | { p_slug: string; p_tenant_id?: string }
         Returns: Json
@@ -7364,6 +7546,10 @@ export type Database = {
       cleanup_bootstrap_state: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      cleanup_expired_registrations: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       cleanup_expired_sessions: {
         Args: Record<PropertyKey, never>
@@ -7378,7 +7564,7 @@ export type Database = {
         Returns: number
       }
       cleanup_old_metrics: {
-        Args: { table_name: string; keep_count?: number }
+        Args: { keep_count?: number; table_name: string }
         Returns: number
       }
       cleanup_old_rate_limits: {
@@ -7390,55 +7576,59 @@ export type Database = {
         Returns: undefined
       }
       complete_bootstrap_for_user: {
-        Args: { user_id: string; user_email: string; user_name: string }
+        Args: { user_email: string; user_id: string; user_name: string }
         Returns: boolean
+      }
+      complete_bootstrap_safely: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       convert_lead_to_tenant: {
         Args: {
-          p_lead_id: string
-          p_tenant_name: string
-          p_tenant_slug: string
-          p_subscription_plan?: string
           p_admin_email?: string
           p_admin_name?: string
+          p_lead_id: string
+          p_subscription_plan?: string
+          p_tenant_name: string
+          p_tenant_slug: string
         }
         Returns: Json
       }
       convert_lead_to_tenant_secure: {
         Args: {
-          p_lead_id: string
-          p_tenant_name: string
-          p_tenant_slug: string
-          p_subscription_plan?: string
           p_admin_email?: string
           p_admin_name?: string
+          p_lead_id: string
+          p_subscription_plan?: string
+          p_tenant_name: string
+          p_tenant_slug: string
         }
         Returns: Json
       }
       create_tenant_with_validation: {
         Args: {
-          p_name: string
-          p_slug: string
-          p_type: string
-          p_status?: string
-          p_subscription_plan?: string
-          p_owner_name?: string
-          p_owner_email?: string
-          p_owner_phone?: string
-          p_business_registration?: string
           p_business_address?: Json
+          p_business_registration?: string
+          p_custom_domain?: string
           p_established_date?: string
-          p_subscription_start_date?: string
-          p_subscription_end_date?: string
-          p_trial_ends_at?: string
-          p_max_farmers?: number
+          p_max_api_calls_per_day?: number
           p_max_dealers?: number
+          p_max_farmers?: number
           p_max_products?: number
           p_max_storage_gb?: number
-          p_max_api_calls_per_day?: number
-          p_subdomain?: string
-          p_custom_domain?: string
           p_metadata?: Json
+          p_name: string
+          p_owner_email?: string
+          p_owner_name?: string
+          p_owner_phone?: string
+          p_slug: string
+          p_status?: string
+          p_subdomain?: string
+          p_subscription_end_date?: string
+          p_subscription_plan?: string
+          p_subscription_start_date?: string
+          p_trial_ends_at?: string
+          p_type: string
         }
         Returns: Json
       }
@@ -7454,12 +7644,12 @@ export type Database = {
         Args:
           | {
               catalog_name: string
+              column_name: string
               schema_name: string
               table_name: string
-              column_name: string
             }
-          | { schema_name: string; table_name: string; column_name: string }
-          | { table_name: string; column_name: string }
+          | { column_name: string; schema_name: string; table_name: string }
+          | { column_name: string; table_name: string }
         Returns: string
       }
       dropgeometrytable: {
@@ -7476,6 +7666,10 @@ export type Database = {
       ensure_onboarding_workflow: {
         Args: { p_tenant_id: string }
         Returns: string
+      }
+      ensure_user_tenant_access: {
+        Args: { p_tenant_id: string; p_user_id?: string }
+        Returns: boolean
       }
       equals: {
         Args: { geom1: unknown; geom2: unknown }
@@ -7945,11 +8139,26 @@ export type Database = {
         Args: { "": string }
         Returns: unknown
       }
+      get_available_tenants_for_onboarding: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
+      get_bootstrap_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_current_admin_role: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
       get_current_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_email: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
@@ -7962,8 +8171,12 @@ export type Database = {
         Returns: Json
       }
       get_onboarding_template: {
-        Args: { tenant_type: string; subscription_plan: string }
+        Args: { subscription_plan: string; tenant_type: string }
         Returns: Json
+      }
+      get_or_create_onboarding_workflow: {
+        Args: { p_tenant_id: string }
+        Returns: string
       }
       get_proj4_from_srid: {
         Args: { "": number }
@@ -7971,12 +8184,36 @@ export type Database = {
       }
       get_spray_suitability: {
         Args: {
-          temp_celsius: number
-          wind_speed_kmh: number
           humidity_percent: number
           rain_probability_percent: number
+          temp_celsius: number
+          wind_speed_kmh: number
         }
         Returns: number
+      }
+      get_super_admin_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_user_tenant_relationships: {
+        Args: {
+          p_include_inactive?: boolean
+          p_tenant_id?: string
+          p_user_id?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          metadata: Json
+          role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+          updated_at: string
+          user_email: string
+          user_id: string
+        }[]
       }
       gettransactionid: {
         Args: Record<PropertyKey, never>
@@ -8018,6 +8255,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_bootstrap_required: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_current_user_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -8038,6 +8279,10 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: boolean
       }
+      is_user_tenant_admin: {
+        Args: { target_tenant_id: string }
+        Returns: boolean
+      }
       json: {
         Args: { "": unknown }
         Returns: Json
@@ -8049,9 +8294,9 @@ export type Database = {
       log_admin_action: {
         Args: {
           p_action: string
-          p_target_admin_id?: string
           p_details?: Json
           p_ip_address?: unknown
+          p_target_admin_id?: string
           p_user_agent?: string
         }
         Returns: string
@@ -8059,17 +8304,17 @@ export type Database = {
       log_enhanced_admin_action: {
         Args: {
           p_action: string
-          p_target_admin_id?: string
-          p_details?: Json
-          p_ip_address?: unknown
-          p_user_agent?: string
-          p_request_id?: string
           p_correlation_id?: string
-          p_session_id?: string
+          p_details?: Json
+          p_duration_ms?: number
+          p_ip_address?: unknown
+          p_request_id?: string
           p_request_payload?: Json
           p_response_data?: Json
-          p_duration_ms?: number
           p_security_context?: Json
+          p_session_id?: string
+          p_target_admin_id?: string
+          p_user_agent?: string
         }
         Returns: string
       }
@@ -8077,40 +8322,51 @@ export type Database = {
         Args:
           | {
               event_type: string
-              user_id?: string
-              tenant_id?: string
-              metadata?: Json
               ip_address?: string
+              metadata?: Json
+              tenant_id?: string
               user_agent?: string
+              user_id?: string
             }
           | {
-              p_user_id?: string
-              p_event_type?: string
               p_event_details?: Json
+              p_event_type?: string
               p_ip_address?: unknown
-              p_user_agent?: string
               p_risk_level?: string
+              p_user_agent?: string
+              p_user_id?: string
             }
         Returns: string
       }
       log_tenant_detection_event: {
         Args: {
-          p_event_type: string
-          p_domain: string
-          p_tenant_id?: string
-          p_fallback_reason?: string
           p_detection_method?: string
-          p_user_agent?: string
+          p_domain: string
+          p_error_details?: Json
+          p_event_type: string
+          p_fallback_reason?: string
           p_ip_address?: unknown
           p_metadata?: Json
-          p_error_details?: Json
           p_session_id?: string
+          p_tenant_id?: string
+          p_user_agent?: string
         }
         Returns: string
       }
       longtransactionsenabled: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      manage_user_tenant_relationship: {
+        Args: {
+          p_is_active?: boolean
+          p_metadata?: Json
+          p_operation?: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_tenant_id: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       mark_invitation_accepted: {
         Args: { token: string }
@@ -8191,15 +8447,15 @@ export type Database = {
         Returns: unknown
       }
       postgis_constraint_dims: {
-        Args: { geomschema: string; geomtable: string; geomcolumn: string }
+        Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: number
       }
       postgis_constraint_srid: {
-        Args: { geomschema: string; geomtable: string; geomcolumn: string }
+        Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: number
       }
       postgis_constraint_type: {
-        Args: { geomschema: string; geomtable: string; geomcolumn: string }
+        Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: string
       }
       postgis_dropbbox: {
@@ -8288,8 +8544,8 @@ export type Database = {
       }
       postgis_type_name: {
         Args: {
-          geomname: string
           coord_dimension: number
+          geomname: string
           use_new_name?: boolean
         }
         Returns: string
@@ -8326,20 +8582,28 @@ export type Database = {
         Args: { p_email: string; p_ip_address?: unknown }
         Returns: Json
       }
+      remove_onboarding_workflow: {
+        Args: { p_workflow_id: string }
+        Returns: Json
+      }
       send_admin_notification: {
         Args: {
+          p_message: string
+          p_metadata?: Json
+          p_priority?: string
           p_recipient_id: string
           p_title: string
-          p_message: string
           p_type?: string
-          p_priority?: string
-          p_metadata?: Json
         }
         Returns: string
       }
       set_limit: {
         Args: { "": number }
         Returns: number
+      }
+      set_onboarding_step_data: {
+        Args: { p_new_status?: string; p_step_data: Json; p_step_id: string }
+        Returns: Json
       }
       show_limit: {
         Args: Record<PropertyKey, never>
@@ -8436,10 +8700,10 @@ export type Database = {
           | { geog: unknown; maxdecimaldigits?: number; options?: number }
           | { geom: unknown; maxdecimaldigits?: number; options?: number }
           | {
-              r: Record<string, unknown>
               geom_column?: string
               maxdecimaldigits?: number
               pretty_bool?: boolean
+              r: Record<string, unknown>
             }
         Returns: string
       }
@@ -8448,28 +8712,28 @@ export type Database = {
           | { "": string }
           | {
               geog: unknown
-              maxdecimaldigits?: number
-              options?: number
-              nprefix?: string
               id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+            }
+          | {
+              geog: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+              version: number
+            }
+          | {
+              geom: unknown
+              id?: string
+              maxdecimaldigits?: number
+              nprefix?: string
+              options?: number
+              version: number
             }
           | { geom: unknown; maxdecimaldigits?: number; options?: number }
-          | {
-              version: number
-              geog: unknown
-              maxdecimaldigits?: number
-              options?: number
-              nprefix?: string
-              id?: string
-            }
-          | {
-              version: number
-              geom: unknown
-              maxdecimaldigits?: number
-              options?: number
-              nprefix?: string
-              id?: string
-            }
         Returns: string
       }
       st_ashexewkb: {
@@ -8488,24 +8752,24 @@ export type Database = {
         Returns: string
       }
       st_asmarc21: {
-        Args: { geom: unknown; format?: string }
+        Args: { format?: string; geom: unknown }
         Returns: string
       }
       st_asmvtgeom: {
         Args: {
-          geom: unknown
           bounds: unknown
-          extent?: number
           buffer?: number
           clip_geom?: boolean
+          extent?: number
+          geom: unknown
         }
         Returns: unknown
       }
       st_assvg: {
         Args:
           | { "": string }
-          | { geog: unknown; rel?: number; maxdecimaldigits?: number }
-          | { geom: unknown; rel?: number; maxdecimaldigits?: number }
+          | { geog: unknown; maxdecimaldigits?: number; rel?: number }
+          | { geom: unknown; maxdecimaldigits?: number; rel?: number }
         Returns: string
       }
       st_astext: {
@@ -8518,18 +8782,18 @@ export type Database = {
               geom: unknown[]
               ids: number[]
               prec?: number
-              prec_z?: number
               prec_m?: number
-              with_sizes?: boolean
+              prec_z?: number
               with_boxes?: boolean
+              with_sizes?: boolean
             }
           | {
               geom: unknown
               prec?: number
-              prec_z?: number
               prec_m?: number
-              with_sizes?: boolean
+              prec_z?: number
               with_boxes?: boolean
+              with_sizes?: boolean
             }
         Returns: string
       }
@@ -8548,13 +8812,13 @@ export type Database = {
         Returns: unknown
       }
       st_boundingdiagonal: {
-        Args: { geom: unknown; fits?: boolean }
+        Args: { fits?: boolean; geom: unknown }
         Returns: unknown
       }
       st_buffer: {
         Args:
-          | { geom: unknown; radius: number; options?: string }
-          | { geom: unknown; radius: number; quadsegs: number }
+          | { geom: unknown; options?: string; radius: number }
+          | { geom: unknown; quadsegs: number; radius: number }
         Returns: unknown
       }
       st_buildarea: {
@@ -8570,7 +8834,7 @@ export type Database = {
         Returns: unknown
       }
       st_clipbybox2d: {
-        Args: { geom: unknown; box: unknown }
+        Args: { box: unknown; geom: unknown }
         Returns: unknown
       }
       st_closestpoint: {
@@ -8595,9 +8859,9 @@ export type Database = {
       }
       st_concavehull: {
         Args: {
+          param_allow_holes?: boolean
           param_geom: unknown
           param_pctconvex: number
-          param_allow_holes?: boolean
         }
         Returns: unknown
       }
@@ -8634,11 +8898,11 @@ export type Database = {
         Returns: boolean
       }
       st_curvetoline: {
-        Args: { geom: unknown; tol?: number; toltype?: number; flags?: number }
+        Args: { flags?: number; geom: unknown; tol?: number; toltype?: number }
         Returns: unknown
       }
       st_delaunaytriangles: {
-        Args: { g1: unknown; tolerance?: number; flags?: number }
+        Args: { flags?: number; g1: unknown; tolerance?: number }
         Returns: unknown
       }
       st_difference: {
@@ -8710,7 +8974,7 @@ export type Database = {
         Args:
           | { box: unknown; dx: number; dy: number }
           | { box: unknown; dx: number; dy: number; dz?: number }
-          | { geom: unknown; dx: number; dy: number; dz?: number; dm?: number }
+          | { dm?: number; dx: number; dy: number; dz?: number; geom: unknown }
         Returns: unknown
       }
       st_exteriorring: {
@@ -8738,7 +9002,7 @@ export type Database = {
         Returns: unknown
       }
       st_force4d: {
-        Args: { geom: unknown; zvalue?: number; mvalue?: number }
+        Args: { geom: unknown; mvalue?: number; zvalue?: number }
         Returns: unknown
       }
       st_forcecollection: {
@@ -8799,10 +9063,10 @@ export type Database = {
       }
       st_geometricmedian: {
         Args: {
-          g: unknown
-          tolerance?: number
-          max_iter?: number
           fail_if_not_converged?: boolean
+          g: unknown
+          max_iter?: number
+          tolerance?: number
         }
         Returns: unknown
       }
@@ -8863,11 +9127,11 @@ export type Database = {
         Returns: number
       }
       st_hexagon: {
-        Args: { size: number; cell_i: number; cell_j: number; origin?: unknown }
+        Args: { cell_i: number; cell_j: number; origin?: unknown; size: number }
         Returns: unknown
       }
       st_hexagongrid: {
-        Args: { size: number; bounds: unknown }
+        Args: { bounds: unknown; size: number }
         Returns: Record<string, unknown>[]
       }
       st_interpolatepoint: {
@@ -8917,7 +9181,7 @@ export type Database = {
         Returns: boolean
       }
       st_isvaliddetail: {
-        Args: { geom: unknown; flags?: number }
+        Args: { flags?: number; geom: unknown }
         Returns: Database["public"]["CompositeTypes"]["valid_detail"]
       }
       st_isvalidreason: {
@@ -8940,7 +9204,7 @@ export type Database = {
         Returns: number
       }
       st_letters: {
-        Args: { letters: string; font?: Json }
+        Args: { font?: Json; letters: string }
         Returns: unknown
       }
       st_linecrossingdirection: {
@@ -8948,7 +9212,7 @@ export type Database = {
         Returns: number
       }
       st_linefromencodedpolyline: {
-        Args: { txtin: string; nprecision?: number }
+        Args: { nprecision?: number; txtin: string }
         Returns: unknown
       }
       st_linefrommultipoint: {
@@ -8980,20 +9244,20 @@ export type Database = {
         Returns: unknown
       }
       st_locatealong: {
-        Args: { geometry: unknown; measure: number; leftrightoffset?: number }
+        Args: { geometry: unknown; leftrightoffset?: number; measure: number }
         Returns: unknown
       }
       st_locatebetween: {
         Args: {
-          geometry: unknown
           frommeasure: number
-          tomeasure: number
+          geometry: unknown
           leftrightoffset?: number
+          tomeasure: number
         }
         Returns: unknown
       }
       st_locatebetweenelevations: {
-        Args: { geometry: unknown; fromelevation: number; toelevation: number }
+        Args: { fromelevation: number; geometry: unknown; toelevation: number }
         Returns: unknown
       }
       st_longestline: {
@@ -9141,7 +9405,7 @@ export type Database = {
         Returns: number
       }
       st_offsetcurve: {
-        Args: { line: unknown; distance: number; params?: string }
+        Args: { distance: number; line: unknown; params?: string }
         Returns: unknown
       }
       st_orderingequals: {
@@ -9174,10 +9438,10 @@ export type Database = {
       }
       st_pointm: {
         Args: {
-          xcoordinate: number
-          ycoordinate: number
           mcoordinate: number
           srid?: number
+          xcoordinate: number
+          ycoordinate: number
         }
         Returns: unknown
       }
@@ -9191,20 +9455,20 @@ export type Database = {
       }
       st_pointz: {
         Args: {
+          srid?: number
           xcoordinate: number
           ycoordinate: number
           zcoordinate: number
-          srid?: number
         }
         Returns: unknown
       }
       st_pointzm: {
         Args: {
+          mcoordinate: number
+          srid?: number
           xcoordinate: number
           ycoordinate: number
           zcoordinate: number
-          mcoordinate: number
-          srid?: number
         }
         Returns: unknown
       }
@@ -9229,16 +9493,16 @@ export type Database = {
         Returns: unknown
       }
       st_project: {
-        Args: { geog: unknown; distance: number; azimuth: number }
+        Args: { azimuth: number; distance: number; geog: unknown }
         Returns: unknown
       }
       st_quantizecoordinates: {
         Args: {
           g: unknown
+          prec_m?: number
           prec_x: number
           prec_y?: number
           prec_z?: number
-          prec_m?: number
         }
         Returns: unknown
       }
@@ -9279,7 +9543,7 @@ export type Database = {
         Returns: unknown
       }
       st_simplifypolygonhull: {
-        Args: { geom: unknown; vertex_fraction: number; is_outer?: boolean }
+        Args: { geom: unknown; is_outer?: boolean; vertex_fraction: number }
         Returns: unknown
       }
       st_split: {
@@ -9287,11 +9551,11 @@ export type Database = {
         Returns: unknown
       }
       st_square: {
-        Args: { size: number; cell_i: number; cell_j: number; origin?: unknown }
+        Args: { cell_i: number; cell_j: number; origin?: unknown; size: number }
         Returns: unknown
       }
       st_squaregrid: {
-        Args: { size: number; bounds: unknown }
+        Args: { bounds: unknown; size: number }
         Returns: Record<string, unknown>[]
       }
       st_srid: {
@@ -9303,7 +9567,7 @@ export type Database = {
         Returns: unknown
       }
       st_subdivide: {
-        Args: { geom: unknown; maxvertices?: number; gridsize?: number }
+        Args: { geom: unknown; gridsize?: number; maxvertices?: number }
         Returns: unknown[]
       }
       st_summary: {
@@ -9324,11 +9588,11 @@ export type Database = {
       }
       st_tileenvelope: {
         Args: {
-          zoom: number
-          x: number
-          y: number
           bounds?: unknown
           margin?: number
+          x: number
+          y: number
+          zoom: number
         }
         Returns: unknown
       }
@@ -9338,8 +9602,8 @@ export type Database = {
       }
       st_transform: {
         Args:
-          | { geom: unknown; from_proj: string; to_proj: string }
-          | { geom: unknown; from_proj: string; to_srid: number }
+          | { from_proj: string; geom: unknown; to_proj: string }
+          | { from_proj: string; geom: unknown; to_srid: number }
           | { geom: unknown; to_proj: string }
         Returns: unknown
       }
@@ -9355,11 +9619,11 @@ export type Database = {
         Returns: unknown
       }
       st_voronoilines: {
-        Args: { g1: unknown; tolerance?: number; extend_to?: unknown }
+        Args: { extend_to?: unknown; g1: unknown; tolerance?: number }
         Returns: unknown
       }
       st_voronoipolygons: {
-        Args: { g1: unknown; tolerance?: number; extend_to?: unknown }
+        Args: { extend_to?: unknown; g1: unknown; tolerance?: number }
         Returns: unknown
       }
       st_within: {
@@ -9375,7 +9639,7 @@ export type Database = {
         Returns: unknown
       }
       st_wrapx: {
-        Args: { geom: unknown; wrap: number; move: number }
+        Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
       st_x: {
@@ -9418,8 +9682,14 @@ export type Database = {
         Args: { "": unknown }
         Returns: number
       }
+      start_onboarding_workflow: {
+        Args:
+          | { p_force_new?: boolean; p_tenant_id: string }
+          | { p_tenant_id: string; p_version?: number }
+        Returns: string
+      }
       suspend_tenant: {
-        Args: { p_tenant_id: string; p_reason?: string }
+        Args: { p_reason?: string; p_tenant_id: string }
         Returns: Json
       }
       test_lead_auto_assignment: {
@@ -9436,17 +9706,17 @@ export type Database = {
       }
       track_failed_login: {
         Args: {
-          p_user_id: string
           p_ip_address?: unknown
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: undefined
       }
       track_user_login: {
         Args: {
-          p_user_id: string
           p_ip_address?: unknown
           p_user_agent?: string
+          p_user_id: string
         }
         Returns: undefined
       }
@@ -9456,19 +9726,19 @@ export type Database = {
       }
       update_user_presence: {
         Args: {
+          p_location?: Json
           p_organization_id: string
           p_status?: string
-          p_location?: Json
         }
         Returns: undefined
       }
       updategeometrysrid: {
         Args: {
           catalogn_name: string
-          schema_name: string
-          table_name: string
           column_name: string
           new_srid_in: number
+          schema_name: string
+          table_name: string
         }
         Returns: string
       }
@@ -9479,42 +9749,46 @@ export type Database = {
       validate_admin_registration_token: {
         Args: { p_token: string }
         Returns: {
-          valid: boolean
           email: string
-          role: string
-          invite_id: string
           expires_at: string
+          invite_id: string
+          role: string
+          valid: boolean
         }[]
       }
       validate_invitation_token: {
         Args: { token: string }
         Returns: {
-          invitation_id: string
-          tenant_id: string
           email: string
+          expires_at: string
+          invitation_id: string
           invitation_type: string
           is_valid: boolean
-          expires_at: string
+          tenant_id: string
         }[]
       }
       validate_invite_token: {
         Args: { token: string }
         Returns: {
-          invite_id: string
           email: string
-          role: string
-          is_valid: boolean
           expires_at: string
+          invite_id: string
+          is_valid: boolean
+          role: string
         }[]
+      }
+      validate_registration_token_secure: {
+        Args: { p_token: string }
+        Returns: Json
       }
       verify_admin_user_setup: {
         Args: Record<PropertyKey, never>
         Returns: {
-          user_id: string
+          admin_role: string
           email: string
           is_verified: boolean
-          admin_role: string
           issues: string[]
+          user_id: string
         }[]
       }
     }
@@ -9541,6 +9815,15 @@ export type Database = {
         | "bn"
         | "ur"
         | "ne"
+      legal_document_type:
+        | "incorporation_certificate"
+        | "gst_certificate"
+        | "pan_card"
+        | "address_proof"
+        | "bank_statement"
+        | "trade_license"
+        | "msme_certificate"
+        | "other"
       metric_type: "system" | "usage" | "ai_model" | "financial" | "custom"
       onboarding_step_status:
         | "pending"
@@ -9594,6 +9877,12 @@ export type Database = {
         | "dealer"
         | "agent"
         | "farmer"
+      verification_status:
+        | "pending"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "expired"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -9753,6 +10042,16 @@ export const Constants = {
         "ur",
         "ne",
       ],
+      legal_document_type: [
+        "incorporation_certificate",
+        "gst_certificate",
+        "pan_card",
+        "address_proof",
+        "bank_statement",
+        "trade_license",
+        "msme_certificate",
+        "other",
+      ],
       metric_type: ["system", "usage", "ai_model", "financial", "custom"],
       onboarding_step_status: [
         "pending",
@@ -9812,6 +10111,13 @@ export const Constants = {
         "dealer",
         "agent",
         "farmer",
+      ],
+      verification_status: [
+        "pending",
+        "under_review",
+        "approved",
+        "rejected",
+        "expired",
       ],
     },
   },
