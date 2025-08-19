@@ -110,7 +110,7 @@ function canAccessTable(userContext: UserContext, table: string, operation: stri
   return false;
 }
 
-// World-class workflow creation with plan-based templates
+// FIXED: Align with actual database schema - removed non-existent columns
 async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   console.log('Ensuring onboarding workflow for tenant:', tenantId);
 
@@ -151,13 +151,12 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
     const subscriptionPlan = tenant?.subscription_plan || 'Kisan_Basic';
     console.log('Creating workflow for subscription plan:', subscriptionPlan);
 
-    // Create workflow with proper schema alignment
+    // FIXED: Only use columns that actually exist in the database
     const { data: workflow, error: workflowError } = await supabase
       .from('onboarding_workflows')
       .insert({
         tenant_id: tenantId,
         status: 'in_progress',
-        progress_percentage: 0,
         current_step: 1,
         total_steps: 0,
         started_at: new Date().toISOString(),
@@ -187,19 +186,20 @@ async function ensureOnboardingWorkflow(tenantId: string): Promise<string> {
   }
 }
 
-// Enterprise-grade step creation with advanced features
+// FIXED: Align step creation with actual database schema
 async function createEnterpriseSteps(workflowId: string, subscriptionPlan: string) {
   const steps = getEnterpriseStepsForPlan(subscriptionPlan);
   
+  // FIXED: Only use columns that exist in onboarding_steps table
   const stepsToInsert = steps.map((step, index) => ({
     workflow_id: workflowId,
     step_number: index + 1,
     step_name: step.name,
-    step_description: step.description,
     step_status: 'pending',
-    is_required: step.required,
-    estimated_time_minutes: step.estimated_time,
     step_data: {
+      description: step.description,
+      required: step.required,
+      estimated_time: step.estimated_time,
       dependencies: step.dependencies || [],
       validations: step.validations || [],
       integrations: step.integrations || [],
@@ -355,20 +355,15 @@ function getFeaturesByPlan(subscriptionPlan: string) {
 async function calculateProgress(workflowId: string): Promise<number> {
   const { data: steps } = await supabase
     .from('onboarding_steps')
-    .select('step_status, is_required')
+    .select('step_status')
     .eq('workflow_id', workflowId);
 
   if (!steps || steps.length === 0) {
     return 0;
   }
 
-  // Weight required steps more heavily
-  const totalWeight = steps.reduce((sum, step) => sum + (step.is_required ? 2 : 1), 0);
-  const completedWeight = steps
-    .filter(step => step.step_status === 'completed')
-    .reduce((sum, step) => sum + (step.is_required ? 2 : 1), 0);
-
-  return Math.round((completedWeight / totalWeight) * 100);
+  const completedCount = steps.filter(step => step.step_status === 'completed').length;
+  return Math.round((completedCount / steps.length) * 100);
 }
 
 async function completeWorkflow(workflowId: string, tenantId: string): Promise<void> {
@@ -380,7 +375,6 @@ async function completeWorkflow(workflowId: string, tenantId: string): Promise<v
     .from('onboarding_workflows')
     .update({
       status: 'completed',
-      progress_percentage: 100,
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })
@@ -530,7 +524,6 @@ async function handleTenantDataRequest(request: TenantDataRequest, userContext: 
         await supabase
           .from('onboarding_workflows')
           .update({
-            progress_percentage: progress,
             updated_at: new Date().toISOString()
           })
           .eq('id', step.workflow_id);
@@ -622,40 +615,41 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Enhanced request body parsing with multiple fallbacks
+    // FIXED: Enhanced request body parsing with comprehensive error handling
     let requestData: any;
     try {
+      const contentType = req.headers.get('content-type') || '';
+      console.log('Request Content-Type:', contentType);
+      
+      if (!contentType.includes('application/json')) {
+        console.warn('Non-JSON content type detected:', contentType);
+      }
+
       const bodyText = await req.text();
       console.log('Raw request body length:', bodyText?.length || 0);
-      console.log('Raw request body preview:', bodyText?.substring(0, 200) || 'empty');
+      console.log('Raw request body preview:', bodyText?.substring(0, 500) || 'empty');
       
-      if (!bodyText || bodyText.trim() === '' || bodyText === 'undefined' || bodyText === 'null') {
-        console.error('Request body is empty, undefined, or null');
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('Request body is empty');
         throw new Error('Request body is required and cannot be empty');
+      }
+      
+      if (bodyText === 'undefined' || bodyText === 'null') {
+        console.error('Request body is literal undefined/null');
+        throw new Error('Invalid request body: received literal undefined/null');
       }
       
       try {
         requestData = JSON.parse(bodyText);
+        console.log('Successfully parsed JSON request data');
       } catch (jsonError) {
-        console.error('JSON parsing failed, trying alternative parsing:', jsonError);
-        // Try to handle malformed JSON or other formats
-        if (bodyText.startsWith('{') && bodyText.endsWith('}')) {
-          throw new Error(`Invalid JSON format: ${jsonError.message}`);
-        }
-        throw new Error('Request body must be valid JSON');
+        console.error('JSON parsing failed:', jsonError);
+        console.error('Failed body content:', bodyText);
+        throw new Error(`Invalid JSON format: ${jsonError.message}`);
       }
       
-      console.log('Successfully parsed request data:', {
-        operation: requestData?.operation,
-        table: requestData?.table,
-        tenant_id: requestData?.tenant_id,
-        hasData: !!requestData?.data,
-        hasFilters: !!requestData?.filters,
-        dataKeys: requestData?.data ? Object.keys(requestData.data) : []
-      });
-      
     } catch (parseError) {
-      console.error('Request parsing error:', parseError);
+      console.error('Request body parsing error:', parseError);
       return new Response(JSON.stringify({ 
         success: false, 
         error: `Failed to parse request: ${parseError.message}`,

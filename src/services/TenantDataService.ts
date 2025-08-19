@@ -58,32 +58,60 @@ class TenantDataService {
         tenant_id: tenantId
       };
 
-      console.log('TenantDataService: Calling edge function with payload:', requestPayload);
+      console.log('TenantDataService: Calling edge function with payload:', {
+        operation: requestPayload.operation,
+        table: requestPayload.table,
+        tenant_id: requestPayload.tenant_id,
+        hasData: !!requestPayload.data,
+        payloadSize: JSON.stringify(requestPayload).length
+      });
 
-      // CRITICAL FIX: Ensure proper request body handling
+      // FIXED: Ensure proper request body serialization and headers
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload,
+        body: JSON.stringify(requestPayload),
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
-      console.log('TenantDataService: Edge function response:', { data, error });
+      console.log('TenantDataService: Edge function response:', { 
+        hasData: !!data, 
+        hasError: !!error,
+        dataType: typeof data 
+      });
 
       if (error) {
         console.error('TenantDataService: Edge function error:', error);
-        throw new Error(error.message || 'Failed to call tenant data API');
+        
+        // FIXED: Categorize errors for proper retry behavior
+        const errorMessage = error.message || 'Failed to call tenant data API';
+        
+        // 400 errors are client errors - don't retry
+        if (errorMessage.includes('400') || errorMessage.includes('Bad Request') || 
+            errorMessage.includes('required') || errorMessage.includes('Invalid')) {
+          const clientError = new Error(errorMessage);
+          (clientError as any).isClientError = true;
+          throw clientError;
+        }
+        
+        // Other errors can be retried
+        throw new Error(errorMessage);
       }
 
       if (data && typeof data === 'object') {
         if (data.success === false) {
-          throw new Error(data.error || 'API request failed');
+          const apiError = new Error(data.error || 'API request failed');
+          // Mark client errors based on API response
+          if (data.error && (data.error.includes('required') || data.error.includes('Invalid'))) {
+            (apiError as any).isClientError = true;
+          }
+          throw apiError;
         }
         
         return data.success ? data.data : data;
       }
 
-      console.log('TenantDataService: Successful response:', data);
+      console.log('TenantDataService: Successful response received');
       return data as T;
     } catch (error) {
       console.error('TenantDataService: Error in callTenantDataAPI:', error);
@@ -91,9 +119,39 @@ class TenantDataService {
     }
   }
 
+  // FIXED: Add idempotency check for workflow creation
+  private async isWorkflowCreationNeeded(tenantId: string): Promise<boolean> {
+    try {
+      const { data: existingWorkflow } = await supabase
+        .from('onboarding_workflows')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .single();
+      
+      return !existingWorkflow;
+    } catch (error) {
+      // If we can't check, assume we need to create
+      return true;
+    }
+  }
+
   // Workflow Management with Enterprise Features
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
+    
+    // FIXED: Add idempotency check
+    const needsCreation = await this.isWorkflowCreationNeeded(tenantId);
+    if (!needsCreation) {
+      const { data: existingWorkflow } = await supabase
+        .from('onboarding_workflows')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .single();
+      
+      console.log('TenantDataService: Workflow already exists:', existingWorkflow?.id);
+      return { workflow_id: existingWorkflow!.id };
+    }
+    
     try {
       const result = await this.callTenantDataAPI(tenantId, {
         table: 'onboarding_workflows',
@@ -178,7 +236,7 @@ class TenantDataService {
     try {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
-      // First ensure workflow exists with retry logic
+      // First ensure workflow exists with improved retry logic
       let workflow_id: string;
       let retryCount = 0;
       const maxRetries = 3;
@@ -189,12 +247,15 @@ class TenantDataService {
           workflow_id = result.workflow_id;
           console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
           break;
-        } catch (error) {
+        } catch (error: any) {
           retryCount++;
           console.error(`TenantDataService: Workflow ensure attempt ${retryCount} failed:`, error);
-          if (retryCount >= maxRetries) {
+          
+          // FIXED: Don't retry client errors (400s)
+          if (error.isClientError || retryCount >= maxRetries) {
             throw error;
           }
+          
           // Wait before retry with exponential backoff
           await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
         }
@@ -206,7 +267,10 @@ class TenantDataService {
         this.getOnboardingSteps(tenantId, workflow_id)
       ]);
 
-      console.log('TenantDataService: Retrieved workflow and steps:', { workflow, steps });
+      console.log('TenantDataService: Retrieved workflow and steps:', { 
+        hasWorkflow: !!workflow, 
+        stepsCount: Array.isArray(steps) ? steps.length : 0 
+      });
 
       return {
         workflow: Array.isArray(workflow) ? workflow[0] : workflow,
@@ -237,9 +301,9 @@ class TenantDataService {
     }
   }
 
-  // Enterprise-grade initialization with comprehensive error handling
+  // FIXED: Enhanced initialization with better error handling
   async initializeOnboardingForTenant(tenantId: string) {
-    const maxRetries = 5;
+    const maxRetries = 3; // Reduced from 5 since client errors shouldn't be retried
     let retryCount = 0;
     
     while (retryCount < maxRetries) {
@@ -255,12 +319,13 @@ class TenantDataService {
         });
         
         return onboardingData;
-      } catch (error) {
+      } catch (error: any) {
         retryCount++;
         console.error(`TenantDataService: Error initializing onboarding (attempt ${retryCount}):`, error);
         
-        if (retryCount >= maxRetries) {
-          throw new Error(`Failed to initialize onboarding after ${maxRetries} attempts: ${error.message}`);
+        // FIXED: Don't retry client errors
+        if (error.isClientError || retryCount >= maxRetries) {
+          throw new Error(`Failed to initialize onboarding: ${error.message}`);
         }
         
         // Wait before retry with exponential backoff and jitter
