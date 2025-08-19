@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 import { tenantDataService } from '@/services/TenantDataService';
 
@@ -68,9 +69,9 @@ export class OnboardingValidationService {
       if (workflowId) {
         const { data: steps, error: stepsError } = await supabase
           .from('onboarding_steps')
-          .select('id, step_name, step_status, step_order, created_at')
+          .select('id, step_name, step_status, step_number, created_at')
           .eq('workflow_id', workflowId)
-          .order('step_order');
+          .order('step_number');
 
         if (stepsError) {
           console.error('OnboardingValidation: Error fetching steps:', stepsError);
@@ -87,11 +88,11 @@ export class OnboardingValidationService {
             console.log('OnboardingValidation: All steps are pending - this is normal for new workflows');
           }
 
-          // Check for step ordering gaps - using step_order instead of step_number
-          const stepOrders = steps.map(s => s.step_order).sort((a, b) => a - b);
-          for (let i = 1; i <= stepOrders.length; i++) {
-            if (!stepOrders.includes(i)) {
-              issues.push(`Missing step order ${i} in sequence`);
+          // Check for step ordering gaps - using step_number instead of step_order
+          const stepNumbers = steps.map(s => s.step_number).sort((a, b) => a - b);
+          for (let i = 1; i <= stepNumbers.length; i++) {
+            if (!stepNumbers.includes(i)) {
+              issues.push(`Missing step number ${i} in sequence`);
             }
           }
         }
@@ -185,7 +186,7 @@ export class OnboardingValidationService {
           .from('onboarding_steps')
           .select('*')
           .eq('workflow_id', workflows.data[0].id)
-          .order('step_order');
+          .order('step_number');
         steps = stepsQuery.data;
       }
 
@@ -210,3 +211,4 @@ export class OnboardingValidationService {
 }
 
 export const onboardingValidationService = OnboardingValidationService;
+
