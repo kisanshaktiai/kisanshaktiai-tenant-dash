@@ -37,6 +37,19 @@ const getWorkflowId = (workflow: any): string => {
       : 'unknown';
 };
 
+// Helper function to safely access payload properties
+const safePayloadAccess = (payload: any, path: string): any => {
+  return payload && 
+    typeof payload === 'object' && 
+    payload !== null && 
+    payload.new &&
+    typeof payload.new === 'object' &&
+    payload.new !== null &&
+    path in payload.new
+      ? payload.new[path]
+      : null;
+};
+
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
@@ -58,15 +71,16 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       console.log('TenantProvider: Fetching tenant data for user:', user.id);
       
+      // FIXED: Specify exact relationship path to avoid ambiguity
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
           *,
-          tenant:tenants!inner(
+          tenant:tenant_id(
             *,
-            branding:tenant_branding(*),
-            features:tenant_features(*),
-            subscription:tenant_subscriptions(
+            branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
+            features:tenant_features!tenant_features_tenant_id_fkey(*),
+            subscription:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
               *,
               plan:subscription_plans(*)
             )
@@ -219,7 +233,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         },
         (payload) => {
           console.log('TenantProvider: Real-time tenant table change detected:', payload.eventType);
-          if (currentTenant && payload.new && payload.new.id === currentTenant.id) {
+          // FIXED: Use safe payload access helper
+          const payloadId = safePayloadAccess(payload, 'id');
+          if (currentTenant && payloadId && payloadId === currentTenant.id) {
             setTimeout(() => {
               fetchUserTenants();
             }, 500);

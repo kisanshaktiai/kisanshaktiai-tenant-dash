@@ -3,6 +3,7 @@ import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
+import { useOnboardingWithValidation } from '@/hooks/useOnboardingWithValidation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
-import { Building2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Building2, AlertTriangle, RefreshCw, Settings, Bug } from 'lucide-react';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 // Lazy load the onboarding flow
@@ -20,7 +21,14 @@ const TenantOnboardingFlow = React.lazy(() =>
   }))
 );
 
-const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
+const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, isValidating, isRefreshing }: { 
+  onRetry: () => void;
+  onValidate: () => void;
+  onForceRefresh: () => void;
+  onDebugInfo: () => void;
+  isValidating: boolean;
+  isRefreshing: boolean;
+}) => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
     <Card className="w-full max-w-md">
       <CardContent className="p-8 text-center">
@@ -31,10 +39,38 @@ const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
         <p className="text-muted-foreground text-sm mb-6">
           We're preparing your onboarding experience. This might take a moment if you just started.
         </p>
-        <Button onClick={onRetry} variant="outline" className="w-full">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh Steps
-        </Button>
+        
+        <div className="space-y-2">
+          <Button onClick={onRetry} variant="outline" className="w-full">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh Steps
+          </Button>
+          
+          <Button 
+            onClick={onValidate} 
+            variant="secondary" 
+            className="w-full"
+            disabled={isValidating}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            {isValidating ? 'Validating...' : 'Validate & Repair'}
+          </Button>
+          
+          <Button 
+            onClick={onForceRefresh} 
+            variant="secondary" 
+            className="w-full"
+            disabled={isRefreshing}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            {isRefreshing ? 'Refreshing...' : 'Force Refresh'}
+          </Button>
+          
+          <Button onClick={onDebugInfo} variant="ghost" size="sm" className="w-full text-xs">
+            <Bug className="w-3 h-3 mr-1" />
+            Debug Info
+          </Button>
+        </div>
       </CardContent>
     </Card>
   </div>
@@ -48,37 +84,50 @@ const OnboardingPage = () => {
   
   // Enhanced real-time connection with reconnect capability
   const { isConnected, isReconnecting, reconnectAttempts, reconnect } = useOnboardingRealtime();
+  
+  // Use the enhanced onboarding hook with validation
+  const { 
+    onboardingData, 
+    isLoading: onboardingLoading, 
+    error: onboardingError,
+    validate,
+    isValidating,
+    forceRefresh,
+    isRefreshing,
+    getDebugInfo,
+    debugInfo,
+    refetch
+  } = useOnboardingWithValidation();
 
   console.log('OnboardingPage: Current state:', {
     user: user?.id,
     currentTenant: currentTenant?.id,
-    tenantLoading
+    tenantLoading,
+    onboardingLoading,
+    hasOnboardingData: !!onboardingData,
+    onboardingError: onboardingError?.message
   });
 
   // Initialize onboarding workflow when tenant is available
   useEffect(() => {
-    if (currentTenant?.id && !tenantLoading) {
-      console.log('OnboardingPage: Ensuring onboarding workflow for tenant:', currentTenant.id);
+    if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData) {
+      console.log('OnboardingPage: Auto-initializing onboarding for tenant:', currentTenant.id);
       
       initializeOnboarding(currentTenant.id)
-        .then((onboardingData) => {
-          console.log('OnboardingPage: Onboarding workflow ensured:', onboardingData);
-          
-          // Invalidate queries to refetch fresh data
-          queryClient.invalidateQueries({ 
-            queryKey: ['onboarding', currentTenant.id] 
-          });
-          
-          // Focus main content
-          setTimeout(() => {
-            mainContentRef.current?.focus();
-          }, 200);
+        .then((result) => {
+          console.log('OnboardingPage: Auto-initialization result:', result);
+          if (result) {
+            // Trigger a refetch of onboarding data
+            setTimeout(() => {
+              refetch();
+            }, 1000);
+          }
         })
         .catch((error) => {
-          console.error('OnboardingPage: Error ensuring onboarding workflow:', error);
+          console.error('OnboardingPage: Auto-initialization failed:', error);
         });
     }
-  }, [currentTenant?.id, tenantLoading, queryClient, initializeOnboarding]);
+  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch]);
 
   // Loading state with skeleton and accessibility
   if (!user) {
@@ -86,9 +135,7 @@ const OnboardingPage = () => {
     return (
       <div role="main" aria-live="polite" aria-label="Setting up your onboarding">
         <OnboardingSkeleton />
-        <div className="sr-only">
-          Setting up your onboarding...
-        </div>
+        <div className="sr-only">Setting up your onboarding...</div>
       </div>
     );
   }
@@ -98,9 +145,7 @@ const OnboardingPage = () => {
     return (
       <div role="main" aria-live="polite" aria-label="Loading tenant data">
         <OnboardingSkeleton />
-        <div className="sr-only">
-          Loading tenant data...
-        </div>
+        <div className="sr-only">Loading tenant data...</div>
       </div>
     );
   }
@@ -110,26 +155,88 @@ const OnboardingPage = () => {
     return (
       <div role="main" aria-live="polite" aria-label="Setting up tenant">
         <OnboardingSkeleton />
-        <div className="sr-only">
-          Setting up tenant...
-        </div>
+        <div className="sr-only">Setting up tenant...</div>
       </div>
     );
   }
 
-  const handleRetry = () => {
-    console.log('OnboardingPage: Retry requested');
-    if (currentTenant?.id) {
-      queryClient.invalidateQueries({ 
-        queryKey: ['onboarding', currentTenant.id] 
-      });
-      
-      // Also try to reinitialize onboarding
-      initializeOnboarding(currentTenant.id).catch(console.error);
-    }
-  };
+  if (onboardingLoading) {
+    console.log('OnboardingPage: Onboarding loading, showing skeleton');
+    return (
+      <div role="main" aria-live="polite" aria-label="Loading onboarding data">
+        <OnboardingSkeleton />
+        <div className="sr-only">Loading onboarding data...</div>
+      </div>
+    );
+  }
 
-  console.log('OnboardingPage: Rendering main content');
+  // Show error state with recovery options
+  if (onboardingError || !onboardingData) {
+    console.log('OnboardingPage: Showing recovery panel:', { 
+      error: onboardingError?.message, 
+      hasData: !!onboardingData 
+    });
+    
+    return (
+      <div className="relative" role="main">
+        {/* Live Updates Indicator */}
+        <div className="fixed top-4 right-4 z-50">
+          <LiveIndicator isConnected={isConnected} activeChannels={1} />
+        </div>
+
+        {/* Disconnect Banner */}
+        {!isConnected && (
+          <DisconnectBanner
+            isReconnecting={isReconnecting}
+            reconnectAttempts={reconnectAttempts}
+            onReconnect={reconnect}
+          />
+        )}
+
+        {/* Error Alert */}
+        {onboardingError && (
+          <div className="fixed top-20 left-4 right-4 z-40">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {onboardingError.message}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        <MissingStepsPanel
+          onRetry={() => {
+            queryClient.invalidateQueries({ 
+              queryKey: ['onboarding-validated', currentTenant.id] 
+            });
+            refetch();
+          }}
+          onValidate={validate}
+          onForceRefresh={forceRefresh}
+          onDebugInfo={() => getDebugInfo()}
+          isValidating={isValidating}
+          isRefreshing={isRefreshing}
+        />
+
+        {/* Debug Info Display */}
+        {debugInfo && (
+          <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="font-semibold text-sm mb-2">Debug Information</h4>
+                <pre className="text-xs overflow-auto max-h-40 bg-muted p-2 rounded">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  console.log('OnboardingPage: Rendering main onboarding flow');
 
   return (
     <div className="relative" role="main">
