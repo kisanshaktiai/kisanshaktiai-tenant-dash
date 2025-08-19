@@ -69,12 +69,8 @@ class TenantDataService {
         hasData: !!requestPayload.data,
       });
 
-      // Ensure we have a proper JSON string
-      const bodyContent = JSON.stringify(requestPayload);
-      console.log('TenantDataService: Request body length:', bodyContent.length);
-
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload, // Let Supabase handle JSON stringification
+        body: requestPayload,
         headers: {
           'Content-Type': 'application/json',
         },
