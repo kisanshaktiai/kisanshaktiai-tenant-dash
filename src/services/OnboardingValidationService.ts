@@ -33,10 +33,10 @@ export class OnboardingValidationService {
         return { isValid: false, issues, repaired: false };
       }
 
-      // Step 2: Check for onboarding workflow
+      // Step 2: Check for onboarding workflow - using actual schema
       const { data: workflows, error: workflowError } = await supabase
         .from('onboarding_workflows')
-        .select('id, status, progress_percentage, total_steps')
+        .select('id, status, created_at, updated_at')
         .eq('tenant_id', tenantId);
 
       if (workflowError) {
@@ -64,13 +64,13 @@ export class OnboardingValidationService {
         console.log('OnboardingValidation: Found existing workflow:', workflowId);
       }
 
-      // Step 3: Validate workflow steps if we have a workflow
+      // Step 3: Validate workflow steps if we have a workflow - using actual schema
       if (workflowId) {
         const { data: steps, error: stepsError } = await supabase
           .from('onboarding_steps')
-          .select('id, step_name, step_status, is_required, step_number')
+          .select('id, step_name, step_status, step_order, created_at')
           .eq('workflow_id', workflowId)
-          .order('step_number');
+          .order('step_order');
 
         if (stepsError) {
           console.error('OnboardingValidation: Error fetching steps:', stepsError);
@@ -81,23 +81,23 @@ export class OnboardingValidationService {
         } else {
           console.log('OnboardingValidation: Found', steps.length, 'steps for workflow');
           
-          // Validate step integrity
-          const requiredSteps = steps.filter(step => step.is_required);
-          if (requiredSteps.length === 0) {
-            issues.push('No required steps found in workflow');
+          // Validate step integrity - using actual schema fields
+          const completedSteps = steps.filter(step => step.step_status === 'completed');
+          if (steps.length > 0 && completedSteps.length === 0) {
+            console.log('OnboardingValidation: All steps are pending - this is normal for new workflows');
           }
 
-          // Check for step numbering gaps
-          const stepNumbers = steps.map(s => s.step_number).sort((a, b) => a - b);
-          for (let i = 1; i <= stepNumbers.length; i++) {
-            if (!stepNumbers.includes(i)) {
-              issues.push(`Missing step number ${i} in sequence`);
+          // Check for step ordering gaps - using step_order instead of step_number
+          const stepOrders = steps.map(s => s.step_order).sort((a, b) => a - b);
+          for (let i = 1; i <= stepOrders.length; i++) {
+            if (!stepOrders.includes(i)) {
+              issues.push(`Missing step order ${i} in sequence`);
             }
           }
         }
       }
 
-      // Step 4: Validate tenant branding and features
+      // Step 4: Validate tenant branding and features (optional validation)
       const { data: branding } = await supabase
         .from('tenant_branding')
         .select('id, app_name')
@@ -185,7 +185,7 @@ export class OnboardingValidationService {
           .from('onboarding_steps')
           .select('*')
           .eq('workflow_id', workflows.data[0].id)
-          .order('step_number');
+          .order('step_order');
         steps = stepsQuery.data;
       }
 
