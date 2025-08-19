@@ -69,8 +69,13 @@ class TenantDataService {
         hasData: !!requestPayload.data,
       });
 
+      // Explicitly stringify the body to ensure proper serialization
+      const bodyString = JSON.stringify(requestPayload);
+      console.log('TenantDataService: Request body string length:', bodyString.length);
+      console.log('TenantDataService: Request body preview:', bodyString.substring(0, 200));
+
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload,
+        body: bodyString,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -115,7 +120,6 @@ class TenantDataService {
     }
   }
 
-  // Enhanced workflow creation with tenant isolation
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
     this.validateTenantAccess(tenantId);
     
