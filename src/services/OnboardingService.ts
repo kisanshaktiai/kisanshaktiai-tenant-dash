@@ -4,9 +4,7 @@ import { tenantDataService } from './TenantDataService';
 export interface OnboardingWorkflow {
   id: string;
   tenant_id: string;
-  workflow_name: string;
-  status: 'not_started' | 'in_progress' | 'completed';
-  progress_percentage: number;
+  status: 'not_started' | 'in_progress' | 'completed' | 'paused';
   current_step: number;
   total_steps: number;
   started_at: string | null;
@@ -21,10 +19,7 @@ export interface OnboardingStep {
   workflow_id: string;
   step_number: number;
   step_name: string;
-  step_description: string;
-  step_status: 'pending' | 'in_progress' | 'completed' | 'skipped';
-  is_required: boolean;
-  estimated_time_minutes: number;
+  step_status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
   step_data: Record<string, any>;
   started_at: string | null;
   completed_at: string | null;
@@ -57,14 +52,12 @@ export class OnboardingService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.workflow_name || 'Onboarding Workflow',
-        status: data.status || 'not_started',
-        progress_percentage: data.progress_percentage || 0,
+        status: data.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
         current_step: data.current_step || 1,
         total_steps: data.total_steps || 0,
         started_at: data.started_at,
         completed_at: data.completed_at,
-        metadata: data.metadata || {},
+        metadata: (data.metadata as Record<string, any>) || {},
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -94,12 +87,9 @@ export class OnboardingService {
         workflow_id: step.workflow_id,
         step_number: step.step_number,
         step_name: step.step_name,
-        step_description: step.step_description || 'Step description',
         step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
-        is_required: step.is_required !== false,
-        estimated_time_minutes: step.estimated_time_minutes || 30,
-        step_data: step.step_data || {},
-        started_at: step.started_at,
+        step_data: (step.step_data as Record<string, any>) || {},
+        started_at: step.started_at || null,
         completed_at: step.completed_at,
         created_at: step.created_at,
         updated_at: step.updated_at
@@ -180,8 +170,8 @@ export class OnboardingService {
 
   async ensureWorkflowExists(tenantId: string): Promise<string> {
     try {
-      const { workflow_id } = await tenantDataService.ensureOnboardingWorkflow(tenantId);
-      return workflow_id;
+      const workflowId = await tenantDataService.ensureOnboardingWorkflow(tenantId);
+      return workflowId;
     } catch (error) {
       console.error('OnboardingService: Error ensuring workflow exists:', error);
       throw error;

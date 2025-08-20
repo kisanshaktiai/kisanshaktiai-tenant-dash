@@ -26,12 +26,12 @@ export const useTenantData = () => {
         
         console.log('useTenantData: Fetching tenant data for user:', user.id);
         
-        // ENHANCED: Use explicit foreign key relationships to avoid ambiguity
+        // Use explicit foreign key relationships to avoid ambiguity
         const { data: userTenantsData, error: userTenantsError } = await supabase
           .from('user_tenants')
           .select(`
             *,
-            tenant:tenant_id(
+            tenant:tenants!user_tenants_tenant_id_fkey(
               *,
               branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
               features:tenant_features!tenant_features_tenant_id_fkey(*),
@@ -53,31 +53,37 @@ export const useTenantData = () => {
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
         // Transform the data to match our interfaces
-        const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
-          ...userTenant,
-          tenant: userTenant.tenant ? {
-            ...userTenant.tenant,
-            // Handle status mapping
-            status: mapTenantStatus(userTenant.tenant.status),
-            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
-            branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
-            features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
-            subscription: userTenant.tenant.subscription ? processSubscription(
-              Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
-            ) : null,
-          } : undefined
-        }));
+        const transformedUserTenants = (userTenantsData || []).map(userTenant => {
+          if (!userTenant.tenant) {
+            return userTenant;
+          }
+          
+          return {
+            ...userTenant,
+            tenant: {
+              ...userTenant.tenant,
+              // Handle status mapping
+              status: mapTenantStatus(userTenant.tenant.status),
+              subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
+              branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
+              features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
+              subscription: userTenant.tenant.subscription ? processSubscription(
+                Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
+              ) : null,
+            }
+          };
+        });
 
         dispatch(setUserTenants(transformedUserTenants));
 
         // Set current tenant if not set and we have tenants
         if (!currentTenant && transformedUserTenants && transformedUserTenants.length > 0) {
-          const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
+          const primaryTenant = transformedUserTenants.find(ut => ut.role === 'tenant_owner') || transformedUserTenants[0];
           if (primaryTenant?.tenant) {
             console.log('useTenantData: Setting current tenant:', primaryTenant.tenant);
             dispatch(setCurrentTenant(primaryTenant.tenant));
             
-            // ENHANCED: Validate onboarding data for the current tenant
+            // Validate onboarding data for the current tenant
             try {
               await onboardingValidationService.validateAndRepairOnboarding(primaryTenant.tenant.id);
             } catch (validationError) {
@@ -107,15 +113,15 @@ export const useTenantData = () => {
             
             return {
               id: plan.id,
-              name: plan.name,
+              name: plan.plan_name || plan.name,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
               max_farmers: limits.max_farmers || 0,
               max_dealers: limits.max_dealers || 0,
               max_products: limits.max_products || 0,
-              max_storage_gb: limits.max_storage_gb || 0,
-              max_api_calls_per_day: limits.max_api_calls_per_day || 0,
+              max_storage_gb: limits.storage_gb || 0,
+              max_api_calls_per_day: limits.api_calls_per_day || 0,
               features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
               is_active: plan.is_active,
             };
@@ -142,15 +148,15 @@ export const useTenantData = () => {
             
             return {
               id: plan.id,
-              name: plan.name,
+              name: plan.plan_name || plan.name,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
               max_farmers: limits.max_farmers || 0,
               max_dealers: limits.max_dealers || 0,
               max_products: limits.max_products || 0,
-              max_storage_gb: limits.max_storage_gb || 0,
-              max_api_calls_per_day: limits.max_api_calls_per_day || 0,
+              max_storage_gb: limits.storage_gb || 0,
+              max_api_calls_per_day: limits.api_calls_per_day || 0,
               features: typeof plan.features === 'object' && plan.features !== null ? plan.features as Record<string, any> : {},
               is_active: plan.is_active,
             };

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TenantDataRequest {
@@ -23,7 +22,7 @@ class TenantDataService {
     }
   }
 
-  async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
+  async ensureOnboardingWorkflow(tenantId: string): Promise<string> {
     this.validateTenantAccess(tenantId);
     
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
@@ -43,7 +42,7 @@ class TenantDataService {
       }
       
       console.log('TenantDataService: Workflow ensured with ID:', data);
-      return { workflow_id: data };
+      return data;
     } catch (error) {
       console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);
       throw error;
@@ -92,17 +91,22 @@ class TenantDataService {
     this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
     
-    const { data, error } = await supabase.rpc('complete_onboarding_workflow', {
-      p_tenant_id: tenantId,
-      p_workflow_id: workflowId
-    });
+    try {
+      const { data, error } = await supabase.rpc('complete_onboarding_workflow', {
+        p_tenant_id: tenantId,
+        p_workflow_id: workflowId
+      });
 
-    if (error) {
+      if (error) {
+        console.error('TenantDataService: Error completing workflow:', error);
+        throw error;
+      }
+
+      return data || { success: true };
+    } catch (error) {
       console.error('TenantDataService: Error completing workflow:', error);
-      throw error;
+      return { success: false };
     }
-
-    return data || { success: true };
   }
 
   async calculateWorkflowProgress(tenantId: string, workflowId: string): Promise<{ progress: number }> {
@@ -177,12 +181,12 @@ class TenantDataService {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
       // First ensure workflow exists
-      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      const workflowId = await this.ensureOnboardingWorkflow(tenantId);
       
       // Then fetch both workflow and steps
       const [workflow, steps] = await Promise.all([
         this.getOnboardingWorkflow(tenantId),
-        this.getOnboardingSteps(tenantId, workflow_id)
+        this.getOnboardingSteps(tenantId, workflowId)
       ]);
 
       console.log('TenantDataService: Retrieved workflow and steps:', { 
@@ -231,11 +235,11 @@ class TenantDataService {
     try {
       console.log('TenantDataService: Initializing onboarding for tenant:', tenantId);
       
-      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      const workflowId = await this.ensureOnboardingWorkflow(tenantId);
       const onboardingData = await this.getCompleteOnboardingData(tenantId);
       
       console.log('TenantDataService: Onboarding initialized successfully for tenant:', tenantId, {
-        workflowId: workflow_id, 
+        workflowId: workflowId, 
         stepCount: onboardingData.steps.length 
       });
       

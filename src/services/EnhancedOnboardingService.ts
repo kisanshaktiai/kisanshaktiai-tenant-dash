@@ -27,10 +27,36 @@ class EnhancedOnboardingService {
       }
       
       console.log('EnhancedOnboardingService: Retrieved onboarding data successfully');
-      return {
-        workflow: data.workflow,
-        steps: data.steps || []
+      
+      // Transform the workflow data to match our interface
+      const workflow: OnboardingWorkflow = {
+        id: data.workflow.id,
+        tenant_id: data.workflow.tenant_id,
+        status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
+        current_step: data.workflow.current_step || 1,
+        total_steps: data.workflow.total_steps || 0,
+        started_at: data.workflow.started_at,
+        completed_at: data.workflow.completed_at,
+        metadata: (data.workflow.metadata as Record<string, any>) || {},
+        created_at: data.workflow.created_at,
+        updated_at: data.workflow.updated_at
       };
+
+      // Transform the steps data to match our interface
+      const steps: OnboardingStep[] = (data.steps || []).map(step => ({
+        id: step.id,
+        workflow_id: step.workflow_id,
+        step_number: step.step_number,
+        step_name: step.step_name,
+        step_status: step.step_status,
+        step_data: (step.step_data as Record<string, any>) || {},
+        started_at: step.started_at || null,
+        completed_at: step.completed_at,
+        created_at: step.created_at,
+        updated_at: step.updated_at
+      }));
+
+      return { workflow, steps };
     } catch (error) {
       console.error('EnhancedOnboardingService: Error getting onboarding data:', error);
       throw error;
@@ -48,10 +74,36 @@ class EnhancedOnboardingService {
       }
       
       console.log('EnhancedOnboardingService: Workflow initialized successfully');
-      return {
-        workflow: data.workflow,
-        steps: data.steps || []
+      
+      // Transform the workflow data
+      const workflow: OnboardingWorkflow = {
+        id: data.workflow.id,
+        tenant_id: data.workflow.tenant_id,
+        status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
+        current_step: data.workflow.current_step || 1,
+        total_steps: data.workflow.total_steps || 0,
+        started_at: data.workflow.started_at,
+        completed_at: data.workflow.completed_at,
+        metadata: (data.workflow.metadata as Record<string, any>) || {},
+        created_at: data.workflow.created_at,
+        updated_at: data.workflow.updated_at
       };
+
+      // Transform the steps data
+      const steps: OnboardingStep[] = (data.steps || []).map(step => ({
+        id: step.id,
+        workflow_id: step.workflow_id,
+        step_number: step.step_number,
+        step_name: step.step_name,
+        step_status: step.step_status,
+        step_data: (step.step_data as Record<string, any>) || {},
+        started_at: step.started_at || null,
+        completed_at: step.completed_at,
+        created_at: step.created_at,
+        updated_at: step.updated_at
+      }));
+
+      return { workflow, steps };
     } catch (error) {
       console.error('EnhancedOnboardingService: Error initializing workflow:', error);
       throw error;
