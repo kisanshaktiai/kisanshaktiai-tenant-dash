@@ -58,7 +58,7 @@ export const useTenantData = () => {
             ...userTenant,
             tenant: {
               ...userTenant.tenant,
-              status: mapTenantStatus(userTenant.tenant.status),
+              status: userTenant.tenant.status as 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval',
               subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
               branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
               features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
@@ -102,7 +102,7 @@ export const useTenantData = () => {
             
             return {
               id: plan.id,
-              name: plan.name || plan.plan_type,
+              name: plan.name,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
@@ -134,7 +134,7 @@ export const useTenantData = () => {
             
             return {
               id: plan.id,
-              name: plan.name || plan.plan_type,
+              name: plan.name,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
@@ -228,20 +228,6 @@ export const useTenantData = () => {
 };
 
 // Helper functions
-const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
-  switch (status) {
-    case 'pending':
-    case 'pending_approval': return 'pending';
-    case 'active': return 'active';
-    case 'suspended': return 'suspended';
-    case 'cancelled':
-    case 'canceled': return 'cancelled';
-    case 'trial': return 'trial';
-    case 'archived': return 'cancelled'; // Map archived to cancelled for compatibility
-    default: return 'pending';
-  }
-};
-
 const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
   switch (plan) {
     case 'starter':

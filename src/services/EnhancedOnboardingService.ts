@@ -29,9 +29,9 @@ class EnhancedOnboardingService {
       const workflow: OnboardingWorkflow = {
         id: data.workflow.id,
         tenant_id: data.workflow.tenant_id,
-        workflow_name: data.workflow.workflow_name || 'Tenant Onboarding',
+        workflow_name: 'Tenant Onboarding', // Default since property doesn't exist in schema
         status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
-        progress_percentage: data.workflow.progress_percentage || 0,
+        progress_percentage: 0, // Default since property doesn't exist in schema
         current_step: data.workflow.current_step || 1,
         total_steps: data.workflow.total_steps || 0,
         started_at: data.workflow.started_at,
@@ -76,9 +76,9 @@ class EnhancedOnboardingService {
       const workflow: OnboardingWorkflow = {
         id: data.workflow.id,
         tenant_id: data.workflow.tenant_id,
-        workflow_name: data.workflow.workflow_name || 'Tenant Onboarding',
+        workflow_name: 'Tenant Onboarding', // Default since property doesn't exist in schema
         status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
-        progress_percentage: data.workflow.progress_percentage || 0,
+        progress_percentage: 0, // Default since property doesn't exist in schema
         current_step: data.workflow.current_step || 1,
         total_steps: data.workflow.total_steps || 0,
         started_at: data.workflow.started_at,

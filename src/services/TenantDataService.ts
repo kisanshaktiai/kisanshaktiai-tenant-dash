@@ -97,7 +97,6 @@ class TenantDataService {
         .from('onboarding_workflows')
         .update({
           status: 'completed',
-          progress_percentage: 100,
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -142,7 +141,6 @@ class TenantDataService {
       await supabase
         .from('onboarding_workflows')
         .update({
-          progress_percentage: progress,
           updated_at: new Date().toISOString()
         })
         .eq('id', workflowId);

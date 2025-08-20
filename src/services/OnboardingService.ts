@@ -1,4 +1,3 @@
-
 import { tenantDataService } from './TenantDataService';
 
 export interface OnboardingWorkflow {
@@ -54,9 +53,9 @@ export class OnboardingService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.workflow_name || 'Tenant Onboarding',
+        workflow_name: 'Tenant Onboarding', // Default since property doesn't exist in schema
         status: data.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
-        progress_percentage: data.progress_percentage || 0,
+        progress_percentage: 0, // Default since property doesn't exist in schema
         current_step: data.current_step || 1,
         total_steps: data.total_steps || 0,
         started_at: data.started_at,

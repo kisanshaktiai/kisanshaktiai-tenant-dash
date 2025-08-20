@@ -1,3 +1,4 @@
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface TenantBranding {
@@ -65,7 +66,7 @@ interface Tenant {
   name: string;
   slug: string;
   type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'dealer' | 'sugar_factory' | 'insurance';
-  status: 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial';
+  status: 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval';
   subscription_plan: 'kisan' | 'shakti' | 'ai';
   owner_name?: string;
   owner_email?: string;
