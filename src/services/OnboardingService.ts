@@ -4,7 +4,9 @@ import { tenantDataService } from './TenantDataService';
 export interface OnboardingWorkflow {
   id: string;
   tenant_id: string;
+  workflow_name: string;
   status: 'not_started' | 'in_progress' | 'completed' | 'paused';
+  progress_percentage: number;
   current_step: number;
   total_steps: number;
   started_at: string | null;
@@ -21,10 +23,10 @@ export interface OnboardingStep {
   step_name: string;
   step_status: 'pending' | 'in_progress' | 'completed' | 'skipped' | 'failed';
   step_data: Record<string, any>;
-  started_at: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  validation_errors?: Record<string, any>;
 }
 
 export class OnboardingService {
@@ -52,7 +54,9 @@ export class OnboardingService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
+        workflow_name: data.workflow_name || 'Tenant Onboarding',
         status: data.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
+        progress_percentage: data.progress_percentage || 0,
         current_step: data.current_step || 1,
         total_steps: data.total_steps || 0,
         started_at: data.started_at,
@@ -89,10 +93,10 @@ export class OnboardingService {
         step_name: step.step_name,
         step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
         step_data: (step.step_data as Record<string, any>) || {},
-        started_at: step.started_at || null,
         completed_at: step.completed_at,
         created_at: step.created_at,
-        updated_at: step.updated_at
+        updated_at: step.updated_at,
+        validation_errors: (step.validation_errors as Record<string, any>) || {}
       }));
     } catch (error) {
       console.error('OnboardingService: Error fetching workflow steps:', error);
@@ -118,8 +122,7 @@ export class OnboardingService {
         step_status: stepStatus,
         step_data: stepData || {},
         updated_at: new Date().toISOString(),
-        ...(stepStatus === 'completed' && { completed_at: new Date().toISOString() }),
-        ...(stepStatus === 'in_progress' && { started_at: new Date().toISOString() })
+        ...(stepStatus === 'completed' && { completed_at: new Date().toISOString() })
       });
 
       return true;

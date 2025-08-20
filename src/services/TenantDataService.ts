@@ -92,17 +92,26 @@ class TenantDataService {
     console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
     
     try {
-      const { data, error } = await supabase.rpc('complete_onboarding_workflow', {
-        p_tenant_id: tenantId,
-        p_workflow_id: workflowId
-      });
+      // Use direct update since RPC function might not be available
+      const { data, error } = await supabase
+        .from('onboarding_workflows')
+        .update({
+          status: 'completed',
+          progress_percentage: 100,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', workflowId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
 
       if (error) {
         console.error('TenantDataService: Error completing workflow:', error);
-        throw error;
+        return { success: false };
       }
 
-      return data || { success: true };
+      return { success: true };
     } catch (error) {
       console.error('TenantDataService: Error completing workflow:', error);
       return { success: false };
@@ -113,16 +122,36 @@ class TenantDataService {
     this.validateTenantAccess(tenantId);
     console.log('TenantDataService: Calculating workflow progress:', { tenantId, workflowId });
     
-    const { data, error } = await supabase.rpc('calculate_workflow_progress', {
-      p_workflow_id: workflowId
-    });
+    try {
+      // Calculate progress directly using query
+      const { data: steps, error } = await supabase
+        .from('onboarding_steps')
+        .select('step_status')
+        .eq('workflow_id', workflowId);
 
-    if (error) {
+      if (error) {
+        console.error('TenantDataService: Error calculating progress:', error);
+        return { progress: 0 };
+      }
+
+      const totalSteps = steps?.length || 0;
+      const completedSteps = steps?.filter(step => step.step_status === 'completed').length || 0;
+      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+
+      // Update workflow progress
+      await supabase
+        .from('onboarding_workflows')
+        .update({
+          progress_percentage: progress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', workflowId);
+
+      return { progress };
+    } catch (error) {
       console.error('TenantDataService: Error calculating progress:', error);
-      throw error;
+      return { progress: 0 };
     }
-
-    return { progress: data || 0 };
   }
 
   async getOnboardingSteps(tenantId: string, workflowId?: string) {
@@ -180,10 +209,8 @@ class TenantDataService {
     try {
       console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
-      // First ensure workflow exists
       const workflowId = await this.ensureOnboardingWorkflow(tenantId);
       
-      // Then fetch both workflow and steps
       const [workflow, steps] = await Promise.all([
         this.getOnboardingWorkflow(tenantId),
         this.getOnboardingSteps(tenantId, workflowId)
@@ -216,7 +243,6 @@ class TenantDataService {
         updated_at: new Date().toISOString()
       });
 
-      // After updating step, recalculate workflow progress
       if (result?.workflow_id) {
         await this.calculateWorkflowProgress(tenantId, result.workflow_id);
       }

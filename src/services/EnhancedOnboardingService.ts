@@ -1,4 +1,3 @@
-
 import { tenantDataService } from './TenantDataService';
 import { OnboardingStep, OnboardingWorkflow } from './OnboardingService';
 
@@ -18,7 +17,6 @@ class EnhancedOnboardingService {
     try {
       console.log('EnhancedOnboardingService: Getting onboarding data for tenant:', tenantId);
       
-      // Get complete onboarding data with workflow creation if needed
       const data = await tenantDataService.getCompleteOnboardingData(tenantId);
       
       if (!data || !data.workflow) {
@@ -28,11 +26,12 @@ class EnhancedOnboardingService {
       
       console.log('EnhancedOnboardingService: Retrieved onboarding data successfully');
       
-      // Transform the workflow data to match our interface
       const workflow: OnboardingWorkflow = {
         id: data.workflow.id,
         tenant_id: data.workflow.tenant_id,
+        workflow_name: data.workflow.workflow_name || 'Tenant Onboarding',
         status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
+        progress_percentage: data.workflow.progress_percentage || 0,
         current_step: data.workflow.current_step || 1,
         total_steps: data.workflow.total_steps || 0,
         started_at: data.workflow.started_at,
@@ -42,7 +41,6 @@ class EnhancedOnboardingService {
         updated_at: data.workflow.updated_at
       };
 
-      // Transform the steps data to match our interface
       const steps: OnboardingStep[] = (data.steps || []).map(step => ({
         id: step.id,
         workflow_id: step.workflow_id,
@@ -50,10 +48,10 @@ class EnhancedOnboardingService {
         step_name: step.step_name,
         step_status: step.step_status,
         step_data: (step.step_data as Record<string, any>) || {},
-        started_at: step.started_at || null,
         completed_at: step.completed_at,
         created_at: step.created_at,
-        updated_at: step.updated_at
+        updated_at: step.updated_at,
+        validation_errors: (step.validation_errors as Record<string, any>) || {}
       }));
 
       return { workflow, steps };
@@ -75,11 +73,12 @@ class EnhancedOnboardingService {
       
       console.log('EnhancedOnboardingService: Workflow initialized successfully');
       
-      // Transform the workflow data
       const workflow: OnboardingWorkflow = {
         id: data.workflow.id,
         tenant_id: data.workflow.tenant_id,
+        workflow_name: data.workflow.workflow_name || 'Tenant Onboarding',
         status: data.workflow.status as 'not_started' | 'in_progress' | 'completed' | 'paused',
+        progress_percentage: data.workflow.progress_percentage || 0,
         current_step: data.workflow.current_step || 1,
         total_steps: data.workflow.total_steps || 0,
         started_at: data.workflow.started_at,
@@ -89,7 +88,6 @@ class EnhancedOnboardingService {
         updated_at: data.workflow.updated_at
       };
 
-      // Transform the steps data
       const steps: OnboardingStep[] = (data.steps || []).map(step => ({
         id: step.id,
         workflow_id: step.workflow_id,
@@ -97,10 +95,10 @@ class EnhancedOnboardingService {
         step_name: step.step_name,
         step_status: step.step_status,
         step_data: (step.step_data as Record<string, any>) || {},
-        started_at: step.started_at || null,
         completed_at: step.completed_at,
         created_at: step.created_at,
-        updated_at: step.updated_at
+        updated_at: step.updated_at,
+        validation_errors: (step.validation_errors as Record<string, any>) || {}
       }));
 
       return { workflow, steps };
@@ -145,8 +143,7 @@ class EnhancedOnboardingService {
         step_status: status,
         step_data: stepData || {},
         updated_at: new Date().toISOString(),
-        ...(status === 'completed' && { completed_at: new Date().toISOString() }),
-        ...(status === 'in_progress' && { started_at: new Date().toISOString() })
+        ...(status === 'completed' && { completed_at: new Date().toISOString() })
       });
       
       console.log('EnhancedOnboardingService: Step status updated successfully');

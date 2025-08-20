@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -13,7 +12,6 @@ export const useTenantData = () => {
 
   useEffect(() => {
     if (!user) {
-      // Clear tenant data when user logs out
       dispatch(setCurrentTenant(null));
       dispatch(setUserTenants([]));
       return;
@@ -26,7 +24,6 @@ export const useTenantData = () => {
         
         console.log('useTenantData: Fetching tenant data for user:', user.id);
         
-        // Use explicit foreign key relationships to avoid ambiguity
         const { data: userTenantsData, error: userTenantsError } = await supabase
           .from('user_tenants')
           .select(`
@@ -52,7 +49,6 @@ export const useTenantData = () => {
 
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
-        // Transform the data to match our interfaces
         const transformedUserTenants = (userTenantsData || []).map(userTenant => {
           if (!userTenant.tenant) {
             return userTenant;
@@ -62,7 +58,6 @@ export const useTenantData = () => {
             ...userTenant,
             tenant: {
               ...userTenant.tenant,
-              // Handle status mapping
               status: mapTenantStatus(userTenant.tenant.status),
               subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
               branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
@@ -76,19 +71,16 @@ export const useTenantData = () => {
 
         dispatch(setUserTenants(transformedUserTenants));
 
-        // Set current tenant if not set and we have tenants
         if (!currentTenant && transformedUserTenants && transformedUserTenants.length > 0) {
           const primaryTenant = transformedUserTenants.find(ut => ut.role === 'tenant_owner') || transformedUserTenants[0];
           if (primaryTenant?.tenant) {
             console.log('useTenantData: Setting current tenant:', primaryTenant.tenant);
             dispatch(setCurrentTenant(primaryTenant.tenant));
             
-            // Validate onboarding data for the current tenant
             try {
               await onboardingValidationService.validateAndRepairOnboarding(primaryTenant.tenant.id);
             } catch (validationError) {
               console.warn('useTenantData: Onboarding validation warning:', validationError);
-              // Don't fail the entire flow for validation issues
             }
           }
         }
@@ -102,18 +94,15 @@ export const useTenantData = () => {
 
     const fetchSubscriptionPlans = async () => {
       try {
-        // Use edge function if we have a current tenant, otherwise fall back to direct query
         if (currentTenant?.id) {
           const plansData = await tenantDataService.getSubscriptionPlans(currentTenant.id);
           
-          // Map the data to match our interface structure
           const mappedPlans = (plansData || []).map(plan => {
-            // Extract limits from the limits JSON field
             const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
             
             return {
               id: plan.id,
-              name: plan.plan_name || plan.name,
+              name: plan.name || plan.plan_type,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
@@ -129,7 +118,6 @@ export const useTenantData = () => {
 
           dispatch(setSubscriptionPlans(mappedPlans));
         } else {
-          // Fallback to direct query for public subscription plans
           const { data: plansData, error: plansError } = await supabase
             .from('subscription_plans')
             .select('*')
@@ -141,14 +129,12 @@ export const useTenantData = () => {
             throw plansError;
           }
 
-          // Map the data to match our interface structure
           const mappedPlans = (plansData || []).map(plan => {
-            // Extract limits from the limits JSON field
             const limits = typeof plan.limits === 'object' && plan.limits !== null ? plan.limits as Record<string, any> : {};
             
             return {
               id: plan.id,
-              name: plan.plan_name || plan.name,
+              name: plan.name || plan.plan_type,
               description: plan.description,
               price_monthly: plan.price_monthly || 0,
               price_annually: plan.price_annually || 0,
@@ -169,26 +155,23 @@ export const useTenantData = () => {
       }
     };
 
-    // Only fetch tenant data if we don't have it or if user changed
     if (userTenants.length === 0 || !loading) {
       fetchUserTenants();
     }
 
-    // Fetch subscription plans when we have a current tenant
     if (currentTenant?.id) {
       fetchSubscriptionPlans();
     }
 
-    // Set up real-time subscription for tenant changes with proper tenant isolation
     const channel = supabase
-      .channel(`tenant_changes_${user.id}`) // User-specific channel
+      .channel(`tenant_changes_${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_tenants',
-          filter: `user_id=eq.${user.id}`, // Filter by user_id
+          filter: `user_id=eq.${user.id}`,
         },
         () => {
           console.log('Real-time tenant data change detected');
@@ -247,12 +230,14 @@ export const useTenantData = () => {
 // Helper functions
 const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
   switch (status) {
-    case 'pending': return 'pending';
+    case 'pending':
+    case 'pending_approval': return 'pending';
     case 'active': return 'active';
     case 'suspended': return 'suspended';
     case 'cancelled':
     case 'canceled': return 'cancelled';
     case 'trial': return 'trial';
+    case 'archived': return 'cancelled'; // Map archived to cancelled for compatibility
     default: return 'pending';
   }
 };
