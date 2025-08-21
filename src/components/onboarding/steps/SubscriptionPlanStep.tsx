@@ -21,11 +21,11 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
   isLoading
 }) => {
   const { t } = useTranslation();
-  const [selectedPlan, setSelectedPlan] = useState(step.step_data?.selectedPlan || 'shakti');
+  const [selectedPlan, setSelectedPlan] = useState(step.step_data?.selectedPlan || 'Shakti_Growth');
 
   const plans = [
     {
-      id: 'kisan',
+      id: 'Kisan_Basic',
       name: t('subscription.kisanBasic'),
       price: '₹2,999',
       period: 'per month',
@@ -39,7 +39,7 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
       ]
     },
     {
-      id: 'shakti',
+      id: 'Shakti_Growth',
       name: t('subscription.shaktiGrowth'),
       price: '₹9,999',
       period: 'per month',
@@ -55,7 +55,7 @@ export const SubscriptionPlanStep: React.FC<SubscriptionPlanStepProps> = ({
       popular: true
     },
     {
-      id: 'ai',
+      id: 'AI_Enterprise',
       name: t('subscription.aiEnterprise'),
       price: '₹24,999',
       period: 'per month',

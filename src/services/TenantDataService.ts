@@ -62,15 +62,21 @@ export class TenantDataService {
     }
   }
 
-  async getOnboardingSteps(tenantId: string, workflowId: string) {
+  async getOnboardingSteps(tenantId: string, workflowId?: string) {
     try {
       console.log('TenantDataService: Getting onboarding steps for workflow:', workflowId);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('onboarding_steps')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .order('step_number', { ascending: true });
+        .select('*');
+
+      if (workflowId) {
+        query = query.eq('workflow_id', workflowId);
+      }
+
+      query = query.order('step_number', { ascending: true });
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('TenantDataService: Error fetching steps:', error);
@@ -130,6 +136,28 @@ export class TenantDataService {
       console.log('TenantDataService: Step updated successfully');
     } catch (error) {
       console.error('TenantDataService: Error in updateOnboardingStep:', error);
+      throw error;
+    }
+  }
+
+  async updateOnboardingWorkflow(tenantId: string, workflowId: string, updates: any) {
+    try {
+      console.log('TenantDataService: Updating onboarding workflow:', { workflowId, updates });
+      
+      const { error } = await supabase
+        .from('onboarding_workflows')
+        .update(updates)
+        .eq('id', workflowId)
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        console.error('TenantDataService: Error updating workflow:', error);
+        throw error;
+      }
+
+      console.log('TenantDataService: Workflow updated successfully');
+    } catch (error) {
+      console.error('TenantDataService: Error in updateOnboardingWorkflow:', error);
       throw error;
     }
   }
@@ -195,12 +223,12 @@ export class TenantDataService {
 
       // Create steps
       const stepTemplates = [
-        { step_number: 1, step_name: 'Business Verification', step_status: 'pending' },
-        { step_number: 2, step_name: 'Subscription Plan', step_status: 'pending' },
-        { step_number: 3, step_name: 'Branding Configuration', step_status: 'pending' },
-        { step_number: 4, step_name: 'Feature Selection', step_status: 'pending' },
-        { step_number: 5, step_name: 'Data Import', step_status: 'pending' },
-        { step_number: 6, step_name: 'Team Invites', step_status: 'pending' }
+        { step_number: 1, step_name: 'Business Verification', step_status: 'pending' as const },
+        { step_number: 2, step_name: 'Subscription Plan', step_status: 'pending' as const },
+        { step_number: 3, step_name: 'Branding Configuration', step_status: 'pending' as const },
+        { step_number: 4, step_name: 'Feature Selection', step_status: 'pending' as const },
+        { step_number: 5, step_name: 'Data Import', step_status: 'pending' as const },
+        { step_number: 6, step_name: 'Team Invites', step_status: 'pending' as const }
       ];
 
       const stepsToInsert = stepTemplates.map(template => ({

@@ -4,14 +4,27 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface TenantBranding {
   id: string;
   tenant_id: string;
+  accent_color: string;
+  app_icon_url: string | null;
   app_name: string;
-  logo_url?: string;
+  app_tagline: string | null;
+  background_color: string;
+  company_description: string | null;
+  created_at: string;
+  custom_css: string | null;
+  email_footer_html: string | null;
+  email_header_html: string | null;
+  favicon_url: string | null;
+  font_family: string;
+  is_active: boolean;
+  logo_url: string | null;
   primary_color: string;
   secondary_color: string;
-  accent_color: string;
-  background_color: string;
+  social_links: any;
   text_color: string;
-  font_family: string;
+  theme_settings: any;
+  updated_at: string;
+  version: number;
 }
 
 interface TenantFeatures {

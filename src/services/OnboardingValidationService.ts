@@ -43,7 +43,7 @@ class OnboardingValidationService {
       // Check if steps exist
       let steps = [];
       try {
-        steps = await tenantDataService.getOnboardingSteps(tenantId);
+        steps = await tenantDataService.getOnboardingSteps(tenantId, workflow?.id);
         if (!steps || steps.length === 0) {
           issues.push('No onboarding steps found');
         }
@@ -128,7 +128,7 @@ class OnboardingValidationService {
       }
       
       try {
-        steps_data = await tenantDataService.getOnboardingSteps(tenantId);
+        steps_data = await tenantDataService.getOnboardingSteps(tenantId, workflow_data?.id);
       } catch (error) {
         console.warn('OnboardingValidationService: Could not fetch steps:', error);
       }
