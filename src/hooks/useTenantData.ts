@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -58,8 +59,8 @@ export const useTenantData = () => {
             ...userTenant,
             tenant: {
               ...userTenant.tenant,
-              status: userTenant.tenant.status as 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval',
-              subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
+              status: mapTenantStatus(userTenant.tenant.status),
+              subscription_plan: userTenant.tenant.subscription_plan as 'Kisan_Basic' | 'Shakti_Growth' | 'AI_Enterprise' | 'custom',
               branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
               features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
               subscription: userTenant.tenant.subscription ? processSubscription(
@@ -228,15 +229,16 @@ export const useTenantData = () => {
 };
 
 // Helper functions
-const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
-  switch (plan) {
-    case 'starter':
-    case 'basic': return 'kisan';
-    case 'professional':
-    case 'growth': return 'shakti';
-    case 'enterprise':
-    case 'custom': return 'ai';
-    default: return 'kisan';
+const mapTenantStatus = (status: string): 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval' => {
+  switch (status) {
+    case 'pending_approval': return 'pending_approval';
+    case 'active': return 'active';
+    case 'suspended': return 'suspended';
+    case 'cancelled':
+    case 'canceled': return 'cancelled';
+    case 'trial': return 'trial';
+    case 'archived': return 'archived';
+    default: return 'pending_approval';
   }
 };
 

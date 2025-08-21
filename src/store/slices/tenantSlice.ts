@@ -67,7 +67,7 @@ interface Tenant {
   slug: string;
   type: 'agri_company' | 'ngo' | 'university' | 'government' | 'cooperative' | 'dealer' | 'sugar_factory' | 'insurance';
   status: 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval';
-  subscription_plan: 'kisan' | 'shakti' | 'ai';
+  subscription_plan: 'Kisan_Basic' | 'Shakti_Growth' | 'AI_Enterprise' | 'custom';
   owner_name?: string;
   owner_email?: string;
   branding?: TenantBranding;

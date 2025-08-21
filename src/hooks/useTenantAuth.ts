@@ -55,7 +55,7 @@ export const useTenantAuth = () => {
           tenant: {
             ...userTenant.tenant,
             status: mapTenantStatus(userTenant.tenant.status),
-            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
+            subscription_plan: userTenant.tenant.subscription_plan as 'Kisan_Basic' | 'Shakti_Growth' | 'AI_Enterprise' | 'custom',
             branding: Array.isArray(userTenant.tenant.branding) 
               ? userTenant.tenant.branding[0] 
               : userTenant.tenant.branding,
@@ -203,27 +203,16 @@ export const useTenantAuth = () => {
 };
 
 // Helper functions
-const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
+const mapTenantStatus = (status: string): 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval' => {
   switch (status) {
-    case 'pending': return 'pending';
+    case 'pending_approval': return 'pending_approval';
     case 'active': return 'active';
     case 'suspended': return 'suspended';
     case 'cancelled':
     case 'canceled': return 'cancelled';
     case 'trial': return 'trial';
-    default: return 'pending';
-  }
-};
-
-const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
-  switch (plan) {
-    case 'starter':
-    case 'basic': return 'kisan';
-    case 'professional':
-    case 'growth': return 'shakti';
-    case 'enterprise':
-    case 'custom': return 'ai';
-    default: return 'kisan';
+    case 'archived': return 'archived';
+    default: return 'pending_approval';
   }
 };
 
