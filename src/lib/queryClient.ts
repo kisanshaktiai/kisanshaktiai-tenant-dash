@@ -1,13 +1,12 @@
-
 import { QueryClient } from '@tanstack/react-query';
-import type { AnalyticsFilters } from '@/types/analytics';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes
-      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnMount: false,
+      refetchOnReconnect: false,
       refetchOnWindowFocus: false,
     },
   },
@@ -15,45 +14,45 @@ export const queryClient = new QueryClient({
 
 export const queryKeys = {
   // Auth
-  user: ['user'] as const,
-  
-  // Tenants
-  tenants: (userId: string) => ['tenants', userId] as const,
-  tenant: (tenantId: string) => ['tenant', tenantId] as const,
-  
+  user: () => ['user'] as const,
+
+  // Tenant
+  tenants: () => ['tenants'] as const,
+  userTenants: (userId: string) => ['tenants', userId] as const,
+  currentTenant: () => ['tenants', 'current'] as const,
+  subscriptionPlans: () => ['subscription-plans'] as const,
+
   // Farmers
   farmers: (tenantId: string) => ['farmers', tenantId] as const,
-  farmer: (farmerId: string) => ['farmer', farmerId] as const,
-  
+  farmer: (farmerId: string, tenantId: string) => ['farmers', tenantId, farmerId] as const,
+  farmerStats: (tenantId: string) => ['farmers', tenantId, 'stats'] as const,
+
   // Products
   products: (tenantId: string) => ['products', tenantId] as const,
-  product: (productId: string) => ['product', productId] as const,
-  
+  product: (productId: string, tenantId: string) => ['products', tenantId, productId] as const,
+
+  // Analytics
+  analytics: (tenantId: string) => ['analytics', tenantId] as const,
+  dashboardStats: (tenantId: string) => ['analytics', tenantId, 'dashboard-stats'] as const,
+  engagementStats: (tenantId: string) => ['analytics', tenantId, 'engagement-stats'] as const,
+
   // Dealers
   dealers: (tenantId: string) => ['dealers', tenantId] as const,
-  dealer: (dealerId: string) => ['dealer', dealerId] as const,
+  dealersList: (tenantId: string) => ['dealers', tenantId, 'list'] as const,
+  dealer: (dealerId: string, tenantId: string) => ['dealers', tenantId, 'detail', dealerId] as const,
   
-  // Campaigns
-  campaigns: (tenantId: string) => ['campaigns', tenantId] as const,
-  campaign: (campaignId: string) => ['campaign', campaignId] as const,
+  // Territories
+  territories: (tenantId: string, options?: any) => ['territories', tenantId, options] as const,
   
-  // Dashboard
-  dashboardStats: (tenantId: string) => ['dashboard', 'stats', tenantId] as const,
+  // Dealer Performance
+  dealerPerformance: (tenantId: string, options?: any) => ['dealer-performance', tenantId, options] as const,
   
-  // Analytics
-  engagementStats: (tenantId: string) => ['analytics', 'engagement', tenantId] as const,
-  executiveDashboard: (tenantId: string, filters?: AnalyticsFilters) => 
-    ['analytics', 'executive', tenantId, filters] as const,
-  farmerAnalytics: (tenantId: string, filters?: AnalyticsFilters) => 
-    ['analytics', 'farmers', tenantId, filters] as const,
-  productAnalytics: (tenantId: string, filters?: AnalyticsFilters) => 
-    ['analytics', 'products', tenantId, filters] as const,
-  customReports: (tenantId: string) => ['analytics', 'reports', tenantId] as const,
-  predictiveAnalytics: (tenantId: string, modelType?: string) => 
-    ['analytics', 'predictive', tenantId, modelType] as const,
-  exportLogs: (tenantId: string) => ['analytics', 'exports', tenantId] as const,
+  // Dealer Communications
+  dealerCommunications: (tenantId: string, options?: any) => ['dealer-communications', tenantId, options] as const,
   
-  // Onboarding
-  onboardingWorkflow: (tenantId: string) => ['onboarding', 'workflow', tenantId] as const,
-  onboardingStep: (stepId: string) => ['onboarding', 'step', stepId] as const,
+  // Dealer Incentives
+  dealerIncentives: (tenantId: string, options?: any) => ['dealer-incentives', tenantId, options] as const,
+  
+  // Dealer Onboarding
+  dealerOnboarding: (dealerId: string, tenantId: string) => ['dealer-onboarding', tenantId, dealerId] as const,
 } as const;
