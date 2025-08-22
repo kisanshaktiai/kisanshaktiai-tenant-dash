@@ -1,10 +1,11 @@
+
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (replaces cacheTime)
       refetchOnMount: false,
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
@@ -24,17 +25,25 @@ export const queryKeys = {
 
   // Farmers
   farmers: (tenantId: string) => ['farmers', tenantId] as const,
+  farmersList: (tenantId: string) => ['farmers', tenantId, 'list'] as const,
   farmer: (farmerId: string, tenantId: string) => ['farmers', tenantId, farmerId] as const,
   farmerStats: (tenantId: string) => ['farmers', tenantId, 'stats'] as const,
 
   // Products
   products: (tenantId: string) => ['products', tenantId] as const,
+  productsList: (tenantId: string) => ['products', tenantId, 'list'] as const,
   product: (productId: string, tenantId: string) => ['products', tenantId, productId] as const,
 
   // Analytics
   analytics: (tenantId: string) => ['analytics', tenantId] as const,
   dashboardStats: (tenantId: string) => ['analytics', tenantId, 'dashboard-stats'] as const,
   engagementStats: (tenantId: string) => ['analytics', tenantId, 'engagement-stats'] as const,
+  executiveDashboard: (tenantId: string) => ['analytics', tenantId, 'executive-dashboard'] as const,
+  farmerAnalytics: (tenantId: string) => ['analytics', tenantId, 'farmer-analytics'] as const,
+  productAnalytics: (tenantId: string) => ['analytics', tenantId, 'product-analytics'] as const,
+  customReports: (tenantId: string) => ['analytics', tenantId, 'custom-reports'] as const,
+  predictiveAnalytics: (tenantId: string) => ['analytics', tenantId, 'predictive-analytics'] as const,
+  exportLogs: (tenantId: string) => ['analytics', tenantId, 'export-logs'] as const,
 
   // Dealers
   dealers: (tenantId: string) => ['dealers', tenantId] as const,

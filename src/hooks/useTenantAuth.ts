@@ -33,7 +33,7 @@ export const useTenantAuth = () => {
         
         // Try to find stored tenant or primary tenant
         if (storedTenantId) {
-          const storedTenant = tenants.find(ut => ut.tenant?.id === storedTenantId);
+          const storedTenant = tenants.find(ut => ut.tenant && 'id' in ut.tenant && ut.tenant.id === storedTenantId);
           if (storedTenant) {
             tenantToSet = storedTenant;
           }
@@ -44,7 +44,7 @@ export const useTenantAuth = () => {
           }
         }
         
-        if (tenantToSet?.tenant) {
+        if (tenantToSet?.tenant && 'id' in tenantToSet.tenant) {
           console.log('useTenantAuth: Setting current tenant:', tenantToSet.tenant);
           dispatch(setCurrentTenant(tenantToSet.tenant));
           localStorage.setItem('currentTenantId', tenantToSet.tenant.id);
