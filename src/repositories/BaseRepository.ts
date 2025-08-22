@@ -40,19 +40,19 @@ export abstract class BaseRepository<T> {
   }
 
   protected async executeQuery<R>(
-    queryFn: () => Promise<{ data: R | null; error: PostgrestError | null }>
+    queryFn: () => any
   ): Promise<R> {
-    const { data, error } = await queryFn();
+    const response = await queryFn();
     
-    if (error) {
-      throw this.handleError(error);
+    if (response.error) {
+      throw this.handleError(response.error);
     }
     
-    if (data === null) {
+    if (response.data === null) {
       throw new Error('No data returned from query');
     }
     
-    return data;
+    return response.data as R;
   }
 
   async findById(id: string, options: RepositoryOptions = {}): Promise<T> {
@@ -112,7 +112,7 @@ export abstract class BaseRepository<T> {
   }
 
   async delete(id: string): Promise<void> {
-    await this.executeQuery<void>(async () => 
+    await this.executeQuery<any>(async () => 
       await supabase
         .from(this.tableName as any)
         .delete()
