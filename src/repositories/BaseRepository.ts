@@ -56,28 +56,24 @@ export abstract class BaseRepository<T> {
   }
 
   async findById(id: string, options: RepositoryOptions = {}): Promise<T> {
-    return this.executeQuery(() => {
-      let query = supabase.from(this.tableName);
-      
-      if (options.select) {
-        query = query.select(options.select);
-      } else {
-        query = query.select('*');
-      }
-      
-      return query.eq('id', id).single();
+    const selectFields = options.select || '*';
+    
+    return this.executeQuery(async () => {
+      return await supabase
+        .from(this.tableName as any)
+        .select(selectFields)
+        .eq('id', id)
+        .single();
     });
   }
 
   async findAll(options: RepositoryOptions = {}): Promise<T[]> {
-    return this.executeQuery(() => {
-      let query = supabase.from(this.tableName);
-      
-      if (options.select) {
-        query = query.select(options.select);
-      } else {
-        query = query.select('*');
-      }
+    const selectFields = options.select || '*';
+    
+    return this.executeQuery(async () => {
+      let query = supabase
+        .from(this.tableName as any)
+        .select(selectFields);
       
       if (options.orderBy) {
         query = query.order(options.orderBy.column, { 
@@ -90,19 +86,24 @@ export abstract class BaseRepository<T> {
         query = query.range(start, start + options.limit - 1);
       }
       
-      return query;
+      return await query;
     });
   }
 
   async create(data: Partial<T>): Promise<T> {
-    return this.executeQuery(() => 
-      supabase.from(this.tableName).insert(data).select().single()
+    return this.executeQuery(async () => 
+      await supabase
+        .from(this.tableName as any)
+        .insert(data)
+        .select()
+        .single()
     );
   }
 
   async update(id: string, data: Partial<T>): Promise<T> {
-    return this.executeQuery(() => 
-      supabase.from(this.tableName)
+    return this.executeQuery(async () => 
+      await supabase
+        .from(this.tableName as any)
         .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select()
@@ -111,8 +112,11 @@ export abstract class BaseRepository<T> {
   }
 
   async delete(id: string): Promise<void> {
-    await this.executeQuery(() => 
-      supabase.from(this.tableName).delete().eq('id', id)
+    await this.executeQuery(async () => 
+      await supabase
+        .from(this.tableName as any)
+        .delete()
+        .eq('id', id)
     );
   }
 }

@@ -24,8 +24,8 @@ export class TenantRepository extends BaseRepository<TenantsTable> {
   }
 
   async findUserTenants(userId: string): Promise<UserTenantWithRelations[]> {
-    return this.executeQuery(() =>
-      supabase
+    return this.executeQuery(async () =>
+      await supabase
         .from('user_tenants')
         .select(`
           *,
@@ -45,22 +45,26 @@ export class TenantRepository extends BaseRepository<TenantsTable> {
   }
 
   async findBySlug(slug: string): Promise<TenantsTable> {
-    return this.executeQuery(() =>
-      supabase.from('tenants').select('*').eq('slug', slug).single()
+    return this.executeQuery(async () =>
+      await supabase
+        .from('tenants')
+        .select('*')
+        .eq('slug', slug)
+        .single()
     );
   }
 
   async updateBranding(tenantId: string, brandingData: any): Promise<void> {
-    await this.executeQuery(() =>
-      supabase
+    await this.executeQuery(async () =>
+      await supabase
         .from('tenant_branding')
         .upsert({ tenant_id: tenantId, ...brandingData })
     );
   }
 
   async updateFeatures(tenantId: string, featuresData: any): Promise<void> {
-    await this.executeQuery(() =>
-      supabase
+    await this.executeQuery(async () =>
+      await supabase
         .from('tenant_features')
         .upsert({ tenant_id: tenantId, ...featuresData })
     );
