@@ -33,7 +33,6 @@ export const useTenantSettings = () => {
 
         console.log('Fetching tenant settings for:', currentTenant.id);
 
-        // Get tenant data directly from Supabase
         const { data: tenantData, error: tenantError } = await supabase
           .from('tenants')
           .select('*')
@@ -43,14 +42,26 @@ export const useTenantSettings = () => {
         if (tenantError) throw tenantError;
 
         if (tenantData) {
-          // Create settings object from tenant data
+          // Safely handle metadata parsing
+          let metadata = {};
+          if (tenantData.metadata) {
+            try {
+              metadata = typeof tenantData.metadata === 'string' 
+                ? JSON.parse(tenantData.metadata) 
+                : tenantData.metadata;
+            } catch (parseError) {
+              console.warn('Failed to parse tenant metadata:', parseError);
+              metadata = {};
+            }
+          }
+
           const tenantSettings: TenantSettings = {
             id: tenantData.id,
             tenant_id: tenantData.id,
             max_farmers: tenantData.max_farmers || 10000,
             max_dealers: tenantData.max_dealers || 1000,
-            features_enabled: tenantData.metadata?.features || {},
-            billing_settings: tenantData.metadata?.billing || {},
+            features_enabled: (metadata as any)?.features || {},
+            billing_settings: (metadata as any)?.billing || {},
             created_at: tenantData.created_at,
             updated_at: tenantData.updated_at
           };

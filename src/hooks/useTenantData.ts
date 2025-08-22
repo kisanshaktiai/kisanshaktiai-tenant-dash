@@ -1,10 +1,10 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setSubscriptionPlans, setLoading, setError } from '@/store/slices/tenantSlice';
 import { tenantDataService } from '@/services/TenantDataService';
 import { onboardingValidationService } from '@/services/OnboardingValidationService';
+import { transformUserTenant } from '@/utils/tenantTransformers';
 
 export const useTenantData = () => {
   const dispatch = useAppDispatch();
@@ -50,25 +50,9 @@ export const useTenantData = () => {
 
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
-        const transformedUserTenants = (userTenantsData || []).map(userTenant => {
-          if (!userTenant.tenant) {
-            return userTenant;
-          }
-          
-          return {
-            ...userTenant,
-            tenant: {
-              ...userTenant.tenant,
-              status: mapTenantStatus(userTenant.tenant.status),
-              subscription_plan: userTenant.tenant.subscription_plan as 'Kisan_Basic' | 'Shakti_Growth' | 'AI_Enterprise' | 'custom',
-              branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
-              features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
-              subscription: userTenant.tenant.subscription ? processSubscription(
-                Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
-              ) : null,
-            }
-          };
-        });
+        const transformedUserTenants = (userTenantsData || [])
+          .filter(userTenant => userTenant.tenant)
+          .map(transformUserTenant);
 
         dispatch(setUserTenants(transformedUserTenants));
 
@@ -156,14 +140,6 @@ export const useTenantData = () => {
       }
     };
 
-    if (userTenants.length === 0 || !loading) {
-      fetchUserTenants();
-    }
-
-    if (currentTenant?.id) {
-      fetchSubscriptionPlans();
-    }
-
     const channel = supabase
       .channel(`tenant_changes_${user.id}`)
       .on(
@@ -217,6 +193,10 @@ export const useTenantData = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+
+    if (userTenants.length === 0 || !loading) {
+      fetchUserTenants();
+    }
   }, [user, dispatch, currentTenant?.id, userTenants.length, loading]);
 
   return {
@@ -226,38 +206,4 @@ export const useTenantData = () => {
     isMultiTenant: userTenants.length > 1,
     loading,
   };
-};
-
-// Helper functions
-const mapTenantStatus = (status: string): 'active' | 'trial' | 'suspended' | 'cancelled' | 'archived' | 'pending_approval' => {
-  switch (status) {
-    case 'pending_approval': return 'pending_approval';
-    case 'active': return 'active';
-    case 'suspended': return 'suspended';
-    case 'cancelled':
-    case 'canceled': return 'cancelled';
-    case 'trial': return 'trial';
-    case 'archived': return 'archived';
-    default: return 'pending_approval';
-  }
-};
-
-const processSubscription = (subscription: any) => {
-  if (!subscription) return null;
-  
-  return {
-    ...subscription,
-    status: mapSubscriptionStatus(subscription.status),
-  };
-};
-
-const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
-  switch (status) {
-    case 'trial': return 'trial';
-    case 'active': return 'active';
-    case 'canceled':
-    case 'cancelled': return 'canceled';
-    case 'past_due': return 'past_due';
-    default: return 'trial';
-  }
 };
