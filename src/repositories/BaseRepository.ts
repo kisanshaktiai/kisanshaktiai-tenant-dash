@@ -55,37 +55,43 @@ export abstract class BaseRepository<T> {
     return data;
   }
 
-  protected createQuery(options: RepositoryOptions = {}) {
-    let query = supabase.from(this.tableName);
-    
-    if (options.select) {
-      query = query.select(options.select);
-    } else {
-      query = query.select('*');
-    }
-    
-    if (options.orderBy) {
-      query = query.order(options.orderBy.column, { 
-        ascending: options.orderBy.ascending ?? true 
-      });
-    }
-    
-    if (options.limit) {
-      const start = options.offset || 0;
-      query = query.range(start, start + options.limit - 1);
-    }
-    
-    return query;
-  }
-
   async findById(id: string, options: RepositoryOptions = {}): Promise<T> {
-    return this.executeQuery(() => 
-      this.createQuery(options).eq('id', id).single()
-    );
+    return this.executeQuery(() => {
+      let query = supabase.from(this.tableName);
+      
+      if (options.select) {
+        query = query.select(options.select);
+      } else {
+        query = query.select('*');
+      }
+      
+      return query.eq('id', id).single();
+    });
   }
 
   async findAll(options: RepositoryOptions = {}): Promise<T[]> {
-    return this.executeQuery(() => this.createQuery(options));
+    return this.executeQuery(() => {
+      let query = supabase.from(this.tableName);
+      
+      if (options.select) {
+        query = query.select(options.select);
+      } else {
+        query = query.select('*');
+      }
+      
+      if (options.orderBy) {
+        query = query.order(options.orderBy.column, { 
+          ascending: options.orderBy.ascending ?? true 
+        });
+      }
+      
+      if (options.limit) {
+        const start = options.offset || 0;
+        query = query.range(start, start + options.limit - 1);
+      }
+      
+      return query;
+    });
   }
 
   async create(data: Partial<T>): Promise<T> {

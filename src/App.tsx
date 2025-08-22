@@ -1,29 +1,29 @@
+
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { Index } from '@/pages';
-import { Auth } from '@/pages/auth';
-import { Dashboard } from '@/pages/dashboard';
-import { NotFound } from '@/pages/not-found';
+import { Index } from '@/pages/Index';
+import { Auth } from '@/pages/Auth';
+import { Dashboard } from '@/pages/Dashboard';
+import { NotFound } from '@/pages/NotFound';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
-import { QueryClientProvider as QueryClient } from '@tanstack/react-query';
-import { ReactQueryDevtools as QueryClientDevtools } from '@tanstack/react-query/devtools';
+import { QueryClient as QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/queryClient';
 import { OnboardingGuard } from './components/guards/OnboardingGuard';
-
 import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider';
 
 function App() {
   return (
     <Provider store={store}>
       <GlobalErrorProvider>
-        <QueryClient client={queryClient}>
+        <QueryClientProvider client={queryClient}>
           <IntlProvider>
             <Router>
               <div className="min-h-screen bg-background font-sans antialiased">
                 <Toaster />
-                <QueryClientDevtools initialIsOpen={false} />
+                <ReactQueryDevtools initialIsOpen={false} />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth/*" element={<Auth />} />
@@ -37,7 +37,7 @@ function App() {
               </div>
             </Router>
           </IntlProvider>
-        </QueryClient>
+        </QueryClientProvider>
       </GlobalErrorProvider>
     </Provider>
   );
