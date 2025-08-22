@@ -1,6 +1,17 @@
 
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
+import type { 
+  ExecutiveDashboardMetric, 
+  FarmerAnalytics, 
+  ProductAnalytics, 
+  CustomReport, 
+  ReportExecution, 
+  PredictiveAnalytics, 
+  DataExportLog,
+  AnalyticsFilters,
+  ReportBuilderConfig
+} from '@/types/analytics';
 
 export interface EngagementStats {
   activeUsers: number;
@@ -9,6 +20,24 @@ export interface EngagementStats {
   responseRate: number;
   churnRate: number;
   npsScore: number;
+}
+
+export interface ExecutiveDashboardData {
+  totalFarmers: number;
+  activeFarmers: number;
+  totalRevenue: number;
+  revenueGrowth: number;
+  engagementRate: number;
+  churnRate: number;
+  topProducts: Array<{
+    name: string;
+    revenue: number;
+    growth: number;
+  }>;
+  revenueChart: Array<{
+    month: string;
+    revenue: number;
+  }>;
 }
 
 class AnalyticsService extends BaseApiService {
@@ -69,6 +98,242 @@ class AnalyticsService extends BaseApiService {
       };
     } catch (error) {
       throw new Error(`Failed to fetch engagement stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getExecutiveDashboardData(tenantId: string, filters?: AnalyticsFilters): Promise<ExecutiveDashboardData> {
+    try {
+      // Get farmers count
+      const { data: farmers, error: farmersError } = await supabase
+        .from('farmers')
+        .select('id, last_app_open, created_at')
+        .eq('tenant_id', tenantId);
+
+      if (farmersError) throw farmersError;
+
+      const totalFarmers = farmers?.length || 0;
+      const activeFarmers = farmers?.filter(f => {
+        if (!f.last_app_open) return false;
+        const lastActive = new Date(f.last_app_open);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return lastActive > thirtyDaysAgo;
+      }).length || 0;
+
+      // Mock revenue data (in real implementation, this would come from orders/payments)
+      const totalRevenue = 2540000; // ₹25.4L
+      const revenueGrowth = 15.8;
+      const engagementRate = totalFarmers > 0 ? (activeFarmers / totalFarmers) * 100 : 0;
+      const churnRate = totalFarmers > 0 ? ((totalFarmers - activeFarmers) / totalFarmers) * 100 : 0;
+
+      // Mock top products
+      const topProducts = [
+        { name: 'Premium Seeds', revenue: 850000, growth: 12.5 },
+        { name: 'Organic Fertilizer', revenue: 720000, growth: 8.3 },
+        { name: 'Bio Pesticides', revenue: 580000, growth: 22.1 }
+      ];
+
+      // Mock revenue chart data
+      const revenueChart = [
+        { month: 'Jan', revenue: 180000 },
+        { month: 'Feb', revenue: 195000 },
+        { month: 'Mar', revenue: 210000 },
+        { month: 'Apr', revenue: 225000 },
+        { month: 'May', revenue: 240000 },
+        { month: 'Jun', revenue: 255000 }
+      ];
+
+      return {
+        totalFarmers,
+        activeFarmers,
+        totalRevenue,
+        revenueGrowth,
+        engagementRate: Math.round(engagementRate * 10) / 10,
+        churnRate: Math.round(churnRate * 10) / 10,
+        topProducts,
+        revenueChart
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch executive dashboard data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getFarmerAnalytics(tenantId: string, filters?: AnalyticsFilters): Promise<FarmerAnalytics[]> {
+    try {
+      const { data, error } = await supabase
+        .from('farmer_analytics')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('calculated_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch farmer analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getProductAnalytics(tenantId: string, filters?: AnalyticsFilters): Promise<ProductAnalytics[]> {
+    try {
+      const { data, error } = await supabase
+        .from('product_analytics')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('period_start', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch product analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getCustomReports(tenantId: string): Promise<CustomReport[]> {
+    try {
+      const { data, error } = await supabase
+        .from('custom_reports')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch custom reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async createCustomReport(tenantId: string, reportData: Partial<CustomReport>): Promise<CustomReport> {
+    try {
+      const { data, error } = await supabase
+        .from('custom_reports')
+        .insert({
+          tenant_id: tenantId,
+          ...reportData
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create custom report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async executeReport(reportId: string, tenantId: string): Promise<ReportExecution> {
+    try {
+      const { data, error } = await supabase
+        .from('report_executions')
+        .insert({
+          report_id: reportId,
+          tenant_id: tenantId,
+          execution_status: 'running'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Mock report execution (in real implementation, this would trigger actual report generation)
+      setTimeout(async () => {
+        await supabase
+          .from('report_executions')
+          .update({
+            execution_status: 'completed',
+            result_data: { mockData: 'Generated report data' },
+            execution_time_ms: 1500,
+            row_count: 100,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', data.id);
+      }, 2000);
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to execute report: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getPredictiveAnalytics(tenantId: string, modelType?: string): Promise<PredictiveAnalytics[]> {
+    try {
+      let query = supabase
+        .from('predictive_analytics')
+        .select('*')
+        .eq('tenant_id', tenantId);
+
+      if (modelType) {
+        query = query.eq('model_type', modelType);
+      }
+
+      const { data, error } = await query.order('prediction_date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch predictive analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async exportData(
+    tenantId: string, 
+    exportConfig: {
+      dataSource: string;
+      format: 'excel' | 'csv' | 'pdf';
+      filters?: AnalyticsFilters;
+    }
+  ): Promise<DataExportLog> {
+    try {
+      const { data, error } = await supabase
+        .from('data_export_logs')
+        .insert({
+          tenant_id: tenantId,
+          export_type: exportConfig.format,
+          export_format: exportConfig.format,
+          data_source: exportConfig.dataSource,
+          filters_applied: exportConfig.filters || {},
+          row_count: 0, // Will be updated after processing
+          file_size_bytes: 0,
+          download_count: 0,
+          exported_by: (await supabase.auth.getUser()).data.user?.id || ''
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Mock export processing (in real implementation, this would generate actual files)
+      setTimeout(async () => {
+        const mockFileUrl = `https://example.com/exports/${data.id}.${exportConfig.format}`;
+        await supabase
+          .from('data_export_logs')
+          .update({
+            row_count: 500,
+            file_size_bytes: 1024 * 1024, // 1MB
+            file_url: mockFileUrl,
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+          })
+          .eq('id', data.id);
+      }, 3000);
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to export data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getExportLogs(tenantId: string): Promise<DataExportLog[]> {
+    try {
+      const { data, error } = await supabase
+        .from('data_export_logs')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(`Failed to fetch export logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

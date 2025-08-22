@@ -1,60 +1,59 @@
 
-import { QueryClient, DefaultOptions } from '@tanstack/react-query';
-
-const queryConfig: DefaultOptions = {
-  queries: {
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    retry: (failureCount, error) => {
-      // Don't retry on 4xx errors except 408, 429
-      if (error && typeof error === 'object' && 'status' in error) {
-        const status = (error as any).status;
-        if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
-          return false;
-        }
-      }
-      return failureCount < 3;
-    },
-    refetchOnWindowFocus: false,
-    refetchOnMount: 'always',
-  },
-  mutations: {
-    retry: 1,
-  },
-};
+import { QueryClient } from '@tanstack/react-query';
+import type { AnalyticsFilters } from '@/types/analytics';
 
 export const queryClient = new QueryClient({
-  defaultOptions: queryConfig,
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
-// Query key factory for consistent cache management with tenant isolation
 export const queryKeys = {
   // Auth
-  auth: ['auth'] as const,
+  user: ['user'] as const,
   
-  // Tenants - FIXED: Always include tenant context
-  tenants: ['tenants'] as const,
-  tenant: (id: string) => ['tenants', id] as const,
+  // Tenants
+  tenants: (userId: string) => ['tenants', userId] as const,
+  tenant: (tenantId: string) => ['tenant', tenantId] as const,
   
-  // Farmers - FIXED: Always include tenantId in cache keys
+  // Farmers
   farmers: (tenantId: string) => ['farmers', tenantId] as const,
-  farmersList: (tenantId: string, filters?: Record<string, any>) => 
-    ['farmers', 'list', tenantId, filters] as const,
-  farmer: (id: string, tenantId: string) => ['farmers', id, tenantId] as const,
-  farmerStats: (tenantId: string) => ['farmers', 'stats', tenantId] as const,
+  farmer: (farmerId: string) => ['farmer', farmerId] as const,
   
-  // Dealers - FIXED: Always include tenantId in cache keys
-  dealers: (tenantId: string) => ['dealers', tenantId] as const,
-  dealersList: (tenantId: string) => ['dealers', 'list', tenantId] as const,
-  dealer: (id: string, tenantId: string) => ['dealers', id, tenantId] as const,
-  
-  // Products - FIXED: Always include tenantId in cache keys
+  // Products
   products: (tenantId: string) => ['products', tenantId] as const,
-  productsList: (tenantId: string) => ['products', 'list', tenantId] as const,
-  product: (id: string, tenantId: string) => ['products', id, tenantId] as const,
+  product: (productId: string) => ['product', productId] as const,
   
-  // Analytics - FIXED: Always include tenantId in cache keys
-  analytics: (tenantId: string) => ['analytics', tenantId] as const,
-  dashboardStats: (tenantId: string) => ['analytics', 'dashboard', tenantId] as const,
+  // Dealers
+  dealers: (tenantId: string) => ['dealers', tenantId] as const,
+  dealer: (dealerId: string) => ['dealer', dealerId] as const,
+  
+  // Campaigns
+  campaigns: (tenantId: string) => ['campaigns', tenantId] as const,
+  campaign: (campaignId: string) => ['campaign', campaignId] as const,
+  
+  // Dashboard
+  dashboardStats: (tenantId: string) => ['dashboard', 'stats', tenantId] as const,
+  
+  // Analytics
   engagementStats: (tenantId: string) => ['analytics', 'engagement', tenantId] as const,
+  executiveDashboard: (tenantId: string, filters?: AnalyticsFilters) => 
+    ['analytics', 'executive', tenantId, filters] as const,
+  farmerAnalytics: (tenantId: string, filters?: AnalyticsFilters) => 
+    ['analytics', 'farmers', tenantId, filters] as const,
+  productAnalytics: (tenantId: string, filters?: AnalyticsFilters) => 
+    ['analytics', 'products', tenantId, filters] as const,
+  customReports: (tenantId: string) => ['analytics', 'reports', tenantId] as const,
+  predictiveAnalytics: (tenantId: string, modelType?: string) => 
+    ['analytics', 'predictive', tenantId, modelType] as const,
+  exportLogs: (tenantId: string) => ['analytics', 'exports', tenantId] as const,
+  
+  // Onboarding
+  onboardingWorkflow: (tenantId: string) => ['onboarding', 'workflow', tenantId] as const,
+  onboardingStep: (stepId: string) => ['onboarding', 'step', stepId] as const,
 } as const;
