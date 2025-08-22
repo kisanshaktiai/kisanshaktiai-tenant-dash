@@ -1,92 +1,45 @@
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './store';
+import { Index } from '@/pages';
+import { Auth } from '@/pages/auth';
+import { Dashboard } from '@/pages/dashboard';
+import { NotFound } from '@/pages/not-found';
+import { IntlProvider } from './components/providers/IntlProvider';
+import { Toaster } from '@/components/ui/toaster';
+import { QueryClientProvider as QueryClient } from '@tanstack/react-query';
+import { ReactQueryDevtools as QueryClientDevtools } from '@tanstack/react-query/devtools';
+import { queryClient } from '@/lib/queryClient';
+import { OnboardingGuard } from './components/guards/OnboardingGuard';
 
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSession, setLoading, logout } from "@/store/slices/authSlice";
-import { TenantProvider } from "@/contexts/TenantContext";
-import { OnboardingGuard } from "@/components/guards/OnboardingGuard";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import Auth from "./pages/Auth";
-import OnboardingPage from "./pages/onboarding/OnboardingPage";
-import NotFound from "./pages/NotFound";
-import "./App.css";
-
-const queryClient = new QueryClient();
+import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider';
 
 function App() {
-  const dispatch = useAppDispatch();
-  const { user, loading } = useAppSelector((state) => state.auth);
-
-  useEffect(() => {
-    dispatch(setLoading(true));
-    
-    // Get current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      dispatch(setSession(session));
-      dispatch(setLoading(false));
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      dispatch(setSession(session));
-      dispatch(setLoading(false));
-    });
-
-    return () => subscription.unsubscribe();
-  }, [dispatch]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <TenantProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  user ? (
+    <Provider store={store}>
+      <GlobalErrorProvider>
+        <QueryClient client={queryClient}>
+          <IntlProvider>
+            <Router>
+              <div className="min-h-screen bg-background font-sans antialiased">
+                <Toaster />
+                <QueryClientDevtools initialIsOpen={false} />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth/*" element={<Auth />} />
+                  <Route path="/dashboard/*" element={
                     <OnboardingGuard>
                       <Dashboard />
                     </OnboardingGuard>
-                  ) : (
-                    <Navigate to="/auth" replace />
-                  )
-                } 
-              />
-              <Route 
-                path="/onboarding" 
-                element={
-                  user ? (
-                    <OnboardingPage />
-                  ) : (
-                    <Navigate to="/auth" replace />
-                  )
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TenantProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </Router>
+          </IntlProvider>
+        </QueryClient>
+      </GlobalErrorProvider>
+    </Provider>
   );
 }
 
