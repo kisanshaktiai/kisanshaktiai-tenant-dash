@@ -7,14 +7,25 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditCard, Calendar, TrendingUp, Users } from 'lucide-react';
 import SubscriptionPlanCard from '@/components/subscription/SubscriptionPlanCard';
+import { mapPlanToUI, isKisanPlan, isShaktiPlan, isAIPlan } from '@/utils/subscriptionPlanMapper';
 
 export default function SubscriptionPage() {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'quarterly' | 'annually'>('monthly');
 
+  // Convert database plan to UI plan for display
+  const currentUIPlan = currentTenant ? mapPlanToUI(currentTenant.subscription_plan) : null;
+
   const handlePlanSelect = (planType: 'kisan' | 'shakti' | 'ai') => {
     console.log('Selected plan:', planType);
     // TODO: Implement plan selection logic
+  };
+
+  const getPlanDisplayName = (dbPlan: string) => {
+    if (isKisanPlan(dbPlan)) return 'Kisan (Basic)';
+    if (isShaktiPlan(dbPlan)) return 'Shakti (Growth)';
+    if (isAIPlan(dbPlan)) return 'AI (Premium)';
+    return dbPlan;
   };
 
   return (
@@ -29,9 +40,7 @@ export default function SubscriptionPage() {
           {currentTenant && (
             <div className="flex items-center gap-2 mt-2">
               <Badge variant="outline">
-                Current Plan: {currentTenant.subscription_plan === 'kisan' ? 'Kisan (Basic)' : 
-                              currentTenant.subscription_plan === 'shakti' ? 'Shakti (Growth)' : 
-                              'AI (Premium)'}
+                Current Plan: {getPlanDisplayName(currentTenant.subscription_plan)}
               </Badge>
               <Badge variant={currentTenant.status === 'active' ? 'default' : 'destructive'}>
                 {currentTenant.status}
@@ -58,9 +67,7 @@ export default function SubscriptionPage() {
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">Plan</div>
                 <div className="text-lg font-semibold">
-                  {currentTenant.subscription_plan === 'kisan' ? 'Kisan (Basic)' : 
-                   currentTenant.subscription_plan === 'shakti' ? 'Shakti (Growth)' : 
-                   'AI (Premium)'}
+                  {getPlanDisplayName(currentTenant.subscription_plan)}
                 </div>
               </div>
               <div className="space-y-2">
@@ -115,17 +122,17 @@ export default function SubscriptionPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <SubscriptionPlanCard
             planType="kisan"
-            isCurrentPlan={currentTenant?.subscription_plan === 'kisan'}
+            isCurrentPlan={currentUIPlan === 'kisan'}
             onSelect={() => handlePlanSelect('kisan')}
           />
           <SubscriptionPlanCard
             planType="shakti"
-            isCurrentPlan={currentTenant?.subscription_plan === 'shakti'}
+            isCurrentPlan={currentUIPlan === 'shakti'}
             onSelect={() => handlePlanSelect('shakti')}
           />
           <SubscriptionPlanCard
             planType="ai"
-            isCurrentPlan={currentTenant?.subscription_plan === 'ai'}
+            isCurrentPlan={currentUIPlan === 'ai'}
             onSelect={() => handlePlanSelect('ai')}
           />
         </div>
@@ -148,31 +155,31 @@ export default function SubscriptionPage() {
               <div className="text-sm font-medium text-muted-foreground">AI Queries</div>
               <div className="text-2xl font-bold">247</div>
               <div className="text-xs text-muted-foreground">
-                {currentTenant?.subscription_plan === 'kisan' ? 'of 100/month' : 
-                 currentTenant?.subscription_plan === 'shakti' ? 'of 500/month' : 'Unlimited'}
+                {isKisanPlan(currentTenant?.subscription_plan || '') ? 'of 100/month' : 
+                 isShaktiPlan(currentTenant?.subscription_plan || '') ? 'of 500/month' : 'Unlimited'}
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-muted-foreground">Land Plots</div>
               <div className="text-2xl font-bold">2</div>
               <div className="text-xs text-muted-foreground">
-                {currentTenant?.subscription_plan === 'kisan' ? 'of 3 max' : 
-                 currentTenant?.subscription_plan === 'shakti' ? 'of 10 max' : 'Unlimited'}
+                {isKisanPlan(currentTenant?.subscription_plan || '') ? 'of 3 max' : 
+                 isShaktiPlan(currentTenant?.subscription_plan || '') ? 'of 10 max' : 'Unlimited'}
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-muted-foreground">Soil Reports</div>
               <div className="text-2xl font-bold">1</div>
               <div className="text-xs text-muted-foreground">
-                {currentTenant?.subscription_plan === 'kisan' ? 'of 2/month' : 'Unlimited'}
+                {isKisanPlan(currentTenant?.subscription_plan || '') ? 'of 2/month' : 'Unlimited'}
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium text-muted-foreground">Storage Used</div>
               <div className="text-2xl font-bold">0.3 GB</div>
               <div className="text-xs text-muted-foreground">
-                {currentTenant?.subscription_plan === 'kisan' ? 'of 1 GB' : 
-                 currentTenant?.subscription_plan === 'shakti' ? 'of 5 GB' : 'of 25 GB'}
+                {isKisanPlan(currentTenant?.subscription_plan || '') ? 'of 1 GB' : 
+                 isShaktiPlan(currentTenant?.subscription_plan || '') ? 'of 5 GB' : 'of 25 GB'}
               </div>
             </div>
           </div>
