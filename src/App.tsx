@@ -6,6 +6,7 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/queryClient';
 import { OnboardingGuard } from './components/guards/OnboardingGuard';
 import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider';
+import { TenantProvider } from '@/contexts/TenantContext';
 
 function App() {
   return (
@@ -20,22 +22,25 @@ function App() {
       <GlobalErrorProvider>
         <QueryClientProvider client={queryClient}>
           <IntlProvider>
-            <Router>
-              <div className="min-h-screen bg-background font-sans antialiased">
-                <Toaster />
-                <ReactQueryDevtools initialIsOpen={false} />
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth/*" element={<Auth />} />
-                  <Route path="/dashboard/*" element={
-                    <OnboardingGuard>
-                      <Dashboard />
-                    </OnboardingGuard>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </Router>
+            <TenantProvider>
+              <Router>
+                <div className="min-h-screen bg-background font-sans antialiased">
+                  <Toaster />
+                  <ReactQueryDevtools initialIsOpen={false} />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/auth/*" element={<Auth />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/dashboard/*" element={
+                      <OnboardingGuard>
+                        <Dashboard />
+                      </OnboardingGuard>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </Router>
+            </TenantProvider>
           </IntlProvider>
         </QueryClientProvider>
       </GlobalErrorProvider>

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useTenantAuth } from '@/hooks/useTenantAuth';
 
 interface TenantContextValue {
@@ -24,7 +24,11 @@ export const useTenantContext = () => {
   return context;
 };
 
-export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface TenantProviderProps {
+  children: ReactNode;
+}
+
+export const TenantProvider: React.FC<TenantProviderProps> = ({ children }) => {
   const tenantAuth = useTenantAuth();
   
   const value: TenantContextValue = {
@@ -35,9 +39,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isMultiTenant: tenantAuth.isMultiTenant,
     switchTenant: tenantAuth.switchTenant,
     refreshTenantData: tenantAuth.refreshTenantData,
-    clearTenantSession: () => {
-      tenantAuth.clearTenantSession();
-    },
+    clearTenantSession: tenantAuth.clearTenantSession,
     isInitialized: tenantAuth.isInitialized,
   };
 
