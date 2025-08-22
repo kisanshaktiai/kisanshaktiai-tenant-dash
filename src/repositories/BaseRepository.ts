@@ -58,7 +58,7 @@ export abstract class BaseRepository<T> {
   async findById(id: string, options: RepositoryOptions = {}): Promise<T> {
     const selectFields = options.select || '*';
     
-    return this.executeQuery(async () => {
+    return this.executeQuery<T>(async () => {
       return await supabase
         .from(this.tableName as any)
         .select(selectFields)
@@ -70,7 +70,7 @@ export abstract class BaseRepository<T> {
   async findAll(options: RepositoryOptions = {}): Promise<T[]> {
     const selectFields = options.select || '*';
     
-    return this.executeQuery(async () => {
+    return this.executeQuery<T[]>(async () => {
       let query = supabase
         .from(this.tableName as any)
         .select(selectFields);
@@ -91,7 +91,7 @@ export abstract class BaseRepository<T> {
   }
 
   async create(data: Partial<T>): Promise<T> {
-    return this.executeQuery(async () => 
+    return this.executeQuery<T>(async () => 
       await supabase
         .from(this.tableName as any)
         .insert(data)
@@ -101,7 +101,7 @@ export abstract class BaseRepository<T> {
   }
 
   async update(id: string, data: Partial<T>): Promise<T> {
-    return this.executeQuery(async () => 
+    return this.executeQuery<T>(async () => 
       await supabase
         .from(this.tableName as any)
         .update({ ...data, updated_at: new Date().toISOString() })
@@ -112,7 +112,7 @@ export abstract class BaseRepository<T> {
   }
 
   async delete(id: string): Promise<void> {
-    await this.executeQuery(async () => 
+    await this.executeQuery<void>(async () => 
       await supabase
         .from(this.tableName as any)
         .delete()

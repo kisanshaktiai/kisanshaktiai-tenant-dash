@@ -44,17 +44,17 @@ export class TenantBusinessLogic {
 
   validateSubscriptionLimits(tenant: Tenant, resourceType: string, currentCount: number): boolean {
     const subscription = tenant.subscription;
-    if (!subscription) return true; // No limits if no subscription
+    if (!subscription?.plan) return true; // No limits if no subscription plan
     
-    const limits = subscription.limits || {};
+    const plan = subscription.plan;
     
     switch (resourceType) {
       case 'farmers':
-        return currentCount < (limits.max_farmers || Infinity);
+        return currentCount < (plan.max_farmers || Infinity);
       case 'dealers':
-        return currentCount < (limits.max_dealers || Infinity);
+        return currentCount < (plan.max_dealers || Infinity);
       case 'products':
-        return currentCount < (limits.max_products || Infinity);
+        return currentCount < (plan.max_products || Infinity);
       default:
         return true;
     }
@@ -88,8 +88,8 @@ export class TenantBusinessLogic {
       score -= 15;
     }
 
-    // Check subscription status
-    if (!tenant.subscription_plan || tenant.subscription_plan === 'trial') {
+    // Check subscription status - compare with subscription status, not plan
+    if (!tenant.subscription || tenant.subscription.status === 'trial') {
       issues.push('No active subscription');
       recommendations.push('Upgrade to a paid plan');
       score -= 20;
