@@ -63,9 +63,14 @@ export const useTenantDataFetch = () => {
         ...userTenant,
         role: userTenant.role as UserTenant['role'], // Type assertion for role
         tenant: userTenant.tenant && typeof userTenant.tenant === 'object' && 'id' in userTenant.tenant 
-          ? userTenant.tenant as Tenant 
+          ? {
+              ...userTenant.tenant,
+              type: userTenant.tenant.type as Tenant['type'],
+              status: userTenant.tenant.status as Tenant['status'],
+              subscription_plan: userTenant.tenant.subscription_plan as Tenant['subscription_plan']
+            } as Tenant
           : undefined
-      })).filter(ut => ut.tenant) as UserTenant[];
+      })).filter(ut => ut.tenant !== undefined && ut.tenant !== null) as UserTenant[];
       
       console.log('useTenantDataFetch: Fetched tenants:', tenants.length);
       

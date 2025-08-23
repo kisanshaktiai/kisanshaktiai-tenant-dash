@@ -1,4 +1,3 @@
-
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
 import type { 
@@ -171,9 +170,10 @@ class AnalyticsService extends BaseApiService {
       // Transform the data to match our types
       return (data || []).map(item => ({
         ...item,
-        features_used: Array.isArray(item.features_used) ? item.features_used : [],
-        performance_metrics: typeof item.performance_metrics === 'object' ? item.performance_metrics : {},
-        predicted_metrics: typeof item.predicted_metrics === 'object' ? item.predicted_metrics : {},
+        features_used: Array.isArray(item.features_used) ? item.features_used : 
+                      typeof item.features_used === 'string' ? [item.features_used] : [],
+        performance_metrics: typeof item.performance_metrics === 'object' && item.performance_metrics !== null ? item.performance_metrics : {},
+        predicted_metrics: typeof item.predicted_metrics === 'object' && item.predicted_metrics !== null ? item.predicted_metrics : {},
       })) as FarmerAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch farmer analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -193,9 +193,9 @@ class AnalyticsService extends BaseApiService {
       // Transform the data to match our types
       return (data || []).map(item => ({
         ...item,
-        geographic_performance: typeof item.geographic_performance === 'object' ? item.geographic_performance : {},
-        seasonal_trends: typeof item.seasonal_trends === 'object' ? item.seasonal_trends : {},
-        competitive_metrics: typeof item.competitive_metrics === 'object' ? item.competitive_metrics : {},
+        geographic_performance: typeof item.geographic_performance === 'object' && item.geographic_performance !== null ? item.geographic_performance : {},
+        seasonal_trends: typeof item.seasonal_trends === 'object' && item.seasonal_trends !== null ? item.seasonal_trends : {},
+        competitive_metrics: typeof item.competitive_metrics === 'object' && item.competitive_metrics !== null ? item.competitive_metrics : {},
       })) as ProductAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch product analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -216,10 +216,10 @@ class AnalyticsService extends BaseApiService {
       return (data || []).map(item => ({
         ...item,
         report_type: (item.report_type as 'dashboard' | 'table' | 'chart') || 'dashboard',
-        query_config: typeof item.query_config === 'object' ? item.query_config : {},
-        visualization_config: typeof item.visualization_config === 'object' ? item.visualization_config : {},
-        filters: typeof item.filters === 'object' ? item.filters : {},
-        schedule_config: typeof item.schedule_config === 'object' ? item.schedule_config : {},
+        query_config: typeof item.query_config === 'object' && item.query_config !== null ? item.query_config : {},
+        visualization_config: typeof item.visualization_config === 'object' && item.visualization_config !== null ? item.visualization_config : {},
+        filters: typeof item.filters === 'object' && item.filters !== null ? item.filters : {},
+        schedule_config: typeof item.schedule_config === 'object' && item.schedule_config !== null ? item.schedule_config : {},
       })) as CustomReport[];
     } catch (error) {
       throw new Error(`Failed to fetch custom reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -251,10 +251,10 @@ class AnalyticsService extends BaseApiService {
       return {
         ...data,
         report_type: (data.report_type as 'dashboard' | 'table' | 'chart') || 'dashboard',
-        query_config: typeof data.query_config === 'object' ? data.query_config : {},
-        visualization_config: typeof data.visualization_config === 'object' ? data.visualization_config : {},
-        filters: typeof data.filters === 'object' ? data.filters : {},
-        schedule_config: typeof data.schedule_config === 'object' ? data.schedule_config : {},
+        query_config: typeof data.query_config === 'object' && data.query_config !== null ? data.query_config : {},
+        visualization_config: typeof data.visualization_config === 'object' && data.visualization_config !== null ? data.visualization_config : {},
+        filters: typeof data.filters === 'object' && data.filters !== null ? data.filters : {},
+        schedule_config: typeof data.schedule_config === 'object' && data.schedule_config !== null ? data.schedule_config : {},
       } as CustomReport;
     } catch (error) {
       throw new Error(`Failed to create custom report: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -289,7 +289,10 @@ class AnalyticsService extends BaseApiService {
           .eq('id', data.id);
       }, 2000);
 
-      return data;
+      return {
+        ...data,
+        execution_status: data.execution_status as 'running' | 'completed' | 'failed'
+      } as ReportExecution;
     } catch (error) {
       throw new Error(`Failed to execute report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -313,8 +316,8 @@ class AnalyticsService extends BaseApiService {
       // Transform the data to match our types  
       return (data || []).map(item => ({
         ...item,
-        input_features: typeof item.input_features === 'object' ? item.input_features : {},
-        prediction_metadata: typeof item.prediction_metadata === 'object' ? item.prediction_metadata : {},
+        input_features: typeof item.input_features === 'object' && item.input_features !== null ? item.input_features : {},
+        prediction_metadata: typeof item.prediction_metadata === 'object' && item.prediction_metadata !== null ? item.prediction_metadata : {},
       })) as PredictiveAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch predictive analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -337,7 +340,7 @@ class AnalyticsService extends BaseApiService {
           export_type: exportConfig.format,
           export_format: exportConfig.format,
           data_source: exportConfig.dataSource,
-          filters_applied: exportConfig.filters || {},
+          filters_applied: exportConfig.filters ? JSON.stringify(exportConfig.filters) : '{}',
           row_count: 0, // Will be updated after processing
           file_size_bytes: 0,
           download_count: 0,
@@ -362,7 +365,10 @@ class AnalyticsService extends BaseApiService {
           .eq('id', data.id);
       }, 3000);
 
-      return data;
+      return {
+        ...data,
+        export_type: data.export_type as 'excel' | 'csv' | 'pdf' | 'api'
+      } as DataExportLog;
     } catch (error) {
       throw new Error(`Failed to export data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -377,7 +383,10 @@ class AnalyticsService extends BaseApiService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        export_type: item.export_type as 'excel' | 'csv' | 'pdf' | 'api'
+      })) as DataExportLog[];
     } catch (error) {
       throw new Error(`Failed to fetch export logs: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
