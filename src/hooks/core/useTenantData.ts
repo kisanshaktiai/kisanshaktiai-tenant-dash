@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -45,30 +46,14 @@ export const useTenantData = () => {
         if (userTenantsError) {
           console.error('useTenantData: Error fetching user tenants:', userTenantsError);
           
-          // Create mock tenant for development if no data exists
-          const mockTenant = {
-            id: 'mock-tenant-1',
-            name: 'Demo Agricultural Company',
-            slug: 'demo-agri',
-            type: 'agri_company' as const,
-            status: 'active' as const,
-            subscription_plan: 'Kisan_Basic' as const,
-          };
-
-          const mockUserTenants = [{
-            id: 'mock-user-tenant-1',
-            user_id: user.id,
-            tenant_id: 'mock-tenant-1',
-            role: 'tenant_owner' as const,
-            is_primary: true,
-            is_active: true,
-            tenant: mockTenant
-          }];
+          // If no tenants found, this is normal for new users
+          if (userTenantsError.code === 'PGRST116') {
+            console.log('useTenantData: No tenants found for user - this is normal for new users');
+            dispatch(setUserTenants([]));
+            return;
+          }
           
-          console.log('useTenantData: Using mock tenant data');
-          dispatch(setUserTenants(mockUserTenants));
-          dispatch(setCurrentTenant(mockTenant));
-          return;
+          throw userTenantsError;
         }
 
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
@@ -310,13 +295,13 @@ export const useTenantData = () => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-
     if (userTenants.length === 0 || !loading) {
       fetchUserTenants();
     }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, dispatch, currentTenant?.id, userTenants.length, loading]);
 
   return {

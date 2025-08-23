@@ -4,8 +4,8 @@ import { useAppSelector } from '@/store/hooks';
 import { setCurrentTenant } from '@/store/slices/tenantSlice';
 import { useTenantSession } from '@/hooks/core/useTenantSession';
 import { useTenantData } from '@/hooks/core/useTenantData';
-import { useTenantRealtime } from '@/hooks/core/useTenantRealtime';
 import { useAppDispatch } from '@/store/hooks';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useTenantAuth = () => {
   const dispatch = useAppDispatch();
@@ -15,11 +15,39 @@ export const useTenantAuth = () => {
 
   const { switchTenant, clearTenantSession } = useTenantSession();
 
-  // Simple fetch function - using the main hook for now
+  // Actual fetch function that queries the database
   const fetchUserTenants = useCallback(async (userId: string) => {
-    // This would typically be more complex, but for now return empty array
-    console.log('fetchUserTenants called for user:', userId);
-    return [];
+    try {
+      console.log('useTenantAuth: Fetching user tenants from database for user:', userId);
+      
+      const { data: userTenantsData, error } = await supabase
+        .from('user_tenants')
+        .select(`
+          *,
+          tenant:tenants!user_tenants_tenant_id_fkey(
+            *,
+            branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
+            features:tenant_features!tenant_features_tenant_id_fkey(*),
+            subscription:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
+              *,
+              plan:subscription_plans(*)
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('useTenantAuth: Error fetching user tenants:', error);
+        return [];
+      }
+
+      console.log('useTenantAuth: Successfully fetched user tenants:', userTenantsData);
+      return userTenantsData || [];
+    } catch (error) {
+      console.error('useTenantAuth: Exception fetching user tenants:', error);
+      return [];
+    }
   }, []);
 
   const refreshTenantData = useCallback(async () => {
@@ -86,9 +114,6 @@ export const useTenantAuth = () => {
       refreshTenantData();
     }
   }, [user, isInitialized, loading, refreshTenantData, clearTenantSession, currentTenant]);
-
-  // Set up real-time subscriptions
-  useTenantRealtime(user?.id, currentTenant?.id, refreshTenantData);
 
   const handleSwitchTenant = useCallback(async (tenantId: string) => {
     console.log('useTenantAuth: Switching tenant to:', tenantId);

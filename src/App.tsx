@@ -7,6 +7,7 @@ import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import TenantSetupPage from '@/pages/TenantSetupPage';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -31,6 +32,7 @@ function App() {
                     <Route path="/" element={<Index />} />
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/tenant-setup" element={<TenantSetupPage />} />
                     <Route path="/dashboard/*" element={
                       <OnboardingGuard>
                         <Dashboard />
