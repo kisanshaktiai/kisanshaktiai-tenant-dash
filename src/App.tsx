@@ -32,12 +32,14 @@ function App() {
                     <Route path="/" element={<Index />} />
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    {/* Remove tenant-setup route - not needed for existing tenants */}
                     <Route path="/tenant-setup" element={<TenantSetupPage />} />
                     <Route path="/dashboard/*" element={
                       <OnboardingGuard>
                         <Dashboard />
                       </OnboardingGuard>
                     } />
+                    {/* Redirect any other routes to main page */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>

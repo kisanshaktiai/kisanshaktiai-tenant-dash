@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSession, setLoading, logout } from '@/store/slices/authSlice';
+import { tenantValidationService } from '@/services/TenantValidationService';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -56,6 +57,21 @@ export const useAuth = () => {
     dispatch(setLoading(true));
     
     try {
+      // First validate if the user can login (tenant ownership check)
+      const loginCheck = await tenantValidationService.checkUserCanLogin(email);
+      
+      if (!loginCheck.canLogin) {
+        console.error('Sign in blocked:', loginCheck.reason);
+        return { 
+          data: null, 
+          error: { 
+            message: loginCheck.reason || 'Login not allowed',
+            code: 'LOGIN_NOT_ALLOWED'
+          } 
+        };
+      }
+
+      // Proceed with authentication if tenant validation passes
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -63,14 +79,24 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Sign in error:', error);
-      } else {
-        console.log('Sign in successful:', data.user?.email);
+        return { data, error };
       }
 
-      return { data, error };
-    } catch (error) {
+      if (data.user) {
+        console.log('Sign in successful for tenant owner:', data.user.email);
+        console.log('Tenant data:', loginCheck.tenantData);
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
       console.error('Unexpected sign in error:', error);
-      return { data: null, error: error as any };
+      return { 
+        data: null, 
+        error: { 
+          message: error.message || 'An unexpected error occurred during login',
+          code: 'UNEXPECTED_ERROR'
+        } 
+      };
     } finally {
       dispatch(setLoading(false));
     }

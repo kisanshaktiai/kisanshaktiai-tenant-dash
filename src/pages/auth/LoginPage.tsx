@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -27,10 +28,24 @@ const LoginPage = () => {
     try {
       const { error } = await signIn(email, password);
       if (error) {
+        // Check if this is a tenant validation error
+        if (error.code === 'LOGIN_NOT_ALLOWED') {
+          toast({
+            title: 'Access Denied',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Login failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+      } else {
         toast({
-          title: 'Login failed',
-          description: error.message,
-          variant: 'destructive',
+          title: 'Login successful',
+          description: 'Welcome back! Redirecting to your dashboard...',
         });
       }
     } catch (error) {
@@ -45,13 +60,20 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardDescription>Sign in to your tenant dashboard</CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Only existing tenant owners can access this system. New user registration is currently not available.
+            </AlertDescription>
+          </Alert>
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -61,7 +83,8 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Enter your email"
+                placeholder="Enter your registered email"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -73,6 +96,7 @@ const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="Enter your password"
+                disabled={isLoading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -80,16 +104,18 @@ const LoginPage = () => {
               Sign In
             </Button>
           </form>
+          
           <div className="mt-4 text-center text-sm">
             <Link to="/forgot-password" className="text-primary hover:underline">
               Forgot your password?
             </Link>
           </div>
-          <div className="mt-2 text-center text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline">
-              Sign up
-            </Link>
+          
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm text-muted-foreground text-center">
+              <strong>Note:</strong> This system is for existing tenant organizations only. 
+              If you need access, please contact your system administrator.
+            </p>
           </div>
         </CardContent>
       </Card>

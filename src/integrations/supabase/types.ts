@@ -10225,6 +10225,17 @@ export type Database = {
         Args: { p_token: string }
         Returns: Json
       }
+      validate_tenant_ownership: {
+        Args: { p_email: string }
+        Returns: {
+          is_owner: boolean
+          onboarding_complete: boolean
+          owner_email: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+        }[]
+      }
       verify_admin_user_setup: {
         Args: Record<PropertyKey, never>
         Returns: {
