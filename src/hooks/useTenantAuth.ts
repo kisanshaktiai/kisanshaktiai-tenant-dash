@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { setCurrentTenant } from '@/store/slices/tenantSlice';
@@ -6,6 +5,7 @@ import { useTenantSession } from '@/hooks/core/useTenantSession';
 import { useTenantData } from '@/hooks/core/useTenantData';
 import { useAppDispatch } from '@/store/hooks';
 import { supabase } from '@/integrations/supabase/client';
+import { transformUserTenant } from '@/utils/tenantTransformers';
 
 export const useTenantAuth = () => {
   const dispatch = useAppDispatch();
@@ -43,7 +43,21 @@ export const useTenantAuth = () => {
       }
 
       console.log('useTenantAuth: Successfully fetched user tenants:', userTenantsData);
-      return userTenantsData || [];
+      
+      // Transform the data using the utility function
+      const transformedData = (userTenantsData || [])
+        .filter(userTenant => userTenant.tenant && typeof userTenant.tenant === 'object')
+        .map(userTenant => {
+          try {
+            return transformUserTenant(userTenant);
+          } catch (error) {
+            console.warn('useTenantAuth: Error transforming user tenant:', error);
+            return null;
+          }
+        })
+        .filter(Boolean);
+      
+      return transformedData;
     } catch (error) {
       console.error('useTenantAuth: Exception fetching user tenants:', error);
       return [];

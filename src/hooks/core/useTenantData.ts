@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -58,104 +57,16 @@ export const useTenantData = () => {
 
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
-        // Transform and filter valid user tenants
+        // Transform and filter valid user tenants using the transformer utility
         const transformedUserTenants = (userTenantsData || [])
           .filter(userTenant => userTenant.tenant && typeof userTenant.tenant === 'object' && !('error' in userTenant.tenant))
           .map(userTenant => {
-            if (!userTenant.tenant || typeof userTenant.tenant !== 'object' || 'error' in userTenant.tenant) {
+            try {
+              return transformUserTenant(userTenant);
+            } catch (error) {
+              console.warn('useTenantData: Error transforming user tenant:', error);
               return null;
             }
-            
-            // Transform branding array to single object with proper properties
-            let branding = undefined;
-            if (userTenant.tenant.branding) {
-              const brandingData = Array.isArray(userTenant.tenant.branding) 
-                ? userTenant.tenant.branding[0] 
-                : userTenant.tenant.branding;
-              
-              if (brandingData) {
-                branding = {
-                  id: brandingData.id || '',
-                  tenant_id: brandingData.tenant_id || userTenant.tenant.id,
-                  accent_color: brandingData.accent_color || '#10B981',
-                  app_icon_url: brandingData.app_icon_url || null,
-                  app_name: brandingData.app_name || 'Tenant App',
-                  app_tagline: brandingData.app_tagline || null,
-                  background_color: brandingData.background_color || '#ffffff',
-                  company_description: brandingData.company_description || null,
-                  created_at: brandingData.created_at || new Date().toISOString(),
-                  custom_css: brandingData.custom_css || null,
-                  email_footer_html: brandingData.email_footer_html || null,
-                  email_header_html: brandingData.email_header_html || null,
-                  favicon_url: brandingData.favicon_url || null,
-                  font_family: brandingData.font_family || 'Inter',
-                  is_active: brandingData.is_active ?? true,
-                  logo_url: brandingData.logo_url || null,
-                  primary_color: brandingData.primary_color || '#0066cc',
-                  secondary_color: brandingData.secondary_color || '#6b7280',
-                  social_links: brandingData.social_links || {},
-                  text_color: brandingData.text_color || '#000000',
-                  theme_settings: brandingData.theme_settings || {},
-                  updated_at: brandingData.updated_at || new Date().toISOString(),
-                  version: brandingData.version || 1,
-                };
-              }
-            }
-
-            // Transform features array to single object
-            let features = undefined;
-            if (userTenant.tenant.features) {
-              const featuresData = Array.isArray(userTenant.tenant.features) 
-                ? userTenant.tenant.features[0] 
-                : userTenant.tenant.features;
-              
-              if (featuresData) {
-                features = {
-                  id: featuresData.id || '',
-                  tenant_id: featuresData.tenant_id || userTenant.tenant.id,
-                  basic_analytics: featuresData.basic_analytics ?? true,
-                  advanced_analytics: featuresData.advanced_analytics ?? false,
-                  ai_chat: featuresData.ai_chat ?? false,
-                  weather_forecast: featuresData.weather_forecast ?? true,
-                  marketplace: featuresData.marketplace ?? false,
-                  community_forum: featuresData.community_forum ?? false,
-                  soil_testing: featuresData.soil_testing ?? false,
-                  satellite_imagery: featuresData.satellite_imagery ?? false,
-                  drone_monitoring: featuresData.drone_monitoring ?? false,
-                  iot_integration: featuresData.iot_integration ?? false,
-                  predictive_analytics: featuresData.predictive_analytics ?? false,
-                  custom_reports: featuresData.custom_reports ?? false,
-                  api_access: featuresData.api_access ?? false,
-                  webhook_support: featuresData.webhook_support ?? false,
-                };
-              }
-            }
-
-            // Transform subscription array to single object
-            let subscription = undefined;
-            if (userTenant.tenant.subscription) {
-              const subData = Array.isArray(userTenant.tenant.subscription) 
-                ? userTenant.tenant.subscription[0] 
-                : userTenant.tenant.subscription;
-              subscription = subData || undefined;
-            }
-            
-            // Transform the tenant data to match expected types
-            const tenant = {
-              ...userTenant.tenant,
-              type: userTenant.tenant.type as any,
-              status: userTenant.tenant.status as any,
-              subscription_plan: userTenant.tenant.subscription_plan as any,
-              branding,
-              features,
-              subscription
-            };
-            
-            return {
-              ...userTenant,
-              role: userTenant.role as any,
-              tenant
-            };
           })
           .filter(Boolean);
 
