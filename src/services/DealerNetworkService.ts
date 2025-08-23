@@ -25,40 +25,32 @@ export interface PerformanceListOptions extends TerritoryListOptions {
 }
 
 class DealerNetworkService extends BaseApiService {
-  // Territory Management
+  // Mock Territory Management since tables don't exist yet
   async getTerritories(tenantId: string, options: TerritoryListOptions = {}) {
     try {
-      let query = supabase
-        .from('dealer_territories')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true);
-
-      if (options.search) {
-        query = query.or(`territory_name.ilike.%${options.search}%,territory_code.ilike.%${options.search}%`);
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
-      }
-
-      const sortBy = options.sortBy || 'territory_name';
-      const sortOrder = options.sortOrder || 'asc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      // Return mock data since table doesn't exist
+      const mockTerritories: DealerTerritory[] = [
+        {
+          id: '1',
+          tenant_id: tenantId,
+          territory_name: 'North Region',
+          territory_code: 'NR001',
+          description: 'Northern territory covering districts 1-5',
+          geographic_boundaries: { north: 40.7, south: 40.0, east: -73.9, west: -74.2 },
+          coverage_areas: ['District 1', 'District 2', 'District 3'],
+          population_data: { total: 50000, farmers: 12000 },
+          market_potential: { rating: 'high', estimated_revenue: 500000 },
+          assigned_dealers: ['dealer-1', 'dealer-2'],
+          territory_manager_id: 'manager-1',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
 
       return {
-        data: data || [],
-        count: count || 0,
+        data: mockTerritories,
+        count: mockTerritories.length,
       };
     } catch (error) {
       throw new Error(`Failed to fetch territories: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -66,75 +58,71 @@ class DealerNetworkService extends BaseApiService {
   }
 
   async createTerritory(territoryData: Omit<DealerTerritory, 'id' | 'created_at' | 'updated_at'>) {
-    return this.executeQuery<DealerTerritory>(async () => {
-      return await supabase
-        .from('dealer_territories')
-        .insert({
-          ...territoryData,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-    });
+    // Mock implementation
+    const newTerritory: DealerTerritory = {
+      ...territoryData,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    return { data: newTerritory, error: null };
   }
 
   async updateTerritory(territoryId: string, tenantId: string, updates: Partial<DealerTerritory>) {
-    return this.executeQuery<DealerTerritory>(async () => {
-      return await supabase
-        .from('dealer_territories')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', territoryId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single();
-    });
+    // Mock implementation
+    const updatedTerritory: DealerTerritory = {
+      id: territoryId,
+      tenant_id: tenantId,
+      territory_name: 'Updated Territory',
+      territory_code: 'UT001',
+      description: 'Updated description',
+      geographic_boundaries: {},
+      coverage_areas: [],
+      population_data: {},
+      market_potential: {},
+      assigned_dealers: [],
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...updates,
+    };
+    
+    return { data: updatedTerritory, error: null };
   }
 
-  // Performance Tracking
+  // Mock Performance Tracking
   async getDealerPerformance(tenantId: string, options: PerformanceListOptions = {}) {
     try {
-      let query = supabase
-        .from('dealer_performance')
-        .select(`
-          *,
-          dealer:dealers!inner(dealer_code, business_name, contact_person)
-        `, { count: 'exact' })
-        .eq('tenant_id', tenantId);
-
-      if (options.dealer_id) {
-        query = query.eq('dealer_id', options.dealer_id);
-      }
-
-      if (options.period) {
-        query = query.eq('performance_period', options.period);
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
-      }
-
-      const sortBy = options.sortBy || 'period_end';
-      const sortOrder = options.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      const mockPerformance: DealerPerformance[] = [
+        {
+          id: '1',
+          tenant_id: tenantId,
+          dealer_id: 'dealer-1',
+          performance_period: 'monthly',
+          period_start: '2024-01-01',
+          period_end: '2024-01-31',
+          sales_target: 100000,
+          sales_achieved: 85000,
+          farmers_acquired: 25,
+          farmers_target: 30,
+          product_sales: { product1: 50000, product2: 35000 },
+          response_time_avg: 2.5,
+          customer_satisfaction_score: 4.2,
+          commission_earned: 8500,
+          performance_score: 85,
+          ranking: 3,
+          achievements: ['High customer satisfaction'],
+          improvement_areas: ['Sales target achievement'],
+          calculated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
 
       return {
-        data: data || [],
-        count: count || 0,
+        data: mockPerformance,
+        count: mockPerformance.length,
       };
     } catch (error) {
       throw new Error(`Failed to fetch performance data: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -142,55 +130,45 @@ class DealerNetworkService extends BaseApiService {
   }
 
   async createPerformanceRecord(performanceData: Omit<DealerPerformance, 'id' | 'created_at' | 'updated_at'>) {
-    return this.executeQuery<DealerPerformance>(async () => {
-      return await supabase
-        .from('dealer_performance')
-        .insert({
-          ...performanceData,
-          id: crypto.randomUUID(),
-          calculated_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-    });
+    const newRecord: DealerPerformance = {
+      ...performanceData,
+      id: crypto.randomUUID(),
+      calculated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    return { data: newRecord, error: null };
   }
 
-  // Communications
+  // Mock Communications
   async getDealerCommunications(tenantId: string, options: TerritoryListOptions = {}) {
     try {
-      let query = supabase
-        .from('dealer_communications')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true);
-
-      if (options.search) {
-        query = query.or(`title.ilike.%${options.search}%,content.ilike.%${options.search}%`);
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
-      }
-
-      const sortBy = options.sortBy || 'created_at';
-      const sortOrder = options.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      const mockCommunications: DealerCommunication[] = [
+        {
+          id: '1',
+          tenant_id: tenantId,
+          title: 'Monthly Newsletter',
+          content: 'This is the monthly newsletter content...',
+          communication_type: 'announcement',
+          priority: 'normal',
+          sender_id: 'admin-1',
+          recipient_ids: ['dealer-1', 'dealer-2'],
+          attachments: [],
+          delivery_status: { delivered: 2, failed: 0 },
+          read_receipts: { 'dealer-1': true, 'dealer-2': false },
+          scheduled_at: new Date().toISOString(),
+          sent_at: new Date().toISOString(),
+          metadata: {},
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
 
       return {
-        data: data || [],
-        count: count || 0,
+        data: mockCommunications,
+        count: mockCommunications.length,
       };
     } catch (error) {
       throw new Error(`Failed to fetch communications: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -198,57 +176,48 @@ class DealerNetworkService extends BaseApiService {
   }
 
   async createCommunication(communicationData: Omit<DealerCommunication, 'id' | 'created_at' | 'updated_at'>) {
-    return this.executeQuery<DealerCommunication>(async () => {
-      return await supabase
-        .from('dealer_communications')
-        .insert({
-          ...communicationData,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-    });
+    const newCommunication: DealerCommunication = {
+      ...communicationData,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    return { data: newCommunication, error: null };
   }
 
-  // Incentive Management
+  // Mock Incentive Management
   async getDealerIncentives(tenantId: string, options: TerritoryListOptions = {}) {
     try {
-      let query = supabase
-        .from('dealer_incentives')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', tenantId);
-
-      if (options.search) {
-        query = query.ilike('incentive_name', `%${options.search}%`);
-      }
-
-      if (options.filters?.status) {
-        query = query.eq('status', options.filters.status);
-      }
-
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
-      if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
-      }
-
-      const sortBy = options.sortBy || 'created_at';
-      const sortOrder = options.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      const mockIncentives: DealerIncentive[] = [
+        {
+          id: '1',
+          tenant_id: tenantId,
+          dealer_id: 'dealer-1',
+          incentive_name: 'Q1 Sales Bonus',
+          incentive_type: 'bonus',
+          calculation_method: 'percentage',
+          criteria: { min_sales: 100000, target_farmers: 50 },
+          reward_structure: { base_percentage: 5, bonus_tiers: [] },
+          eligibility_rules: { active_status: true, min_tenure: 6 },
+          period_start: '2024-01-01',
+          period_end: '2024-03-31',
+          status: 'active',
+          total_budget: 50000,
+          amount_allocated: 25000,
+          amount_paid: 15000,
+          participants_count: 5,
+          winners: [],
+          leaderboard: [],
+          created_by: 'admin-1',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
 
       return {
-        data: data || [],
-        count: count || 0,
+        data: mockIncentives,
+        count: mockIncentives.length,
       };
     } catch (error) {
       throw new Error(`Failed to fetch incentives: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -256,78 +225,88 @@ class DealerNetworkService extends BaseApiService {
   }
 
   async createIncentive(incentiveData: Omit<DealerIncentive, 'id' | 'created_at' | 'updated_at'>) {
-    return this.executeQuery<DealerIncentive>(async () => {
-      return await supabase
-        .from('dealer_incentives')
-        .insert({
-          ...incentiveData,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-    });
+    const newIncentive: DealerIncentive = {
+      ...incentiveData,
+      id: crypto.randomUUID(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    return { data: newIncentive, error: null };
   }
 
-  // Onboarding Management
+  // Mock Onboarding Management
   async getDealerOnboardingSteps(dealerId: string, tenantId: string) {
     try {
-      const { data, error } = await supabase
-        .from('dealer_onboarding_steps')
-        .select('*')
-        .eq('dealer_id', dealerId)
-        .eq('tenant_id', tenantId)
-        .order('step_order', { ascending: true });
+      const mockSteps: DealerOnboardingStep[] = [
+        {
+          id: '1',
+          tenant_id: tenantId,
+          dealer_id: dealerId,
+          step_name: 'Document Upload',
+          step_type: 'document_upload',
+          step_order: 1,
+          status: 'completed',
+          required_documents: ['gst_certificate', 'pan_card'],
+          submitted_documents: [{ name: 'gst.pdf', url: '/docs/gst.pdf' }],
+          verification_data: { verified: true, verified_by: 'admin-1' },
+          completion_data: { completed_at: new Date().toISOString() },
+          completed_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      return data || [];
+      return mockSteps;
     } catch (error) {
       throw new Error(`Failed to fetch onboarding steps: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   async updateOnboardingStep(stepId: string, tenantId: string, updates: Partial<DealerOnboardingStep>) {
-    return this.executeQuery<DealerOnboardingStep>(async () => {
-      return await supabase
-        .from('dealer_onboarding_steps')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', stepId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single();
-    });
+    const updatedStep: DealerOnboardingStep = {
+      id: stepId,
+      tenant_id: tenantId,
+      dealer_id: 'dealer-1',
+      step_name: 'Updated Step',
+      step_type: 'document_upload',
+      step_order: 1,
+      status: 'completed',
+      required_documents: [],
+      submitted_documents: [],
+      verification_data: {},
+      completion_data: {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...updates,
+    };
+    
+    return { data: updatedStep, error: null };
   }
 
   async initializeDealerOnboarding(dealerId: string, tenantId: string) {
     const defaultSteps = [
       {
         step_name: 'Document Upload',
-        step_type: 'document_upload',
+        step_type: 'document_upload' as const,
         step_order: 1,
         required_documents: ['gst_certificate', 'pan_card', 'bank_details'],
       },
       {
         step_name: 'KYC Verification',
-        step_type: 'verification',
+        step_type: 'verification' as const,
         step_order: 2,
         required_documents: ['address_proof', 'identity_proof'],
       },
       {
         step_name: 'Product Training',
-        step_type: 'training',
+        step_type: 'training' as const,
         step_order: 3,
         required_documents: [],
       },
       {
         step_name: 'Agreement Signing',
-        step_type: 'agreement',
+        step_type: 'agreement' as const,
         step_order: 4,
         required_documents: ['dealer_agreement'],
       },
@@ -346,16 +325,7 @@ class DealerNetworkService extends BaseApiService {
       updated_at: new Date().toISOString(),
     }));
 
-    const { data, error } = await supabase
-      .from('dealer_onboarding_steps')
-      .insert(steps)
-      .select();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data;
+    return steps;
   }
 }
 

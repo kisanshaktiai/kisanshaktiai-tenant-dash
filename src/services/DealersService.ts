@@ -94,8 +94,28 @@ class DealersService extends BaseApiService {
         throw new Error(error.message);
       }
 
+      // Transform basic dealer data to EnhancedDealer format
+      const enhancedDealers: EnhancedDealer[] = (data || []).map(dealer => ({
+        ...dealer,
+        alternate_phone: dealer.alternate_phone || '',
+        address: (dealer.business_address as Record<string, any>) || {},
+        business_type: dealer.business_type || '',
+        registration_status: dealer.registration_status || 'pending',
+        onboarding_status: dealer.onboarding_status || 'not_started',
+        kyc_status: dealer.kyc_status || 'pending',
+        territory_id: dealer.territory_id,
+        product_authorizations: (dealer.product_authorizations as string[]) || [],
+        commission_structure: (dealer.commission_structure as Record<string, any>) || {},
+        performance_metrics: (dealer.performance_metrics as Record<string, any>) || {},
+        banking_details: (dealer.bank_details as Record<string, any>) || {},
+        documents: (dealer.documents as any[]) || [],
+        notes: dealer.notes || '',
+        verified_at: dealer.verified_at,
+        verified_by: dealer.verified_by,
+      }));
+
       return {
-        data: data as EnhancedDealer[] || [],
+        data: enhancedDealers,
         count: count || 0,
       };
     } catch (error) {
@@ -105,12 +125,36 @@ class DealersService extends BaseApiService {
 
   async getDealer(dealerId: string, tenantId: string) {
     return this.executeQuery<EnhancedDealer>(async () => {
-      return await supabase
+      const { data, error } = await supabase
         .from('dealers')
         .select('*')
         .eq('id', dealerId)
         .eq('tenant_id', tenantId)
         .single();
+
+      if (error) throw error;
+
+      // Transform to EnhancedDealer format
+      const enhancedDealer: EnhancedDealer = {
+        ...data,
+        alternate_phone: data.alternate_phone || '',
+        address: (data.business_address as Record<string, any>) || {},
+        business_type: data.business_type || '',
+        registration_status: data.registration_status || 'pending',
+        onboarding_status: data.onboarding_status || 'not_started',
+        kyc_status: data.kyc_status || 'pending',
+        territory_id: data.territory_id,
+        product_authorizations: (data.product_authorizations as string[]) || [],
+        commission_structure: (data.commission_structure as Record<string, any>) || {},
+        performance_metrics: (data.performance_metrics as Record<string, any>) || {},
+        banking_details: (data.bank_details as Record<string, any>) || {},
+        documents: (data.documents as any[]) || [],
+        notes: data.notes || '',
+        verified_at: data.verified_at,
+        verified_by: data.verified_by,
+      };
+
+      return { data: enhancedDealer, error: null };
     });
   }
 

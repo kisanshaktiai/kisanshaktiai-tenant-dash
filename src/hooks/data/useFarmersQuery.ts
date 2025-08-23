@@ -8,7 +8,7 @@ export const useFarmersQuery = (options?: { search?: string; limit?: number }) =
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.farmersList(currentTenant?.id || '', options),
+    queryKey: queryKeys.farmersList(currentTenant?.id || ''),
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
