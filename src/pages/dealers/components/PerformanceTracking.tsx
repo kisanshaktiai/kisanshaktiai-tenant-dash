@@ -1,48 +1,97 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Target, Users, DollarSign, Star } from 'lucide-react';
-import { useDealerPerformanceQuery } from '@/hooks/data/useDealerNetworkQuery';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendingUp, TrendingDown, Target, Users, Calendar, Award, Eye, Download } from 'lucide-react';
 
 export const PerformanceTracking: React.FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
-  const [selectedDealer, setSelectedDealer] = useState<string>('all');
+  // Mock performance data
+  const performanceData = [
+    {
+      id: '1',
+      dealer: {
+        business_name: 'Green Valley Suppliers',
+        contact_person: 'Rajesh Kumar',
+      },
+      period: 'Q1 2024',
+      sales_target: 500000,
+      sales_achieved: 425000,
+      farmers_target: 100,
+      farmers_acquired: 85,
+      performance_score: 85,
+      ranking: 1,
+      response_time_avg: 2.5,
+      customer_satisfaction_score: 4.2,
+      commission_earned: 42500,
+      achievements: ['Top Performer', 'Customer Champion'],
+      improvement_areas: ['Response Time'],
+    },
+    {
+      id: '2',
+      dealer: {
+        business_name: 'Sunrise Agro Center',
+        contact_person: 'Priya Sharma',
+      },
+      period: 'Q1 2024',
+      sales_target: 400000,
+      sales_achieved: 380000,
+      farmers_target: 80,
+      farmers_acquired: 78,
+      performance_score: 95,
+      ranking: 2,
+      response_time_avg: 1.8,
+      customer_satisfaction_score: 4.6,
+      commission_earned: 38000,
+      achievements: ['Fastest Response', 'Quality Leader'],
+      improvement_areas: [],
+    },
+    {
+      id: '3',
+      dealer: {
+        business_name: 'Modern Farm Solutions',
+        contact_person: 'Amit Patel',
+      },
+      period: 'Q1 2024',
+      sales_target: 300000,
+      sales_achieved: 180000,
+      farmers_target: 60,
+      farmers_acquired: 35,
+      performance_score: 60,
+      ranking: 3,
+      response_time_avg: 4.2,
+      customer_satisfaction_score: 3.8,
+      commission_earned: 18000,
+      achievements: [],
+      improvement_areas: ['Sales Performance', 'Farmer Acquisition', 'Response Time'],
+    },
+  ];
 
-  const { data: performanceData, isLoading } = useDealerPerformanceQuery({
-    period: selectedPeriod,
-    dealer_id: selectedDealer !== 'all' ? selectedDealer : undefined,
-  });
+  const getPerformanceBadge = (score: number) => {
+    if (score >= 90) return <Badge variant="default" className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (score >= 75) return <Badge variant="default" className="bg-blue-100 text-blue-800">Good</Badge>;
+    if (score >= 60) return <Badge variant="default" className="bg-yellow-100 text-yellow-800">Average</Badge>;
+    return <Badge variant="destructive">Needs Improvement</Badge>;
+  };
 
-  const performances = performanceData?.data || [];
+  const getRankingIcon = (ranking: number) => {
+    switch (ranking) {
+      case 1:
+        return <Award className="h-5 w-5 text-yellow-500" />;
+      case 2:
+        return <Award className="h-5 w-5 text-gray-400" />;
+      case 3:
+        return <Award className="h-5 w-5 text-orange-600" />;
+      default:
+        return <div className="h-5 w-5" />;
+    }
+  };
 
-  const topPerformers = performances
-    .sort((a, b) => b.performance_score - a.performance_score)
-    .slice(0, 5);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-muted animate-pulse rounded" />
-          ))}
-        </div>
-        <div className="h-96 bg-muted animate-pulse rounded" />
-      </div>
-    );
-  }
-
-  const averagePerformance = performances.length > 0 
-    ? performances.reduce((sum, p) => sum + p.performance_score, 0) / performances.length 
-    : 0;
-
-  const totalSalesAchieved = performances.reduce((sum, p) => sum + p.sales_achieved, 0);
-  const totalSalesTarget = performances.reduce((sum, p) => sum + p.sales_target, 0);
-  const salesAchievementRate = totalSalesTarget > 0 ? (totalSalesAchieved / totalSalesTarget) * 100 : 0;
+  const calculateSalesPercentage = (achieved: number, target: number) => {
+    return Math.round((achieved / target) * 100);
+  };
 
   return (
     <div className="space-y-6">
@@ -55,151 +104,196 @@ export const PerformanceTracking: React.FC = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedPeriod} onValueChange={(value: any) => setSelectedPeriod(value)}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline">Export Report</Button>
+          <Button variant="outline">
+            <Calendar className="h-4 w-4 mr-2" />
+            Change Period
+          </Button>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
+          </Button>
         </div>
       </div>
 
-      {/* Performance Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Avg Performance Score
-                </p>
-                <p className="text-2xl font-bold">{averagePerformance.toFixed(1)}</p>
-                <p className="text-xs text-green-600">
-                  +5.2% from last period
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="detailed">Detailed View</TabsTrigger>
+          <TabsTrigger value="rankings">Rankings</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Sales Achievement
-                </p>
-                <p className="text-2xl font-bold">{salesAchievementRate.toFixed(1)}%</p>
-                <p className="text-xs text-green-600">
-                  +3.1% from target
-                </p>
-              </div>
-              <Target className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Revenue
-                </p>
-                <p className="text-2xl font-bold">₹{(totalSalesAchieved / 100000).toFixed(1)}L</p>
-                <p className="text-xs text-green-600">
-                  +8.7% growth
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Active Dealers
-                </p>
-                <p className="text-2xl font-bold">{performances.length}</p>
-                <p className="text-xs text-blue-600">
-                  97% active rate
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Top Performers */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5" />
-            Top Performers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {topPerformers.map((performance, index) => (
-              <div key={performance.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">{performance.dealer?.business_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {performance.dealer?.contact_person}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Performance Score</p>
-                    <p className="font-semibold">{performance.performance_score.toFixed(1)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Sales Achievement</p>
-                    <p className="font-semibold">
-                      {((performance.sales_achieved / performance.sales_target) * 100).toFixed(1)}%
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">Commission</p>
-                    <p className="font-semibold">₹{performance.commission_earned.toLocaleString()}</p>
-                  </div>
-                  <Badge variant={performance.performance_score >= 80 ? 'default' : 'secondary'}>
-                    {performance.performance_score >= 90 ? 'Excellent' : 
-                     performance.performance_score >= 80 ? 'Good' : 
-                     performance.performance_score >= 60 ? 'Average' : 'Needs Improvement'}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+        <TabsContent value="overview">
+          {/* Performance Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold">₹9.85L</p>
+                <p className="text-sm text-muted-foreground">Total Sales</p>
+                <p className="text-xs text-green-600">+12% vs target</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold">198</p>
+                <p className="text-sm text-muted-foreground">Farmers Acquired</p>
+                <p className="text-xs text-blue-600">82% of target</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Target className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold">80.0</p>
+                <p className="text-sm text-muted-foreground">Avg Performance</p>
+                <p className="text-xs text-purple-600">Good</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Award className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold">4.2</p>
+                <p className="text-sm text-muted-foreground">Satisfaction Score</p>
+                <p className="text-xs text-yellow-600">Out of 5.0</p>
+              </CardContent>
+            </Card>
           </div>
 
-          {topPerformers.length === 0 && (
-            <div className="text-center py-8">
-              <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No performance data available</h3>
-              <p className="text-muted-foreground">
-                Performance data will appear here once dealers start reporting their metrics.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          {/* Performance Cards */}
+          <div className="grid gap-6">
+            {performanceData.map((performance) => (
+              <Card key={performance.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      {getRankingIcon(performance.ranking)}
+                      <div>
+                        <CardTitle className="text-lg">{performance.dealer.business_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {performance.dealer.contact_person} • {performance.period}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      {getPerformanceBadge(performance.performance_score)}
+                      <span className="text-lg font-bold">#{performance.ranking}</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {/* Sales Performance */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Sales Performance</span>
+                      <span className="text-sm text-muted-foreground">
+                        ₹{(performance.sales_achieved / 100000).toFixed(1)}L / ₹{(performance.sales_target / 100000).toFixed(1)}L
+                      </span>
+                    </div>
+                    <Progress 
+                      value={calculateSalesPercentage(performance.sales_achieved, performance.sales_target)} 
+                      className="h-2"
+                    />
+                  </div>
+
+                  {/* Farmer Acquisition */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Farmer Acquisition</span>
+                      <span className="text-sm text-muted-foreground">
+                        {performance.farmers_acquired} / {performance.farmers_target}
+                      </span>
+                    </div>
+                    <Progress 
+                      value={calculateSalesPercentage(performance.farmers_acquired, performance.farmers_target)} 
+                      className="h-2"
+                    />
+                  </div>
+
+                  {/* Key Metrics */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                    <div className="text-center">
+                      <p className="text-lg font-bold">{performance.response_time_avg}h</p>
+                      <p className="text-xs text-muted-foreground">Avg Response Time</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold">{performance.customer_satisfaction_score}/5</p>
+                      <p className="text-xs text-muted-foreground">Satisfaction</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold">₹{(performance.commission_earned / 1000).toFixed(1)}K</p>
+                      <p className="text-xs text-muted-foreground">Commission</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold">{performance.performance_score}</p>
+                      <p className="text-xs text-muted-foreground">Score</p>
+                    </div>
+                  </div>
+
+                  {/* Achievements & Improvements */}
+                  {(performance.achievements.length > 0 || performance.improvement_areas.length > 0) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+                      {performance.achievements.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-green-600 mb-2">Achievements</p>
+                          <div className="flex flex-wrap gap-1">
+                            {performance.achievements.map((achievement, index) => (
+                              <Badge key={index} variant="default" className="bg-green-100 text-green-800 text-xs">
+                                {achievement}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {performance.improvement_areas.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-yellow-600 mb-2">Improvement Areas</p>
+                          <div className="flex flex-wrap gap-1">
+                            {performance.improvement_areas.map((area, index) => (
+                              <Badge key={index} variant="default" className="bg-yellow-100 text-yellow-800 text-xs">
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Performance Review
+                    </Button>
+                    {performance.performance_score < 75 && (
+                      <Button size="sm">
+                        Action Plan
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="detailed">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Detailed performance metrics view coming soon...</p>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rankings">
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Dealer rankings and leaderboard coming soon...</p>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -167,7 +167,14 @@ class AnalyticsService extends BaseApiService {
         .order('calculated_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our types
+      return (data || []).map(item => ({
+        ...item,
+        features_used: Array.isArray(item.features_used) ? item.features_used : [],
+        performance_metrics: typeof item.performance_metrics === 'object' ? item.performance_metrics : {},
+        predicted_metrics: typeof item.predicted_metrics === 'object' ? item.predicted_metrics : {},
+      })) as FarmerAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch farmer analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -182,7 +189,14 @@ class AnalyticsService extends BaseApiService {
         .order('period_start', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our types
+      return (data || []).map(item => ({
+        ...item,
+        geographic_performance: typeof item.geographic_performance === 'object' ? item.geographic_performance : {},
+        seasonal_trends: typeof item.seasonal_trends === 'object' ? item.seasonal_trends : {},
+        competitive_metrics: typeof item.competitive_metrics === 'object' ? item.competitive_metrics : {},
+      })) as ProductAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch product analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -197,7 +211,16 @@ class AnalyticsService extends BaseApiService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our types
+      return (data || []).map(item => ({
+        ...item,
+        report_type: (item.report_type as 'dashboard' | 'table' | 'chart') || 'dashboard',
+        query_config: typeof item.query_config === 'object' ? item.query_config : {},
+        visualization_config: typeof item.visualization_config === 'object' ? item.visualization_config : {},
+        filters: typeof item.filters === 'object' ? item.filters : {},
+        schedule_config: typeof item.schedule_config === 'object' ? item.schedule_config : {},
+      })) as CustomReport[];
     } catch (error) {
       throw new Error(`Failed to fetch custom reports: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -209,13 +232,30 @@ class AnalyticsService extends BaseApiService {
         .from('custom_reports')
         .insert({
           tenant_id: tenantId,
-          ...reportData
+          report_name: reportData.report_name || 'New Report',
+          report_type: reportData.report_type || 'dashboard',
+          description: reportData.description,
+          query_config: reportData.query_config || {},
+          visualization_config: reportData.visualization_config || {},
+          filters: reportData.filters || {},
+          schedule_config: reportData.schedule_config || {},
+          is_public: reportData.is_public || false,
+          is_scheduled: reportData.is_scheduled || false,
+          created_by: reportData.created_by,
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        report_type: (data.report_type as 'dashboard' | 'table' | 'chart') || 'dashboard',
+        query_config: typeof data.query_config === 'object' ? data.query_config : {},
+        visualization_config: typeof data.visualization_config === 'object' ? data.visualization_config : {},
+        filters: typeof data.filters === 'object' ? data.filters : {},
+        schedule_config: typeof data.schedule_config === 'object' ? data.schedule_config : {},
+      } as CustomReport;
     } catch (error) {
       throw new Error(`Failed to create custom report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -269,7 +309,13 @@ class AnalyticsService extends BaseApiService {
       const { data, error } = await query.order('prediction_date', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our types  
+      return (data || []).map(item => ({
+        ...item,
+        input_features: typeof item.input_features === 'object' ? item.input_features : {},
+        prediction_metadata: typeof item.prediction_metadata === 'object' ? item.prediction_metadata : {},
+      })) as PredictiveAnalytics[];
     } catch (error) {
       throw new Error(`Failed to fetch predictive analytics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

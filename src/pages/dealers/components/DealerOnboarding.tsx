@@ -1,96 +1,89 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Clock, AlertCircle, FileText, Users, Settings } from 'lucide-react';
-import type { EnhancedDealer } from '@/types/dealer';
+import { CheckCircle, Clock, AlertTriangle, FileText, User, Shield } from 'lucide-react';
 
-interface DealerOnboardingProps {
-  // Props can be added here as needed
-}
-
-export const DealerOnboarding: React.FC<DealerOnboardingProps> = () => {
-  const [selectedDealer, setSelectedDealer] = useState<string>('');
-
-  // Mock data for demonstration
+export const DealerOnboarding: React.FC = () => {
+  // Mock onboarding data
   const onboardingSteps = [
     {
       id: '1',
-      step_name: 'Document Upload',
-      status: 'completed',
-      required_documents: ['GST Certificate', 'PAN Card', 'Bank Details'],
-      submitted_documents: ['gst.pdf', 'pan.pdf', 'bank.pdf'],
+      dealerName: 'Green Valley Suppliers',
+      contactPerson: 'Rajesh Kumar',
+      currentStep: 'KYC Verification',
+      progress: 75,
+      status: 'in_progress' as const,
+      steps: [
+        { name: 'Basic Information', completed: true },
+        { name: 'Document Upload', completed: true },
+        { name: 'KYC Verification', completed: false },
+        { name: 'Territory Assignment', completed: false },
+        { name: 'Product Authorization', completed: false },
+        { name: 'Agreement Signing', completed: false },
+      ]
     },
     {
       id: '2',
-      step_name: 'KYC Verification',
-      status: 'in_progress',
-      required_documents: ['Address Proof', 'Identity Proof'],
-      submitted_documents: ['address.pdf'],
+      dealerName: 'Sunrise Agro Center',
+      contactPerson: 'Priya Sharma',
+      currentStep: 'Agreement Signing',
+      progress: 90,
+      status: 'pending_approval' as const,
+      steps: [
+        { name: 'Basic Information', completed: true },
+        { name: 'Document Upload', completed: true },
+        { name: 'KYC Verification', completed: true },
+        { name: 'Territory Assignment', completed: true },
+        { name: 'Product Authorization', completed: true },
+        { name: 'Agreement Signing', completed: false },
+      ]
     },
     {
       id: '3',
-      step_name: 'Product Training',
-      status: 'pending',
-      required_documents: [],
-      submitted_documents: [],
-    },
-    {
-      id: '4',
-      step_name: 'Agreement Signing',
-      status: 'pending',
-      required_documents: ['Dealer Agreement'],
-      submitted_documents: [],
-    },
-  ];
-
-  const mockDealers = [
-    {
-      id: '1',
-      business_name: 'Green Valley Agro',
-      onboarding_status: 'in_progress',
-      progress: 50,
-    },
-    {
-      id: '2',
-      business_name: 'Sunrise Seeds Co.',
-      onboarding_status: 'completed',
-      progress: 100,
-    },
-    {
-      id: '3',
-      business_name: 'Rural Farm Supply',
-      onboarding_status: 'not_started',
-      progress: 0,
+      dealerName: 'Modern Farm Solutions',
+      contactPerson: 'Amit Patel',
+      currentStep: 'Document Upload',
+      progress: 25,
+      status: 'stuck' as const,
+      steps: [
+        { name: 'Basic Information', completed: true },
+        { name: 'Document Upload', completed: false },
+        { name: 'KYC Verification', completed: false },
+        { name: 'Territory Assignment', completed: false },
+        { name: 'Product Authorization', completed: false },
+        { name: 'Agreement Signing', completed: false },
+      ]
     },
   ];
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'in_progress':
-        return <Clock className="h-5 w-5 text-blue-600" />;
-      case 'failed':
-        return <AlertCircle className="h-5 w-5 text-red-600" />;
+        return <Clock className="h-4 w-4 text-blue-600" />;
+      case 'stuck':
+        return <AlertTriangle className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-5 w-5 text-muted-foreground" />;
+        return <Clock className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'default';
+        return <Badge variant="default" className="bg-green-100 text-green-800">Completed</Badge>;
       case 'in_progress':
-        return 'secondary';
-      case 'failed':
-        return 'destructive';
+        return <Badge variant="default" className="bg-blue-100 text-blue-800">In Progress</Badge>;
+      case 'pending_approval':
+        return <Badge variant="default" className="bg-yellow-100 text-yellow-800">Pending Approval</Badge>;
+      case 'stuck':
+        return <Badge variant="destructive">Stuck</Badge>;
       default:
-        return 'outline';
+        return <Badge variant="secondary">Pending</Badge>;
     }
   };
 
@@ -101,179 +94,82 @@ export const DealerOnboarding: React.FC<DealerOnboardingProps> = () => {
         <div>
           <h2 className="text-2xl font-bold">Dealer Onboarding</h2>
           <p className="text-muted-foreground">
-            Manage dealer registration and onboarding process
+            Track and manage dealer onboarding progress
           </p>
         </div>
         <Button>
-          <Settings className="h-4 w-4 mr-2" />
-          Configure Workflow
+          <User className="h-4 w-4 mr-2" />
+          New Dealer Application
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="workflow">Workflow</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          {/* Onboarding Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Dealers
-                    </p>
-                    <p className="text-2xl font-bold">{mockDealers.length}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      In Progress
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {mockDealers.filter(d => d.onboarding_status === 'in_progress').length}
-                    </p>
-                  </div>
-                  <Clock className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Completed
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {mockDealers.filter(d => d.onboarding_status === 'completed').length}
-                    </p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Dealers List */}
-          <Card>
+      {/* Onboarding Pipeline */}
+      <div className="grid gap-6">
+        {onboardingSteps.map((dealer) => (
+          <Card key={dealer.id}>
             <CardHeader>
-              <CardTitle>Dealer Onboarding Status</CardTitle>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(dealer.status)}
+                  <div>
+                    <CardTitle className="text-lg">{dealer.dealerName}</CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Contact: {dealer.contactPerson}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  {getStatusBadge(dealer.status)}
+                  <Button variant="outline" size="sm">
+                    View Details
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {mockDealers.map((dealer) => (
-                  <div key={dealer.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <h4 className="font-semibold">{dealer.business_name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Status: {dealer.onboarding_status.replace('_', ' ')}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-32">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{dealer.progress}%</span>
-                        </div>
-                        <Progress value={dealer.progress} className="h-2" />
-                      </div>
-                      
-                      <Badge variant={getStatusColor(dealer.onboarding_status) as any}>
-                        {dealer.onboarding_status.replace('_', ' ')}
-                      </Badge>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setSelectedDealer(dealer.id)}
-                      >
-                        View Details
-                      </Button>
-                    </div>
+            
+            <CardContent className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Current Step: {dealer.currentStep}</span>
+                  <span className="text-sm text-muted-foreground">{dealer.progress}% complete</span>
+                </div>
+                <Progress value={dealer.progress} className="h-2" />
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {dealer.steps.map((step, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    {step.completed ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                    <span className={`text-xs ${step.completed ? 'text-green-600' : 'text-muted-foreground'}`}>
+                      {step.name}
+                    </span>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="workflow">
-          <Card>
-            <CardHeader>
-              <CardTitle>Onboarding Workflow</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {onboardingSteps.map((step, index) => (
-                  <div key={step.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10">
-                      {index + 1}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        {getStatusIcon(step.status)}
-                        <h4 className="font-semibold">{step.step_name}</h4>
-                        <Badge variant={getStatusColor(step.status) as any}>
-                          {step.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                      
-                      {step.required_documents.length > 0 && (
-                        <div className="text-sm text-muted-foreground">
-                          <p className="mb-1">Required Documents:</p>
-                          <ul className="list-disc list-inside ml-4">
-                            {step.required_documents.map((doc, i) => (
-                              <li key={i}>{doc}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <Button variant="outline" size="sm">
-                      Configure
-                    </Button>
-                  </div>
-                ))}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <FileText className="h-4 w-4 mr-2" />
+                  View Documents
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Update KYC
+                </Button>
+                {dealer.status === 'stuck' && (
+                  <Button size="sm">
+                    Follow Up
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Management</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Document Management</h3>
-                <p className="text-muted-foreground">
-                  Track and manage dealer documentation throughout the onboarding process.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
     </div>
   );
 };

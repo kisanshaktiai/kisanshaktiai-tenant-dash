@@ -26,7 +26,7 @@ export const useExecutiveDashboardQuery = (filters?: AnalyticsFilters) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.executiveDashboard(currentTenant?.id || '', filters),
+    queryKey: [queryKeys.executiveDashboard(currentTenant?.id || ''), filters],
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -43,7 +43,7 @@ export const useFarmerAnalyticsQuery = (filters?: AnalyticsFilters) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.farmerAnalytics(currentTenant?.id || '', filters),
+    queryKey: [queryKeys.farmerAnalytics(currentTenant?.id || ''), filters],
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -60,7 +60,7 @@ export const useProductAnalyticsQuery = (filters?: AnalyticsFilters) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.productAnalytics(currentTenant?.id || '', filters),
+    queryKey: [queryKeys.productAnalytics(currentTenant?.id || ''), filters],
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -94,7 +94,7 @@ export const usePredictiveAnalyticsQuery = (modelType?: string) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.predictiveAnalytics(currentTenant?.id || '', modelType),
+    queryKey: [queryKeys.predictiveAnalytics(currentTenant?.id || ''), modelType],
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');

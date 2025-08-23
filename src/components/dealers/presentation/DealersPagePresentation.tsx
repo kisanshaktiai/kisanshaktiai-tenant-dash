@@ -163,7 +163,7 @@ export const DealersPagePresentation: React.FC<DealersPagePresentationProps> = (
         <TabsContent value="directory">
           <DealerDirectory 
             dealers={dealers}
-            isLoading={isLoading}
+            loading={isLoading}
             searchTerm={searchTerm}
             onSearch={onSearch}
             selectedDealers={selectedDealers}
@@ -172,7 +172,7 @@ export const DealersPagePresentation: React.FC<DealersPagePresentationProps> = (
         </TabsContent>
 
         <TabsContent value="onboarding">
-          <DealerOnboarding dealers={dealers} />
+          <DealerOnboarding />
         </TabsContent>
 
         <TabsContent value="territories">

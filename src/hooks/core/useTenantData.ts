@@ -41,8 +41,6 @@ export const useTenantDataFetch = () => {
           type: 'agri_company',
           status: 'active',
           subscription_plan: 'Kisan_Basic',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
         };
 
         const mockTenants: UserTenant[] = [{
@@ -60,7 +58,15 @@ export const useTenantDataFetch = () => {
         return mockTenants;
       }
 
-      const tenants = (userTenantsData || []) as UserTenant[];
+      // Transform and validate the data
+      const tenants = (userTenantsData || []).map(userTenant => ({
+        ...userTenant,
+        role: userTenant.role as UserTenant['role'], // Type assertion for role
+        tenant: userTenant.tenant && typeof userTenant.tenant === 'object' && 'id' in userTenant.tenant 
+          ? userTenant.tenant as Tenant 
+          : undefined
+      })).filter(ut => ut.tenant) as UserTenant[];
+      
       console.log('useTenantDataFetch: Fetched tenants:', tenants.length);
       
       dispatch(setUserTenants(tenants));
