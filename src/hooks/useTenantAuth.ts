@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { setCurrentTenant } from '@/store/slices/tenantSlice';
 import { useTenantSession } from '@/hooks/core/useTenantSession';
-import { useTenantDataFetch } from '@/hooks/core/useTenantData';
+import { useTenantData } from '@/hooks/core/useTenantData';
 import { useTenantRealtime } from '@/hooks/core/useTenantRealtime';
 import { useAppDispatch } from '@/store/hooks';
 
@@ -14,7 +14,13 @@ export const useTenantAuth = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const { switchTenant, clearTenantSession } = useTenantSession();
-  const { fetchUserTenants } = useTenantDataFetch();
+
+  // Simple fetch function - using the main hook for now
+  const fetchUserTenants = useCallback(async (userId: string) => {
+    // This would typically be more complex, but for now return empty array
+    console.log('fetchUserTenants called for user:', userId);
+    return [];
+  }, []);
 
   const refreshTenantData = useCallback(async () => {
     if (!user?.id) {

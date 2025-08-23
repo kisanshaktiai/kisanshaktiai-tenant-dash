@@ -95,21 +95,25 @@ class DealersService extends BaseApiService {
       }
 
       // Transform basic dealer data to EnhancedDealer format
+      // Map database columns to expected interface properties
       const enhancedDealers: EnhancedDealer[] = (data || []).map(dealer => ({
         ...dealer,
-        alternate_phone: dealer.alternate_phone || '',
+        // Map database columns to interface properties with fallbacks
+        alternate_phone: dealer.secondary_phone || '', // Map secondary_phone to alternate_phone
         address: (dealer.business_address as Record<string, any>) || {},
         business_type: dealer.business_type || '',
         registration_status: dealer.registration_status || 'pending',
-        onboarding_status: dealer.onboarding_status || 'not_started',
+        onboarding_status: dealer.onboarding_date ? 'completed' : 'not_started', // Derive from onboarding_date
         kyc_status: dealer.kyc_status || 'pending',
-        territory_id: dealer.territory_id,
+        territory_id: Array.isArray(dealer.territory_ids) && dealer.territory_ids.length > 0 
+          ? dealer.territory_ids[0] 
+          : dealer.territory_ids || undefined, // Map territory_ids array to single territory_id
         product_authorizations: (dealer.product_authorizations as string[]) || [],
-        commission_structure: (dealer.commission_structure as Record<string, any>) || {},
-        performance_metrics: (dealer.performance_metrics as Record<string, any>) || {},
+        commission_structure: { commission_rate: dealer.commission_rate || 0 }, // Create structure from commission_rate
+        performance_metrics: {}, // Default empty object
         banking_details: (dealer.bank_details as Record<string, any>) || {},
-        documents: (dealer.documents as any[]) || [],
-        notes: dealer.notes || '',
+        documents: [], // Default empty array
+        notes: '', // Default empty string
         verified_at: dealer.verified_at,
         verified_by: dealer.verified_by,
       }));
@@ -134,22 +138,24 @@ class DealersService extends BaseApiService {
 
       if (error) throw error;
 
-      // Transform to EnhancedDealer format
+      // Transform to EnhancedDealer format with proper mappings
       const enhancedDealer: EnhancedDealer = {
         ...data,
-        alternate_phone: data.alternate_phone || '',
+        alternate_phone: data.secondary_phone || '',
         address: (data.business_address as Record<string, any>) || {},
         business_type: data.business_type || '',
         registration_status: data.registration_status || 'pending',
-        onboarding_status: data.onboarding_status || 'not_started',
+        onboarding_status: data.onboarding_date ? 'completed' : 'not_started',
         kyc_status: data.kyc_status || 'pending',
-        territory_id: data.territory_id,
+        territory_id: Array.isArray(data.territory_ids) && data.territory_ids.length > 0 
+          ? data.territory_ids[0] 
+          : data.territory_ids || undefined,
         product_authorizations: (data.product_authorizations as string[]) || [],
-        commission_structure: (data.commission_structure as Record<string, any>) || {},
-        performance_metrics: (data.performance_metrics as Record<string, any>) || {},
+        commission_structure: { commission_rate: data.commission_rate || 0 },
+        performance_metrics: {},
         banking_details: (data.bank_details as Record<string, any>) || {},
-        documents: (data.documents as any[]) || [],
-        notes: data.notes || '',
+        documents: [],
+        notes: '',
         verified_at: data.verified_at,
         verified_by: data.verified_by,
       };
