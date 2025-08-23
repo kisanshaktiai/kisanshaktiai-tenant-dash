@@ -92,7 +92,7 @@ export const useTenantData = () => {
                 branding = {
                   id: brandingData.id || '',
                   tenant_id: brandingData.tenant_id || userTenant.tenant.id,
-                  accent_color: brandingData.accent_color || '#000000',
+                  accent_color: brandingData.accent_color || '#10B981',
                   app_icon_url: brandingData.app_icon_url || null,
                   app_name: brandingData.app_name || 'Tenant App',
                   app_tagline: brandingData.app_tagline || null,
