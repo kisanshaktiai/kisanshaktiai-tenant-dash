@@ -115,7 +115,7 @@ class DealersService extends BaseApiService {
         documents: [], // Default empty array
         notes: '', // Default empty string
         verified_at: dealer.created_at, // Use created_at as fallback since verified_at doesn't exist
-        verified_by: dealer.created_by || '', // Use created_by as fallback since verified_by doesn't exist
+        verified_by: '', // Default empty string since created_by doesn't exist
       }));
 
       return {
@@ -157,7 +157,7 @@ class DealersService extends BaseApiService {
         documents: [],
         notes: '',
         verified_at: data.created_at, // Use created_at as fallback
-        verified_by: data.created_by || '', // Use created_by as fallback
+        verified_by: '', // Default empty string since created_by doesn't exist
       };
 
       return { data: enhancedDealer, error: null };
