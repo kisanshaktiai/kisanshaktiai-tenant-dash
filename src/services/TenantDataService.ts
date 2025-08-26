@@ -15,7 +15,47 @@ export interface TenantDataResponse<T = any> {
   error?: string;
 }
 
+// Circuit breaker to prevent infinite loops
+class CircuitBreaker {
+  private failures: Map<string, number> = new Map();
+  private lastFailureTime: Map<string, number> = new Map();
+  private readonly maxFailures = 3;
+  private readonly resetTimeMs = 60000; // 1 minute
+
+  isOpen(key: string): boolean {
+    const failures = this.failures.get(key) || 0;
+    const lastFailure = this.lastFailureTime.get(key) || 0;
+    
+    if (failures >= this.maxFailures) {
+      const timeSinceLastFailure = Date.now() - lastFailure;
+      if (timeSinceLastFailure > this.resetTimeMs) {
+        this.reset(key);
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  recordFailure(key: string): void {
+    const current = this.failures.get(key) || 0;
+    this.failures.set(key, current + 1);
+    this.lastFailureTime.set(key, Date.now());
+  }
+
+  recordSuccess(key: string): void {
+    this.reset(key);
+  }
+
+  private reset(key: string): void {
+    this.failures.delete(key);
+    this.lastFailureTime.delete(key);
+  }
+}
+
 class TenantDataService {
+  private circuitBreaker = new CircuitBreaker();
+
   private validateTenantAccess(tenantId: string): void {
     if (!tenantId || tenantId.trim() === '') {
       throw new Error('Tenant ID is required for data isolation');
@@ -54,6 +94,13 @@ class TenantDataService {
     tenantId: string, 
     request: TenantDataRequest
   ): Promise<T> {
+    const circuitKey = `${tenantId}-${request.operation}`;
+    
+    // Check circuit breaker
+    if (this.circuitBreaker.isOpen(circuitKey)) {
+      throw new Error(`Circuit breaker is open for ${request.operation}. Too many failures. Please try again later.`);
+    }
+
     try {
       this.validateRequest(tenantId, request);
 
@@ -67,16 +114,16 @@ class TenantDataService {
         table: requestPayload.table,
         tenant_id: requestPayload.tenant_id,
         hasData: !!requestPayload.data,
+        payloadSize: JSON.stringify(requestPayload).length
       });
 
-      // Fix: Ensure request body is properly stringified and not empty
-      const body = JSON.stringify(requestPayload);
-      if (!body || body === '{}') {
+      // Ensure we have a valid payload
+      if (!requestPayload || Object.keys(requestPayload).length === 0) {
         throw new Error('Request payload cannot be empty');
       }
 
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: requestPayload, // Pass object directly, Supabase handles stringification
+        body: requestPayload,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -84,12 +131,14 @@ class TenantDataService {
 
       if (error) {
         console.error('TenantDataService: Edge function error for tenant:', tenantId, error);
+        this.circuitBreaker.recordFailure(circuitKey);
         
         const errorMessage = error.message || 'Failed to call tenant data API';
         
         // Categorize errors for proper retry behavior
         if (errorMessage.includes('400') || errorMessage.includes('Bad Request') || 
-            errorMessage.includes('required') || errorMessage.includes('Invalid')) {
+            errorMessage.includes('required') || errorMessage.includes('Invalid') ||
+            errorMessage.includes('empty')) {
           const clientError = new Error(errorMessage);
           (clientError as any).isClientError = true;
           throw clientError;
@@ -97,6 +146,9 @@ class TenantDataService {
         
         throw new Error(errorMessage);
       }
+
+      // Record success
+      this.circuitBreaker.recordSuccess(circuitKey);
 
       if (data && typeof data === 'object') {
         if (data.success === false) {
@@ -117,11 +169,17 @@ class TenantDataService {
         operation: request.operation,
         error: error instanceof Error ? error.message : error
       });
+      
+      // Don't record circuit breaker failure for client errors
+      if (!(error as any)?.isClientError) {
+        this.circuitBreaker.recordFailure(circuitKey);
+      }
+      
       throw error;
     }
   }
 
-  // Enhanced workflow creation with tenant isolation and debouncing
+  // Enhanced workflow creation with better error handling
   private workflowCreationCache = new Map<string, Promise<{ workflow_id: string }>>();
 
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
@@ -136,15 +194,19 @@ class TenantDataService {
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
     
     // Check if workflow already exists for this tenant
-    const { data: existingWorkflow } = await supabase
-      .from('onboarding_workflows')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .single();
-    
-    if (existingWorkflow) {
-      console.log('TenantDataService: Workflow already exists for tenant:', tenantId, 'workflow ID:', existingWorkflow.id);
-      return { workflow_id: existingWorkflow.id };
+    try {
+      const { data: existingWorkflow, error } = await supabase
+        .from('onboarding_workflows')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .single();
+      
+      if (!error && existingWorkflow) {
+        console.log('TenantDataService: Workflow already exists for tenant:', tenantId, 'workflow ID:', existingWorkflow.id);
+        return { workflow_id: existingWorkflow.id };
+      }
+    } catch (error) {
+      console.log('TenantDataService: No existing workflow found, will create new one');
     }
     
     try {
@@ -174,6 +236,37 @@ class TenantDataService {
       // Clean up cache on error
       this.workflowCreationCache.delete(tenantId);
       console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);
+      throw error;
+    }
+  }
+
+  // Simplified methods to reduce complexity and prevent loops
+  async getCompleteOnboardingData(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    
+    try {
+      console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
+      
+      // First, ensure workflow exists
+      const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+      
+      // Then get workflow and steps data
+      const [workflow, steps] = await Promise.all([
+        this.getOnboardingWorkflow(tenantId),
+        this.getOnboardingSteps(tenantId, workflow_id)
+      ]);
+
+      console.log('TenantDataService: Retrieved workflow and steps:', { 
+        hasWorkflow: !!workflow, 
+        stepsCount: Array.isArray(steps) ? steps.length : 0 
+      });
+
+      return {
+        workflow: Array.isArray(workflow) ? workflow[0] : workflow,
+        steps: Array.isArray(steps) ? steps.sort((a, b) => a.step_number - b.step_number) : []
+      };
+    } catch (error) {
+      console.error('TenantDataService: Error getting complete onboarding data:', error);
       throw error;
     }
   }
@@ -243,53 +336,6 @@ class TenantDataService {
       id: stepId,
       data
     });
-  }
-
-  async getCompleteOnboardingData(tenantId: string) {
-    this.validateTenantAccess(tenantId);
-    try {
-      console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
-      
-      let workflow_id: string;
-      let retryCount = 0;
-      const maxRetries = 3;
-      
-      while (retryCount < maxRetries) {
-        try {
-          const result = await this.ensureOnboardingWorkflow(tenantId);
-          workflow_id = result.workflow_id;
-          console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
-          break;
-        } catch (error: any) {
-          retryCount++;
-          console.error(`TenantDataService: Workflow ensure attempt ${retryCount} failed:`, error);
-          
-          if (error.isClientError || retryCount >= maxRetries) {
-            throw error;
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-        }
-      }
-      
-      const [workflow, steps] = await Promise.all([
-        this.getOnboardingWorkflow(tenantId),
-        this.getOnboardingSteps(tenantId, workflow_id)
-      ]);
-
-      console.log('TenantDataService: Retrieved workflow and steps:', { 
-        hasWorkflow: !!workflow, 
-        stepsCount: Array.isArray(steps) ? steps.length : 0 
-      });
-
-      return {
-        workflow: Array.isArray(workflow) ? workflow[0] : workflow,
-        steps: Array.isArray(steps) ? steps.sort((a, b) => a.step_number - b.step_number) : []
-      };
-    } catch (error) {
-      console.error('TenantDataService: Error getting complete onboarding data:', error);
-      throw error;
-    }
   }
 
   async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any) {

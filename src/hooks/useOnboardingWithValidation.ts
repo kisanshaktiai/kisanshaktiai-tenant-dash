@@ -2,12 +2,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 import { onboardingValidationService } from '@/services/OnboardingValidationService';
-import { useTenantContext } from '@/contexts/TenantContext';
-import { toast } from 'sonner';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { useErrorHandler } from '@/hooks/core/useErrorHandler';
+import { globalErrorHandler } from '@/services/GlobalErrorHandler';
 
 export const useOnboardingWithValidation = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const queryClient = useQueryClient();
+  const { handleError } = useErrorHandler({
+    component: 'useOnboardingWithValidation'
+  });
   
   const onboardingQuery = useQuery({
     queryKey: ['onboarding-validated', currentTenant?.id],
@@ -28,8 +32,6 @@ export const useOnboardingWithValidation = () => {
           
           if (!validationResult.repaired) {
             throw new Error(`Onboarding validation failed: ${validationResult.issues.join(', ')}`);
-          } else {
-            toast.success('Onboarding data has been repaired');
           }
         }
         
@@ -47,7 +49,10 @@ export const useOnboardingWithValidation = () => {
           validationResult
         };
       } catch (error) {
-        console.error('useOnboardingWithValidation: Error in validated query:', error);
+        handleError(error, 'Failed to load onboarding data', {
+          operation: 'validateAndFetch',
+          tenantId: currentTenant.id
+        });
         throw error;
       }
     },
@@ -55,9 +60,15 @@ export const useOnboardingWithValidation = () => {
     staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
-      console.error('useOnboardingWithValidation: Retry attempt:', { failureCount, error });
-      return failureCount < 2;
+      // Don't retry client errors or circuit breaker errors
+      if (error?.message?.includes('Circuit breaker') || 
+          error?.message?.includes('required') ||
+          error?.isClientError) {
+        return false;
+      }
+      return failureCount < 1; // Reduced retry attempts
     },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   const validateMutation = useMutation({
@@ -69,19 +80,34 @@ export const useOnboardingWithValidation = () => {
     },
     onSuccess: (result) => {
       if (result.repaired) {
-        toast.success('Onboarding data has been repaired!');
+        globalErrorHandler.handleError('Onboarding data repaired successfully', {
+          component: 'useOnboardingWithValidation',
+          operation: 'validate',
+          tenantId: currentTenant?.id
+        }, {
+          severity: 'low',
+          showToast: true
+        });
+        
         queryClient.invalidateQueries({ 
           queryKey: ['onboarding-validated', currentTenant?.id] 
         });
       } else if (result.isValid) {
-        toast.success('Onboarding data is valid!');
-      } else {
-        toast.warning('Onboarding data has issues that need attention.');
+        globalErrorHandler.handleError('Onboarding data is valid', {
+          component: 'useOnboardingWithValidation',
+          operation: 'validate',
+          tenantId: currentTenant?.id
+        }, {
+          severity: 'low',
+          showToast: true
+        });
       }
     },
     onError: (error) => {
-      console.error('Onboarding validation failed:', error);
-      toast.error('Failed to validate onboarding data.');
+      handleError(error, 'Failed to validate onboarding data', {
+        operation: 'validate',
+        tenantId: currentTenant?.id
+      });
     }
   });
 
@@ -90,24 +116,36 @@ export const useOnboardingWithValidation = () => {
       if (!currentTenant?.id) {
         throw new Error('No current tenant available');
       }
+      
+      // Clear caches
+      enhancedOnboardingService.clearCache();
+      
       return await onboardingValidationService.forceRefreshOnboarding(currentTenant.id);
     },
     onSuccess: (success) => {
       if (success) {
-        toast.success('Onboarding data refreshed successfully!');
+        globalErrorHandler.handleError('Onboarding data refreshed successfully', {
+          component: 'useOnboardingWithValidation',
+          operation: 'forceRefresh',
+          tenantId: currentTenant?.id
+        }, {
+          severity: 'low',
+          showToast: true
+        });
+        
         queryClient.invalidateQueries({ 
           queryKey: ['onboarding-validated', currentTenant?.id] 
         });
         queryClient.invalidateQueries({ 
           queryKey: ['onboarding', currentTenant?.id] 
         });
-      } else {
-        toast.warning('Failed to refresh onboarding data.');
       }
     },
     onError: (error) => {
-      console.error('Force refresh failed:', error);
-      toast.error('Failed to refresh onboarding data.');
+      handleError(error, 'Failed to refresh onboarding data', {
+        operation: 'forceRefresh',
+        tenantId: currentTenant?.id
+      });
     }
   });
 
