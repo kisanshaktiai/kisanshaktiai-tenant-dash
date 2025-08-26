@@ -64,7 +64,11 @@ export const FarmersPage = () => {
         <TabsContent value="add-farmer" className="space-y-6">
           <Card>
             <CardContent className="p-6">
-              <CreateFarmerContainer />
+              <CreateFarmerContainer 
+                isOpen={true}
+                onClose={() => setActiveTab('overview')}
+                onSuccess={() => setActiveTab('overview')}
+              />
             </CardContent>
           </Card>
         </TabsContent>

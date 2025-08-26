@@ -55,25 +55,6 @@ export const useRealTimeConnection = () => {
           }
         ),
 
-      // Analytics real-time updates
-      supabase
-        .channel(`tenant_analytics_${currentTenant.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'analytics_reports',
-            filter: `tenant_id=eq.${currentTenant.id}`,
-          },
-          (payload) => {
-            console.log('Analytics real-time update:', payload);
-            queryClient.invalidateQueries({ 
-              queryKey: queryKeys.analytics(currentTenant.id) 
-            });
-          }
-        ),
-
       // User presence tracking
       supabase
         .channel(`tenant_presence_${currentTenant.id}`)
@@ -92,9 +73,7 @@ export const useRealTimeConnection = () => {
     channels.forEach((channel, index) => {
       const channelName = `channel_${index}_${currentTenant.id}`;
       channelsRef.current.add(channelName);
-      channel.subscribe((status) => {
-        console.log(`Channel ${channelName} status:`, status);
-      });
+      channel.subscribe();
     });
 
     return () => {
