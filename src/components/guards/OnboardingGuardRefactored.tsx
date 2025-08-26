@@ -1,7 +1,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContext } from '@/contexts/TenantContextRefactored';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
@@ -41,7 +41,7 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
       if (!currentTenant?.id) return null;
       return await enhancedOnboardingService.isOnboardingComplete(currentTenant.id);
     },
-    enabled: !!(currentTenant?.id && tenantValidation?.canLogin && !tenantValidation.needsOnboarding),
+    enabled: !!(currentTenant?.id && tenantValidation?.canLogin && tenantValidation?.tenantData?.onboarding_complete === false),
     staleTime: 30000,
     retry: 1,
   });
@@ -64,7 +64,8 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
     return <Navigate to="/auth" replace />;
   }
 
-  if (tenantValidation?.needsOnboarding) {
+  // Check if onboarding is needed based on tenantData
+  if (tenantValidation?.tenantData && !tenantValidation.tenantData.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
 
