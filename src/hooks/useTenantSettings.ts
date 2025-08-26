@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { tenantDataService } from '@/services/TenantDataService';
 import { useAppSelector } from '@/store/hooks';
 
 interface TenantSettings {
@@ -33,37 +33,22 @@ export const useTenantSettings = () => {
 
         console.log('Fetching tenant settings for:', currentTenant.id);
 
-        const { data: tenantData, error: tenantError } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', currentTenant.id)
-          .single();
+        // Try to get tenant data via edge function
+        const tenantData = await tenantDataService.getTenant(currentTenant.id);
         
-        if (tenantError) throw tenantError;
-
-        if (tenantData) {
-          // Safely handle metadata parsing
-          let metadata = {};
-          if (tenantData.metadata) {
-            try {
-              metadata = typeof tenantData.metadata === 'string' 
-                ? JSON.parse(tenantData.metadata) 
-                : tenantData.metadata;
-            } catch (parseError) {
-              console.warn('Failed to parse tenant metadata:', parseError);
-              metadata = {};
-            }
-          }
-
+        if (tenantData && Array.isArray(tenantData) && tenantData.length > 0) {
+          const tenant = tenantData[0];
+          
+          // Create settings object from tenant data
           const tenantSettings: TenantSettings = {
-            id: tenantData.id,
-            tenant_id: tenantData.id,
-            max_farmers: tenantData.max_farmers || 10000,
-            max_dealers: tenantData.max_dealers || 1000,
-            features_enabled: (metadata as any)?.features || {},
-            billing_settings: (metadata as any)?.billing || {},
-            created_at: tenantData.created_at,
-            updated_at: tenantData.updated_at
+            id: tenant.id,
+            tenant_id: tenant.id,
+            max_farmers: 10000, // Default values
+            max_dealers: 1000,
+            features_enabled: tenant.metadata?.features || {},
+            billing_settings: tenant.metadata?.billing || {},
+            created_at: tenant.created_at,
+            updated_at: tenant.updated_at
           };
 
           setSettings(tenantSettings);
@@ -82,7 +67,7 @@ export const useTenantSettings = () => {
           setSettings(fallbackSettings);
         }
       } catch (err) {
-        console.warn('Error fetching tenant settings:', err);
+        console.warn('Error fetching tenant settings via edge function:', err);
         setError(err instanceof Error ? err.message : 'Failed to load tenant settings');
         
         // Provide fallback settings on error
@@ -111,20 +96,13 @@ export const useTenantSettings = () => {
     try {
       console.log('Updating tenant settings:', updates);
       
-      const { error } = await supabase
-        .from('tenants')
-        .update({
-          max_farmers: updates.max_farmers || settings.max_farmers,
-          max_dealers: updates.max_dealers || settings.max_dealers,
-          metadata: {
-            features: updates.features_enabled || settings.features_enabled,
-            billing: updates.billing_settings || settings.billing_settings,
-          },
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentTenant.id);
-      
-      if (error) throw error;
+      await tenantDataService.updateTenant(currentTenant.id, {
+        metadata: {
+          features: updates.features_enabled || settings.features_enabled,
+          billing: updates.billing_settings || settings.billing_settings,
+        },
+        updated_at: new Date().toISOString()
+      });
       
       // Update local state
       setSettings(prev => prev ? { ...prev, ...updates } : null);

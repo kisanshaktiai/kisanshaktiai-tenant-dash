@@ -60,7 +60,10 @@ export const TenantOnboardingFlow: React.FC = () => {
   const [preloadedSteps, setPreloadedSteps] = useState<Set<number>>(new Set());
   const currentStepRef = useRef<HTMLDivElement>(null);
 
+  // Enable real-time updates
   useOnboardingRealtime();
+
+  // Enable auto-progress detection
   useOnboardingAutoProgress(
     onboardingData?.steps || [], 
     onboardingData?.workflow?.id
@@ -70,6 +73,7 @@ export const TenantOnboardingFlow: React.FC = () => {
   const workflow = onboardingData?.workflow;
   const currentStep = steps[currentStepIndex];
 
+  // Add summary step if not present
   const allSteps = [...steps];
   if (allSteps.length > 0 && !allSteps.find(s => s.step_name === 'Summary')) {
     allSteps.push({
@@ -77,15 +81,19 @@ export const TenantOnboardingFlow: React.FC = () => {
       workflow_id: workflow?.id || '',
       step_number: allSteps.length + 1,
       step_name: 'Summary',
+      step_description: 'Review and complete your setup',
       step_status: 'pending' as const,
+      is_required: true,
+      estimated_time_minutes: 5,
       step_data: {},
+      started_at: null,
       completed_at: null,
       created_at: '',
-      updated_at: '',
-      validation_errors: {}
+      updated_at: ''
     });
   }
 
+  // Preload next step component
   useEffect(() => {
     const nextStepIndex = currentStepIndex + 1;
     if (nextStepIndex < allSteps.length && !preloadedSteps.has(nextStepIndex)) {
@@ -100,12 +108,14 @@ export const TenantOnboardingFlow: React.FC = () => {
     }
   }, [currentStepIndex, allSteps, preloadedSteps]);
 
+  // Focus management
   useEffect(() => {
     if (currentStepRef.current && !showWelcome) {
       currentStepRef.current.focus();
     }
   }, [currentStepIndex, showWelcome]);
 
+  // Update current step index based on progress
   useEffect(() => {
     if (allSteps.length === 0) return;
 
@@ -124,12 +134,15 @@ export const TenantOnboardingFlow: React.FC = () => {
     if (!currentStep || !currentTenant?.id) return;
 
     try {
+      // Handle Summary step differently - complete the workflow
       if (currentStep.step_name === 'Summary' && workflow) {
         await completeWorkflowMutation.mutateAsync(workflow.id);
+        // Refetch onboarding data to reflect completion
         await refetch();
         return;
       }
 
+      // Save data to appropriate tenant tables based on step
       switch (currentStep.step_name) {
         case 'Business Verification':
           if (stepData) {
@@ -171,11 +184,13 @@ export const TenantOnboardingFlow: React.FC = () => {
           break;
       }
 
+      // Complete the step
       await completeStepMutation.mutateAsync({
         stepId: currentStep.id,
         stepData
       });
 
+      // Move to next step if available
       if (currentStepIndex < allSteps.length - 1) {
         setCurrentStepIndex(currentStepIndex + 1);
       }
@@ -233,10 +248,12 @@ export const TenantOnboardingFlow: React.FC = () => {
     );
   }
 
+  // Show friendly retry panel if no steps are available
   if (!isLoading && allSteps.length === 0) {
     return <MissingStepsPanel onRetry={() => refetch()} />;
   }
 
+  // Welcome screen
   if (showWelcome && currentTenant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5 p-4">

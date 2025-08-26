@@ -37,7 +37,7 @@ export const AnalyticsPagePresentation: React.FC<AnalyticsPagePresentationProps>
               Analytics & Reports
             </h1>
             <p className="text-muted-foreground">
-              Comprehensive insights and data-driven analytics for informed decision-making
+              Comprehensive insights and data-driven analytics
             </p>
           </div>
           <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />

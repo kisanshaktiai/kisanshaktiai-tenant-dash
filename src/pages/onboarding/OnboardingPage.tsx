@@ -1,6 +1,7 @@
+
 import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { useTenant } from '@/contexts/TenantContext';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useOnboardingWithValidation } from '@/hooks/useOnboardingWithValidation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,6 +12,7 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { Building2, AlertTriangle, RefreshCw, Settings, Bug } from 'lucide-react';
+import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -76,7 +78,7 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading } = useTenant();
+  const { currentTenant, loading: tenantLoading, initializeOnboarding } = useTenantContext();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
@@ -105,6 +107,27 @@ const OnboardingPage = () => {
     hasOnboardingData: !!onboardingData,
     onboardingError: onboardingError?.message
   });
+
+  // Initialize onboarding workflow when tenant is available
+  useEffect(() => {
+    if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData) {
+      console.log('OnboardingPage: Auto-initializing onboarding for tenant:', currentTenant.id);
+      
+      initializeOnboarding(currentTenant.id)
+        .then((result) => {
+          console.log('OnboardingPage: Auto-initialization result:', result);
+          if (result) {
+            // Trigger a refetch of onboarding data
+            setTimeout(() => {
+              refetch();
+            }, 1000);
+          }
+        })
+        .catch((error) => {
+          console.error('OnboardingPage: Auto-initialization failed:', error);
+        });
+    }
+  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch]);
 
   // Loading state with skeleton and accessibility
   if (!user) {

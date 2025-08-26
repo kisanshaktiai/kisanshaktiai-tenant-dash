@@ -1,301 +1,428 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
-export class TenantDataService {
-  async getCompleteOnboardingData(tenantId: string) {
+export interface TenantDataRequest {
+  table: string;
+  operation: 'select' | 'insert' | 'update' | 'delete' | 'ensure_workflow' | 'complete_workflow' | 'calculate_progress';
+  data?: any;
+  filters?: Record<string, any>;
+  id?: string;
+  workflow_id?: string;
+}
+
+export interface TenantDataResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+class TenantDataService {
+  private validateTenantAccess(tenantId: string): void {
+    if (!tenantId || tenantId.trim() === '') {
+      throw new Error('Tenant ID is required for data isolation');
+    }
+  }
+
+  private validateRequest(tenantId: string, request: TenantDataRequest): void {
+    this.validateTenantAccess(tenantId);
+    
+    if (!request.operation) {
+      throw new Error('Operation is required');
+    }
+
+    if (!['ensure_workflow', 'complete_workflow', 'calculate_progress'].includes(request.operation) && !request.table) {
+      throw new Error('Table is required for this operation');
+    }
+
+    if (request.operation === 'complete_workflow' && !request.workflow_id) {
+      throw new Error('Workflow ID is required for complete_workflow operation');
+    }
+
+    if (request.operation === 'calculate_progress' && !request.workflow_id) {
+      throw new Error('Workflow ID is required for calculate_progress operation');
+    }
+
+    if (['insert', 'update'].includes(request.operation) && !request.data) {
+      throw new Error(`Data is required for ${request.operation} operation`);
+    }
+
+    if (['update', 'delete'].includes(request.operation) && !request.id) {
+      throw new Error(`ID is required for ${request.operation} operation`);
+    }
+  }
+
+  private async callTenantDataAPI<T = any>(
+    tenantId: string, 
+    request: TenantDataRequest
+  ): Promise<T> {
     try {
-      console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
-      
-      const { data, error } = await supabase
-        .from('onboarding_workflows')
-        .select(`
-          *,
-          steps:onboarding_steps(*)
-        `)
-        .eq('tenant_id', tenantId)
-        .single();
+      this.validateRequest(tenantId, request);
+
+      const requestPayload = {
+        ...request,
+        tenant_id: tenantId
+      };
+
+      console.log('TenantDataService: Calling edge function with tenant isolation:', {
+        operation: requestPayload.operation,
+        table: requestPayload.table,
+        tenant_id: requestPayload.tenant_id,
+        hasData: !!requestPayload.data,
+      });
+
+      const { data, error } = await supabase.functions.invoke('tenant-data-api', {
+        body: JSON.stringify(requestPayload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('TenantDataService: No onboarding workflow found for tenant:', tenantId);
-          return null;
+        console.error('TenantDataService: Edge function error for tenant:', tenantId, error);
+        
+        const errorMessage = error.message || 'Failed to call tenant data API';
+        
+        // Categorize errors for proper retry behavior
+        if (errorMessage.includes('400') || errorMessage.includes('Bad Request') || 
+            errorMessage.includes('required') || errorMessage.includes('Invalid')) {
+          const clientError = new Error(errorMessage);
+          (clientError as any).isClientError = true;
+          throw clientError;
         }
-        console.error('TenantDataService: Error fetching complete onboarding data:', error);
-        throw error;
+        
+        throw new Error(errorMessage);
       }
 
-      console.log('TenantDataService: Retrieved complete onboarding data successfully');
-      return {
-        workflow: data,
-        steps: data.steps || []
-      };
+      if (data && typeof data === 'object') {
+        if (data.success === false) {
+          const apiError = new Error(data.error || 'API request failed');
+          if (data.error && (data.error.includes('required') || data.error.includes('Invalid'))) {
+            (apiError as any).isClientError = true;
+          }
+          throw apiError;
+        }
+        
+        return data.success ? data.data : data;
+      }
+
+      return data as T;
     } catch (error) {
-      console.error('TenantDataService: Error in getCompleteOnboardingData:', error);
+      console.error('TenantDataService: Error in tenant-isolated API call:', {
+        tenantId,
+        operation: request.operation,
+        error: error instanceof Error ? error.message : error
+      });
+      throw error;
+    }
+  }
+
+  // Enhanced workflow creation with tenant isolation
+  async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
+    this.validateTenantAccess(tenantId);
+    
+    console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
+    
+    // Check if workflow already exists for this tenant
+    const { data: existingWorkflow } = await supabase
+      .from('onboarding_workflows')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .single();
+    
+    if (existingWorkflow) {
+      console.log('TenantDataService: Workflow already exists for tenant:', tenantId, 'workflow ID:', existingWorkflow.id);
+      return { workflow_id: existingWorkflow.id };
+    }
+    
+    try {
+      const result = await this.callTenantDataAPI(tenantId, {
+        table: 'onboarding_workflows',
+        operation: 'ensure_workflow'
+      });
+      
+      if (!result || !result.workflow_id) {
+        throw new Error('Failed to ensure workflow - no workflow ID returned');
+      }
+      
+      console.log('TenantDataService: Created new workflow for tenant:', tenantId, 'workflow ID:', result.workflow_id);
+      return result;
+    } catch (error) {
+      console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);
       throw error;
     }
   }
 
   async getOnboardingWorkflow(tenantId: string) {
-    try {
-      console.log('TenantDataService: Getting onboarding workflow for tenant:', tenantId);
-      
-      const { data, error } = await supabase
-        .from('onboarding_workflows')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .single();
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting onboarding workflow for tenant:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_workflows',
+      operation: 'select',
+      filters: { tenant_id: tenantId }
+    });
+  }
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          console.log('TenantDataService: No workflow found for tenant:', tenantId);
-          return null;
-        }
-        console.error('TenantDataService: Error fetching workflow:', error);
-        throw error;
-      }
+  async updateOnboardingWorkflow(tenantId: string, workflowId: string, data: any) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Updating onboarding workflow:', { tenantId, workflowId, data });
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_workflows',
+      operation: 'update',
+      id: workflowId,
+      data
+    });
+  }
 
-      console.log('TenantDataService: Retrieved workflow successfully');
-      return data;
-    } catch (error) {
-      console.error('TenantDataService: Error in getOnboardingWorkflow:', error);
-      throw error;
-    }
+  async completeOnboardingWorkflow(tenantId: string, workflowId: string): Promise<{ success: boolean }> {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_workflows',
+      operation: 'complete_workflow',
+      workflow_id: workflowId
+    });
+  }
+
+  async calculateWorkflowProgress(tenantId: string, workflowId: string): Promise<{ progress: number }> {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Calculating workflow progress:', { tenantId, workflowId });
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_workflows',
+      operation: 'calculate_progress',
+      workflow_id: workflowId
+    });
   }
 
   async getOnboardingSteps(tenantId: string, workflowId?: string) {
-    try {
-      console.log('TenantDataService: Getting onboarding steps for workflow:', workflowId);
-      
-      let query = supabase
-        .from('onboarding_steps')
-        .select('*');
-
-      if (workflowId) {
-        query = query.eq('workflow_id', workflowId);
-      }
-
-      query = query.order('step_number', { ascending: true });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('TenantDataService: Error fetching steps:', error);
-        throw error;
-      }
-
-      console.log('TenantDataService: Retrieved steps successfully');
-      return data || [];
-    } catch (error) {
-      console.error('TenantDataService: Error in getOnboardingSteps:', error);
-      throw error;
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting onboarding steps for tenant:', tenantId, 'workflow:', workflowId);
+    const filters: Record<string, any> = { tenant_id: tenantId };
+    if (workflowId) {
+      filters.workflow_id = workflowId;
     }
+
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_steps',
+      operation: 'select',
+      filters
+    });
   }
 
-  async completeOnboardingWorkflow(tenantId: string, workflowId: string) {
-    try {
-      console.log('TenantDataService: Completing onboarding workflow:', { tenantId, workflowId });
-
-      // Update workflow status to completed
-      const { error: workflowError } = await supabase
-        .from('onboarding_workflows')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', workflowId)
-        .eq('tenant_id', tenantId);
-
-      if (workflowError) {
-        console.error('TenantDataService: Error updating workflow:', workflowError);
-        throw workflowError;
-      }
-
-      console.log('TenantDataService: Workflow completed successfully');
-      return { success: true };
-    } catch (error) {
-      console.error('TenantDataService: Error in completeOnboardingWorkflow:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
+  async updateOnboardingStep(tenantId: string, stepId: string, data: any) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Updating onboarding step:', { tenantId, stepId, data });
+    return this.callTenantDataAPI(tenantId, {
+      table: 'onboarding_steps',
+      operation: 'update',
+      id: stepId,
+      data
+    });
   }
 
-  async updateOnboardingStep(tenantId: string, stepId: string, updates: any) {
+  async getCompleteOnboardingData(tenantId: string) {
+    this.validateTenantAccess(tenantId);
     try {
-      console.log('TenantDataService: Updating onboarding step:', { stepId, updates });
+      console.log('TenantDataService: Getting complete onboarding data for tenant:', tenantId);
       
-      const { error } = await supabase
-        .from('onboarding_steps')
-        .update(updates)
-        .eq('id', stepId);
-
-      if (error) {
-        console.error('TenantDataService: Error updating step:', error);
-        throw error;
-      }
-
-      console.log('TenantDataService: Step updated successfully');
-    } catch (error) {
-      console.error('TenantDataService: Error in updateOnboardingStep:', error);
-      throw error;
-    }
-  }
-
-  async updateOnboardingWorkflow(tenantId: string, workflowId: string, updates: any) {
-    try {
-      console.log('TenantDataService: Updating onboarding workflow:', { workflowId, updates });
+      let workflow_id: string;
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      const { error } = await supabase
-        .from('onboarding_workflows')
-        .update(updates)
-        .eq('id', workflowId)
-        .eq('tenant_id', tenantId);
-
-      if (error) {
-        console.error('TenantDataService: Error updating workflow:', error);
-        throw error;
+      while (retryCount < maxRetries) {
+        try {
+          const result = await this.ensureOnboardingWorkflow(tenantId);
+          workflow_id = result.workflow_id;
+          console.log('TenantDataService: Workflow ensured with ID:', workflow_id);
+          break;
+        } catch (error: any) {
+          retryCount++;
+          console.error(`TenantDataService: Workflow ensure attempt ${retryCount} failed:`, error);
+          
+          if (error.isClientError || retryCount >= maxRetries) {
+            throw error;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        }
       }
+      
+      const [workflow, steps] = await Promise.all([
+        this.getOnboardingWorkflow(tenantId),
+        this.getOnboardingSteps(tenantId, workflow_id)
+      ]);
 
-      console.log('TenantDataService: Workflow updated successfully');
+      console.log('TenantDataService: Retrieved workflow and steps:', { 
+        hasWorkflow: !!workflow, 
+        stepsCount: Array.isArray(steps) ? steps.length : 0 
+      });
+
+      return {
+        workflow: Array.isArray(workflow) ? workflow[0] : workflow,
+        steps: Array.isArray(steps) ? steps.sort((a, b) => a.step_number - b.step_number) : []
+      };
     } catch (error) {
-      console.error('TenantDataService: Error in updateOnboardingWorkflow:', error);
+      console.error('TenantDataService: Error getting complete onboarding data:', error);
       throw error;
     }
   }
 
   async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any) {
+    this.validateTenantAccess(tenantId);
     try {
-      console.log('TenantDataService: Completing onboarding step:', { stepId, stepData });
+      console.log('TenantDataService: Completing onboarding step:', { tenantId, stepId, stepData });
       
-      const { error } = await supabase
-        .from('onboarding_steps')
-        .update({
-          step_status: 'completed',
-          step_data: stepData || {},
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', stepId);
+      const result = await this.updateOnboardingStep(tenantId, stepId, {
+        step_status: 'completed',
+        step_data: stepData || {},
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
 
-      if (error) {
-        console.error('TenantDataService: Error completing step:', error);
-        throw error;
-      }
-
-      console.log('TenantDataService: Step completed successfully');
+      console.log('TenantDataService: Step completed successfully:', stepId);
+      return result;
     } catch (error) {
-      console.error('TenantDataService: Error in completeOnboardingStep:', error);
+      console.error('TenantDataService: Error completing step:', error);
       throw error;
     }
   }
 
   async initializeOnboardingForTenant(tenantId: string) {
-    try {
-      console.log('TenantDataService: Initializing onboarding for tenant:', tenantId);
-      
-      // Check if workflow already exists
-      const existingWorkflow = await this.getOnboardingWorkflow(tenantId);
-      if (existingWorkflow) {
-        console.log('TenantDataService: Workflow already exists for tenant:', tenantId);
-        const steps = await this.getOnboardingSteps(tenantId, existingWorkflow.id);
-        return {
-          workflow: existingWorkflow,
-          steps: steps
-        };
+    this.validateTenantAccess(tenantId);
+    
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`TenantDataService: Initializing onboarding for tenant (attempt ${retryCount + 1}/${maxRetries}):`, tenantId);
+        
+        const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
+        const onboardingData = await this.getCompleteOnboardingData(tenantId);
+        
+        console.log('TenantDataService: Onboarding initialized successfully for tenant:', tenantId, {
+          workflowId: workflow_id, 
+          stepCount: onboardingData.steps.length 
+        });
+        
+        return onboardingData;
+      } catch (error: any) {
+        retryCount++;
+        console.error(`TenantDataService: Error initializing onboarding for tenant ${tenantId} (attempt ${retryCount}):`, error);
+        
+        if (error.isClientError || retryCount >= maxRetries) {
+          throw new Error(`Failed to initialize onboarding for tenant ${tenantId}: ${error.message}`);
+        }
+        
+        const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 30000);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      // Create new workflow
-      const { data: workflowData, error: workflowError } = await supabase
-        .from('onboarding_workflows')
-        .insert({
-          tenant_id: tenantId,
-          status: 'in_progress',
-          current_step: 1,
-          total_steps: 6,
-          started_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (workflowError) {
-        console.error('TenantDataService: Error creating workflow:', workflowError);
-        throw workflowError;
-      }
-
-      // Create steps
-      const stepTemplates = [
-        { step_number: 1, step_name: 'Business Verification', step_status: 'pending' as const },
-        { step_number: 2, step_name: 'Subscription Plan', step_status: 'pending' as const },
-        { step_number: 3, step_name: 'Branding Configuration', step_status: 'pending' as const },
-        { step_number: 4, step_name: 'Feature Selection', step_status: 'pending' as const },
-        { step_number: 5, step_name: 'Data Import', step_status: 'pending' as const },
-        { step_number: 6, step_name: 'Team Invites', step_status: 'pending' as const }
-      ];
-
-      const stepsToInsert = stepTemplates.map(template => ({
-        workflow_id: workflowData.id,
-        ...template,
-        step_data: {}
-      }));
-
-      const { data: stepsData, error: stepsError } = await supabase
-        .from('onboarding_steps')
-        .insert(stepsToInsert)
-        .select();
-
-      if (stepsError) {
-        console.error('TenantDataService: Error creating steps:', stepsError);
-        throw stepsError;
-      }
-
-      console.log('TenantDataService: Onboarding initialized successfully');
-      return {
-        workflow: workflowData,
-        steps: stepsData || []
-      };
-    } catch (error) {
-      console.error('TenantDataService: Error in initializeOnboardingForTenant:', error);
-      throw error;
     }
   }
 
-  async ensureOnboardingWorkflow(tenantId: string): Promise<string> {
-    try {
-      console.log('TenantDataService: Ensuring onboarding workflow exists for tenant:', tenantId);
-      
-      const existingWorkflow = await this.getOnboardingWorkflow(tenantId);
-      if (existingWorkflow) {
-        return existingWorkflow.id;
-      }
-
-      const initialized = await this.initializeOnboardingForTenant(tenantId);
-      return initialized.workflow.id;
-    } catch (error) {
-      console.error('TenantDataService: Error ensuring workflow:', error);
-      throw error;
-    }
+  async getSubscriptionPlans(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting subscription plans for tenant:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'subscription_plans',
+      operation: 'select'
+    });
   }
 
-  async getSubscriptionPlans(tenantId?: string) {
+  async getTenant(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting tenant data:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenants',
+      operation: 'select'
+    });
+  }
+
+  async updateTenant(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Updating tenant:', { tenantId, data });
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenants',
+      operation: 'update',
+      id: tenantId,
+      data
+    });
+  }
+
+  async getTenantBranding(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting tenant branding:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenant_branding',
+      operation: 'select',
+      filters: { tenant_id: tenantId }
+    });
+  }
+
+  async upsertTenantBranding(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
     try {
-      console.log('TenantDataService: Getting subscription plans');
-      
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
-
-      if (error) {
-        console.error('TenantDataService: Error fetching subscription plans:', error);
-        throw error;
+      console.log('TenantDataService: Upserting tenant branding:', { tenantId, data });
+      const existing = await this.getTenantBranding(tenantId);
+      if (existing && Array.isArray(existing) && existing.length > 0) {
+        return this.callTenantDataAPI(tenantId, {
+          table: 'tenant_branding',
+          operation: 'update',
+          id: existing[0].id,
+          data
+        });
       }
-
-      console.log('TenantDataService: Retrieved subscription plans successfully');
-      return data || [];
     } catch (error) {
-      console.error('TenantDataService: Error in getSubscriptionPlans:', error);
-      throw error;
+      console.log('TenantDataService: No existing branding found, will create new');
     }
+
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenant_branding',
+      operation: 'insert',
+      data: { ...data, tenant_id: tenantId }
+    });
+  }
+
+  async getTenantFeatures(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting tenant features:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenant_features',
+      operation: 'select',
+      filters: { tenant_id: tenantId }
+    });
+  }
+
+  async upsertTenantFeatures(tenantId: string, data: any) {
+    this.validateTenantAccess(tenantId);
+    try {
+      console.log('TenantDataService: Upserting tenant features:', { tenantId, data });
+      const existing = await this.getTenantFeatures(tenantId);
+      if (existing && Array.isArray(existing) && existing.length > 0) {
+        return this.callTenantDataAPI(tenantId, {
+          table: 'tenant_features',
+          operation: 'update',
+          id: existing[0].id,
+          data
+        });
+      }
+    } catch (error) {
+      console.log('TenantDataService: No existing features found, will create new');
+    }
+
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenant_features',
+      operation: 'insert',
+      data: { ...data, tenant_id: tenantId }
+    });
+  }
+
+  async getTenantSubscription(tenantId: string) {
+    this.validateTenantAccess(tenantId);
+    console.log('TenantDataService: Getting tenant subscription:', tenantId);
+    return this.callTenantDataAPI(tenantId, {
+      table: 'tenant_subscriptions',
+      operation: 'select',
+      filters: { tenant_id: tenantId }
+    });
   }
 }
 

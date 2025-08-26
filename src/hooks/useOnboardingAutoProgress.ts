@@ -29,7 +29,7 @@ export const useOnboardingAutoProgress = (steps: any[], workflowId?: string) => 
         case 'Subscription Plan':
           shouldMarkComplete = !!(
             currentTenant.subscription_plan &&
-            currentTenant.status !== 'pending_approval'
+            currentTenant.status !== 'pending'
           );
           break;
 

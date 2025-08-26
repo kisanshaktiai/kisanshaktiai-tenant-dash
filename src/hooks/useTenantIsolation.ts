@@ -27,11 +27,10 @@ export const useTenantIsolation = () => {
     };
   }, [user, currentTenant]);
 
-  // Simplified query builder for tenant-isolated data
   const createTenantQuery = useCallback((table: string) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table as any)
+      .from(table)
       .select('*')
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
@@ -39,7 +38,7 @@ export const useTenantIsolation = () => {
   const createTenantInsert = useCallback((table: string, data: any) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table as any)
+      .from(table)
       .insert({
         ...data,
         tenant_id: tenantId,
@@ -49,7 +48,7 @@ export const useTenantIsolation = () => {
   const createTenantUpdate = useCallback((table: string, id: string, data: any) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table as any)
+      .from(table)
       .update(data)
       .eq('id', id)
       .eq('tenant_id', tenantId);
@@ -58,7 +57,7 @@ export const useTenantIsolation = () => {
   const createTenantDelete = useCallback((table: string, id: string) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table as any)
+      .from(table)
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId);

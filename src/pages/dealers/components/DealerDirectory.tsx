@@ -1,181 +1,205 @@
-
-import React from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+  Search, Filter, Download, MoreHorizontal, MapPin, 
+  Phone, Mail, Edit, Eye, MessageSquare, Users, Building
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Plus, Filter, Download, MoreVertical } from 'lucide-react';
-import type { EnhancedDealer } from '@/types/dealer';
 
 interface DealerDirectoryProps {
-  dealers: EnhancedDealer[];
+  dealers: any[];
   loading: boolean;
-  searchTerm: string;
-  onSearch: (value: string) => void;
-  selectedDealers: string[];
-  onSelectedDealersChange: (dealers: string[]) => void;
 }
 
-export const DealerDirectory: React.FC<DealerDirectoryProps> = ({
-  dealers,
-  loading,
-  searchTerm,
-  onSearch,
-  selectedDealers,
-  onSelectedDealersChange,
-}) => {
-  const handleSelectAll = () => {
-    if (selectedDealers.length === dealers.length) {
-      onSelectedDealersChange([]);
-    } else {
-      onSelectedDealersChange(dealers.map(d => d.id));
-    }
-  };
+export const DealerDirectory = ({ dealers, loading }: DealerDirectoryProps) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
 
-  const handleSelectDealer = (dealerId: string) => {
-    if (selectedDealers.includes(dealerId)) {
-      onSelectedDealersChange(selectedDealers.filter(id => id !== dealerId));
-    } else {
-      onSelectedDealersChange([...selectedDealers, dealerId]);
+  // Sample data when no real data
+  const sampleDealers = [
+    {
+      id: '1',
+      business_name: 'Green Valley Seeds',
+      contact_person: 'Rajesh Kumar',
+      phone: '+91 9876543210',
+      email: 'rajesh@greenvalley.com',
+      business_address: { city: 'Sonipat', state: 'Haryana' },
+      dealer_code: 'GVS001',
+      registration_status: 'approved',
+      is_active: true,
+      performance_rating: 4.5,
+      territory_ids: ['t1', 't2']
+    },
+    {
+      id: '2',
+      business_name: 'Krishi Kendra',
+      contact_person: 'Priya Sharma',
+      phone: '+91 9876543211',
+      email: 'priya@krishikendra.com',
+      business_address: { city: 'Karnal', state: 'Haryana' },
+      dealer_code: 'KK002',
+      registration_status: 'pending',
+      is_active: true,
+      performance_rating: 4.2,
+      territory_ids: ['t3']
+    }
+  ];
+
+  const displayDealers = dealers.length > 0 ? dealers : sampleDealers;
+
+  const filteredDealers = displayDealers.filter(dealer =>
+    dealer.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dealer.contact_person.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    dealer.phone.includes(searchQuery)
+  );
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'approved': return 'default';
+      case 'pending': return 'secondary';
+      case 'rejected': return 'destructive';
+      default: return 'secondary';
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-muted animate-pulse rounded" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-48 bg-muted animate-pulse rounded" />
-          ))}
-        </div>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center">Loading dealers...</div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Search and Actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search dealers..."
-              value={searchTerm}
-              onChange={(e) => onSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-          </Button>
-        </div>
-        
-        <div className="flex gap-2">
-          {selectedDealers.length > 0 && (
-            <>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export ({selectedDealers.length})
-              </Button>
-              <Button variant="outline" size="sm">
-                Bulk Actions
-              </Button>
-            </>
-          )}
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Dealer
-          </Button>
-        </div>
-      </div>
-
-      {/* Select All */}
-      {dealers.length > 0 && (
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            checked={selectedDealers.length === dealers.length && dealers.length > 0}
-            onCheckedChange={handleSelectAll}
+      {/* Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search Dealers
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input
+            placeholder="Search dealers by name, contact person, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <span className="text-sm text-muted-foreground">
-            Select all ({dealers.length} dealers)
-          </span>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* Dealers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {dealers.map((dealer) => (
-          <Card key={dealer.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    checked={selectedDealers.includes(dealer.id)}
-                    onCheckedChange={() => handleSelectDealer(dealer.id)}
-                  />
-                  <div>
-                    <CardTitle className="text-lg">{dealer.business_name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{dealer.dealer_code}</p>
+      {/* Dealer List */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Dealers ({filteredDealers.length})
+            </CardTitle>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {filteredDealers.map((dealer) => (
+              <div
+                key={dealer.id}
+                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {dealer.business_name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold truncate">{dealer.business_name}</h3>
+                    <Badge variant={getStatusColor(dealer.registration_status)}>
+                      {dealer.registration_status}
+                    </Badge>
+                    {dealer.is_active && (
+                      <Badge variant="outline" className="text-xs">
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {dealer.phone}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {dealer.business_address?.city}, {dealer.business_address?.state}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Building className="h-3 w-3" />
+                      {dealer.dealer_code}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Contact: {dealer.contact_person}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+                
+                <div className="text-right">
+                  <div className="text-sm font-medium">
+                    Rating: {dealer.performance_rating || 'N/A'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {dealer.territory_ids?.length || 0} territories
+                  </div>
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Send Message
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Call Dealer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div>
-                <p className="font-medium">{dealer.contact_person}</p>
-                <p className="text-sm text-muted-foreground">{dealer.phone}</p>
-                <p className="text-sm text-muted-foreground">{dealer.email}</p>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Badge variant={dealer.is_active ? 'default' : 'secondary'}>
-                  {dealer.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-                <Badge variant={dealer.registration_status === 'verified' ? 'default' : 'secondary'}>
-                  {dealer.registration_status || 'Pending'}
-                </Badge>
-                <Badge variant={dealer.kyc_status === 'verified' ? 'default' : 'secondary'}>
-                  KYC: {dealer.kyc_status || 'Pending'}
-                </Badge>
-              </div>
-
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
-                  View Details
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1">
-                  Edit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {dealers.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="text-muted-foreground mb-4">
-            {searchTerm 
-              ? `No dealers match "${searchTerm}"`
-              : "No dealers found"
-            }
+            ))}
           </div>
-          {!searchTerm && (
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Dealer
-            </Button>
-          )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -1,14 +1,15 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { farmersService, type CreateFarmerData, type UpdateFarmerData } from '@/services/FarmersService';
+import { farmersService, type FarmersListOptions, type CreateFarmerData, type UpdateFarmerData } from '@/services/FarmersService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
 
-export const useFarmersQuery = (options?: { search?: string; limit?: number }) => {
+export const useFarmersQuery = (options: FarmersListOptions = {}) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useQuery({
-    queryKey: queryKeys.farmersList(currentTenant?.id || ''),
+    queryKey: queryKeys.farmersList(currentTenant?.id || '', options),
     queryFn: () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
@@ -16,8 +17,21 @@ export const useFarmersQuery = (options?: { search?: string; limit?: number }) =
       return farmersService.getFarmers(currentTenant.id, options);
     },
     enabled: !!currentTenant,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
+export const useFarmerQuery = (farmerId: string) => {
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+
+  return useQuery({
+    queryKey: queryKeys.farmer(farmerId, currentTenant?.id || ''),
+    queryFn: () => {
+      if (!currentTenant) {
+        throw new Error('No tenant selected');
+      }
+      return farmersService.getFarmer(farmerId, currentTenant.id);
+    },
+    enabled: !!currentTenant && !!farmerId,
   });
 };
 
@@ -31,7 +45,7 @@ export const useCreateFarmerMutation = () => {
         throw new Error('No tenant selected');
       }
 
-      // Generate farmer code
+      // Get farmer count and generate code
       const count = await farmersService.getFarmerCount(currentTenant.id);
       const farmerCode = await farmersService.generateFarmerCode(currentTenant.slug, count);
 
@@ -43,10 +57,16 @@ export const useCreateFarmerMutation = () => {
 
       return farmersService.createFarmer(createData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.farmers(currentTenant?.id || '') 
-      });
+    onSuccess: (data) => {
+      // Invalidate and refetch farmers list
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmerStats(currentTenant?.id || '') });
+      
+      toast.success('Farmer created successfully');
+      return data;
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to create farmer');
     },
   });
 };
@@ -56,16 +76,51 @@ export const useUpdateFarmerMutation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useMutation({
-    mutationFn: async ({ farmerId, data }: { farmerId: string; data: UpdateFarmerData }) => {
+    mutationFn: ({ farmerId, data }: { farmerId: string; data: UpdateFarmerData }) => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
       }
       return farmersService.updateFarmer(farmerId, currentTenant.id, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.farmers(currentTenant?.id || '') 
-      });
+    onSuccess: (data, variables) => {
+      // Update the specific farmer in cache
+      queryClient.setQueryData(queryKeys.farmer(variables.farmerId, currentTenant?.id || ''), data);
+      
+      // Invalidate farmers list
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
+      
+      toast.success('Farmer updated successfully');
+      return data;
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to update farmer');
+    },
+  });
+};
+
+export const useDeleteFarmerMutation = () => {
+  const queryClient = useQueryClient();
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+
+  return useMutation({
+    mutationFn: (farmerId: string) => {
+      if (!currentTenant) {
+        throw new Error('No tenant selected');
+      }
+      return farmersService.deleteFarmer(farmerId, currentTenant.id);
+    },
+    onSuccess: (_, farmerId) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: queryKeys.farmer(farmerId, currentTenant?.id || '') });
+      
+      // Invalidate farmers list
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmers(currentTenant?.id || '') });
+      queryClient.invalidateQueries({ queryKey: queryKeys.farmerStats(currentTenant?.id || '') });
+      
+      toast.success('Farmer deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete farmer');
     },
   });
 };

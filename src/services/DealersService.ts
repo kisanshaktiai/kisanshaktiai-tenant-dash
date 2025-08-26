@@ -1,7 +1,6 @@
 
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
-import type { EnhancedDealer } from '@/types/dealer';
 
 export interface DealersListOptions {
   search?: string;
@@ -12,52 +11,50 @@ export interface DealersListOptions {
   filters?: Record<string, any>;
 }
 
+export interface Dealer {
+  id: string;
+  tenant_id: string;
+  dealer_code: string;
+  business_name: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  is_active: boolean;
+  verification_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CreateDealerData {
   tenant_id: string;
   dealer_code: string;
   business_name: string;
   contact_person: string;
-  email: string;
   phone: string;
-  alternate_phone?: string;
-  address: Record<string, any>;
-  business_type?: string;
-  registration_status?: string;
-  onboarding_status?: string;
-  kyc_status?: string;
-  territory_id?: string;
-  product_authorizations?: string[];
-  commission_structure?: Record<string, any>;
-  performance_metrics?: Record<string, any>;
-  banking_details?: Record<string, any>;
-  documents?: any[];
-  notes?: string;
+  email: string;
+  verification_status?: string;
   is_active?: boolean;
 }
 
 export interface UpdateDealerData {
   business_name?: string;
   contact_person?: string;
-  email?: string;
   phone?: string;
-  alternate_phone?: string;
-  address?: Record<string, any>;
-  business_type?: string;
-  registration_status?: string;
-  onboarding_status?: string;
-  kyc_status?: string;
-  territory_id?: string;
-  product_authorizations?: string[];
-  commission_structure?: Record<string, any>;
-  performance_metrics?: Record<string, any>;
-  banking_details?: Record<string, any>;
-  documents?: any[];
-  notes?: string;
+  email?: string;
+  verification_status?: string;
   is_active?: boolean;
 }
 
+export interface DealersListResponse {
+  data: Dealer[];
+  count: number;
+  error?: string;
+}
+
 class DealersService extends BaseApiService {
-  async getDealers(tenantId: string, options: DealersListOptions = {}) {
+  protected basePath = '/dealers';
+
+  async getDealers(tenantId: string, options: DealersListOptions = {}): Promise<DealersListResponse> {
     try {
       let query = supabase
         .from('dealers')
@@ -65,15 +62,7 @@ class DealersService extends BaseApiService {
         .eq('tenant_id', tenantId);
 
       if (options.search) {
-        query = query.or(`business_name.ilike.%${options.search}%,contact_person.ilike.%${options.search}%,dealer_code.ilike.%${options.search}%`);
-      }
-
-      if (options.filters?.is_active !== undefined) {
-        query = query.eq('is_active', options.filters.is_active);
-      }
-
-      if (options.filters?.registration_status) {
-        query = query.eq('registration_status', options.filters.registration_status);
+        query = query.or(`dealer_code.ilike.%${options.search}%,business_name.ilike.%${options.search}%,contact_person.ilike.%${options.search}%`);
       }
 
       if (options.limit) {
@@ -84,42 +73,14 @@ class DealersService extends BaseApiService {
         query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
       }
 
-      const sortBy = options.sortBy || 'business_name';
-      const sortOrder = options.sortOrder || 'asc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
       const { data, error, count } = await query;
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Transform basic dealer data to EnhancedDealer format
-      // Map database columns to expected interface properties
-      const enhancedDealers: EnhancedDealer[] = (data || []).map(dealer => ({
-        ...dealer,
-        // Map database columns to interface properties with fallbacks
-        alternate_phone: dealer.phone || '', // Use phone as fallback since secondary_phone doesn't exist
-        address: (dealer.business_address as Record<string, any>) || {},
-        business_type: dealer.business_type || '',
-        registration_status: dealer.registration_status || 'pending',
-        onboarding_status: dealer.onboarding_date ? 'completed' : 'not_started', // Derive from onboarding_date
-        kyc_status: dealer.kyc_status || 'pending',
-        territory_id: Array.isArray(dealer.territory_ids) && dealer.territory_ids.length > 0 
-          ? dealer.territory_ids[0] 
-          : (typeof dealer.territory_ids === 'string' ? dealer.territory_ids : ''), // Handle both array and string
-        product_authorizations: (dealer.product_authorizations as string[]) || [],
-        commission_structure: { commission_rate: dealer.commission_rate || 0 }, // Create structure from commission_rate
-        performance_metrics: {}, // Default empty object
-        banking_details: (dealer.bank_details as Record<string, any>) || {},
-        documents: [], // Default empty array
-        notes: '', // Default empty string
-        verified_at: dealer.created_at, // Use created_at as fallback since verified_at doesn't exist
-        verified_by: '', // Default empty string since created_by doesn't exist
-      }));
-
       return {
-        data: enhancedDealers,
+        data: data || [],
         count: count || 0,
       };
     } catch (error) {
@@ -127,8 +88,8 @@ class DealersService extends BaseApiService {
     }
   }
 
-  async getDealer(dealerId: string, tenantId: string) {
-    return this.executeQuery<EnhancedDealer>(async () => {
+  async getDealer(dealerId: string, tenantId: string): Promise<Dealer> {
+    try {
       const { data, error } = await supabase
         .from('dealers')
         .select('*')
@@ -136,52 +97,44 @@ class DealersService extends BaseApiService {
         .eq('tenant_id', tenantId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      // Transform to EnhancedDealer format with proper mappings
-      const enhancedDealer: EnhancedDealer = {
-        ...data,
-        alternate_phone: data.phone || '', // Use phone as fallback
-        address: (data.business_address as Record<string, any>) || {},
-        business_type: data.business_type || '',
-        registration_status: data.registration_status || 'pending',
-        onboarding_status: data.onboarding_date ? 'completed' : 'not_started',
-        kyc_status: data.kyc_status || 'pending',
-        territory_id: Array.isArray(data.territory_ids) && data.territory_ids.length > 0 
-          ? data.territory_ids[0] 
-          : (typeof data.territory_ids === 'string' ? data.territory_ids : ''),
-        product_authorizations: (data.product_authorizations as string[]) || [],
-        commission_structure: { commission_rate: data.commission_rate || 0 },
-        performance_metrics: {},
-        banking_details: (data.bank_details as Record<string, any>) || {},
-        documents: [],
-        notes: '',
-        verified_at: data.created_at, // Use created_at as fallback
-        verified_by: '', // Default empty string since created_by doesn't exist
-      };
-
-      return { data: enhancedDealer, error: null };
-    });
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to fetch dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async createDealer(dealerData: CreateDealerData) {
-    return this.executeQuery<EnhancedDealer>(async () => {
-      return await supabase
+  async createDealer(dealerData: CreateDealerData): Promise<Dealer> {
+    try {
+      const { data, error } = await supabase
         .from('dealers')
         .insert({
           ...dealerData,
           id: crypto.randomUUID(),
+          verification_status: dealerData.verification_status || 'pending',
+          is_active: dealerData.is_active ?? true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .select()
         .single();
-    });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async updateDealer(dealerId: string, tenantId: string, updates: UpdateDealerData) {
-    return this.executeQuery<EnhancedDealer>(async () => {
-      return await supabase
+  async updateDealer(dealerId: string, tenantId: string, updates: UpdateDealerData): Promise<Dealer> {
+    try {
+      const { data, error } = await supabase
         .from('dealers')
         .update({
           ...updates,
@@ -191,34 +144,54 @@ class DealersService extends BaseApiService {
         .eq('tenant_id', tenantId)
         .select()
         .single();
-    });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to update dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
-  async deleteDealer(dealerId: string, tenantId: string) {
-    return this.executeQuery(async () => {
-      return await supabase
+  async deleteDealer(dealerId: string, tenantId: string): Promise<void> {
+    try {
+      const { error } = await supabase
         .from('dealers')
-        .update({ is_active: false })
+        .delete()
         .eq('id', dealerId)
-        .eq('tenant_id', tenantId)
-        .select()
-        .single();
-    });
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      throw new Error(`Failed to delete dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async getDealerCount(tenantId: string): Promise<number> {
-    const { count } = await supabase
-      .from('dealers')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId);
-    
-    return count || 0;
+    try {
+      const { count, error } = await supabase
+        .from('dealers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return count || 0;
+    } catch (error) {
+      throw new Error(`Failed to get dealer count: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async generateDealerCode(tenantSlug: string, count: number): Promise<string> {
-    const prefix = tenantSlug.toUpperCase().substring(0, 3);
-    const sequenceNumber = (count + 1).toString().padStart(4, '0');
-    return `${prefix}D${sequenceNumber}`;
+    const dealerNumber = count + 1;
+    const tenantPrefix = tenantSlug.substring(0, 3).toUpperCase();
+    return `${tenantPrefix}D${dealerNumber.toString().padStart(5, '0')}`;
   }
 }
 

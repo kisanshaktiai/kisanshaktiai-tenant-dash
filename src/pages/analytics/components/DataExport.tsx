@@ -1,426 +1,572 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Download, 
   FileText, 
-  FileSpreadsheet, 
-  File, 
-  Database,
-  Calendar,
-  Filter,
-  Share,
-  Clock,
+  Database, 
+  Cloud, 
+  Calendar, 
+  Settings, 
+  Link,
   CheckCircle,
-  XCircle,
-  Loader2
+  Clock,
+  AlertCircle,
+  Code
 } from "lucide-react";
-import { useExportLogsQuery } from '@/hooks/data/useAnalyticsQuery';
 
 export const DataExport = () => {
-  const [selectedSource, setSelectedSource] = useState("");
-  const [selectedFormat, setSelectedFormat] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
-
-  const { data: exportLogs = [] } = useExportLogsQuery();
-
-  const exportSources = [
-    { id: "farmers", name: "Farmers Data", description: "Complete farmer profiles and engagement", icon: Database },
-    { id: "products", name: "Products Catalog", description: "Product listings with performance metrics", icon: FileText },
-    { id: "analytics", name: "Analytics Reports", description: "Pre-computed analytics and insights", icon: FileSpreadsheet },
-    { id: "campaigns", name: "Campaign Data", description: "Marketing campaigns and performance", icon: File },
-    { id: "dealers", name: "Dealer Network", description: "Dealer information and territories", icon: Database }
-  ];
+  const [selectedFormat, setSelectedFormat] = useState("csv");
+  const [selectedDataset, setSelectedDataset] = useState("farmers");
+  const [isScheduled, setIsScheduled] = useState(false);
 
   const exportFormats = [
+    { id: "csv", name: "CSV", icon: FileText, description: "Comma-separated values" },
+    { id: "excel", name: "Excel", icon: FileText, description: "Microsoft Excel format" },
+    { id: "pdf", name: "PDF", icon: FileText, description: "Portable document format" },
+    { id: "json", name: "JSON", icon: Code, description: "JavaScript object notation" }
+  ];
+
+  const datasets = [
+    { id: "farmers", name: "Farmer Data", records: "12,847", size: "2.3 MB" },
+    { id: "products", name: "Product Catalog", records: "1,234", size: "850 KB" },
+    { id: "campaigns", name: "Campaign Data", records: "456", size: "1.1 MB" },
+    { id: "analytics", name: "Analytics Data", records: "98,765", size: "5.7 MB" },
+    { id: "transactions", name: "Transaction Data", records: "23,456", size: "3.2 MB" }
+  ];
+
+  const scheduledExports = [
     { 
-      id: "excel", 
-      name: "Excel Workbook", 
-      description: "Full-featured spreadsheet with multiple sheets",
-      icon: FileSpreadsheet,
-      extension: ".xlsx"
+      id: 1, 
+      name: "Weekly Farmer Export", 
+      format: "CSV", 
+      dataset: "Farmer Data",
+      schedule: "Every Monday 9:00 AM", 
+      status: "active",
+      lastRun: "2 days ago"
     },
     { 
-      id: "csv", 
-      name: "CSV File", 
-      description: "Comma-separated values for data analysis",
-      icon: FileText,
-      extension: ".csv"
+      id: 2, 
+      name: "Monthly Analytics", 
+      format: "Excel", 
+      dataset: "Analytics Data",
+      schedule: "1st of every month", 
+      status: "active",
+      lastRun: "1 week ago"
     },
     { 
-      id: "pdf", 
-      name: "PDF Report", 
-      description: "Formatted report document",
-      icon: File,
-      extension: ".pdf"
+      id: 3, 
+      name: "Product Sync", 
+      format: "JSON", 
+      dataset: "Product Catalog",
+      schedule: "Daily 2:00 AM", 
+      status: "paused",
+      lastRun: "5 days ago"
     }
   ];
 
-  const quickExports = [
-    {
-      id: "farmer-summary",
-      name: "Farmer Summary Report",
-      description: "Key metrics and farmer overview",
-      source: "farmers",
-      format: "excel",
-      estimated_time: "2-3 minutes"
+  const apiIntegrations = [
+    { 
+      name: "Power BI Connector", 
+      type: "bi_tool", 
+      status: "connected",
+      lastSync: "1 hour ago",
+      description: "Real-time data feed to Power BI dashboards"
     },
-    {
-      id: "monthly-analytics",
-      name: "Monthly Analytics",
-      description: "Complete monthly performance data",
-      source: "analytics",
-      format: "pdf",
-      estimated_time: "3-5 minutes"
+    { 
+      name: "Tableau Integration", 
+      type: "bi_tool", 
+      status: "pending",
+      lastSync: "Never",
+      description: "Data visualization and analytics platform"
     },
-    {
-      id: "product-performance",
-      name: "Product Performance Export",
-      description: "Sales and product metrics",
-      source: "products",
-      format: "csv",
-      estimated_time: "1-2 minutes"
+    { 
+      name: "Custom CRM Sync", 
+      type: "crm", 
+      status: "connected",
+      lastSync: "30 minutes ago",
+      description: "Farmer data synchronization with external CRM"
+    },
+    { 
+      name: "ERP Integration", 
+      type: "erp", 
+      status: "error",
+      lastSync: "2 days ago",
+      description: "Product and inventory data sync"
     }
   ];
 
-  const recentExports = exportLogs.slice(0, 10);
-
-  const handleExport = async () => {
-    if (!selectedSource || !selectedFormat) return;
-    
-    setIsExporting(true);
-    
-    // Mock export process
-    setTimeout(() => {
-      setIsExporting(false);
-      setSelectedSource("");
-      setSelectedFormat("");
-    }, 3000);
-  };
-
-  const handleQuickExport = (exportConfig: any) => {
-    console.log("Quick export:", exportConfig);
-  };
+  const webhookEndpoints = [
+    { 
+      name: "Farmer Registration", 
+      url: "https://api.example.com/webhooks/farmers",
+      events: ["farmer.created", "farmer.updated"],
+      status: "active"
+    },
+    { 
+      name: "Product Updates", 
+      url: "https://api.example.com/webhooks/products",
+      events: ["product.created", "product.updated", "product.deleted"],
+      status: "active"
+    },
+    { 
+      name: "Campaign Events", 
+      url: "https://api.example.com/webhooks/campaigns",
+      events: ["campaign.started", "campaign.completed"],
+      status: "inactive"
+    }
+  ];
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case "active":
+      case "connected":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'processing':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
-      default:
+      case "paused":
+      case "pending":
         return <Clock className="h-4 w-4 text-yellow-600" />;
+      case "error":
+      case "inactive":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+      case "connected":
+        return "text-green-600 bg-green-50";
+      case "paused":
+      case "pending":
+        return "text-yellow-600 bg-yellow-50";
+      case "error":
+      case "inactive":
+        return "text-red-600 bg-red-50";
+      default:
+        return "text-gray-600 bg-gray-50";
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Data Export & Integration</h2>
-          <p className="text-muted-foreground">Export your data in various formats for external analysis</p>
-        </div>
-        <Button variant="outline">
-          <Share className="h-4 w-4 mr-2" />
-          API Access
+        <h2 className="text-2xl font-bold">Data Export & Integration</h2>
+        <Button>
+          <Download className="h-4 w-4 mr-2" />
+          Quick Export
         </Button>
       </div>
 
       <Tabs defaultValue="export" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="export">Custom Export</TabsTrigger>
-          <TabsTrigger value="quick">Quick Exports</TabsTrigger>
-          <TabsTrigger value="history">Export History</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="export">Data Export</TabsTrigger>
+          <TabsTrigger value="scheduled">Scheduled Exports</TabsTrigger>
+          <TabsTrigger value="integrations">API Integrations</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
 
         <TabsContent value="export" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Export Configuration */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Configure Export</CardTitle>
-                <CardDescription>Select data source and format for your export</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Data Source Selection */}
-                <div>
-                  <h4 className="font-medium mb-3">Select Data Source</h4>
-                  <div className="space-y-2">
-                    {exportSources.map((source) => {
-                      const Icon = source.icon;
-                      return (
-                        <div
-                          key={source.id}
-                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedSource === source.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setSelectedSource(source.id)}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <div className="font-medium">{source.name}</div>
-                              <div className="text-sm text-muted-foreground">{source.description}</div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Format Selection */}
-                <div>
-                  <h4 className="font-medium mb-3">Export Format</h4>
-                  <div className="space-y-2">
-                    {exportFormats.map((format) => {
-                      const Icon = format.icon;
-                      return (
-                        <div
-                          key={format.id}
-                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedFormat === format.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
-                          }`}
-                          onClick={() => setSelectedFormat(format.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <Icon className="h-5 w-5 text-muted-foreground" />
-                              <div>
-                                <div className="font-medium">{format.name}</div>
-                                <div className="text-sm text-muted-foreground">{format.description}</div>
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {format.extension}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Export Options */}
-                <div>
-                  <h4 className="font-medium mb-3">Export Options</h4>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-sm">Date Range</label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="All time" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Time</SelectItem>
-                            <SelectItem value="30d">Last 30 Days</SelectItem>
-                            <SelectItem value="90d">Last 90 Days</SelectItem>
-                            <SelectItem value="1y">Last Year</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="text-sm">Include Archives</label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Active only" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active Only</SelectItem>
-                            <SelectItem value="all">Include Archived</SelectItem>
-                            <SelectItem value="archived">Archived Only</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <Button 
-                  className="w-full" 
-                  onClick={handleExport}
-                  disabled={!selectedSource || !selectedFormat || isExporting}
-                >
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing Export...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="h-4 w-4 mr-2" />
-                      Start Export
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Export Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Export Preview</CardTitle>
-                <CardDescription>Preview of your export configuration</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {selectedSource && selectedFormat ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-muted/20 rounded-lg">
-                      <h4 className="font-medium mb-2">Export Summary</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Data Source:</span>
-                          <span className="font-medium">
-                            {exportSources.find(s => s.id === selectedSource)?.name}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Format:</span>
-                          <span className="font-medium">
-                            {exportFormats.find(f => f.id === selectedFormat)?.name}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Estimated Size:</span>
-                          <span className="font-medium">~2.5 MB</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Estimated Time:</span>
-                          <span className="font-medium">2-4 minutes</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {isExporting && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Processing...</span>
-                          <span>65%</span>
-                        </div>
-                        <Progress value={65} className="h-2" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Download className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Select a data source and format to preview your export
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="quick">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {quickExports.map((exportConfig) => (
-              <Card key={exportConfig.id} className="cursor-pointer hover:shadow-md transition-shadow">
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{exportConfig.name}</CardTitle>
-                  <CardDescription>{exportConfig.description}</CardDescription>
+                  <CardTitle>Export Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Dataset</Label>
+                    <Select value={selectedDataset} onValueChange={setSelectedDataset}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select dataset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {datasets.map((dataset) => (
+                          <SelectItem key={dataset.id} value={dataset.id}>
+                            {dataset.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Date Range</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7d">Last 7 days</SelectItem>
+                        <SelectItem value="30d">Last 30 days</SelectItem>
+                        <SelectItem value="90d">Last 90 days</SelectItem>
+                        <SelectItem value="custom">Custom range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Export Format</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {exportFormats.map((format) => {
+                        const Icon = format.icon;
+                        return (
+                          <div 
+                            key={format.id}
+                            className={`p-3 border rounded-lg cursor-pointer text-center transition-colors ${
+                              selectedFormat === format.id 
+                                ? 'border-primary bg-primary/5' 
+                                : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => setSelectedFormat(format.id)}
+                          >
+                            <Icon className="h-6 w-6 mx-auto mb-1" />
+                            <div className="font-medium text-sm">{format.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {format.description}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="scheduled"
+                      checked={isScheduled}
+                      onCheckedChange={setIsScheduled}
+                    />
+                    <Label htmlFor="scheduled">Schedule this export</Label>
+                  </div>
+
+                  {isScheduled && (
+                    <div className="space-y-2">
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Frequency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input placeholder="Email recipients" />
+                    </div>
+                  )}
+
+                  <Button className="w-full">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export Data
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Dataset Overview */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Available Datasets</CardTitle>
+                  <CardDescription>Choose from available data sources for export</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {datasets.map((dataset) => (
+                    <div 
+                      key={dataset.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedDataset === dataset.id 
+                          ? 'border-primary bg-primary/5' 
+                          : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setSelectedDataset(dataset.id)}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{dataset.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {dataset.records} records
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">{dataset.size}</div>
+                          {selectedDataset === dataset.id && (
+                            <Badge variant="default">Selected</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Export History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Exports</CardTitle>
+                  <CardDescription>Your recent data export history</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span>Source:</span>
-                      <Badge variant="outline">{exportConfig.source}</Badge>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Format:</span>
-                      <Badge variant="outline">{exportConfig.format.toUpperCase()}</Badge>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Time:</span>
-                      <span className="text-muted-foreground">{exportConfig.estimated_time}</span>
-                    </div>
-                    <Button 
-                      className="w-full" 
-                      size="sm" 
-                      onClick={() => handleQuickExport(exportConfig)}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Now
-                    </Button>
+                    {[
+                      { name: "Farmer Data Export", date: "2 hours ago", format: "CSV", size: "2.3 MB" },
+                      { name: "Product Analytics", date: "1 day ago", format: "Excel", size: "1.8 MB" },
+                      { name: "Campaign Report", date: "3 days ago", format: "PDF", size: "950 KB" },
+                      { name: "Transaction Data", date: "1 week ago", format: "JSON", size: "3.2 MB" }
+                    ].map((export_, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <div className="font-medium">{export_.name}</div>
+                            <div className="text-sm text-muted-foreground">{export_.date}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline">{export_.format}</Badge>
+                          <span className="text-sm text-muted-foreground">{export_.size}</span>
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="history">
+        <TabsContent value="scheduled" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Export History</CardTitle>
-              <CardDescription>Track and download your previous exports</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Scheduled Exports</CardTitle>
+                <CardDescription>Manage automated data export schedules</CardDescription>
+              </div>
+              <Button>
+                <Calendar className="h-4 w-4 mr-2" />
+                New Schedule
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentExports.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      No exports found. Create your first export to see it here.
-                    </p>
-                  </div>
-                ) : (
-                  recentExports.map((exportLog) => (
-                    <div
-                      key={exportLog.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon('completed')}
-                          <div>
-                            <div className="font-medium">
-                              {exportLog.data_source} Export ({exportLog.export_format.toUpperCase()})
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(exportLog.created_at).toLocaleString()}
-                            </div>
-                          </div>
+                {scheduledExports.map((export_) => (
+                  <div key={export_.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      {getStatusIcon(export_.status)}
+                      <div>
+                        <div className="font-medium">{export_.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {export_.dataset} • {export_.format} • {export_.schedule}
                         </div>
                       </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right text-sm">
-                          <div>{exportLog.row_count.toLocaleString()} rows</div>
-                          <div className="text-muted-foreground">
-                            {formatFileSize(exportLog.file_size_bytes)}
-                          </div>
-                        </div>
-                        
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-muted-foreground">
+                        Last run: {export_.lastRun}
+                      </div>
+                      <Badge className={getStatusColor(export_.status)}>
+                        {export_.status}
+                      </Badge>
+                      <div className="flex space-x-2">
+                        <Button variant="ghost" size="sm">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>API Integrations</CardTitle>
+                <CardDescription>Connect with external BI tools and platforms</CardDescription>
+              </div>
+              <Button>
+                <Link className="h-4 w-4 mr-2" />
+                New Integration
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {apiIntegrations.map((integration, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      {getStatusIcon(integration.status)}
+                      <div>
+                        <div className="font-medium">{integration.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {integration.description}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-sm text-muted-foreground">
+                        Last sync: {integration.lastSync}
+                      </div>
+                      <Badge className={getStatusColor(integration.status)}>
+                        {integration.status}
+                      </Badge>
+                      <div className="flex space-x-2">
+                        <Button variant="ghost" size="sm">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Database className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* API Documentation */}
+          <Card>
+            <CardHeader>
+              <CardTitle>API Documentation</CardTitle>
+              <CardDescription>Integration endpoints and documentation</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="font-medium mb-2">REST API Endpoint</div>
+                  <code className="text-sm bg-muted p-2 rounded block">
+                    https://api.tenant.com/v1/export
+                  </code>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    View Docs
+                  </Button>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="font-medium mb-2">GraphQL Endpoint</div>
+                  <code className="text-sm bg-muted p-2 rounded block">
+                    https://api.tenant.com/graphql
+                  </code>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    View Schema
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="webhooks" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Webhook Endpoints</CardTitle>
+                <CardDescription>Real-time data notifications and event triggers</CardDescription>
+              </div>
+              <Button>
+                <Link className="h-4 w-4 mr-2" />
+                Add Webhook
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {webhookEndpoints.map((webhook, index) => (
+                  <div key={index} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(webhook.status)}
+                        <span className="font-medium">{webhook.name}</span>
+                      </div>
+                      <Badge className={getStatusColor(webhook.status)}>
+                        {webhook.status}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm text-muted-foreground">URL:</span>
+                        <code className="text-sm ml-2">{webhook.url}</code>
+                      </div>
+                      <div>
+                        <span className="text-sm text-muted-foreground">Events:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {webhook.events.map((event) => (
+                            <Badge key={event} variant="outline">
+                              {event}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2 mt-3">
+                      <Button variant="ghost" size="sm">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">Test</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Webhook Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Add New Webhook</CardTitle>
+              <CardDescription>Configure a new webhook endpoint</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="webhookName">Webhook Name</Label>
+                  <Input id="webhookName" placeholder="Enter webhook name" />
+                </div>
+                <div>
+                  <Label htmlFor="webhookUrl">Endpoint URL</Label>
+                  <Input id="webhookUrl" placeholder="https://api.example.com/webhook" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="webhookEvents">Events</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select events to trigger" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="farmer.created">Farmer Created</SelectItem>
+                    <SelectItem value="farmer.updated">Farmer Updated</SelectItem>
+                    <SelectItem value="product.created">Product Created</SelectItem>
+                    <SelectItem value="campaign.started">Campaign Started</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="webhookHeaders">Custom Headers (JSON)</Label>
+                <Textarea 
+                  id="webhookHeaders" 
+                  placeholder='{"Authorization": "Bearer token", "Content-Type": "application/json"}'
+                  className="h-20"
+                />
+              </div>
+              <Button>Create Webhook</Button>
             </CardContent>
           </Card>
         </TabsContent>

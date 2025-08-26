@@ -1,15 +1,15 @@
 
-import { useOptimizedDashboardQuery } from './useOptimizedDashboardQuery';
-import { useConsolidatedRealtime } from '@/hooks/realtime/useConsolidatedRealtime';
+import { useDashboardQuery } from './useDashboardQuery';
+import { useTenantRealtime } from './useTenantRealtime';
 
 export const useRealTimeDashboard = () => {
-  const dashboardQuery = useOptimizedDashboardQuery();
-  const { isConnected, activeChannels } = useConsolidatedRealtime();
+  const dashboardQuery = useDashboardQuery();
+  const { isConnected, activeChannels, lastUpdate } = useTenantRealtime();
 
   return {
     ...dashboardQuery,
     isLive: isConnected,
     activeChannels,
-    lastUpdate: new Date()
+    lastUpdate
   };
 };

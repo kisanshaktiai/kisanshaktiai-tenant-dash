@@ -1,10 +1,11 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
-import { useTenant } from '@/contexts/TenantContext';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { toast } from 'sonner';
 
 export const useOnboardingQuery = () => {
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useQuery({
     queryKey: ['onboarding', currentTenant?.id],
@@ -47,7 +48,7 @@ export const useOnboardingQuery = () => {
 
 export const useCompleteStep = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async ({ stepId, stepData }: { stepId: string; stepData?: any }) => {
@@ -94,7 +95,7 @@ export const useCompleteStep = () => {
 
 export const useUpdateStepStatus = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async ({ stepId, status, stepData }: { 
@@ -136,7 +137,7 @@ export const useUpdateStepStatus = () => {
 };
 
 export const useIsOnboardingComplete = () => {
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useQuery({
     queryKey: ['onboarding-complete', currentTenant?.id],
@@ -156,7 +157,7 @@ export const useIsOnboardingComplete = () => {
 
 export const useCompleteWorkflow = () => {
   const queryClient = useQueryClient();
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async (workflowId: string) => {
@@ -196,7 +197,7 @@ export const useCompleteWorkflow = () => {
 };
 
 export const useOnboardingValidation = () => {
-  const { currentTenant } = useTenant();
+  const { currentTenant } = useTenantContext();
   
   return useMutation({
     mutationFn: async () => {
