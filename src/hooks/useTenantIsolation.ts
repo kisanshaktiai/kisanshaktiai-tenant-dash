@@ -1,5 +1,4 @@
 
-import { useCallback } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,39 +34,47 @@ export const useTenantIsolation = () => {
   };
 
   const createTenantQuery = (tableName: TableName) => {
-    const tenantId = getTenantId();
+    if (!currentTenant?.id) {
+      throw new Error('No current tenant available');
+    }
     return supabase
       .from(tableName)
       .select('*')
-      .eq('tenant_id', tenantId);
+      .eq('tenant_id', currentTenant.id);
   };
 
   const createTenantInsert = (tableName: TableName, data: Record<string, any>) => {
-    const tenantId = getTenantId();
+    if (!currentTenant?.id) {
+      throw new Error('No current tenant available');
+    }
     return supabase
       .from(tableName)
       .insert({
         ...data,
-        tenant_id: tenantId,
+        tenant_id: currentTenant.id,
       });
   };
 
   const createTenantUpdate = (tableName: TableName, id: string, data: Record<string, any>) => {
-    const tenantId = getTenantId();
+    if (!currentTenant?.id) {
+      throw new Error('No current tenant available');
+    }
     return supabase
       .from(tableName)
       .update(data)
       .eq('id', id)
-      .eq('tenant_id', tenantId);
+      .eq('tenant_id', currentTenant.id);
   };
 
   const createTenantDelete = (tableName: TableName, id: string) => {
-    const tenantId = getTenantId();
+    if (!currentTenant?.id) {
+      throw new Error('No current tenant available');
+    }
     return supabase
       .from(tableName)
       .delete()
       .eq('id', id)
-      .eq('tenant_id', tenantId);
+      .eq('tenant_id', currentTenant.id);
   };
 
   return {
