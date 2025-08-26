@@ -1,443 +1,275 @@
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { 
-  MessageSquare, Send, Users, Package, 
-  UserPlus, Download, Calendar, Mail,
-  Phone, FileText, Target, Tag, X
+  MessageSquare, Users, Tag, Download, 
+  Send, X, CheckCircle, AlertCircle 
 } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { useCreateBulkOperationMutation, useFarmerSegmentsQuery } from '@/hooks/data/useEnhancedFarmerQuery';
+import { useBulkOperationMutation } from '@/hooks/data/useFarmerManagementQuery';
 import { toast } from 'sonner';
 
-interface BulkOperationsPanelProps {
+export interface BulkOperationsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedFarmers: string[];
   onComplete: () => void;
 }
 
-export const BulkOperationsPanel = ({
+export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   open,
   onOpenChange,
   selectedFarmers,
-  onComplete,
-}: BulkOperationsPanelProps) => {
-  const [selectedOperation, setSelectedOperation] = useState('messaging');
-  const [message, setMessage] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#3B82F6');
-  const [selectedSegment, setSelectedSegment] = useState('');
+  onComplete
+}) => {
+  const [selectedOperation, setSelectedOperation] = useState<string>('');
+  const [messageContent, setMessageContent] = useState('');
+  const [messageType, setMessageType] = useState('sms');
+  const [tagName, setTagName] = useState('');
+  const [segmentName, setSegmentName] = useState('');
 
-  const createBulkOperationMutation = useCreateBulkOperationMutation();
-  const { data: segments = [] } = useFarmerSegmentsQuery();
+  const bulkOperationMutation = useBulkOperationMutation();
 
-  const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error('Please enter a message');
+  if (!open) return null;
+
+  const handleExecuteOperation = async () => {
+    if (!selectedOperation) {
+      toast.error('Please select an operation');
       return;
     }
 
-    setIsProcessing(true);
-    
-    try {
-      await createBulkOperationMutation.mutateAsync({
-        operation_type: 'mass_messaging',
-        target_farmer_ids: selectedFarmers,
-        operation_data: {
-          message: message,
-          channel: 'sms' // Could be made configurable
-        }
-      });
+    let operationData: any = {};
 
-      // Simulate progress
-      let currentProgress = 0;
-      const interval = setInterval(() => {
-        currentProgress += 10;
-        setProgress(currentProgress);
-        
-        if (currentProgress >= 100) {
-          clearInterval(interval);
-          setIsProcessing(false);
-          setProgress(0);
-          setMessage('');
-          onComplete();
-          onOpenChange(false);
-          toast.success(`Message sent to ${selectedFarmers.length} farmers`);
+    switch (selectedOperation) {
+      case 'message':
+        if (!messageContent.trim()) {
+          toast.error('Please enter message content');
+          return;
         }
-      }, 300);
+        operationData = {
+          message_content: messageContent,
+          communication_type: messageType
+        };
+        break;
       
-    } catch (error) {
-      setIsProcessing(false);
-      setProgress(0);
-      toast.error('Failed to send messages');
-    }
-  };
-
-  const handleAddTag = async () => {
-    if (!newTagName.trim()) {
-      toast.error('Please enter a tag name');
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    try {
-      await createBulkOperationMutation.mutateAsync({
-        operation_type: 'add_tags',
-        target_farmer_ids: selectedFarmers,
-        operation_data: {
-          tag_name: newTagName,
-          tag_color: newTagColor
+      case 'tag':
+        if (!tagName.trim()) {
+          toast.error('Please enter tag name');
+          return;
         }
-      });
+        operationData = {
+          tag_name: tagName,
+          tag_color: '#3B82F6'
+        };
+        break;
+      
+      case 'segment':
+        if (!segmentName.trim()) {
+          toast.error('Please enter segment name');
+          return;
+        }
+        operationData = {
+          segment_name: segmentName,
+          farmer_ids: selectedFarmers
+        };
+        break;
+      
+      case 'export':
+        operationData = {
+          format: 'csv',
+          include_fields: ['farmer_code', 'contact_info', 'land_details']
+        };
+        break;
+      
+      default:
+        toast.error('Invalid operation selected');
+        return;
+    }
 
-      setNewTagName('');
-      setNewTagColor('#3B82F6');
+    try {
+      await bulkOperationMutation.mutateAsync({
+        operation_type: selectedOperation as any,
+        farmer_ids: selectedFarmers,
+        operation_data: operationData
+      });
+      
       onComplete();
-      toast.success(`Tag added to ${selectedFarmers.length} farmers`);
-      
+      toast.success('Bulk operation completed successfully');
     } catch (error) {
-      toast.error('Failed to add tags');
-    } finally {
-      setIsProcessing(false);
+      toast.error('Failed to execute bulk operation');
     }
   };
 
-  const handleAssignSegment = async () => {
-    if (!selectedSegment) {
-      toast.error('Please select a segment');
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    try {
-      await createBulkOperationMutation.mutateAsync({
-        operation_type: 'assign_segment',
-        target_farmer_ids: selectedFarmers,
-        operation_data: {
-          segment_id: selectedSegment
-        }
-      });
-
-      setSelectedSegment('');
-      onComplete();
-      toast.success(`Segment assigned to ${selectedFarmers.length} farmers`);
+  const renderOperationForm = () => {
+    switch (selectedOperation) {
+      case 'message':
+        return (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Message Type</label>
+              <Select value={messageType} onValueChange={setMessageType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sms">SMS</SelectItem>
+                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Message Content</label>
+              <Textarea
+                placeholder="Enter your message..."
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                rows={4}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Characters: {messageContent.length}/160
+              </p>
+            </div>
+          </div>
+        );
       
-    } catch (error) {
-      toast.error('Failed to assign segment');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleExportSelected = async () => {
-    setIsProcessing(true);
-    
-    try {
-      // Simulate export process
-      let currentProgress = 0;
-      const interval = setInterval(() => {
-        currentProgress += 20;
-        setProgress(currentProgress);
-        
-        if (currentProgress >= 100) {
-          clearInterval(interval);
-          setIsProcessing(false);
-          setProgress(0);
-          
-          // Create and download a sample CSV
-          const csvContent = `Farmer Code,Land Size,Crops,Engagement
-${selectedFarmers.map(id => `FARMER_${id.substring(0, 6)},${Math.random() * 10 + 1},Rice;Wheat,Medium`).join('\n')}`;
-          
-          const blob = new Blob([csvContent], { type: 'text/csv' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `farmers_export_${new Date().toISOString().split('T')[0]}.csv`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-          
-          toast.success(`Exported ${selectedFarmers.length} farmers`);
-        }
-      }, 500);
+      case 'tag':
+        return (
+          <div>
+            <label className="block text-sm font-medium mb-2">Tag Name</label>
+            <input
+              type="text"
+              placeholder="Enter tag name..."
+              value={tagName}
+              onChange={(e) => setTagName(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+        );
       
-    } catch (error) {
-      setIsProcessing(false);
-      setProgress(0);
-      toast.error('Export failed');
+      case 'segment':
+        return (
+          <div>
+            <label className="block text-sm font-medium mb-2">Segment Name</label>
+            <input
+              type="text"
+              placeholder="Enter segment name..."
+              value={segmentName}
+              onChange={(e) => setSegmentName(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+        );
+      
+      case 'export':
+        return (
+          <div className="text-center py-4">
+            <Download className="w-12 h-12 text-blue-500 mx-auto mb-4" />
+            <p className="text-gray-600">
+              Export {selectedFarmers.length} farmers to CSV format
+            </p>
+          </div>
+        );
+      
+      default:
+        return null;
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Bulk Operations
-            <Badge variant="outline" className="ml-2">
-              {selectedFarmers.length} farmers selected
-            </Badge>
-          </DialogTitle>
-          <DialogDescription>
-            Perform actions on multiple farmers at once
-          </DialogDescription>
-        </DialogHeader>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl max-h-[90vh] overflow-auto">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Bulk Operations
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{selectedFarmers.length} farmers selected</Badge>
+          </div>
+        </CardHeader>
 
-        <Tabs value={selectedOperation} onValueChange={setSelectedOperation}>
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="messaging">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Messages
-            </TabsTrigger>
-            <TabsTrigger value="tags">
-              <Tag className="h-4 w-4 mr-2" />
-              Tags
-            </TabsTrigger>
-            <TabsTrigger value="segments">
-              <Target className="h-4 w-4 mr-2" />
-              Segments
-            </TabsTrigger>
-            <TabsTrigger value="export">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </TabsTrigger>
-            <TabsTrigger value="campaigns">
-              <Calendar className="h-4 w-4 mr-2" />
-              Campaigns
-            </TabsTrigger>
-          </TabsList>
-
-          {isProcessing && (
-            <div className="space-y-2 p-4 bg-muted rounded-lg">
-              <div className="flex items-center justify-between text-sm">
-                <span>Processing operation...</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
+        <CardContent className="space-y-6">
+          {/* Operation Selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Select Operation</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={selectedOperation === 'message' ? 'default' : 'outline'}
+                onClick={() => setSelectedOperation('message')}
+                className="justify-start"
+              >
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Send Message
+              </Button>
+              <Button
+                variant={selectedOperation === 'tag' ? 'default' : 'outline'}
+                onClick={() => setSelectedOperation('tag')}
+                className="justify-start"
+              >
+                <Tag className="w-4 h-4 mr-2" />
+                Add Tag
+              </Button>
+              <Button
+                variant={selectedOperation === 'segment' ? 'default' : 'outline'}
+                onClick={() => setSelectedOperation('segment')}
+                className="justify-start"
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Create Segment
+              </Button>
+              <Button
+                variant={selectedOperation === 'export' ? 'default' : 'outline'}
+                onClick={() => setSelectedOperation('export')}
+                className="justify-start"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export Data
+              </Button>
             </div>
+          </div>
+
+          {selectedOperation && (
+            <>
+              <Separator />
+              {renderOperationForm()}
+            </>
           )}
 
-          <TabsContent value="messaging" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Send Bulk Messages</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Select defaultValue="sms">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Message Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sms">SMS</SelectItem>
-                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="app">App Notification</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select defaultValue="immediate">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Schedule" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="immediate">Send Now</SelectItem>
-                      <SelectItem value="schedule">Schedule Later</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Textarea
-                  placeholder="Type your message here..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="min-h-32"
-                />
-                
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    {message.length}/160 characters
-                  </p>
-                  <div className="flex gap-2">
-                    <Button variant="outline">Save Template</Button>
-                    <Button onClick={handleSendMessage} disabled={isProcessing}>
-                      <Send className="h-4 w-4 mr-2" />
-                      Send to {selectedFarmers.length} farmers
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tags" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Add Tags</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="tagName">Tag Name</Label>
-                    <Input
-                      id="tagName"
-                      placeholder="Enter tag name"
-                      value={newTagName}
-                      onChange={(e) => setNewTagName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tagColor">Tag Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="tagColor"
-                        type="color"
-                        value={newTagColor}
-                        onChange={(e) => setNewTagColor(e.target.value)}
-                        className="w-16"
-                      />
-                      <Input
-                        value={newTagColor}
-                        onChange={(e) => setNewTagColor(e.target.value)}
-                        placeholder="#3B82F6"
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button onClick={handleAddTag} disabled={isProcessing}>
-                    <Tag className="h-4 w-4 mr-2" />
-                    Add Tag to {selectedFarmers.length} farmers
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="segments" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Assign Segment</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Select Segment</Label>
-                  <Select value={selectedSegment} onValueChange={setSelectedSegment}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a segment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {segments.map(segment => (
-                        <SelectItem key={segment.id} value={segment.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: segment.color }}
-                            />
-                            {segment.segment_name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button onClick={handleAssignSegment} disabled={isProcessing}>
-                    <Target className="h-4 w-4 mr-2" />
-                    Assign to {selectedFarmers.length} farmers
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="export" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Export Selected Farmers</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Select defaultValue="csv">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Export Format" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="csv">CSV File</SelectItem>
-                      <SelectItem value="excel">Excel File</SelectItem>
-                      <SelectItem value="pdf">PDF Report</SelectItem>
-                      <SelectItem value="json">JSON Data</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select defaultValue="all">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Data Fields" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Fields</SelectItem>
-                      <SelectItem value="basic">Basic Info</SelectItem>
-                      <SelectItem value="contact">Contact Details</SelectItem>
-                      <SelectItem value="farming">Farming Details</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex justify-end">
-                  <Button onClick={handleExportSelected} disabled={isProcessing}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export {selectedFarmers.length} farmers
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="campaigns" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Campaign Enrollment</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Campaign enrollment feature coming soon...
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+          {selectedOperation && (
+            <>
+              <Separator />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleExecuteOperation}
+                  disabled={bulkOperationMutation.isPending}
+                >
+                  {bulkOperationMutation.isPending ? (
+                    'Processing...'
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Execute Operation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
