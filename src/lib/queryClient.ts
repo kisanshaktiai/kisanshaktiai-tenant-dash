@@ -1,71 +1,57 @@
-import { QueryClient, DefaultOptions } from '@tanstack/react-query';
 
-const queryConfig: DefaultOptions = {
-  queries: {
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-    retry: (failureCount, error) => {
-      // Don't retry on 4xx errors except 408, 429
-      if (error && typeof error === 'object' && 'status' in error) {
-        const status = (error as any).status;
-        if (status >= 400 && status < 500 && status !== 408 && status !== 429) {
-          return false;
-        }
-      }
-      return failureCount < 3;
-    },
-    refetchOnWindowFocus: false,
-    refetchOnMount: 'always',
-  },
-  mutations: {
-    retry: 1,
-  },
-};
+import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
-  defaultOptions: queryConfig,
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
-// Query key factory for consistent cache management with tenant isolation
 export const queryKeys = {
-  // Auth
-  auth: ['auth'] as const,
+  // Tenant-related queries
+  tenants: (userId?: string) => ['tenants', userId] as const,
+  tenant: (tenantId: string) => ['tenant', tenantId] as const,
+  tenantSettings: (tenantId: string) => ['tenant-settings', tenantId] as const,
+  tenantBranding: (tenantId: string) => ['tenant-branding', tenantId] as const,
+  tenantFeatures: (tenantId: string) => ['tenant-features', tenantId] as const,
   
-  // Tenants - FIXED: Always include tenant context
-  tenants: ['tenants'] as const,
-  tenant: (id: string) => ['tenants', id] as const,
+  // Farmer-related queries
+  farmers: (tenantId: string, options?: any) => ['farmers', tenantId, options] as const,
+  farmer: (farmerId: string, tenantId: string) => ['farmer', farmerId, tenantId] as const,
+  farmerEngagement: (tenantId: string, farmerId?: string) => ['farmer-engagement', tenantId, farmerId] as const,
+  farmerTags: (tenantId: string, farmerId?: string) => ['farmer-tags', tenantId, farmerId] as const,
+  farmerNotes: (farmerId: string, tenantId: string) => ['farmer-notes', farmerId, tenantId] as const,
+  farmerSegments: (tenantId: string) => ['farmer-segments', tenantId] as const,
+  advancedFarmerSearch: (tenantId: string, params: any) => ['advanced-farmer-search', tenantId, params] as const,
+  communicationHistory: (farmerId: string, tenantId: string) => ['communication-history', farmerId, tenantId] as const,
   
-  // Farmers - FIXED: Always include tenantId in cache keys
-  farmers: (tenantId: string) => ['farmers', tenantId] as const,
-  farmersList: (tenantId: string, filters?: Record<string, any>) => 
-    ['farmers', 'list', tenantId, filters] as const,
-  farmer: (id: string, tenantId: string) => ['farmers', id, tenantId] as const,
-  farmerStats: (tenantId: string) => ['farmers', 'stats', tenantId] as const,
+  // Dealer-related queries
+  dealers: (tenantId: string, options?: any) => ['dealers', tenantId, options] as const,
+  dealer: (dealerId: string, tenantId: string) => ['dealer', dealerId, tenantId] as const,
+  dealerPerformance: (dealerId: string, tenantId: string) => ['dealer-performance', dealerId, tenantId] as const,
   
-  // Dealers - FIXED: Always include tenantId in cache keys
-  dealers: (tenantId: string) => ['dealers', tenantId] as const,
-  dealersList: (tenantId: string) => ['dealers', 'list', tenantId] as const,
-  dealer: (id: string, tenantId: string) => ['dealers', id, tenantId] as const,
+  // Product-related queries
+  products: (tenantId: string, options?: any) => ['products', tenantId, options] as const,
+  product: (productId: string, tenantId: string) => ['product', productId, tenantId] as const,
+  productCategories: (tenantId: string) => ['product-categories', tenantId] as const,
   
-  // Products - FIXED: Always include tenantId in cache keys
-  products: (tenantId: string) => ['products', tenantId] as const,
-  productsList: (tenantId: string) => ['products', 'list', tenantId] as const,
-  product: (id: string, tenantId: string) => ['products', id, tenantId] as const,
+  // Campaign-related queries
+  campaigns: (tenantId: string, options?: any) => ['campaigns', tenantId, options] as const,
+  campaign: (campaignId: string, tenantId: string) => ['campaign', campaignId, tenantId] as const,
+  campaignAnalytics: (campaignId: string, tenantId: string) => ['campaign-analytics', campaignId, tenantId] as const,
   
-  // Analytics - FIXED: Always include tenantId in cache keys
-  analytics: (tenantId: string) => ['analytics', tenantId] as const,
-  dashboardStats: (tenantId: string) => ['analytics', 'dashboard', tenantId] as const,
-  engagementStats: (tenantId: string) => ['analytics', 'engagement', tenantId] as const,
-
-  // Farmer Management
-  farmerEngagement: (tenantId: string, farmerId?: string) => 
-    farmerId ? ['farmer-engagement', tenantId, farmerId] : ['farmer-engagement', tenantId],
-  farmerTags: (tenantId: string, farmerId?: string) => 
-    farmerId ? ['farmer-tags', tenantId, farmerId] : ['farmer-tags', tenantId],
-  farmerNotes: (farmerId: string, tenantId: string) => ['farmer-notes', farmerId, tenantId],
-  communicationHistory: (farmerId: string, tenantId: string) => ['communication-history', farmerId, tenantId],
-  farmerSegments: (tenantId: string) => ['farmer-segments', tenantId],
-  farmerLeads: (tenantId: string) => ['farmer-leads', tenantId],
-  advancedFarmerSearch: (tenantId: string, params: any) => ['advanced-farmer-search', tenantId, params],
-  farmerImportJobs: (tenantId: string) => ['farmer-import-jobs', tenantId],
+  // Analytics queries
+  analytics: (tenantId: string, type: string, params?: any) => ['analytics', tenantId, type, params] as const,
+  dashboardStats: (tenantId: string) => ['dashboard-stats', tenantId] as const,
+  
+  // Onboarding queries
+  onboardingWorkflow: (tenantId: string) => ['onboarding-workflow', tenantId] as const,
+  onboardingSteps: (workflowId: string, tenantId: string) => ['onboarding-steps', workflowId, tenantId] as const,
+  
+  // System queries
+  subscriptionPlans: () => ['subscription-plans'] as const,
+  systemConfig: () => ['system-config'] as const,
 } as const;

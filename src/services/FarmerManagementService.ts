@@ -65,24 +65,6 @@ export interface FarmerSegment {
   updated_at: string;
 }
 
-export interface FarmerLead {
-  id: string;
-  tenant_id: string;
-  lead_name: string;
-  phone: string | null;
-  email: string | null;
-  location: Record<string, any> | null;
-  lead_source: string;
-  lead_score: number;
-  status: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
-  assigned_to: string | null;
-  notes: string | null;
-  follow_up_date: string | null;
-  converted_farmer_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface BulkOperationRequest {
   operation_type: 'message' | 'tag' | 'segment' | 'export';
   farmer_ids: string[];
@@ -238,39 +220,6 @@ class FarmerManagementService extends BaseApiService {
     }
   }
 
-  async getFarmerLeads(tenantId: string): Promise<FarmerLead[]> {
-    try {
-      // Use existing leads table with proper field mapping
-      const { data: leads, error } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('organization_name', tenantId) // Use organization_name for tenant lookup
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      return (leads || []).map(lead => ({
-        id: lead.id,
-        tenant_id: tenantId,
-        lead_name: lead.contact_name || lead.organization_name || 'Unknown',
-        phone: lead.phone,
-        email: lead.email,
-        location: null, // Field doesn't exist in current schema
-        lead_source: lead.source || 'manual',
-        lead_score: lead.ai_score || 0,
-        status: lead.status as 'new' | 'contacted' | 'qualified' | 'converted' | 'lost',
-        assigned_to: lead.assigned_to,
-        notes: lead.notes,
-        follow_up_date: lead.follow_up_date,
-        converted_farmer_id: lead.converted_tenant_id,
-        created_at: lead.created_at,
-        updated_at: lead.updated_at
-      }));
-    } catch (error) {
-      throw new Error(`Failed to get farmer leads: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
   async searchFarmers(tenantId: string, params: SearchParams) {
     try {
       let query = supabase
@@ -282,7 +231,7 @@ class FarmerManagementService extends BaseApiService {
         .eq('tenant_id', tenantId);
 
       if (params.query) {
-        query = query.or(`name.ilike.%${params.query}%,phone.ilike.%${params.query}%,email.ilike.%${params.query}%`);
+        query = query.or(`farmer_code.ilike.%${params.query}%,primary_crops.cs.{${params.query}}`);
       }
 
       const { data: farmers, error } = await query;
@@ -333,49 +282,6 @@ class FarmerManagementService extends BaseApiService {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-  }
-
-  async createFarmerLead(tenantId: string, leadData: Omit<FarmerLead, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerLead> {
-    try {
-      const { data: lead, error } = await supabase
-        .from('leads')
-        .insert({
-          contact_name: leadData.lead_name,
-          phone: leadData.phone,
-          email: leadData.email,
-          source: leadData.lead_source,
-          ai_score: leadData.lead_score,
-          status: leadData.status,
-          assigned_to: leadData.assigned_to,
-          notes: leadData.notes,
-          follow_up_date: leadData.follow_up_date,
-          organization_name: tenantId // Use organization_name for tenant reference
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return {
-        id: lead.id,
-        tenant_id: tenantId,
-        lead_name: lead.contact_name,
-        phone: lead.phone,
-        email: lead.email,
-        location: null,
-        lead_source: lead.source,
-        lead_score: lead.ai_score,
-        status: lead.status as any,
-        assigned_to: lead.assigned_to,
-        notes: lead.notes,
-        follow_up_date: lead.follow_up_date,
-        converted_farmer_id: null,
-        created_at: lead.created_at,
-        updated_at: lead.updated_at
-      };
-    } catch (error) {
-      throw new Error(`Failed to create farmer lead: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
   }
 
   async performBulkOperation(tenantId: string, operation: BulkOperationRequest): Promise<BulkOperationResult> {

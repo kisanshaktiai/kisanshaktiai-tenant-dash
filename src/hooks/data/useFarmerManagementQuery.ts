@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { farmerManagementService, type BulkOperationRequest, type FarmerSegment, type FarmerLead } from '@/services/FarmerManagementService';
+import { farmerManagementService, type BulkOperationRequest, type FarmerSegment } from '@/services/FarmerManagementService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
@@ -75,21 +75,6 @@ export const useFarmerSegmentsQuery = () => {
         throw new Error('No tenant selected');
       }
       return farmerManagementService.getFarmerSegments(currentTenant.id);
-    },
-    enabled: !!currentTenant,
-  });
-};
-
-export const useFarmerLeadsQuery = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
-
-  return useQuery({
-    queryKey: queryKeys.farmerLeads(currentTenant?.id || ''),
-    queryFn: () => {
-      if (!currentTenant) {
-        throw new Error('No tenant selected');
-      }
-      return farmerManagementService.getFarmerLeads(currentTenant.id);
     },
     enabled: !!currentTenant,
   });
@@ -172,27 +157,6 @@ export const useCreateFarmerSegmentMutation = () => {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : 'Failed to create segment');
-    },
-  });
-};
-
-export const useCreateFarmerLeadMutation = () => {
-  const queryClient = useQueryClient();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
-
-  return useMutation({
-    mutationFn: (leadData: Omit<FarmerLead, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>) => {
-      if (!currentTenant) {
-        throw new Error('No tenant selected');
-      }
-      return farmerManagementService.createFarmerLead(currentTenant.id, leadData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.farmerLeads(currentTenant?.id || '') });
-      toast.success('Lead created successfully');
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to create lead');
     },
   });
 };
