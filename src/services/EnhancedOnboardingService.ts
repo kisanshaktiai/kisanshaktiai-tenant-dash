@@ -1,4 +1,3 @@
-
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -56,6 +55,8 @@ class EnhancedOnboardingService extends BaseApiService {
       if (error) throw new Error(error.message);
       
       if (data) {
+        const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
+        
         return {
           id: data.id,
           tenant_id: data.tenant_id,
@@ -65,7 +66,7 @@ class EnhancedOnboardingService extends BaseApiService {
           current_step: data.current_step,
           total_steps: data.total_steps,
           status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
-          metadata: typeof data.metadata === 'object' ? data.metadata as Record<string, any> : {},
+          metadata,
           created_at: data.created_at,
           updated_at: data.updated_at
         };
@@ -98,16 +99,18 @@ class EnhancedOnboardingService extends BaseApiService {
 
       if (error) throw new Error(error.message);
       
+      const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
+      
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
-        workflow_type: data.metadata?.workflow_type || 'standard',
-        template_data: data.metadata?.template_data || {},
+        workflow_name: metadata.workflow_name || 'Tenant Onboarding',
+        workflow_type: metadata.workflow_type || 'standard',
+        template_data: metadata.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
-        metadata: typeof data.metadata === 'object' ? data.metadata as Record<string, any> : {},
+        metadata,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -130,16 +133,18 @@ class EnhancedOnboardingService extends BaseApiService {
 
       if (error) throw new Error(error.message);
       
+      const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
+      
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
-        workflow_type: data.metadata?.workflow_type || 'standard',
-        template_data: data.metadata?.template_data || {},
+        workflow_name: metadata.workflow_name || 'Tenant Onboarding',
+        workflow_type: metadata.workflow_type || 'standard',
+        template_data: metadata.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
-        metadata: typeof data.metadata === 'object' ? data.metadata as Record<string, any> : {},
+        metadata,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
@@ -307,16 +312,18 @@ class EnhancedOnboardingService extends BaseApiService {
 
       if (error) throw new Error(error.message);
       
+      const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
+      
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
-        workflow_type: data.metadata?.workflow_type || 'standard',
-        template_data: data.metadata?.template_data || {},
+        workflow_name: metadata.workflow_name || 'Tenant Onboarding',
+        workflow_type: metadata.workflow_type || 'standard',
+        template_data: metadata.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
-        metadata: typeof data.metadata === 'object' ? data.metadata as Record<string, any> : {},
+        metadata,
         created_at: data.created_at,
         updated_at: data.updated_at
       };
