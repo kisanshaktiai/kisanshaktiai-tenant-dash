@@ -13,14 +13,14 @@ export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
 
-  const getTenantId = (): string => {
+  const getTenantId = () => {
     if (!currentTenant?.id) {
       throw new Error('No current tenant available. Please ensure user is properly authenticated and has access to a tenant.');
     }
     return currentTenant.id;
   };
 
-  const validateTenantAccess = (): TenantValidation => {
+  const validateTenantAccess = () => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -30,15 +30,16 @@ export const useTenantIsolation = () => {
     return {
       userId: user.id,
       tenantId: currentTenant.id,
-    };
+    } as TenantValidation;
   };
 
   const createTenantQuery = (tableName: TableName) => {
     if (!currentTenant?.id) {
       throw new Error('No current tenant available');
     }
+    // Explicitly type the return to avoid deep type inference
     return supabase
-      .from(tableName)
+      .from(tableName as any)
       .select('*')
       .eq('tenant_id', currentTenant.id);
   };
@@ -48,7 +49,7 @@ export const useTenantIsolation = () => {
       throw new Error('No current tenant available');
     }
     return supabase
-      .from(tableName)
+      .from(tableName as any)
       .insert({
         ...data,
         tenant_id: currentTenant.id,
@@ -60,7 +61,7 @@ export const useTenantIsolation = () => {
       throw new Error('No current tenant available');
     }
     return supabase
-      .from(tableName)
+      .from(tableName as any)
       .update(data)
       .eq('id', id)
       .eq('tenant_id', currentTenant.id);
@@ -71,7 +72,7 @@ export const useTenantIsolation = () => {
       throw new Error('No current tenant available');
     }
     return supabase
-      .from(tableName)
+      .from(tableName as any)
       .delete()
       .eq('id', id)
       .eq('tenant_id', currentTenant.id);
