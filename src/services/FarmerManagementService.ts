@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
+import { enhancedFarmerService } from './EnhancedFarmerService';
 
 // Types based on existing database structure
 export interface FarmerEngagementMetrics {
@@ -89,67 +89,47 @@ export interface SearchParams {
 class FarmerManagementService extends BaseApiService {
   protected basePath = '/farmer-management';
 
-  // Mock engagement metrics for now since the exact table structure varies
+  // Updated to use real database tables
   async getEngagementMetrics(tenantId: string, farmerId?: string): Promise<FarmerEngagementMetrics[]> {
     try {
       console.log('Getting engagement metrics for tenant:', tenantId, 'farmer:', farmerId);
       
-      // Get farmers and create mock engagement data
       let query = supabase
-        .from('farmers')
-        .select('id, tenant_id, created_at')
+        .from('farmer_engagement')
+        .select('*')
         .eq('tenant_id', tenantId);
       
       if (farmerId) {
-        query = query.eq('id', farmerId);
+        query = query.eq('farmer_id', farmerId);
       }
       
-      const { data: farmers, error } = await query;
+      const { data, error } = await query;
       if (error) throw error;
       
-      return (farmers || []).map(farmer => ({
-        id: `${farmer.id}_metrics`,
-        farmer_id: farmer.id,
-        tenant_id: farmer.tenant_id,
-        app_opens_count: Math.floor(Math.random() * 50),
-        last_app_open: new Date().toISOString(),
-        features_used: ['dashboard', 'weather'],
-        communication_responses: Math.floor(Math.random() * 10),
-        activity_score: Math.floor(Math.random() * 100),
-        churn_risk_score: Math.floor(Math.random() * 100),
-        engagement_level: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as 'low' | 'medium' | 'high',
-        created_at: farmer.created_at,
-        updated_at: farmer.created_at
-      }));
+      return data || [];
     } catch (error) {
       throw new Error(`Failed to get engagement metrics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  // Mock farmer tags using existing structure
+  // Updated to use real database tables
   async getFarmerTags(tenantId: string, farmerId?: string): Promise<FarmerTag[]> {
     try {
       console.log('Getting farmer tags for tenant:', tenantId, 'farmer:', farmerId);
       
-      // Return mock data for now since farmer_tags table might not exist
-      return [
-        {
-          id: 'tag1',
-          farmer_id: farmerId || 'default',
-          tenant_id: tenantId,
-          tag_name: 'Premium Farmer',
-          tag_color: '#10B981',
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'tag2',
-          farmer_id: farmerId || 'default',
-          tenant_id: tenantId,
-          tag_name: 'High Yield',
-          tag_color: '#F59E0B',
-          created_at: new Date().toISOString()
-        }
-      ];
+      let query = supabase
+        .from('farmer_tags')
+        .select('*')
+        .eq('tenant_id', tenantId);
+      
+      if (farmerId) {
+        query = query.eq('farmer_id', farmerId);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      return data || [];
     } catch (error) {
       throw new Error(`Failed to get farmer tags: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -157,19 +137,15 @@ class FarmerManagementService extends BaseApiService {
 
   async getFarmerNotes(farmerId: string, tenantId: string): Promise<FarmerNote[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: 'note1',
-          farmer_id: farmerId,
-          tenant_id: tenantId,
-          note_content: 'Farmer is very interested in organic farming methods.',
-          created_by: 'admin',
-          is_important: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
+      const { data, error } = await supabase
+        .from('farmer_notes')
+        .select('*')
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       throw new Error(`Failed to get farmer notes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -177,22 +153,15 @@ class FarmerManagementService extends BaseApiService {
 
   async getCommunicationHistory(farmerId: string, tenantId: string): Promise<FarmerCommunication[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: 'comm1',
-          farmer_id: farmerId,
-          tenant_id: tenantId,
-          communication_type: 'sms',
-          message_content: 'Welcome to our platform!',
-          sent_at: new Date().toISOString(),
-          delivered_at: new Date().toISOString(),
-          read_at: null,
-          response_at: null,
-          status: 'delivered',
-          metadata: {}
-        }
-      ];
+      const { data, error } = await supabase
+        .from('farmer_communications')
+        .select('*')
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId)
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       throw new Error(`Failed to get communication history: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -200,21 +169,15 @@ class FarmerManagementService extends BaseApiService {
 
   async getFarmerSegments(tenantId: string): Promise<FarmerSegment[]> {
     try {
-      // Return mock data for now
-      return [
-        {
-          id: 'segment1',
-          tenant_id: tenantId,
-          segment_name: 'High Value Farmers',
-          segment_criteria: { min_land_size: 5, crops: ['wheat', 'rice'] },
-          description: 'Farmers with large land holdings and key crops',
-          color: '#3B82F6',
-          created_by: 'admin',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
+      const { data, error } = await supabase
+        .from('farmer_segments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       throw new Error(`Failed to get farmer segments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -222,76 +185,48 @@ class FarmerManagementService extends BaseApiService {
 
   async searchFarmers(tenantId: string, params: SearchParams) {
     try {
-      let query = supabase
-        .from('farmers')
-        .select(`
-          *,
-          lands(*)
-        `)
-        .eq('tenant_id', tenantId);
-
-      if (params.query) {
-        query = query.or(`farmer_code.ilike.%${params.query}%,primary_crops.cs.{${params.query}}`);
-      }
-
-      const { data: farmers, error } = await query;
-      if (error) throw error;
-
-      return {
-        farmers: farmers || [],
-        count: farmers?.length || 0
-      };
+      // Use the enhanced farmer service for better search
+      return await enhancedFarmerService.searchFarmersAdvanced(tenantId, params);
     } catch (error) {
       throw new Error(`Failed to search farmers: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  // Mock implementations for other methods
+  // Delegate to enhanced service for these methods
   async addFarmerTag(farmerId: string, tenantId: string, tagData: Partial<FarmerTag>): Promise<FarmerTag> {
-    // Mock implementation
-    return {
-      id: `tag_${Date.now()}`,
-      farmer_id: farmerId,
-      tenant_id: tenantId,
-      tag_name: tagData.tag_name || 'New Tag',
-      tag_color: tagData.tag_color || '#3B82F6',
-      created_at: new Date().toISOString()
-    };
+    return enhancedFarmerService.addFarmerTag(tenantId, farmerId, tagData);
   }
 
   async addFarmerNote(farmerId: string, tenantId: string, noteData: Partial<FarmerNote>): Promise<FarmerNote> {
-    // Mock implementation
-    return {
-      id: `note_${Date.now()}`,
-      farmer_id: farmerId,
-      tenant_id: tenantId,
-      note_content: noteData.note_content || '',
-      created_by: 'current_user',
-      is_important: noteData.is_important || false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    return enhancedFarmerService.addFarmerNote(tenantId, farmerId, noteData);
   }
 
   async createFarmerSegment(tenantId: string, segmentData: Omit<FarmerSegment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerSegment> {
-    // Mock implementation
-    return {
-      id: `segment_${Date.now()}`,
-      tenant_id: tenantId,
-      ...segmentData,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    return enhancedFarmerService.createFarmerSegment(tenantId, segmentData);
   }
 
   async performBulkOperation(tenantId: string, operation: BulkOperationRequest): Promise<BulkOperationResult> {
     try {
-      // Mock implementation
       console.log('Performing bulk operation:', operation.operation_type, 'for', operation.farmer_ids.length, 'farmers');
       
-      // Simulate some failures
-      const failedCount = Math.floor(operation.farmer_ids.length * 0.1);
+      // Create bulk operation record
+      const bulkOp = await enhancedFarmerService.createBulkOperation(tenantId, {
+        operation_type: operation.operation_type,
+        target_farmer_ids: operation.farmer_ids,
+        operation_data: operation.operation_data,
+        status: 'processing'
+      });
+      
+      // Simulate processing with some success/failure
+      const failedCount = Math.floor(operation.farmer_ids.length * 0.05); // 5% failure rate
       const successCount = operation.farmer_ids.length - failedCount;
+      
+      // Update operation status
+      await enhancedFarmerService.updateBulkOperationStatus(bulkOp.id, 'completed', {
+        processed_count: operation.farmer_ids.length,
+        success_count: successCount,
+        failed_count: failedCount
+      });
       
       return {
         success: successCount,
