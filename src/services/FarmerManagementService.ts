@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 import { enhancedFarmerService } from './EnhancedFarmerService';
@@ -89,7 +90,7 @@ export interface SearchParams {
 class FarmerManagementService extends BaseApiService {
   protected basePath = '/farmer-management';
 
-  // Updated to use real database tables
+  // Updated to use real database tables with proper type casting
   async getEngagementMetrics(tenantId: string, farmerId?: string): Promise<FarmerEngagementMetrics[]> {
     try {
       console.log('Getting engagement metrics for tenant:', tenantId, 'farmer:', farmerId);
@@ -106,7 +107,12 @@ class FarmerManagementService extends BaseApiService {
       const { data, error } = await query;
       if (error) throw error;
       
-      return data || [];
+      // Transform data to match interface
+      return (data || []).map(item => ({
+        ...item,
+        engagement_level: (item.engagement_level as string || 'medium') as 'low' | 'medium' | 'high',
+        features_used: Array.isArray(item.features_used) ? item.features_used as string[] : []
+      }));
     } catch (error) {
       throw new Error(`Failed to get engagement metrics: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -161,7 +167,13 @@ class FarmerManagementService extends BaseApiService {
         .order('sent_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to match interface
+      return (data || []).map(item => ({
+        ...item,
+        communication_type: (item.communication_type as string || 'sms') as 'sms' | 'whatsapp' | 'email' | 'call',
+        metadata: typeof item.metadata === 'object' ? item.metadata as Record<string, any> : {}
+      }));
     } catch (error) {
       throw new Error(`Failed to get communication history: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -177,7 +189,12 @@ class FarmerManagementService extends BaseApiService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to match interface
+      return (data || []).map(item => ({
+        ...item,
+        segment_criteria: typeof item.segment_criteria === 'object' ? item.segment_criteria as Record<string, any> : {}
+      }));
     } catch (error) {
       throw new Error(`Failed to get farmer segments: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -192,16 +209,16 @@ class FarmerManagementService extends BaseApiService {
     }
   }
 
-  // Delegate to enhanced service for these methods
-  async addFarmerTag(farmerId: string, tenantId: string, tagData: Partial<FarmerTag>): Promise<FarmerTag> {
+  // Delegate to enhanced service with proper parameter types
+  async addFarmerTag(farmerId: string, tenantId: string, tagData: { tag_name: string; tag_color?: string; created_by?: string }): Promise<FarmerTag> {
     return enhancedFarmerService.addFarmerTag(tenantId, farmerId, tagData);
   }
 
-  async addFarmerNote(farmerId: string, tenantId: string, noteData: Partial<FarmerNote>): Promise<FarmerNote> {
+  async addFarmerNote(farmerId: string, tenantId: string, noteData: { note_content: string; created_by?: string; is_important?: boolean; is_private?: boolean }): Promise<any> {
     return enhancedFarmerService.addFarmerNote(tenantId, farmerId, noteData);
   }
 
-  async createFarmerSegment(tenantId: string, segmentData: Omit<FarmerSegment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerSegment> {
+  async createFarmerSegment(tenantId: string, segmentData: Omit<FarmerSegment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<any> {
     return enhancedFarmerService.createFarmerSegment(tenantId, segmentData);
   }
 
@@ -209,12 +226,17 @@ class FarmerManagementService extends BaseApiService {
     try {
       console.log('Performing bulk operation:', operation.operation_type, 'for', operation.farmer_ids.length, 'farmers');
       
-      // Create bulk operation record
+      // Create bulk operation record with all required fields
       const bulkOp = await enhancedFarmerService.createBulkOperation(tenantId, {
         operation_type: operation.operation_type,
         target_farmer_ids: operation.farmer_ids,
         operation_data: operation.operation_data,
-        status: 'processing'
+        status: 'processing',
+        error_log: [],
+        failed_count: 0,
+        processed_count: 0,
+        success_count: 0,
+        updated_at: new Date().toISOString()
       });
       
       // Simulate processing with some success/failure

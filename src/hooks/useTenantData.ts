@@ -55,7 +55,10 @@ export const useTenantData = () => {
         const transformedUserTenants = (userTenantsData || []).map(userTenant => {
           const tenant = userTenant.tenants;
           if (!tenant || typeof tenant !== 'object') {
-            return userTenant;
+            return {
+              ...userTenant,
+              tenant: null
+            };
           }
 
           return {

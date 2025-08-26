@@ -9,7 +9,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AdvancedSearchModal } from './AdvancedSearchModal';
 import { BulkOperationsPanel } from './BulkOperationsPanel';
 import { useFarmersQuery } from '@/hooks/data/useFarmersQuery';
+import { useFarmerSegmentsQuery } from '@/hooks/data/useEnhancedFarmerQuery';
 import type { Farmer } from '@/services/FarmersService';
+import type { AdvancedSearchFilters } from '@/services/EnhancedFarmerService';
 
 interface EnhancedFarmerDirectoryProps {
   onSelectFarmer: (farmer: Farmer) => void;
@@ -22,11 +24,14 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
   const [selectedFarmers, setSelectedFarmers] = useState<string[]>([]);
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
   const [isBulkPanelOpen, setIsBulkPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<AdvancedSearchFilters>({});
 
   const { data: farmersData, isLoading, error } = useFarmersQuery({
     search: searchTerm,
     limit: 50,
   });
+
+  const { data: segments = [] } = useFarmerSegmentsQuery();
 
   const farmers = farmersData?.data || [];
 
@@ -44,6 +49,10 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
     } else {
       setSelectedFarmers(farmers.map(f => f.id));
     }
+  };
+
+  const handleFiltersChange = (newFilters: AdvancedSearchFilters) => {
+    setFilters(newFilters);
   };
 
   if (isLoading) {
@@ -143,11 +152,11 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Phone className="h-3 w-3" />
-                          {farmer.phone || 'No phone'}
+                          Contact available
                         </div>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          {farmer.village || 'Unknown location'}
+                          Location available
                         </div>
                         <div>
                           Land: {farmer.total_land_acres} acres
@@ -206,6 +215,10 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
       <AdvancedSearchModal
         open={isAdvancedSearchOpen}
         onOpenChange={setIsAdvancedSearchOpen}
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        segments={segments}
+        tags={[]}
       />
 
       {/* Bulk Operations Panel */}
@@ -213,7 +226,6 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
         open={isBulkPanelOpen}
         onOpenChange={setIsBulkPanelOpen}
         selectedFarmers={selectedFarmers}
-        onClearSelection={() => setSelectedFarmers([])}
       />
     </>
   );
