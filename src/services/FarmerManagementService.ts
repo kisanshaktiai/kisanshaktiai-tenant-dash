@@ -107,10 +107,10 @@ class FarmerManagementService extends BaseApiService {
       const { data, error } = await query;
       if (error) throw error;
       
-      // Transform data to match interface
+      // Transform data to match interface with proper type casting
       return (data || []).map(item => ({
         ...item,
-        engagement_level: (item.engagement_level as string || 'medium') as 'low' | 'medium' | 'high',
+        engagement_level: (item.engagement_level as 'low' | 'medium' | 'high') || 'medium',
         features_used: Array.isArray(item.features_used) ? item.features_used as string[] : []
       }));
     } catch (error) {
@@ -168,10 +168,11 @@ class FarmerManagementService extends BaseApiService {
 
       if (error) throw error;
       
-      // Transform data to match interface
+      // Transform data to match interface with proper type casting
       return (data || []).map(item => ({
         ...item,
-        communication_type: (item.communication_type as string || 'sms') as 'sms' | 'whatsapp' | 'email' | 'call',
+        communication_type: (item.communication_type as 'sms' | 'whatsapp' | 'email' | 'call') || 'sms',
+        status: (item.status as 'sent' | 'delivered' | 'read' | 'failed') || 'sent',
         metadata: typeof item.metadata === 'object' ? item.metadata as Record<string, any> : {}
       }));
     } catch (error) {
@@ -190,7 +191,7 @@ class FarmerManagementService extends BaseApiService {
 
       if (error) throw error;
       
-      // Transform data to match interface
+      // Transform data to match interface with proper type casting
       return (data || []).map(item => ({
         ...item,
         segment_criteria: typeof item.segment_criteria === 'object' ? item.segment_criteria as Record<string, any> : {}
@@ -235,8 +236,7 @@ class FarmerManagementService extends BaseApiService {
         error_log: [],
         failed_count: 0,
         processed_count: 0,
-        success_count: 0,
-        updated_at: new Date().toISOString()
+        success_count: 0
       });
       
       // Simulate processing with some success/failure

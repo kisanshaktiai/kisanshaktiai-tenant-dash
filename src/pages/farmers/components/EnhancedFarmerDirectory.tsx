@@ -55,6 +55,11 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
     setFilters(newFilters);
   };
 
+  const handleBulkOperationComplete = () => {
+    setSelectedFarmers([]);
+    setIsBulkPanelOpen(false);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -226,6 +231,7 @@ export const EnhancedFarmerDirectory: React.FC<EnhancedFarmerDirectoryProps> = (
         open={isBulkPanelOpen}
         onOpenChange={setIsBulkPanelOpen}
         selectedFarmers={selectedFarmers}
+        onComplete={handleBulkOperationComplete}
       />
     </>
   );
