@@ -107,10 +107,9 @@ export interface SearchParams {
 class FarmerManagementService extends BaseApiService {
   protected basePath = '/farmer-management';
 
-  // Mock engagement metrics using existing farmers table
+  // Mock engagement metrics for now since the exact table structure varies
   async getEngagementMetrics(tenantId: string, farmerId?: string): Promise<FarmerEngagementMetrics[]> {
     try {
-      // For now, return mock data since the engagement_metrics table doesn't exist in types
       console.log('Getting engagement metrics for tenant:', tenantId, 'farmer:', farmerId);
       
       // Get farmers and create mock engagement data
@@ -150,7 +149,7 @@ class FarmerManagementService extends BaseApiService {
     try {
       console.log('Getting farmer tags for tenant:', tenantId, 'farmer:', farmerId);
       
-      // Return mock data for now
+      // Return mock data for now since farmer_tags table might not exist
       return [
         {
           id: 'tag1',
@@ -241,24 +240,24 @@ class FarmerManagementService extends BaseApiService {
 
   async getFarmerLeads(tenantId: string): Promise<FarmerLead[]> {
     try {
-      // Use existing leads table
+      // Use existing leads table with proper field mapping
       const { data: leads, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('tenant_id', tenantId)
+        .eq('organization_id', tenantId) // Use organization_id instead of tenant_id
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       return (leads || []).map(lead => ({
         id: lead.id,
-        tenant_id: lead.tenant_id,
+        tenant_id: tenantId,
         lead_name: lead.contact_name || lead.organization_name || 'Unknown',
         phone: lead.phone,
         email: lead.email,
-        location: lead.location_data as Record<string, any>,
+        location: (lead.location_data as any) || null,
         lead_source: lead.source || 'manual',
-        lead_score: lead.score || 0,
+        lead_score: lead.ai_score || 0, // Use ai_score instead of score
         status: lead.status as 'new' | 'contacted' | 'qualified' | 'converted' | 'lost',
         assigned_to: lead.assigned_to,
         notes: lead.notes,
@@ -341,13 +340,13 @@ class FarmerManagementService extends BaseApiService {
       const { data: lead, error } = await supabase
         .from('leads')
         .insert({
-          tenant_id: tenantId,
+          organization_id: tenantId, // Use organization_id instead of tenant_id
           contact_name: leadData.lead_name,
           phone: leadData.phone,
           email: leadData.email,
           location_data: leadData.location,
           source: leadData.lead_source,
-          score: leadData.lead_score,
+          ai_score: leadData.lead_score, // Use ai_score instead of score
           status: leadData.status,
           assigned_to: leadData.assigned_to,
           notes: leadData.notes,
@@ -360,13 +359,13 @@ class FarmerManagementService extends BaseApiService {
 
       return {
         id: lead.id,
-        tenant_id: lead.tenant_id,
+        tenant_id: tenantId,
         lead_name: lead.contact_name,
         phone: lead.phone,
         email: lead.email,
-        location: lead.location_data as Record<string, any>,
+        location: (lead.location_data as any) || null,
         lead_source: lead.source,
-        lead_score: lead.score,
+        lead_score: lead.ai_score,
         status: lead.status as any,
         assigned_to: lead.assigned_to,
         notes: lead.notes,

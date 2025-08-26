@@ -79,17 +79,20 @@ export const TenantOnboardingFlow: React.FC = () => {
     allSteps.push({
       id: 'summary',
       workflow_id: workflow?.id || '',
-      step_number: allSteps.length + 1,
+      step_order: allSteps.length + 1,
       step_name: 'Summary',
-      step_description: 'Review and complete your setup',
-      step_status: 'pending' as const,
-      is_required: true,
-      estimated_time_minutes: 5,
+      step_type: 'summary',
+      step_config: {},
       step_data: {},
-      started_at: null,
+      step_status: 'pending' as const,
       completed_at: null,
       created_at: '',
-      updated_at: ''
+      updated_at: '',
+      step_number: allSteps.length + 1,
+      step_description: 'Review and complete your setup',
+      is_required: true,
+      estimated_time_minutes: 5,
+      started_at: null
     });
   }
 
