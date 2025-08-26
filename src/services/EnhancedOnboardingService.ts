@@ -1,3 +1,4 @@
+
 import { tenantDataService } from './TenantDataService';
 import { toast } from 'sonner';
 
@@ -101,11 +102,16 @@ class EnhancedOnboardingService {
         return repairedData;
       }
       
+      // Safe access to metadata properties with fallbacks
+      const workflowMetadata = onboardingData.workflow.metadata || {};
+      const subscriptionPlan = workflowMetadata.subscription_plan || 'unknown';
+      const workflowVersion = workflowMetadata.workflow_version || '1.0';
+      
       console.log('EnhancedOnboardingService: Enterprise workflow initialized successfully:', {
         workflowId: onboardingData.workflow.id,
         stepCount: onboardingData.steps.length,
-        plan: onboardingData.workflow.metadata?.subscription_plan || 'unknown',
-        version: onboardingData.workflow.metadata?.workflow_version || '1.0'
+        plan: subscriptionPlan,
+        version: workflowVersion
       });
       
       return onboardingData;
