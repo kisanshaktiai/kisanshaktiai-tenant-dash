@@ -8,7 +8,7 @@ import { queryKeys } from '@/lib/queryClient';
 export const useTenantRealtime = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
-  const channelsRef = useRef<Set<string>>(new Set());
+  const channelsRef = useRef<any[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
@@ -20,7 +20,7 @@ export const useTenantRealtime = () => {
 
     console.log('Setting up tenant real-time connections for:', currentTenant.id);
     
-    const setupChannels = async () => {
+    const setupChannels = () => {
       // Farmers channel
       const farmersChannel = supabase
         .channel(`tenant_farmers_${currentTenant.id}`)
@@ -36,7 +36,6 @@ export const useTenantRealtime = () => {
             console.log('Farmers real-time update:', payload);
             setLastUpdate(new Date());
             
-            // Invalidate related queries
             queryClient.invalidateQueries({ 
               queryKey: queryKeys.farmers(currentTenant.id)
             });
@@ -88,19 +87,21 @@ export const useTenantRealtime = () => {
           }
         );
 
-      // Subscribe to channels
       const channels = [farmersChannel, dealersChannel, productsChannel];
       
+      // Subscribe to channels
       channels.forEach((channel) => {
         channel.subscribe((status) => {
-          console.log(`Channel status:`, status);
+          console.log(`Channel ${channel.topic} status:`, status);
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
-            channelsRef.current.add(channel.topic);
+          } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+            setIsConnected(false);
           }
         });
       });
 
+      channelsRef.current = channels;
       return channels;
     };
 
@@ -108,19 +109,17 @@ export const useTenantRealtime = () => {
 
     return () => {
       console.log('Cleaning up tenant real-time connections');
-      channels.then(channelList => {
-        channelList.forEach((channel) => {
-          supabase.removeChannel(channel);
-        });
+      channels.forEach((channel) => {
+        supabase.removeChannel(channel);
       });
-      channelsRef.current.clear();
+      channelsRef.current = [];
       setIsConnected(false);
     };
   }, [currentTenant, queryClient]);
 
   return {
     isConnected,
-    activeChannels: channelsRef.current.size,
+    activeChannels: channelsRef.current.length,
     lastUpdate
   };
 };

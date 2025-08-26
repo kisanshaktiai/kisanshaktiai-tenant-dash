@@ -7,12 +7,10 @@ import { useOnboardingWithValidation } from '@/hooks/useOnboardingWithValidation
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
-import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { OnboardingBypass } from '@/components/onboarding/OnboardingBypass';
-import { Building2, AlertTriangle, RefreshCw, Settings, Bug } from 'lucide-react';
+import { Building2, RefreshCw, Settings, Bug } from 'lucide-react';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -82,8 +80,8 @@ const OnboardingPage = () => {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
-  // Enhanced real-time connection with reconnect capability
-  const { isConnected, isReconnecting, reconnectAttempts, reconnect } = useOnboardingRealtime();
+  // Real-time connection
+  const { isConnected } = useOnboardingRealtime();
   
   // Use the enhanced onboarding hook with validation
   const { 
@@ -186,15 +184,6 @@ const OnboardingPage = () => {
       <div className="fixed top-4 right-4 z-50">
         <LiveIndicator isConnected={isConnected} activeChannels={1} />
       </div>
-
-      {/* Disconnect Banner */}
-      {!isConnected && (
-        <DisconnectBanner
-          isReconnecting={isReconnecting}
-          reconnectAttempts={reconnectAttempts}
-          onReconnect={reconnect}
-        />
-      )}
       
       {/* Main onboarding flow with focus management */}
       <div ref={mainContentRef} tabIndex={-1} className="focus:outline-none">
