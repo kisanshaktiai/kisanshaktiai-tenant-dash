@@ -20,6 +20,9 @@ import { DashboardSkeleton } from '@/components/dashboard/presentation/Dashboard
 
 // Lazy load heavy page components
 const LazyDashboard = lazy(() => import('@/pages/LazyDashboard'));
+const LazyFarmersPage = lazy(() => import('@/pages/LazyFarmersPage'));
+const LazyDealersPage = lazy(() => import('@/pages/LazyDealersPage'));
+const LazyAnalyticsPage = lazy(() => import('@/pages/LazyAnalyticsPage'));
 const LazyEnhancedDashboardLayout = lazy(() => 
   import('@/components/layout/EnhancedDashboardLayout').then(module => ({
     default: module.EnhancedDashboardLayout
@@ -47,26 +50,24 @@ function App() {
                         <Suspense fallback={<DashboardSkeleton />}>
                           <LazyEnhancedDashboardLayout>
                             <Routes>
-                              <Route index element={<LazyDashboard />} />
+                              <Route index element={
+                                <Suspense fallback={<DashboardSkeleton />}>
+                                  <LazyDashboard />
+                                </Suspense>
+                              } />
                               <Route path="farmers" element={
                                 <Suspense fallback={<DashboardSkeleton />}>
-                                  <lazy>
-                                    {() => import('@/pages/LazyFarmersPage')}
-                                  </lazy>
+                                  <LazyFarmersPage />
                                 </Suspense>
                               } />
                               <Route path="dealers" element={
                                 <Suspense fallback={<DashboardSkeleton />}>
-                                  <lazy>
-                                    {() => import('@/pages/LazyDealersPage')}
-                                  </lazy>
+                                  <LazyDealersPage />
                                 </Suspense>
                               } />
                               <Route path="analytics" element={
                                 <Suspense fallback={<DashboardSkeleton />}>
-                                  <lazy>
-                                    {() => import('@/pages/LazyAnalyticsPage')}
-                                  </lazy>
+                                  <LazyAnalyticsPage />
                                 </Suspense>
                               } />
                             </Routes>

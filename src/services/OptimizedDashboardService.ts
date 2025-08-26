@@ -51,17 +51,8 @@ class OptimizedDashboardService extends BaseApiService {
     }
 
     try {
-      // Single optimized query using SQL aggregation
-      const { data: statsData, error } = await supabase.rpc('get_dashboard_stats_optimized', {
-        p_tenant_id: tenantId
-      });
-
-      if (error) {
-        console.warn('Optimized query failed, falling back to individual queries:', error);
-        return this.getFallbackStats(tenantId);
-      }
-
-      const stats = this.transformStatsData(statsData[0] || {});
+      // Use optimized batch queries instead of non-existent RPC
+      const stats = await this.getBatchedStats(tenantId);
       
       // Cache the results
       this.statsCache.set(tenantId, { data: stats, timestamp: Date.now() });
@@ -73,8 +64,8 @@ class OptimizedDashboardService extends BaseApiService {
     }
   }
 
-  private async getFallbackStats(tenantId: string): Promise<OptimizedDashboardStats> {
-    // Batch multiple queries in parallel
+  private async getBatchedStats(tenantId: string): Promise<OptimizedDashboardStats> {
+    // Batch multiple queries in parallel for better performance
     const [farmersCount, landsCount, productsCount, dealersCount, recentFarmers] = await Promise.all([
       supabase.from('farmers').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
       supabase.from('lands').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('is_active', true),
@@ -112,7 +103,7 @@ class OptimizedDashboardService extends BaseApiService {
       }
     ];
 
-    const stats: OptimizedDashboardStats = {
+    return {
       totalFarmers,
       activeLands: landsCount.count || 0,
       totalProducts: productsCount.count || 0,
@@ -132,37 +123,62 @@ class OptimizedDashboardService extends BaseApiService {
       growth_percentage: Math.round(growthRate),
       customer_satisfaction: 94
     };
-
-    // Cache the fallback results too
-    this.statsCache.set(tenantId, { data: stats, timestamp: Date.now() });
-    
-    return stats;
   }
 
-  private transformStatsData(data: any): OptimizedDashboardStats {
-    const totalFarmers = data.farmers_count || 0;
-    const growthRate = data.growth_rate || 0;
+  private async getFallbackStats(tenantId: string): Promise<OptimizedDashboardStats> {
+    // Simplified fallback with minimal queries
+    try {
+      const { count: farmersCount } = await supabase
+        .from('farmers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
 
-    return {
-      totalFarmers,
-      activeLands: data.lands_count || 0,
-      totalProducts: data.products_count || 0,
-      pendingIssues: data.pending_dealers || 0,
-      growthRate: Math.round(growthRate),
-      recentActivity: [],
-      upcomingTasks: [],
-      total_farmers: totalFarmers,
-      active_farmers: Math.floor(totalFarmers * 0.8),
-      new_farmers_this_week: data.recent_farmers || 0,
-      total_dealers: data.dealers_count || 0,
-      active_dealers: Math.floor((data.dealers_count || 0) * 0.8),
-      average_dealer_performance: 92,
-      product_categories: 12,
-      out_of_stock_products: 3,
-      total_revenue: 2540000,
-      growth_percentage: Math.round(growthRate),
-      customer_satisfaction: 94
-    };
+      const totalFarmers = farmersCount || 0;
+
+      return {
+        totalFarmers,
+        activeLands: 0,
+        totalProducts: 0,
+        pendingIssues: 0,
+        growthRate: 0,
+        recentActivity: [],
+        upcomingTasks: [],
+        total_farmers: totalFarmers,
+        active_farmers: Math.floor(totalFarmers * 0.8),
+        new_farmers_this_week: 0,
+        total_dealers: 0,
+        active_dealers: 0,
+        average_dealer_performance: 0,
+        product_categories: 0,
+        out_of_stock_products: 0,
+        total_revenue: 0,
+        growth_percentage: 0,
+        customer_satisfaction: 0
+      };
+    } catch (error) {
+      console.error('Fallback stats error:', error);
+      // Return empty stats if everything fails
+      return {
+        totalFarmers: 0,
+        activeLands: 0,
+        totalProducts: 0,
+        pendingIssues: 0,
+        growthRate: 0,
+        recentActivity: [],
+        upcomingTasks: [],
+        total_farmers: 0,
+        active_farmers: 0,
+        new_farmers_this_week: 0,
+        total_dealers: 0,
+        active_dealers: 0,
+        average_dealer_performance: 0,
+        product_categories: 0,
+        out_of_stock_products: 0,
+        total_revenue: 0,
+        growth_percentage: 0,
+        customer_satisfaction: 0
+      };
+    }
   }
 
   private getRelativeTime(dateString: string): string {
