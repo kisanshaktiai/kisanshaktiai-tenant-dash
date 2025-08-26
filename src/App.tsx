@@ -41,34 +41,32 @@ function App() {
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/tenant-setup" element={<TenantSetupPage />} />
-                    <Route path="/dashboard/*" element={
+                    <Route path="/dashboard" element={
                       <OnboardingGuard>
-                        <EnhancedDashboardLayout>
-                          <Routes>
-                            <Route index element={
-                              <Suspense fallback={<DashboardSkeleton />}>
-                                <LazyDashboard />
-                              </Suspense>
-                            } />
-                            <Route path="farmers" element={
-                              <Suspense fallback={<DashboardSkeleton />}>
-                                <LazyFarmersPage />
-                              </Suspense>
-                            } />
-                            <Route path="dealers" element={
-                              <Suspense fallback={<DashboardSkeleton />}>
-                                <LazyDealersPage />
-                              </Suspense>
-                            } />
-                            <Route path="analytics" element={
-                              <Suspense fallback={<DashboardSkeleton />}>
-                                <LazyAnalyticsPage />
-                              </Suspense>
-                            } />
-                          </Routes>
-                        </EnhancedDashboardLayout>
+                        <EnhancedDashboardLayout />
                       </OnboardingGuard>
-                    } />
+                    }>
+                      <Route index element={
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <LazyDashboard />
+                        </Suspense>
+                      } />
+                      <Route path="farmers" element={
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <LazyFarmersPage />
+                        </Suspense>
+                      } />
+                      <Route path="dealers" element={
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <LazyDealersPage />
+                        </Suspense>
+                      } />
+                      <Route path="analytics" element={
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <LazyAnalyticsPage />
+                        </Suspense>
+                      } />
+                    </Route>
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
