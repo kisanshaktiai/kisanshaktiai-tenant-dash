@@ -1,4 +1,3 @@
-
 import { QueryClient, DefaultOptions } from '@tanstack/react-query';
 
 const queryConfig: DefaultOptions = {
@@ -57,4 +56,16 @@ export const queryKeys = {
   analytics: (tenantId: string) => ['analytics', tenantId] as const,
   dashboardStats: (tenantId: string) => ['analytics', 'dashboard', tenantId] as const,
   engagementStats: (tenantId: string) => ['analytics', 'engagement', tenantId] as const,
+
+  // Farmer Management
+  farmerEngagement: (tenantId: string, farmerId?: string) => 
+    farmerId ? ['farmer-engagement', tenantId, farmerId] : ['farmer-engagement', tenantId],
+  farmerTags: (tenantId: string, farmerId?: string) => 
+    farmerId ? ['farmer-tags', tenantId, farmerId] : ['farmer-tags', tenantId],
+  farmerNotes: (farmerId: string, tenantId: string) => ['farmer-notes', farmerId, tenantId],
+  communicationHistory: (farmerId: string, tenantId: string) => ['communication-history', farmerId, tenantId],
+  farmerSegments: (tenantId: string) => ['farmer-segments', tenantId],
+  farmerLeads: (tenantId: string) => ['farmer-leads', tenantId],
+  advancedFarmerSearch: (tenantId: string, params: any) => ['advanced-farmer-search', tenantId, params],
+  farmerImportJobs: (tenantId: string) => ['farmer-import-jobs', tenantId],
 } as const;
