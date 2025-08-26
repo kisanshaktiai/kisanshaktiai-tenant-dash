@@ -1,214 +1,123 @@
 
-
 import { supabase } from '@/integrations/supabase/client';
-import { tenantDataService } from '@/services/TenantDataService';
+import { enhancedOnboardingService } from './EnhancedOnboardingService';
 
-interface OnboardingValidationResult {
-  isValid: boolean;
-  issues: string[];
-  repaired: boolean;
-  workflowId?: string;
-}
-
-export class OnboardingValidationService {
-  /**
-   * Validates and repairs onboarding data for a tenant
-   */
-  static async validateAndRepairOnboarding(tenantId: string): Promise<OnboardingValidationResult> {
-    const issues: string[] = [];
-    let repaired = false;
-    let workflowId: string | undefined;
-
+class OnboardingValidationService {
+  async validateAndRepairOnboarding(tenantId: string) {
     try {
-      console.log('OnboardingValidation: Starting validation for tenant:', tenantId);
-
-      // Step 1: Check if tenant exists
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .select('id, name, status, subscription_plan')
-        .eq('id', tenantId)
-        .single();
-
-      if (tenantError || !tenant) {
-        issues.push('Tenant not found or inaccessible');
-        return { isValid: false, issues, repaired: false };
-      }
-
-      // Step 2: Check for onboarding workflow - using actual schema
-      const { data: workflows, error: workflowError } = await supabase
-        .from('onboarding_workflows')
-        .select('id, status, created_at, updated_at')
-        .eq('tenant_id', tenantId);
-
-      if (workflowError) {
-        console.error('OnboardingValidation: Error fetching workflows:', workflowError);
-        issues.push(`Workflow query failed: ${workflowError.message}`);
-      }
-
-      if (!workflows || workflows.length === 0) {
-        console.log('OnboardingValidation: No workflow found, creating one...');
-        try {
-          const result = await tenantDataService.ensureOnboardingWorkflow(tenantId);
-          if (result && result.workflow_id) {
-            workflowId = result.workflow_id;
-            repaired = true;
-            console.log('OnboardingValidation: Created workflow:', workflowId);
-          } else {
-            issues.push('Failed to create onboarding workflow');
-          }
-        } catch (error) {
-          console.error('OnboardingValidation: Error creating workflow:', error);
-          issues.push(`Failed to create workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-      } else {
-        workflowId = workflows[0].id;
-        console.log('OnboardingValidation: Found existing workflow:', workflowId);
-      }
-
-      // Step 3: Validate workflow steps if we have a workflow - using actual schema
-      if (workflowId) {
-        const { data: steps, error: stepsError } = await supabase
-          .from('onboarding_steps')
-          .select('id, step_name, step_status, step_number, created_at')
-          .eq('workflow_id', workflowId)
-          .order('step_number');
-
-        if (stepsError) {
-          console.error('OnboardingValidation: Error fetching steps:', stepsError);
-          issues.push(`Steps query failed: ${stepsError.message}`);
-        } else if (!steps || steps.length === 0) {
-          issues.push('Workflow exists but has no steps');
-          console.log('OnboardingValidation: Workflow has no steps, this should be fixed by the edge function');
-        } else {
-          console.log('OnboardingValidation: Found', steps.length, 'steps for workflow');
-          
-          // Validate step integrity - using actual schema fields
-          const completedSteps = steps.filter(step => step.step_status === 'completed');
-          if (steps.length > 0 && completedSteps.length === 0) {
-            console.log('OnboardingValidation: All steps are pending - this is normal for new workflows');
-          }
-
-          // Check for step ordering gaps - using step_number instead of step_order
-          const stepNumbers = steps.map(s => s.step_number).sort((a, b) => a - b);
-          for (let i = 1; i <= stepNumbers.length; i++) {
-            if (!stepNumbers.includes(i)) {
-              issues.push(`Missing step number ${i} in sequence`);
-            }
-          }
-        }
-      }
-
-      // Step 4: Validate tenant branding and features (optional validation)
-      const { data: branding } = await supabase
-        .from('tenant_branding')
-        .select('id, app_name')
-        .eq('tenant_id', tenantId);
-
-      const { data: features } = await supabase
-        .from('tenant_features')
-        .select('id')
-        .eq('tenant_id', tenantId);
-
-      if (!branding || branding.length === 0) {
-        console.log('OnboardingValidation: No tenant branding found');
-      }
-
-      if (!features || features.length === 0) {
-        console.log('OnboardingValidation: No tenant features found');
-      }
-
-      const isValid = issues.length === 0;
+      console.log('OnboardingValidationService: Starting validation for tenant:', tenantId);
       
-      console.log('OnboardingValidation: Validation complete:', {
-        tenantId,
-        isValid,
-        issues: issues.length,
-        repaired,
-        workflowId
-      });
-
-      return {
-        isValid,
-        issues,
-        repaired,
-        workflowId
-      };
-
+      // Check if workflow exists
+      const workflow = await enhancedOnboardingService.getOnboardingWorkflow(tenantId);
+      
+      if (!workflow) {
+        console.log('OnboardingValidationService: No workflow found, initializing...');
+        await enhancedOnboardingService.initializeOnboardingWorkflow(tenantId);
+        return { isValid: true, repaired: true, issues: [] };
+      }
+      
+      // Check if steps exist
+      const steps = await enhancedOnboardingService.getOnboardingSteps(workflow.id);
+      
+      if (steps.length === 0) {
+        console.log('OnboardingValidationService: No steps found, creating default steps...');
+        
+        // Create default steps
+        const defaultSteps = [
+          { name: 'company_profile', order: 1, description: 'Complete your company profile and business verification' },
+          { name: 'billing_plan', order: 2, description: 'Choose your subscription plan' },
+          { name: 'branding', order: 3, description: 'Set up your brand colors and logo' },
+          { name: 'domain_and_whitelabel', order: 4, description: 'Select features for your platform' },
+          { name: 'review_and_go_live', order: 5, description: 'Import your existing data' },
+          { name: 'users_and_roles', order: 6, description: 'Invite team members' }
+        ];
+        
+        for (const step of defaultSteps) {
+          await supabase
+            .from('onboarding_steps')
+            .insert({
+              workflow_id: workflow.id,
+              step_name: step.name,
+              step_number: step.order,
+              step_status: 'pending',
+              step_data: {
+                step_description: step.description,
+                is_required: true,
+                estimated_time_minutes: 15,
+                step_type: 'standard',
+                step_config: {}
+              }
+            });
+        }
+        
+        return { isValid: true, repaired: true, issues: [] };
+      }
+      
+      // Check if we have the expected number of steps (6)
+      if (steps.length < 6) {
+        console.log('OnboardingValidationService: Missing steps, found:', steps.length);
+        return { isValid: false, repaired: false, issues: [`Expected 6 steps, found ${steps.length}`] };
+      }
+      
+      console.log('OnboardingValidationService: Validation passed');
+      return { isValid: true, repaired: false, issues: [] };
+      
     } catch (error) {
-      console.error('OnboardingValidation: Validation failed:', error);
-      issues.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return { isValid: false, issues, repaired: false };
+      console.error('OnboardingValidationService: Validation failed:', error);
+      return { 
+        isValid: false, 
+        repaired: false, 
+        issues: [error instanceof Error ? error.message : 'Unknown validation error'] 
+      };
     }
   }
-
-  /**
-   * Force refresh onboarding data for a tenant
-   */
-  static async forceRefreshOnboarding(tenantId: string): Promise<boolean> {
+  
+  async forceRefreshOnboarding(tenantId: string) {
     try {
-      console.log('OnboardingValidation: Force refreshing onboarding for tenant:', tenantId);
+      console.log('OnboardingValidationService: Force refreshing onboarding for tenant:', tenantId);
       
+      // Clear any cached data
+      enhancedOnboardingService.clearCache();
+      
+      // Re-validate and repair if needed
       const validationResult = await this.validateAndRepairOnboarding(tenantId);
       
-      if (validationResult.workflowId) {
-        // Trigger a fresh fetch of complete onboarding data
-        const onboardingData = await tenantDataService.getCompleteOnboardingData(tenantId);
-        console.log('OnboardingValidation: Retrieved fresh onboarding data:', {
-          workflowId: validationResult.workflowId,
-          hasWorkflow: !!onboardingData?.workflow,
-          stepCount: onboardingData?.steps?.length || 0
-        });
-        return true;
-      }
-
-      return false;
+      return validationResult.isValid || validationResult.repaired;
     } catch (error) {
-      console.error('OnboardingValidation: Force refresh failed:', error);
+      console.error('OnboardingValidationService: Force refresh failed:', error);
       return false;
     }
   }
-
-  /**
-   * Get detailed onboarding status for debugging
-   */
-  static async getOnboardingDebugInfo(tenantId: string) {
+  
+  async getOnboardingDebugInfo(tenantId: string) {
     try {
-      const [tenant, workflows, branding, features] = await Promise.all([
-        supabase.from('tenants').select('*').eq('id', tenantId).single(),
-        supabase.from('onboarding_workflows').select('*').eq('tenant_id', tenantId),
-        supabase.from('tenant_branding').select('*').eq('tenant_id', tenantId),
-        supabase.from('tenant_features').select('*').eq('tenant_id', tenantId)
-      ]);
-
-      let steps = null;
-      if (workflows.data && workflows.data.length > 0) {
-        const stepsQuery = await supabase
-          .from('onboarding_steps')
-          .select('*')
-          .eq('workflow_id', workflows.data[0].id)
-          .order('step_number');
-        steps = stepsQuery.data;
-      }
-
+      const workflow = await enhancedOnboardingService.getOnboardingWorkflow(tenantId);
+      const steps = workflow ? await enhancedOnboardingService.getOnboardingSteps(workflow.id) : [];
+      
       return {
-        tenant: tenant.data,
-        workflows: workflows.data,
-        steps: steps,
-        branding: branding.data,
-        features: features.data,
-        errors: {
-          tenant: tenant.error,
-          workflows: workflows.error,
-          branding: branding.error,
-          features: features.error
-        }
+        tenantId,
+        hasWorkflow: !!workflow,
+        workflowId: workflow?.id,
+        workflowStatus: workflow?.status,
+        stepCount: steps.length,
+        steps: steps.map(step => ({
+          id: step.id,
+          name: step.step_name,
+          status: step.step_status,
+          order: step.step_number,
+          hasData: !!step.step_data && Object.keys(step.step_data).length > 0
+        })),
+        completedSteps: steps.filter(s => s.step_status === 'completed').length,
+        timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error('OnboardingValidation: Debug info failed:', error);
-      return { error: error instanceof Error ? error.message : 'Unknown error' };
+      return {
+        tenantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 }
 
-export const onboardingValidationService = OnboardingValidationService;
-
+export const onboardingValidationService = new OnboardingValidationService();

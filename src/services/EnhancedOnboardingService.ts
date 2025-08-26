@@ -1,6 +1,12 @@
 
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  transformDbStepToFrontend, 
+  transformFrontendStepToDb, 
+  calculateWorkflowProgress,
+  mapDisplayNameToDb 
+} from '@/utils/onboardingDataMapper';
 
 export interface OnboardingWorkflow {
   id: string;
@@ -53,9 +59,9 @@ class EnhancedOnboardingService extends BaseApiService {
         return {
           id: data.id,
           tenant_id: data.tenant_id,
-          workflow_name: 'Default Onboarding',
-          workflow_type: 'standard',
-          template_data: {},
+          workflow_name: data.workflow_name || 'Tenant Onboarding',
+          workflow_type: data.workflow_type || 'standard',
+          template_data: data.template_data || {},
           current_step: data.current_step,
           total_steps: data.total_steps,
           status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -77,6 +83,9 @@ class EnhancedOnboardingService extends BaseApiService {
         .from('onboarding_workflows')
         .insert({
           tenant_id: tenantId,
+          workflow_name: workflowData.workflow_name || 'Tenant Onboarding',
+          workflow_type: workflowData.workflow_type || 'standard',
+          template_data: workflowData.template_data || {},
           current_step: workflowData.current_step || 1,
           total_steps: workflowData.total_steps || 6,
           status: workflowData.status || 'pending',
@@ -90,9 +99,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: 'Default Onboarding',
-        workflow_type: 'standard',
-        template_data: {},
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -122,9 +131,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: 'Default Onboarding',
-        workflow_type: 'standard',
-        template_data: {},
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -147,24 +156,7 @@ class EnhancedOnboardingService extends BaseApiService {
 
       if (error) throw new Error(error.message);
       
-      return (data || []).map(step => ({
-        id: step.id,
-        workflow_id: step.workflow_id,
-        step_order: step.step_number,
-        step_name: step.step_name,
-        step_type: 'default',
-        step_config: {},
-        step_data: typeof step.step_data === 'object' ? step.step_data : {},
-        step_status: step.step_status === 'failed' ? 'pending' : step.step_status,
-        completed_at: step.completed_at,
-        created_at: step.created_at,
-        updated_at: step.updated_at,
-        step_number: step.step_number,
-        step_description: '',
-        is_required: true,
-        estimated_time_minutes: 10,
-        started_at: null
-      }));
+      return (data || []).map(transformDbStepToFrontend);
     } catch (error) {
       throw new Error(`Failed to fetch onboarding steps: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -176,7 +168,7 @@ class EnhancedOnboardingService extends BaseApiService {
         .from('onboarding_steps')
         .update({
           step_status: 'completed',
-          step_data: stepData,
+          step_data: stepData || {},
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -186,24 +178,7 @@ class EnhancedOnboardingService extends BaseApiService {
 
       if (error) throw new Error(error.message);
       
-      return {
-        id: data.id,
-        workflow_id: data.workflow_id,
-        step_order: data.step_number,
-        step_name: data.step_name,
-        step_type: 'default',
-        step_config: {},
-        step_data: typeof data.step_data === 'object' ? data.step_data : {},
-        step_status: data.step_status === 'failed' ? 'pending' : data.step_status,
-        completed_at: data.completed_at,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        step_number: data.step_number,
-        step_description: '',
-        is_required: true,
-        estimated_time_minutes: 10,
-        started_at: null
-      };
+      return transformDbStepToFrontend(data);
     } catch (error) {
       throw new Error(`Failed to complete step: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -253,14 +228,14 @@ class EnhancedOnboardingService extends BaseApiService {
         status: 'pending'
       });
       
-      // Create default steps
+      // Create steps based on existing database step names
       const defaultSteps = [
-        { name: 'Business Verification', order: 1, description: 'Verify business details and documents' },
-        { name: 'Subscription Plan', order: 2, description: 'Choose your subscription plan' },
-        { name: 'Branding Configuration', order: 3, description: 'Set up your brand colors and logo' },
-        { name: 'Feature Selection', order: 4, description: 'Select features for your platform' },
-        { name: 'Data Import', order: 5, description: 'Import your existing data' },
-        { name: 'Team Setup', order: 6, description: 'Invite team members' }
+        { name: 'company_profile', order: 1, description: 'Complete your company profile and business verification' },
+        { name: 'billing_plan', order: 2, description: 'Choose your subscription plan' },
+        { name: 'branding', order: 3, description: 'Set up your brand colors and logo' },
+        { name: 'domain_and_whitelabel', order: 4, description: 'Select features for your platform' },
+        { name: 'review_and_go_live', order: 5, description: 'Import your existing data' },
+        { name: 'users_and_roles', order: 6, description: 'Invite team members' }
       ];
       
       for (const step of defaultSteps) {
@@ -271,7 +246,13 @@ class EnhancedOnboardingService extends BaseApiService {
             step_name: step.name,
             step_number: step.order,
             step_status: 'pending',
-            step_data: {}
+            step_data: {
+              step_description: step.description,
+              is_required: true,
+              estimated_time_minutes: 15,
+              step_type: 'standard',
+              step_config: {}
+            }
           });
       }
       
@@ -283,38 +264,28 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async updateStepStatus(stepId: string, status: OnboardingStep['step_status'], stepData?: any, tenantId?: string) {
     try {
+      const updateData: any = {
+        step_status: status,
+        step_data: stepData || {},
+        updated_at: new Date().toISOString()
+      };
+
+      if (status === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      } else if (status === 'in_progress') {
+        updateData.started_at = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from('onboarding_steps')
-        .update({
-          step_status: status,
-          step_data: stepData || {},
-          updated_at: new Date().toISOString(),
-          ...(status === 'completed' && { completed_at: new Date().toISOString() })
-        })
+        .update(updateData)
         .eq('id', stepId)
         .select()
         .single();
 
       if (error) throw new Error(error.message);
       
-      return {
-        id: data.id,
-        workflow_id: data.workflow_id,
-        step_order: data.step_number,
-        step_name: data.step_name,
-        step_type: 'default',
-        step_config: {},
-        step_data: typeof data.step_data === 'object' ? data.step_data : {},
-        step_status: data.step_status === 'failed' ? 'pending' : data.step_status,
-        completed_at: data.completed_at,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        step_number: data.step_number,
-        step_description: '',
-        is_required: true,
-        estimated_time_minutes: 10,
-        started_at: null
-      };
+      return transformDbStepToFrontend(data);
     } catch (error) {
       throw new Error(`Failed to update step status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -337,9 +308,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: 'Default Onboarding',
-        workflow_type: 'standard',
-        template_data: {},
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',

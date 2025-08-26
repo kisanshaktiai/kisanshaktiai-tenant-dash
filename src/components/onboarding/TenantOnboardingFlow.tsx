@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -19,6 +18,7 @@ import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 import { tenantProfileService } from '@/services/TenantProfileService';
 import { toast } from 'sonner';
 import type { OnboardingStep } from '@/services/EnhancedOnboardingService';
+import { calculateWorkflowProgress } from '@/utils/onboardingDataMapper';
 
 const stepComponents = {
   'Business Verification': BusinessVerificationStep,
@@ -26,7 +26,7 @@ const stepComponents = {
   'Branding Configuration': BrandingConfigurationStep,
   'Feature Selection': FeatureSelectionStep,
   'Data Import': DataImportStep,
-  'Team Invites': TeamInvitesStep,
+  'Team Setup': TeamInvitesStep,
   'Summary': OnboardingSummaryStep,
 };
 
@@ -74,7 +74,7 @@ export const TenantOnboardingFlow: React.FC = () => {
   const workflow = onboardingData?.workflow;
   const currentStep = steps[currentStepIndex];
 
-  // Add summary step if not present
+  // Add summary step if not present and we have real steps
   const allSteps = [...steps];
   if (allSteps.length > 0 && !allSteps.find(s => s.step_name === 'Summary')) {
     const summaryStep: OnboardingStep = {
@@ -142,7 +142,6 @@ export const TenantOnboardingFlow: React.FC = () => {
       // Handle Summary step differently - complete the workflow
       if (currentStep.step_name === 'Summary' && workflow) {
         await completeWorkflowMutation.mutateAsync(workflow.id);
-        // Refetch onboarding data to reflect completion
         await refetch();
         return;
       }
@@ -182,7 +181,7 @@ export const TenantOnboardingFlow: React.FC = () => {
           }
           break;
 
-        case 'Team Invites':
+        case 'Team Setup':
           if (stepData?.invites?.length > 0) {
             await tenantProfileService.inviteTeamMembers(currentTenant.id, stepData.invites);
           }
@@ -213,7 +212,7 @@ export const TenantOnboardingFlow: React.FC = () => {
   };
 
   const progress = allSteps.length > 0 
-    ? Math.round((allSteps.filter(s => s.step_status === 'completed').length / allSteps.length) * 100)
+    ? calculateWorkflowProgress(allSteps)
     : 0;
 
   if (isLoading) {
