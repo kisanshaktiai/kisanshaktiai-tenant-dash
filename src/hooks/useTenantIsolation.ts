@@ -9,7 +9,7 @@ export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
 
-  const getTenantId = useCallback(() => {
+  const getTenantId = useCallback((): string => {
     if (!currentTenant?.id) {
       throw new Error('No current tenant available. Please ensure user is properly authenticated and has access to a tenant.');
     }
@@ -37,7 +37,7 @@ export const useTenantIsolation = () => {
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantInsert = useCallback((tableName: TableName, data: Record<string, unknown>) => {
+  const createTenantInsert = useCallback((tableName: TableName, data: Record<string, any>) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
@@ -47,7 +47,7 @@ export const useTenantIsolation = () => {
       });
   }, [getTenantId]);
 
-  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: Record<string, unknown>) => {
+  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: Record<string, any>) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
