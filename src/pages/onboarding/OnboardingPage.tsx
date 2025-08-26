@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContext } from '@/contexts/TenantContext';
@@ -10,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
+import { OnboardingBypass } from '@/components/onboarding/OnboardingBypass';
 import { Building2, AlertTriangle, RefreshCw, Settings, Bug } from 'lucide-react';
 
 // Lazy load the onboarding flow
@@ -106,9 +108,12 @@ const OnboardingPage = () => {
     onboardingError: onboardingError?.message
   });
 
+  // Check if we should show bypass options instead of loading/error states
+  const shouldShowBypass = user && currentTenant && !tenantLoading && !onboardingLoading && (!onboardingData || onboardingError);
+
   // Initialize onboarding workflow when tenant is available
   useEffect(() => {
-    if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData) {
+    if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData && !shouldShowBypass) {
       console.log('OnboardingPage: Auto-initializing onboarding for tenant:', currentTenant.id);
       
       initializeOnboarding(currentTenant.id)
@@ -125,7 +130,7 @@ const OnboardingPage = () => {
           console.error('OnboardingPage: Auto-initialization failed:', error);
         });
     }
-  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch]);
+  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch, shouldShowBypass]);
 
   if (!user) {
     console.log('OnboardingPage: No user, showing skeleton');
@@ -167,70 +172,10 @@ const OnboardingPage = () => {
     );
   }
 
-  // Show error state with recovery options
-  if (onboardingError || !onboardingData) {
-    console.log('OnboardingPage: Showing recovery panel:', { 
-      error: onboardingError?.message, 
-      hasData: !!onboardingData 
-    });
-    
-    return (
-      <div className="relative" role="main">
-        {/* Live Updates Indicator */}
-        <div className="fixed top-4 right-4 z-50">
-          <LiveIndicator isConnected={isConnected} activeChannels={1} />
-        </div>
-
-        {/* Disconnect Banner */}
-        {!isConnected && (
-          <DisconnectBanner
-            isReconnecting={isReconnecting}
-            reconnectAttempts={reconnectAttempts}
-            onReconnect={reconnect}
-          />
-        )}
-
-        {/* Error Alert */}
-        {onboardingError && (
-          <div className="fixed top-20 left-4 right-4 z-40">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                {onboardingError.message}
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-        <MissingStepsPanel
-          onRetry={() => {
-            queryClient.invalidateQueries({ 
-              queryKey: ['onboarding-validated', currentTenant.id] 
-            });
-            refetch();
-          }}
-          onValidate={validate}
-          onForceRefresh={forceRefresh}
-          onDebugInfo={() => getDebugInfo()}
-          isValidating={isValidating}
-          isRefreshing={isRefreshing}
-        />
-
-        {/* Debug Info Display */}
-        {debugInfo && (
-          <div className="fixed bottom-4 left-4 right-4 z-40 max-w-lg mx-auto">
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-sm mb-2">Debug Information</h4>
-                <pre className="text-xs overflow-auto max-h-40 bg-muted p-2 rounded">
-                  {JSON.stringify(debugInfo, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-    );
+  // Show bypass options when there's an error or no data
+  if (shouldShowBypass) {
+    console.log('OnboardingPage: Showing bypass options');
+    return <OnboardingBypass />;
   }
 
   console.log('OnboardingPage: Rendering main onboarding flow');
