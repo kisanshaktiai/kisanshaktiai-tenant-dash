@@ -32,6 +32,7 @@ export interface OnboardingStep {
 
 class EnhancedOnboardingService extends BaseApiService {
   protected basePath = '/onboarding';
+  private cache = new Map<string, any>();
 
   async getOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
     try {
@@ -42,7 +43,25 @@ class EnhancedOnboardingService extends BaseApiService {
         .maybeSingle();
 
       if (error) throw new Error(error.message);
-      return data;
+      
+      // Map database fields to interface
+      if (data) {
+        return {
+          id: data.id,
+          tenant_id: data.tenant_id,
+          workflow_name: data.workflow_name || 'Default Onboarding',
+          workflow_type: data.workflow_type || 'standard',
+          template_data: data.template_data || {},
+          current_step: data.current_step,
+          total_steps: data.total_steps,
+          status: data.status,
+          metadata: data.metadata,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        };
+      }
+      
+      return null;
     } catch (error) {
       throw new Error(`Failed to fetch onboarding workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -54,13 +73,32 @@ class EnhancedOnboardingService extends BaseApiService {
         .from('onboarding_workflows')
         .insert({
           tenant_id: tenantId,
-          ...workflowData
+          workflow_name: workflowData.workflow_name || 'Default Onboarding',
+          workflow_type: workflowData.workflow_type || 'standard',
+          template_data: workflowData.template_data || {},
+          current_step: workflowData.current_step || 1,
+          total_steps: workflowData.total_steps || 6,
+          status: workflowData.status || 'pending',
+          metadata: workflowData.metadata || {}
         })
         .select()
         .single();
 
       if (error) throw new Error(error.message);
-      return data;
+      
+      return {
+        id: data.id,
+        tenant_id: data.tenant_id,
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
+        current_step: data.current_step,
+        total_steps: data.total_steps,
+        status: data.status,
+        metadata: data.metadata,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       throw new Error(`Failed to create onboarding workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -79,7 +117,20 @@ class EnhancedOnboardingService extends BaseApiService {
         .single();
 
       if (error) throw new Error(error.message);
-      return data;
+      
+      return {
+        id: data.id,
+        tenant_id: data.tenant_id,
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
+        current_step: data.current_step,
+        total_steps: data.total_steps,
+        status: data.status,
+        metadata: data.metadata,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       throw new Error(`Failed to update workflow status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -91,16 +142,29 @@ class EnhancedOnboardingService extends BaseApiService {
         .from('onboarding_steps')
         .select('*')
         .eq('workflow_id', workflowId)
-        .order('step_order');
+        .order('step_number');
 
       if (error) throw new Error(error.message);
-      return data || [];
+      
+      return (data || []).map(step => ({
+        id: step.id,
+        workflow_id: step.workflow_id,
+        step_order: step.step_number,
+        step_name: step.step_name,
+        step_type: step.step_type || 'default',
+        step_config: step.step_config || {},
+        step_data: step.step_data,
+        step_status: step.step_status,
+        completed_at: step.completed_at,
+        created_at: step.created_at,
+        updated_at: step.updated_at
+      }));
     } catch (error) {
       throw new Error(`Failed to fetch onboarding steps: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  async completeStep(stepId: string, stepData: any): Promise<OnboardingStep> {
+  async completeStep(stepId: string, stepData: any, tenantId?: string): Promise<OnboardingStep> {
     try {
       const { data, error } = await supabase
         .from('onboarding_steps')
@@ -115,10 +179,188 @@ class EnhancedOnboardingService extends BaseApiService {
         .single();
 
       if (error) throw new Error(error.message);
-      return data;
+      
+      return {
+        id: data.id,
+        workflow_id: data.workflow_id,
+        step_order: data.step_number,
+        step_name: data.step_name,
+        step_type: data.step_type || 'default',
+        step_config: data.step_config || {},
+        step_data: data.step_data,
+        step_status: data.step_status,
+        completed_at: data.completed_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       throw new Error(`Failed to complete step: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  // New methods that were missing
+  async isOnboardingComplete(tenantId: string): Promise<boolean> {
+    try {
+      const workflow = await this.getOnboardingWorkflow(tenantId);
+      if (!workflow) return false;
+      
+      const steps = await this.getOnboardingSteps(workflow.id);
+      const completedSteps = steps.filter(step => step.step_status === 'completed');
+      
+      return completedSteps.length === steps.length && steps.length > 0;
+    } catch (error) {
+      console.error('Error checking onboarding completion:', error);
+      return false;
+    }
+  }
+
+  async getOnboardingData(tenantId: string) {
+    try {
+      const workflow = await this.getOnboardingWorkflow(tenantId);
+      if (!workflow) return null;
+      
+      const steps = await this.getOnboardingSteps(workflow.id);
+      
+      return {
+        workflow,
+        steps
+      };
+    } catch (error) {
+      throw new Error(`Failed to get onboarding data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async initializeOnboardingWorkflow(tenantId: string) {
+    try {
+      // Check if workflow already exists
+      const existing = await this.getOnboardingWorkflow(tenantId);
+      if (existing) return this.getOnboardingData(tenantId);
+      
+      // Create new workflow
+      const workflow = await this.createOnboardingWorkflow(tenantId, {
+        workflow_name: 'Tenant Onboarding',
+        workflow_type: 'standard',
+        current_step: 1,
+        total_steps: 6,
+        status: 'pending'
+      });
+      
+      // Create default steps
+      const defaultSteps = [
+        { name: 'Business Verification', order: 1 },
+        { name: 'Subscription Plan', order: 2 },
+        { name: 'Branding Configuration', order: 3 },
+        { name: 'Feature Selection', order: 4 },
+        { name: 'Data Import', order: 5 },
+        { name: 'Team Setup', order: 6 }
+      ];
+      
+      for (const step of defaultSteps) {
+        await supabase
+          .from('onboarding_steps')
+          .insert({
+            workflow_id: workflow.id,
+            step_name: step.name,
+            step_number: step.order,
+            step_status: 'pending',
+            step_data: {},
+            step_type: 'default',
+            step_config: {}
+          });
+      }
+      
+      return this.getOnboardingData(tenantId);
+    } catch (error) {
+      throw new Error(`Failed to initialize onboarding workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async updateStepStatus(stepId: string, status: OnboardingStep['step_status'], stepData?: any, tenantId?: string) {
+    try {
+      const { data, error } = await supabase
+        .from('onboarding_steps')
+        .update({
+          step_status: status,
+          step_data: stepData || {},
+          updated_at: new Date().toISOString(),
+          ...(status === 'completed' && { completed_at: new Date().toISOString() })
+        })
+        .eq('id', stepId)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      
+      return {
+        id: data.id,
+        workflow_id: data.workflow_id,
+        step_order: data.step_number,
+        step_name: data.step_name,
+        step_type: data.step_type || 'default',
+        step_config: data.step_config || {},
+        step_data: data.step_data,
+        step_status: data.step_status,
+        completed_at: data.completed_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+    } catch (error) {
+      throw new Error(`Failed to update step status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async completeWorkflow(workflowId: string, tenantId?: string) {
+    try {
+      const { data, error } = await supabase
+        .from('onboarding_workflows')
+        .update({
+          status: 'completed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', workflowId)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      
+      return {
+        id: data.id,
+        tenant_id: data.tenant_id,
+        workflow_name: data.workflow_name,
+        workflow_type: data.workflow_type,
+        template_data: data.template_data,
+        current_step: data.current_step,
+        total_steps: data.total_steps,
+        status: data.status,
+        metadata: data.metadata,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+    } catch (error) {
+      throw new Error(`Failed to complete workflow: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async validateOnboardingIntegrity(tenantId: string) {
+    try {
+      const workflow = await this.getOnboardingWorkflow(tenantId);
+      if (!workflow) {
+        return { isValid: false, repaired: false, issues: ['No workflow found'] };
+      }
+      
+      const steps = await this.getOnboardingSteps(workflow.id);
+      if (steps.length === 0) {
+        return { isValid: false, repaired: false, issues: ['No steps found'] };
+      }
+      
+      return { isValid: true, repaired: false, issues: [] };
+    } catch (error) {
+      return { isValid: false, repaired: false, issues: [error instanceof Error ? error.message : 'Unknown error'] };
+    }
+  }
+
+  clearCache() {
+    this.cache.clear();
   }
 }
 
