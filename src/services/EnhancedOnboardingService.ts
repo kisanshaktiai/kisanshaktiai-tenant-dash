@@ -1,4 +1,3 @@
-
 import { tenantDataService } from './TenantDataService';
 import { globalErrorHandler } from './GlobalErrorHandler';
 
@@ -46,19 +45,30 @@ class EnhancedOnboardingService {
         return true;
       }
 
-      // Check if all steps are completed
-      const totalSteps = steps.length;
-      const completedSteps = steps.filter(step => step.step_status === 'completed').length;
+      // Check if all required steps are completed
+      const requiredSteps = steps.filter(step => 
+        step.step_data?.is_required !== false // Default to required if not specified
+      );
+      const completedRequiredSteps = requiredSteps.filter(step => 
+        step.step_status === 'completed'
+      );
       
-      const isComplete = totalSteps > 0 && completedSteps === totalSteps;
+      const isComplete = requiredSteps.length > 0 && completedRequiredSteps.length === requiredSteps.length;
       
       console.log('EnhancedOnboardingService: Onboarding completion check:', {
         tenantId,
-        totalSteps,
-        completedSteps,
+        totalSteps: steps.length,
+        requiredSteps: requiredSteps.length,
+        completedRequiredSteps: completedRequiredSteps.length,
         workflowStatus: workflow.status,
         isComplete
       });
+
+      // Auto-complete workflow if all required steps are done
+      if (isComplete && workflow.status !== 'completed') {
+        console.log('EnhancedOnboardingService: Auto-completing workflow');
+        await this.completeWorkflow(workflow.id, tenantId);
+      }
 
       return isComplete;
     } catch (error) {
@@ -168,7 +178,6 @@ class EnhancedOnboardingService {
     }
   }
 
-  // Add the missing methods that are being called from useOnboarding.ts
   async initializeOnboardingWorkflow(tenantId: string): Promise<{ workflow: any; steps: any[] } | null> {
     return this.initializeOnboarding(tenantId);
   }
@@ -204,13 +213,17 @@ class EnhancedOnboardingService {
         throw new Error('Tenant ID is required to update step status');
       }
 
-      // For completed status, use the existing complete step method
       if (status === 'completed') {
         return await this.completeStep(stepId, stepData, tenantId);
       }
       
-      // For other statuses, we'd need to implement step status updates in tenantDataService
-      // For now, just return true as a placeholder
+      await tenantDataService.updateOnboardingStep(tenantId, stepId, {
+        step_status: status,
+        step_data: stepData || {},
+        updated_at: new Date().toISOString(),
+        ...(status === 'in_progress' && { started_at: new Date().toISOString() })
+      });
+      
       console.log('EnhancedOnboardingService: Step status updated successfully');
       return true;
     } catch (error) {
@@ -232,8 +245,8 @@ class EnhancedOnboardingService {
         throw new Error('Tenant ID is required to complete workflow');
       }
       
-      // This would need to be implemented in tenantDataService
-      // For now, return true as placeholder
+      await tenantDataService.completeOnboardingWorkflow(tenantId, workflowId);
+      
       console.log('EnhancedOnboardingService: Workflow completed successfully');
       return true;
     } catch (error) {
@@ -271,6 +284,16 @@ class EnhancedOnboardingService {
         issues.push('No onboarding steps found');
       }
       
+      // Check for step sequence gaps
+      if (onboardingData.steps && onboardingData.steps.length > 0) {
+        const stepNumbers = onboardingData.steps.map((s: OnboardingStep) => s.step_number).sort((a, b) => a - b);
+        for (let i = 1; i <= stepNumbers.length; i++) {
+          if (!stepNumbers.includes(i)) {
+            issues.push(`Missing step number ${i} in sequence`);
+          }
+        }
+      }
+      
       return {
         isValid: issues.length === 0,
         issues,
@@ -293,6 +316,139 @@ class EnhancedOnboardingService {
 
   async completeOnboardingStep(tenantId: string, stepId: string, stepData?: any): Promise<boolean> {
     return this.completeStep(stepId, stepData, tenantId);
+  }
+
+  async calculateProgress(tenantId: string): Promise<number> {
+    try {
+      const onboardingData = await this.getOnboardingData(tenantId);
+      
+      if (!onboardingData?.steps || onboardingData.steps.length === 0) {
+        return 0;
+      }
+
+      const completedSteps = onboardingData.steps.filter(
+        (step: OnboardingStep) => step.step_status === 'completed'
+      ).length;
+
+      const progress = (completedSteps / onboardingData.steps.length) * 100;
+      
+      console.log('EnhancedOnboardingService: Progress calculated:', {
+        tenantId,
+        completedSteps,
+        totalSteps: onboardingData.steps.length,
+        progress
+      });
+
+      return Math.round(progress);
+    } catch (error) {
+      globalErrorHandler.handleError(error, {
+        component: 'EnhancedOnboardingService',
+        operation: 'calculateProgress',
+        tenantId
+      }, {
+        severity: 'low',
+        showToast: false
+      });
+      return 0;
+    }
+  }
+
+  // Clear cache method for troubleshooting
+  clearCache(): void {
+    this.initializationCache.clear();
+    console.log('EnhancedOnboardingService: Cache cleared');
+  }
+
+  async getOnboardingData(tenantId: string): Promise<{ workflow: any; steps: any[] } | null> {
+    try {
+      console.log('EnhancedOnboardingService: Getting onboarding data for tenant:', tenantId);
+
+      // Prevent multiple simultaneous calls for the same tenant
+      const cacheKey = `onboarding-${tenantId}`;
+      if (this.initializationCache.has(cacheKey)) {
+        console.log('EnhancedOnboardingService: Using cached onboarding data request');
+        return await this.initializationCache.get(cacheKey)!;
+      }
+
+      const dataPromise = this.fetchOnboardingData(tenantId);
+      this.initializationCache.set(cacheKey, dataPromise);
+
+      try {
+        const result = await dataPromise;
+        return result;
+      } finally {
+        // Clean up cache after request completes
+        setTimeout(() => {
+          this.initializationCache.delete(cacheKey);
+        }, 1000);
+      }
+    } catch (error) {
+      globalErrorHandler.handleError(error, {
+        component: 'EnhancedOnboardingService',
+        operation: 'getOnboardingData',
+        tenantId
+      }, {
+        severity: 'high'
+      });
+      return null;
+    }
+  }
+
+  private async fetchOnboardingData(tenantId: string): Promise<{ workflow: any; steps: any[] }> {
+    console.log('EnhancedOnboardingService: Fetching onboarding data for tenant:', tenantId);
+    
+    try {
+      const onboardingData = await tenantDataService.getCompleteOnboardingData(tenantId);
+      
+      if (!onboardingData) {
+        throw new Error('No onboarding data returned from service');
+      }
+
+      console.log('EnhancedOnboardingService: Successfully retrieved onboarding data:', {
+        hasWorkflow: !!onboardingData.workflow,
+        stepCount: onboardingData.steps?.length || 0
+      });
+
+      return onboardingData;
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error fetching onboarding data:', error);
+      throw error;
+    }
+  }
+
+  async initializeOnboarding(tenantId: string): Promise<{ workflow: any; steps: any[] } | null> {
+    try {
+      console.log('EnhancedOnboardingService: Initializing onboarding for tenant:', tenantId);
+
+      // Check if already initialized
+      const existingData = await this.getOnboardingData(tenantId);
+      if (existingData?.workflow) {
+        console.log('EnhancedOnboardingService: Onboarding already initialized');
+        return existingData;
+      }
+
+      // Initialize new workflow
+      const { workflow_id } = await tenantDataService.ensureOnboardingWorkflow(tenantId);
+      
+      // Get the complete data
+      const onboardingData = await tenantDataService.getCompleteOnboardingData(tenantId);
+      
+      console.log('EnhancedOnboardingService: Onboarding initialized successfully:', {
+        workflowId: workflow_id,
+        hasSteps: !!onboardingData?.steps?.length
+      });
+
+      return onboardingData;
+    } catch (error) {
+      globalErrorHandler.handleError(error, {
+        component: 'EnhancedOnboardingService',
+        operation: 'initializeOnboarding',
+        tenantId
+      }, {
+        severity: 'high'
+      });
+      return null;
+    }
   }
 
   async calculateProgress(tenantId: string): Promise<number> {

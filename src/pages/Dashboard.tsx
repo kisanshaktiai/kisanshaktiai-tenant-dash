@@ -2,10 +2,18 @@
 import React from 'react';
 import { EnhancedDashboardPresentation } from '@/components/dashboard/presentation/EnhancedDashboardPresentation';
 import { useRealTimeDashboard } from '@/hooks/data/useRealTimeDashboard';
+import { usePostLoginOnboardingCheck } from '@/hooks/usePostLoginOnboardingCheck';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 const Dashboard = () => {
   const { data, isLoading, error, isLive, activeChannels } = useRealTimeDashboard();
+
+  // Initialize post-login onboarding check
+  usePostLoginOnboardingCheck({
+    delayMs: 30000, // 30 seconds after login
+    skipOnOnboardingPage: true,
+    showNotification: true
+  });
 
   // Mock data for demonstration - replace with real data from the query
   const dashboardData = {
