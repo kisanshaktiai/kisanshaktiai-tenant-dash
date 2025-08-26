@@ -41,6 +41,11 @@ const LoginPage = () => {
         title: 'Welcome back!',
         description: 'You have successfully signed in.',
       });
+      
+      // The OnboardingGuardRefactored will handle the redirect logic:
+      // - If onboarding is incomplete, it will redirect to /onboarding
+      // - If onboarding is complete, it will redirect to /dashboard
+      // - This happens automatically through the guard component
       navigate('/dashboard', { replace: true });
     }
   };

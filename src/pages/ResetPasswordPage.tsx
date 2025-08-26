@@ -99,7 +99,7 @@ const ResetPasswordPage = () => {
 
         // Redirect to login after 3 seconds
         setTimeout(() => {
-          navigate('/auth', { 
+          navigate('/auth/login', { 
             state: { 
               message: 'Your password has been reset successfully. Please sign in with your new password.' 
             }
@@ -188,7 +188,7 @@ const ResetPasswordPage = () => {
                 </AlertDescription>
               </Alert>
               <Button 
-                onClick={() => navigate('/auth')} 
+                onClick={() => navigate('/auth/login')} 
                 variant="outline" 
                 className="w-full"
               >
