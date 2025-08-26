@@ -78,7 +78,7 @@ export const usePostLoginOnboardingCheck = (options: PostLoginOnboardingCheckOpt
       }, {
         severity: 'medium',
         showToast: true,
-        fallbackMessage: 'Unable to verify onboarding status'
+        suppressDuplicates: true
       });
     }
   }, [navigate, location.pathname, skipOnOnboardingPage, showNotification]);
