@@ -1,5 +1,6 @@
 
 import React, { lazy, Suspense } from 'react';
+import { ModernDashboardLayout } from '@/components/layout/ModernDashboardLayout';
 import { DashboardSkeleton } from '@/components/dashboard/presentation/DashboardSkeleton';
 import { useConsolidatedRealtime } from '@/hooks/realtime/useConsolidatedRealtime';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
@@ -11,14 +12,21 @@ const OptimizedDashboardContainer = lazy(() =>
   }))
 );
 
-const LazyDashboard = () => {
+const DashboardContent = () => {
   const { isConnected, activeChannels } = useConsolidatedRealtime();
 
   return (
     <div className="space-y-6">
       {/* Live Indicator */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Monitor your farm operations and performance metrics
+          </p>
+        </div>
         <LiveIndicator isConnected={isConnected} activeChannels={activeChannels} />
       </div>
       
@@ -26,6 +34,14 @@ const LazyDashboard = () => {
         <OptimizedDashboardContainer />
       </Suspense>
     </div>
+  );
+};
+
+const LazyDashboard = () => {
+  return (
+    <ModernDashboardLayout>
+      <DashboardContent />
+    </ModernDashboardLayout>
   );
 };
 
