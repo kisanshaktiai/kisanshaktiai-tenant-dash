@@ -3,6 +3,8 @@ import { useCallback } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { supabase } from '@/integrations/supabase/client';
 
+type TableName = 'tenants' | 'farmers' | 'products' | 'user_tenants' | 'onboarding_workflows' | 'onboarding_steps';
+
 export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
@@ -27,37 +29,37 @@ export const useTenantIsolation = () => {
     };
   }, [user, currentTenant]);
 
-  const createTenantQuery = useCallback((table: string) => {
+  const createTenantQuery = useCallback((tableName: TableName) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table)
+      .from(tableName)
       .select('*')
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantInsert = useCallback((table: string, data: any) => {
+  const createTenantInsert = useCallback((tableName: TableName, data: any) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table)
+      .from(tableName)
       .insert({
         ...data,
         tenant_id: tenantId,
       });
   }, [getTenantId]);
 
-  const createTenantUpdate = useCallback((table: string, id: string, data: any) => {
+  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: any) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table)
+      .from(tableName)
       .update(data)
       .eq('id', id)
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantDelete = useCallback((table: string, id: string) => {
+  const createTenantDelete = useCallback((tableName: TableName, id: string) => {
     const tenantId = getTenantId();
     return supabase
-      .from(table)
+      .from(tableName)
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId);

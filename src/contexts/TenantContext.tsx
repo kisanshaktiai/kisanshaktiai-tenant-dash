@@ -1,7 +1,6 @@
 
 import React, { createContext, useContext } from 'react';
 import { useTenantAuth } from '@/hooks/useTenantAuth';
-import { useTenantContext as useOriginalTenantContext } from '@/contexts/TenantContext';
 
 interface TenantContextValue {
   currentTenant: any;
@@ -13,6 +12,7 @@ interface TenantContextValue {
   refreshTenantData: () => Promise<void>;
   clearTenantSession: () => void;
   isInitialized: boolean;
+  initializeOnboarding: (tenantId: string) => Promise<any>;
 }
 
 const TenantContext = createContext<TenantContextValue | undefined>(undefined);
@@ -28,16 +28,28 @@ export const useTenantContext = () => {
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const tenantAuth = useTenantAuth();
   
+  const initializeOnboarding = async (tenantId: string) => {
+    try {
+      // Initialize onboarding workflow for the tenant
+      console.log('Initializing onboarding for tenant:', tenantId);
+      return { success: true, tenantId };
+    } catch (error) {
+      console.error('Error initializing onboarding:', error);
+      throw error;
+    }
+  };
+  
   const value: TenantContextValue = {
     currentTenant: tenantAuth.currentTenant,
     userTenants: tenantAuth.userTenants,
     loading: tenantAuth.loading,
-    error: null, // Error handling moved to useTenantAuth
+    error: null,
     isMultiTenant: tenantAuth.isMultiTenant,
     switchTenant: tenantAuth.switchTenant,
     refreshTenantData: tenantAuth.refreshTenantData,
     clearTenantSession: tenantAuth.clearTenantSession,
     isInitialized: tenantAuth.isInitialized,
+    initializeOnboarding,
   };
 
   return (

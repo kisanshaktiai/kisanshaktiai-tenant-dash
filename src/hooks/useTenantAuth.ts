@@ -186,7 +186,7 @@ export const useTenantAuth = () => {
     loading: loading || !isInitialized,
     isMultiTenant: userTenants.length > 1,
     switchTenant,
-    refreshTenantData: user ? () => fetchUserTenants(user.id) : () => {},
+    refreshTenantData: user ? () => fetchUserTenants(user.id) : async () => {},
     clearTenantSession,
     isInitialized,
   };
