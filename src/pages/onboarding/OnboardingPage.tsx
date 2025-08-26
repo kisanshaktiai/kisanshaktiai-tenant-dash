@@ -1,7 +1,6 @@
-
 import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenant } from '@/contexts/TenantContext';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useOnboardingWithValidation } from '@/hooks/useOnboardingWithValidation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -77,7 +76,7 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading } = useTenantContext();
+  const { currentTenant, loading: tenantLoading } = useTenant();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   

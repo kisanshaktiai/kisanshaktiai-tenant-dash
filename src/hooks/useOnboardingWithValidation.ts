@@ -1,12 +1,11 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 import { onboardingValidationService } from '@/services/OnboardingValidationService';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenant } from '@/contexts/TenantContext';
 import { toast } from 'sonner';
 
 export const useOnboardingWithValidation = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenant();
   const queryClient = useQueryClient();
   
   const onboardingQuery = useQuery({
@@ -119,7 +118,7 @@ export const useOnboardingWithValidation = () => {
     },
     enabled: false, // Only run when explicitly requested
   });
-
+  
   return {
     onboardingData: onboardingQuery.data,
     isLoading: onboardingQuery.isLoading,

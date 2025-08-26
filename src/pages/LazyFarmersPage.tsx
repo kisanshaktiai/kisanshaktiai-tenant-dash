@@ -1,6 +1,5 @@
 
 import React, { lazy, Suspense } from 'react';
-import { ModernDashboardLayout } from '@/components/layout/ModernDashboardLayout';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Users, Plus, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ const FarmersPageContainer = lazy(() =>
   }))
 );
 
-const FarmersContent = () => {
+const LazyFarmersPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -102,14 +101,6 @@ const FarmersContent = () => {
         <FarmersPageContainer />
       </Suspense>
     </div>
-  );
-};
-
-const LazyFarmersPage = () => {
-  return (
-    <ModernDashboardLayout>
-      <FarmersContent />
-    </ModernDashboardLayout>
   );
 };
 

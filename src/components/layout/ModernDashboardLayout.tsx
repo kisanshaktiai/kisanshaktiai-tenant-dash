@@ -53,14 +53,14 @@ const navigationItems = [
 ];
 
 const AppSidebar = () => {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
   
-  const isActive = (path: string) => currentPath === path;
+  const isCollapsed = state === 'collapsed';
   
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+    <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
       <SidebarContent className="bg-gradient-to-b from-card to-card/95 border-r border-border/50">
         <SidebarGroup>
           <SidebarGroupLabel className="text-muted-foreground font-medium px-4 py-2">
@@ -82,7 +82,7 @@ const AppSidebar = () => {
                       }
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -208,7 +208,7 @@ const TopBar = () => {
 
 export const ModernDashboardLayout: React.FC = () => {
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background to-muted/20">
         <AppSidebar />
         
