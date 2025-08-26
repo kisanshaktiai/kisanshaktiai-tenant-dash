@@ -7,12 +7,13 @@ import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import TenantSetupPage from '@/pages/TenantSetupPage';
+import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { optimizedQueryClient } from '@/lib/optimizedQueryClient';
-import { OnboardingGuard } from './components/guards/OnboardingGuard';
+import { OnboardingGuard } from './components/guards/OnboardingGuardRefactored';
 import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider';
 import { TenantProvider } from '@/contexts/TenantContext';
 import { lazy, Suspense } from 'react';
@@ -41,6 +42,7 @@ function App() {
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
                     <Route path="/tenant-setup" element={<TenantSetupPage />} />
+                    <Route path="/onboarding" element={<OnboardingPage />} />
                     <Route path="/dashboard" element={
                       <OnboardingGuard>
                         <EnhancedDashboardLayout />
