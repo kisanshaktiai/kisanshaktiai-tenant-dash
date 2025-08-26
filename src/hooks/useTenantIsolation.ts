@@ -5,6 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 type TableName = 'tenants' | 'farmers' | 'products' | 'user_tenants' | 'onboarding_workflows' | 'onboarding_steps';
 
+interface TenantData {
+  [key: string]: any;
+  tenant_id?: string;
+}
+
 export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
@@ -37,7 +42,7 @@ export const useTenantIsolation = () => {
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantInsert = useCallback((tableName: TableName, data: any) => {
+  const createTenantInsert = useCallback((tableName: TableName, data: TenantData) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
@@ -47,7 +52,7 @@ export const useTenantIsolation = () => {
       });
   }, [getTenantId]);
 
-  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: any) => {
+  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: TenantData) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)

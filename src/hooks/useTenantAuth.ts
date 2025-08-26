@@ -164,7 +164,8 @@ export const useTenantAuth = () => {
         },
         (payload) => {
           console.log('useTenantAuth: Real-time tenant update detected:', payload.eventType);
-          const payloadId = payload.new?.id || payload.old?.id;
+          // Fix TypeScript error by properly checking payload structure
+          const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
           if (currentTenant && payloadId && payloadId === currentTenant.id) {
             setTimeout(() => {
               fetchUserTenants(user.id);
