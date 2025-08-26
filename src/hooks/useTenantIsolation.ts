@@ -5,6 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 type TableName = 'tenants' | 'farmers' | 'products' | 'user_tenants' | 'onboarding_workflows' | 'onboarding_steps';
 
+interface TenantValidation {
+  userId: string;
+  tenantId: string;
+}
+
 export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
@@ -16,7 +21,7 @@ export const useTenantIsolation = () => {
     return currentTenant.id;
   }, [currentTenant?.id]);
 
-  const validateTenantAccess = useCallback(() => {
+  const validateTenantAccess = useCallback((): TenantValidation => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -37,7 +42,7 @@ export const useTenantIsolation = () => {
       .eq('tenant_id', tenantId);
   }, [getTenantId]);
 
-  const createTenantInsert = useCallback((tableName: TableName, data: Record<string, any>) => {
+  const createTenantInsert = useCallback((tableName: TableName, data: any) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
@@ -47,7 +52,7 @@ export const useTenantIsolation = () => {
       });
   }, [getTenantId]);
 
-  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: Record<string, any>) => {
+  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: any) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
