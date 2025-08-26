@@ -18,6 +18,7 @@ import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 import { tenantProfileService } from '@/services/TenantProfileService';
 import { onboardingService } from '@/services/OnboardingService';
 import { toast } from 'sonner';
+import type { OnboardingStep } from '@/services/OnboardingService';
 
 const stepComponents = {
   'Business Verification': BusinessVerificationStep,
@@ -76,24 +77,22 @@ export const TenantOnboardingFlow: React.FC = () => {
   // Add summary step if not present
   const allSteps = [...steps];
   if (allSteps.length > 0 && !allSteps.find(s => s.step_name === 'Summary')) {
-    allSteps.push({
+    const summaryStep: OnboardingStep = {
       id: 'summary',
       workflow_id: workflow?.id || '',
-      step_order: allSteps.length + 1,
-      step_name: 'Summary',
-      step_type: 'summary',
-      step_config: {},
-      step_data: {},
-      step_status: 'pending' as const,
-      completed_at: null,
-      created_at: '',
-      updated_at: '',
       step_number: allSteps.length + 1,
+      step_name: 'Summary',
       step_description: 'Review and complete your setup',
+      step_status: 'pending' as const,
       is_required: true,
       estimated_time_minutes: 5,
-      started_at: null
-    });
+      step_data: {},
+      started_at: null,
+      completed_at: null,
+      created_at: '',
+      updated_at: ''
+    };
+    allSteps.push(summaryStep);
   }
 
   // Preload next step component
