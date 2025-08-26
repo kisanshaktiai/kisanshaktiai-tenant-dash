@@ -2,7 +2,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '@/pages/auth/LoginPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuthRefactored';
 
 const Auth = () => {
   const { user, loading, initialized } = useAuth();
