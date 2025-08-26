@@ -59,9 +59,9 @@ class EnhancedOnboardingService extends BaseApiService {
         return {
           id: data.id,
           tenant_id: data.tenant_id,
-          workflow_name: data.workflow_name || 'Tenant Onboarding',
-          workflow_type: data.workflow_type || 'standard',
-          template_data: data.template_data || {},
+          workflow_name: 'Tenant Onboarding', // Default value since field doesn't exist
+          workflow_type: 'standard', // Default value since field doesn't exist
+          template_data: {}, // Default value since field doesn't exist
           current_step: data.current_step,
           total_steps: data.total_steps,
           status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -83,13 +83,15 @@ class EnhancedOnboardingService extends BaseApiService {
         .from('onboarding_workflows')
         .insert({
           tenant_id: tenantId,
-          workflow_name: workflowData.workflow_name || 'Tenant Onboarding',
-          workflow_type: workflowData.workflow_type || 'standard',
-          template_data: workflowData.template_data || {},
           current_step: workflowData.current_step || 1,
           total_steps: workflowData.total_steps || 6,
           status: workflowData.status || 'pending',
-          metadata: workflowData.metadata || {}
+          metadata: {
+            ...workflowData.metadata,
+            workflow_name: workflowData.workflow_name || 'Tenant Onboarding',
+            workflow_type: workflowData.workflow_type || 'standard',
+            template_data: workflowData.template_data || {}
+          }
         })
         .select()
         .single();
@@ -99,9 +101,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.workflow_name,
-        workflow_type: data.workflow_type,
-        template_data: data.template_data,
+        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
+        workflow_type: data.metadata?.workflow_type || 'standard',
+        template_data: data.metadata?.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -131,9 +133,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.workflow_name,
-        workflow_type: data.workflow_type,
-        template_data: data.template_data,
+        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
+        workflow_type: data.metadata?.workflow_type || 'standard',
+        template_data: data.metadata?.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -308,9 +310,9 @@ class EnhancedOnboardingService extends BaseApiService {
       return {
         id: data.id,
         tenant_id: data.tenant_id,
-        workflow_name: data.workflow_name,
-        workflow_type: data.workflow_type,
-        template_data: data.template_data,
+        workflow_name: data.metadata?.workflow_name || 'Tenant Onboarding',
+        workflow_type: data.metadata?.workflow_type || 'standard',
+        template_data: data.metadata?.template_data || {},
         current_step: data.current_step,
         total_steps: data.total_steps,
         status: data.status as 'pending' | 'in_progress' | 'completed' | 'failed',
