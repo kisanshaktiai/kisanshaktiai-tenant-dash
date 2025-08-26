@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -94,10 +94,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     
     try {
-      // Validate tenant access first
+      // First validate if the user can login (tenant ownership check)
       const loginCheck = await tenantValidationService.checkUserCanLogin(email);
       
       if (!loginCheck.canLogin) {
+        console.error('Sign in blocked:', loginCheck.reason);
         toast({
           variant: 'destructive',
           title: 'Access Denied',
@@ -106,12 +107,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: { message: loginCheck.reason || 'Login not allowed' } };
       }
 
+      // Proceed with authentication if tenant validation passes
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Sign in error:', error);
         toast({
           variant: 'destructive',
           title: 'Sign In Failed',
@@ -120,10 +123,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error };
       }
 
-      toast({
-        title: 'Welcome back!',
-        description: 'You have been successfully signed in.',
-      });
+      if (data.user) {
+        console.log('Sign in successful for tenant owner:', data.user.email);
+        console.log('Tenant data:', loginCheck.tenantData);
+        toast({
+          title: 'Welcome back!',
+          description: 'You have been successfully signed in.',
+        });
+      }
 
       return { error: null };
     } catch (error: any) {
