@@ -244,7 +244,7 @@ class FarmerManagementService extends BaseApiService {
       const { data: leads, error } = await supabase
         .from('leads')
         .select('*')
-        .eq('organization_id', tenantId) // Use organization_id instead of tenant_id
+        .eq('organization_name', tenantId) // Use organization_name for tenant lookup
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -255,9 +255,9 @@ class FarmerManagementService extends BaseApiService {
         lead_name: lead.contact_name || lead.organization_name || 'Unknown',
         phone: lead.phone,
         email: lead.email,
-        location: (lead.location_data as any) || null,
+        location: null, // Field doesn't exist in current schema
         lead_source: lead.source || 'manual',
-        lead_score: lead.ai_score || 0, // Use ai_score instead of score
+        lead_score: lead.ai_score || 0,
         status: lead.status as 'new' | 'contacted' | 'qualified' | 'converted' | 'lost',
         assigned_to: lead.assigned_to,
         notes: lead.notes,
@@ -340,17 +340,16 @@ class FarmerManagementService extends BaseApiService {
       const { data: lead, error } = await supabase
         .from('leads')
         .insert({
-          organization_id: tenantId, // Use organization_id instead of tenant_id
           contact_name: leadData.lead_name,
           phone: leadData.phone,
           email: leadData.email,
-          location_data: leadData.location,
           source: leadData.lead_source,
-          ai_score: leadData.lead_score, // Use ai_score instead of score
+          ai_score: leadData.lead_score,
           status: leadData.status,
           assigned_to: leadData.assigned_to,
           notes: leadData.notes,
-          follow_up_date: leadData.follow_up_date
+          follow_up_date: leadData.follow_up_date,
+          organization_name: tenantId // Use organization_name for tenant reference
         })
         .select()
         .single();
@@ -363,7 +362,7 @@ class FarmerManagementService extends BaseApiService {
         lead_name: lead.contact_name,
         phone: lead.phone,
         email: lead.email,
-        location: (lead.location_data as any) || null,
+        location: null,
         lead_source: lead.source,
         lead_score: lead.ai_score,
         status: lead.status as any,

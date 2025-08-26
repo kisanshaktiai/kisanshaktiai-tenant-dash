@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -16,9 +17,8 @@ import { DataImportStep } from './steps/DataImportStep';
 import { TeamInvitesStep } from './steps/TeamInvitesStep';
 import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 import { tenantProfileService } from '@/services/TenantProfileService';
-import { onboardingService } from '@/services/OnboardingService';
 import { toast } from 'sonner';
-import type { OnboardingStep } from '@/services/OnboardingService';
+import type { OnboardingStep } from '@/services/EnhancedOnboardingService';
 
 const stepComponents = {
   'Business Verification': BusinessVerificationStep,
@@ -80,17 +80,20 @@ export const TenantOnboardingFlow: React.FC = () => {
     const summaryStep: OnboardingStep = {
       id: 'summary',
       workflow_id: workflow?.id || '',
-      step_number: allSteps.length + 1,
+      step_order: allSteps.length + 1,
       step_name: 'Summary',
-      step_description: 'Review and complete your setup',
+      step_type: 'summary',
+      step_config: {},
+      step_data: {},
       step_status: 'pending' as const,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      step_number: allSteps.length + 1,
+      step_description: 'Review and complete your setup',
       is_required: true,
       estimated_time_minutes: 5,
-      step_data: {},
-      started_at: null,
-      completed_at: null,
-      created_at: '',
-      updated_at: ''
+      started_at: null
     };
     allSteps.push(summaryStep);
   }
