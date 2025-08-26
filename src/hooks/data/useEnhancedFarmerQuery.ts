@@ -24,7 +24,7 @@ export const useAddFarmerTagMutation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useMutation({
-    mutationFn: ({ farmerId, tagData }: { farmerId: string; tagData: Partial<FarmerTag> }) => {
+    mutationFn: ({ farmerId, tagData }: { farmerId: string; tagData: { tag_name: string; tag_color?: string; created_by?: string } }) => {
       if (!currentTenant) throw new Error('No tenant selected');
       return enhancedFarmerService.addFarmerTag(currentTenant.id, farmerId, tagData);
     },
@@ -90,7 +90,7 @@ export const useAddFarmerNoteMutation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useMutation({
-    mutationFn: ({ farmerId, noteData }: { farmerId: string; noteData: Partial<FarmerNote> }) => {
+    mutationFn: ({ farmerId, noteData }: { farmerId: string; noteData: { note_content: string; created_by?: string; is_important?: boolean; is_private?: boolean } }) => {
       if (!currentTenant) throw new Error('No tenant selected');
       return enhancedFarmerService.addFarmerNote(currentTenant.id, farmerId, noteData);
     },
@@ -153,7 +153,7 @@ export const useCreateFarmerLeadMutation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return useMutation({
-    mutationFn: (leadData: Partial<FarmerLead>) => {
+    mutationFn: (leadData: { lead_source: string; contact_name: string; phone?: string; email?: string; location?: Record<string, any>; land_size?: number; crops_interested?: string[]; lead_score?: number; status?: string; assigned_to?: string; assigned_at?: string; converted_farmer_id?: string; converted_at?: string; next_follow_up?: string; notes?: string; metadata?: Record<string, any> }) => {
       if (!currentTenant) throw new Error('No tenant selected');
       return enhancedFarmerService.createFarmerLead(currentTenant.id, leadData);
     },

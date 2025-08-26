@@ -1,112 +1,140 @@
 
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Plus, Search, Filter, Download, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Users, TrendingUp, Target, MessageSquare, 
-  BarChart3, UserPlus
-} from 'lucide-react';
-
-// Import enhanced components
-import { EnhancedFarmerDirectory } from './components/EnhancedFarmerDirectory';
-import { FarmerProfile } from './components/FarmerProfile';
+import { FarmersPageContainer } from '@/components/farmers/containers/FarmersPageContainer';
+import { CreateFarmerModal } from './components/CreateFarmerModal';
+import { FarmerImportModal } from './components/FarmerImportModal';
 import { BulkOperations } from './components/BulkOperations';
 import { EngagementTracking } from './components/EngagementTracking';
-import { FarmerPipeline } from './components/FarmerPipeline';
 import { LeadManagement } from './components/LeadManagement';
-import { CreateFarmerContainer } from '@/components/farmers/containers/CreateFarmerContainer';
+import { FarmerStats } from './components/FarmerStats';
+import { FarmerProfile } from './components/FarmerProfile';
+import { EnhancedFarmerDirectory } from './components/EnhancedFarmerDirectory';
+import type { Farmer } from '@/services/FarmersService';
 
 export default function FarmersPage() {
-  const [activeTab, setActiveTab] = useState('directory');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState<Farmer | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleImportModalChange = (open: boolean) => {
+    setIsImportModalOpen(open);
+  };
+
+  const handleFarmerSelect = (farmer: Farmer) => {
+    setSelectedFarmer(farmer);
+  };
+
+  const handleCloseFarmerProfile = () => {
+    setSelectedFarmer(null);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Farmer Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Users className="h-8 w-8" />
+            Farmer Management
+          </h1>
           <p className="text-muted-foreground">
-            Comprehensive farmer network management and engagement
+            Manage your farmer network and track their engagement
           </p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+            <Download className="mr-2 h-4 w-4" />
+            Import Farmers
+          </Button>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Farmer
+          </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="directory">
-            <Users className="h-4 w-4 mr-2" />
-            Directory
-          </TabsTrigger>
-          <TabsTrigger value="pipeline">
-            <Target className="h-4 w-4 mr-2" />
-            Pipeline
-          </TabsTrigger>
-          <TabsTrigger value="engagement">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Engagement
-          </TabsTrigger>
-          <TabsTrigger value="leads">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Leads
-          </TabsTrigger>
-          <TabsTrigger value="bulk">
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Bulk Ops
-          </TabsTrigger>
-          <TabsTrigger value="analytics">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
-          </TabsTrigger>
+      {/* Stats */}
+      <FarmerStats />
+
+      {/* Search and Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Search & Filter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search farmers by name, phone, or location..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Advanced Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Content */}
+      <Tabs defaultValue="directory" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="directory">Directory</TabsTrigger>
+          <TabsTrigger value="bulk">Bulk Operations</TabsTrigger>
+          <TabsTrigger value="engagement">Engagement</TabsTrigger>
+          <TabsTrigger value="leads">Lead Management</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="directory" className="space-y-6">
-          <EnhancedFarmerDirectory 
-            onSelectFarmer={setSelectedFarmer}
-          />
+        <TabsContent value="directory">
+          <EnhancedFarmerDirectory onSelectFarmer={handleFarmerSelect} />
         </TabsContent>
 
-        <TabsContent value="pipeline" className="space-y-6">
-          <FarmerPipeline />
-        </TabsContent>
-
-        <TabsContent value="engagement" className="space-y-6">
-          <EngagementTracking />
-        </TabsContent>
-
-        <TabsContent value="leads" className="space-y-6">
-          <LeadManagement />
-        </TabsContent>
-
-        <TabsContent value="bulk" className="space-y-6">
+        <TabsContent value="bulk">
           <BulkOperations />
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
-          <Card>
-            <CardContent className="text-center py-8">
-              <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Advanced analytics dashboard coming soon...
-              </p>
-            </CardContent>
-          </Card>
+        <TabsContent value="engagement">
+          <EngagementTracking />
+        </TabsContent>
+
+        <TabsContent value="leads">
+          <LeadManagement />
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <CreateFarmerModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
+      
+      <FarmerImportModal
+        open={isImportModalOpen}
+        onOpenChange={handleImportModalChange}
+      />
 
       {/* Farmer Profile Modal */}
       {selectedFarmer && (
         <FarmerProfile 
           farmer={selectedFarmer}
-          onClose={() => setSelectedFarmer(null)}
+          onClose={handleCloseFarmerProfile}
         />
       )}
-
-      {/* Create Farmer Modal */}
-      <CreateFarmerContainer
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-      />
     </div>
   );
 }

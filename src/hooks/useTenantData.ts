@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -31,7 +30,7 @@ export const useTenantData = () => {
           .from('user_tenants')
           .select(`
             *,
-            tenants:tenant_id(
+            tenants!user_tenants_tenant_id_fkey(
               *,
               tenant_branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
               tenant_features:tenant_features!tenant_features_tenant_id_fkey(*),
