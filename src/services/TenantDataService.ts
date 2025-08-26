@@ -69,8 +69,14 @@ class TenantDataService {
         hasData: !!requestPayload.data,
       });
 
+      // Fix: Ensure request body is properly stringified and not empty
+      const body = JSON.stringify(requestPayload);
+      if (!body || body === '{}') {
+        throw new Error('Request payload cannot be empty');
+      }
+
       const { data, error } = await supabase.functions.invoke('tenant-data-api', {
-        body: JSON.stringify(requestPayload),
+        body: requestPayload, // Pass object directly, Supabase handles stringification
         headers: {
           'Content-Type': 'application/json',
         },
@@ -115,9 +121,17 @@ class TenantDataService {
     }
   }
 
-  // Enhanced workflow creation with tenant isolation
+  // Enhanced workflow creation with tenant isolation and debouncing
+  private workflowCreationCache = new Map<string, Promise<{ workflow_id: string }>>();
+
   async ensureOnboardingWorkflow(tenantId: string): Promise<{ workflow_id: string }> {
     this.validateTenantAccess(tenantId);
+    
+    // Check cache to prevent duplicate requests
+    if (this.workflowCreationCache.has(tenantId)) {
+      console.log('TenantDataService: Using cached workflow creation for tenant:', tenantId);
+      return await this.workflowCreationCache.get(tenantId)!;
+    }
     
     console.log('TenantDataService: Ensuring onboarding workflow for tenant:', tenantId);
     
@@ -134,18 +148,31 @@ class TenantDataService {
     }
     
     try {
-      const result = await this.callTenantDataAPI(tenantId, {
+      const workflowPromise = this.callTenantDataAPI(tenantId, {
         table: 'onboarding_workflows',
         operation: 'ensure_workflow'
       });
+
+      // Cache the promise to prevent duplicate requests
+      this.workflowCreationCache.set(tenantId, workflowPromise);
+      
+      const result = await workflowPromise;
       
       if (!result || !result.workflow_id) {
         throw new Error('Failed to ensure workflow - no workflow ID returned');
       }
       
       console.log('TenantDataService: Created new workflow for tenant:', tenantId, 'workflow ID:', result.workflow_id);
+      
+      // Clean up cache after successful creation
+      setTimeout(() => {
+        this.workflowCreationCache.delete(tenantId);
+      }, 5000);
+      
       return result;
     } catch (error) {
+      // Clean up cache on error
+      this.workflowCreationCache.delete(tenantId);
       console.error('TenantDataService: Error ensuring workflow for tenant:', tenantId, error);
       throw error;
     }
@@ -288,22 +315,25 @@ class TenantDataService {
   async initializeOnboardingForTenant(tenantId: string) {
     this.validateTenantAccess(tenantId);
     
-    const maxRetries = 3;
+    const maxRetries = 2; // Reduced from 3 to prevent long retry chains
     let retryCount = 0;
     
     while (retryCount < maxRetries) {
       try {
         console.log(`TenantDataService: Initializing onboarding for tenant (attempt ${retryCount + 1}/${maxRetries}):`, tenantId);
         
+        // Just ensure workflow exists, don't fetch complete data here to prevent recursion
         const { workflow_id } = await this.ensureOnboardingWorkflow(tenantId);
-        const onboardingData = await this.getCompleteOnboardingData(tenantId);
         
         console.log('TenantDataService: Onboarding initialized successfully for tenant:', tenantId, {
-          workflowId: workflow_id, 
-          stepCount: onboardingData.steps.length 
+          workflowId: workflow_id
         });
         
-        return onboardingData;
+        // Return minimal data to prevent heavy operations
+        return {
+          workflow: { id: workflow_id },
+          steps: [] // Will be fetched separately when needed
+        };
       } catch (error: any) {
         retryCount++;
         console.error(`TenantDataService: Error initializing onboarding for tenant ${tenantId} (attempt ${retryCount}):`, error);
@@ -312,7 +342,7 @@ class TenantDataService {
           throw new Error(`Failed to initialize onboarding for tenant ${tenantId}: ${error.message}`);
         }
         
-        const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 30000);
+        const delay = Math.min(Math.pow(2, retryCount) * 1000 + Math.random() * 1000, 10000); // Max 10s delay
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
