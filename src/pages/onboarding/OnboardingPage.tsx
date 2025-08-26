@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, Suspense } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContext } from '@/contexts/TenantContext';
@@ -12,7 +11,6 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { DisconnectBanner } from '@/components/ui/DisconnectBanner';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { Building2, AlertTriangle, RefreshCw, Settings, Bug } from 'lucide-react';
-import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -129,7 +127,6 @@ const OnboardingPage = () => {
     }
   }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch]);
 
-  // Loading state with skeleton and accessibility
   if (!user) {
     console.log('OnboardingPage: No user, showing skeleton');
     return (
