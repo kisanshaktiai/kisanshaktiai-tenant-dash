@@ -17,17 +17,13 @@ import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider'
 import { TenantProvider } from '@/contexts/TenantContext';
 import { lazy, Suspense } from 'react';
 import { DashboardSkeleton } from '@/components/dashboard/presentation/DashboardSkeleton';
+import { EnhancedDashboardLayout } from '@/components/layout/EnhancedDashboardLayout';
 
 // Lazy load heavy page components
 const LazyDashboard = lazy(() => import('@/pages/LazyDashboard'));
 const LazyFarmersPage = lazy(() => import('@/pages/LazyFarmersPage'));
 const LazyDealersPage = lazy(() => import('@/pages/LazyDealersPage'));
 const LazyAnalyticsPage = lazy(() => import('@/pages/LazyAnalyticsPage'));
-const LazyEnhancedDashboardLayout = lazy(() => 
-  import('@/components/layout/EnhancedDashboardLayout').then(module => ({
-    default: module.EnhancedDashboardLayout
-  }))
-);
 
 function App() {
   return (
@@ -47,32 +43,30 @@ function App() {
                     <Route path="/tenant-setup" element={<TenantSetupPage />} />
                     <Route path="/dashboard/*" element={
                       <OnboardingGuard>
-                        <Suspense fallback={<DashboardSkeleton />}>
-                          <LazyEnhancedDashboardLayout>
-                            <Routes>
-                              <Route index element={
-                                <Suspense fallback={<DashboardSkeleton />}>
-                                  <LazyDashboard />
-                                </Suspense>
-                              } />
-                              <Route path="farmers" element={
-                                <Suspense fallback={<DashboardSkeleton />}>
-                                  <LazyFarmersPage />
-                                </Suspense>
-                              } />
-                              <Route path="dealers" element={
-                                <Suspense fallback={<DashboardSkeleton />}>
-                                  <LazyDealersPage />
-                                </Suspense>
-                              } />
-                              <Route path="analytics" element={
-                                <Suspense fallback={<DashboardSkeleton />}>
-                                  <LazyAnalyticsPage />
-                                </Suspense>
-                              } />
-                            </Routes>
-                          </LazyEnhancedDashboardLayout>
-                        </Suspense>
+                        <EnhancedDashboardLayout>
+                          <Routes>
+                            <Route index element={
+                              <Suspense fallback={<DashboardSkeleton />}>
+                                <LazyDashboard />
+                              </Suspense>
+                            } />
+                            <Route path="farmers" element={
+                              <Suspense fallback={<DashboardSkeleton />}>
+                                <LazyFarmersPage />
+                              </Suspense>
+                            } />
+                            <Route path="dealers" element={
+                              <Suspense fallback={<DashboardSkeleton />}>
+                                <LazyDealersPage />
+                              </Suspense>
+                            } />
+                            <Route path="analytics" element={
+                              <Suspense fallback={<DashboardSkeleton />}>
+                                <LazyAnalyticsPage />
+                              </Suspense>
+                            } />
+                          </Routes>
+                        </EnhancedDashboardLayout>
                       </OnboardingGuard>
                     } />
                     <Route path="*" element={<NotFound />} />
