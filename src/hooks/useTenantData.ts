@@ -31,13 +31,13 @@ export const useTenantData = () => {
           .from('user_tenants')
           .select(`
             *,
-            tenant:tenant_id(
+            tenants:tenant_id(
               *,
-              branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
-              features:tenant_features!tenant_features_tenant_id_fkey(*),
-              subscription:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
+              tenant_branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
+              tenant_features:tenant_features!tenant_features_tenant_id_fkey(*),
+              tenant_subscriptions:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
                 *,
-                plan:subscription_plans(*)
+                subscription_plans(*)
               )
             )
           `)
@@ -53,20 +53,27 @@ export const useTenantData = () => {
         console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
         // Transform the data to match our interfaces
-        const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
-          ...userTenant,
-          tenant: userTenant.tenant ? {
-            ...userTenant.tenant,
-            // Handle status mapping
-            status: mapTenantStatus(userTenant.tenant.status),
-            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
-            branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
-            features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
-            subscription: userTenant.tenant.subscription ? processSubscription(
-              Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
-            ) : null,
-          } : undefined
-        }));
+        const transformedUserTenants = (userTenantsData || []).map(userTenant => {
+          const tenant = userTenant.tenants;
+          if (!tenant || typeof tenant !== 'object') {
+            return userTenant;
+          }
+
+          return {
+            ...userTenant,
+            tenant: {
+              ...tenant,
+              // Handle status mapping
+              status: mapTenantStatus(tenant.status || 'pending'),
+              subscription_plan: mapSubscriptionPlan(tenant.subscription_plan || 'kisan'),
+              branding: Array.isArray(tenant.tenant_branding) ? tenant.tenant_branding[0] : tenant.tenant_branding,
+              features: Array.isArray(tenant.tenant_features) ? tenant.tenant_features[0] : tenant.tenant_features,
+              subscription: tenant.tenant_subscriptions ? processSubscription(
+                Array.isArray(tenant.tenant_subscriptions) ? tenant.tenant_subscriptions[0] : tenant.tenant_subscriptions
+              ) : null,
+            }
+          };
+        });
 
         dispatch(setUserTenants(transformedUserTenants));
 

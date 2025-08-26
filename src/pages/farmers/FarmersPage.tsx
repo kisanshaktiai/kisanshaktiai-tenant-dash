@@ -19,7 +19,7 @@ import { CreateFarmerContainer } from '@/components/farmers/containers/CreateFar
 export default function FarmersPage() {
   const [activeTab, setActiveTab] = useState('directory');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedFarmerId, setSelectedFarmerId] = useState<string | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
 
   return (
     <div className="space-y-6">
@@ -61,7 +61,9 @@ export default function FarmersPage() {
         </TabsList>
 
         <TabsContent value="directory" className="space-y-6">
-          <EnhancedFarmerDirectory />
+          <EnhancedFarmerDirectory 
+            onSelectFarmer={setSelectedFarmer}
+          />
         </TabsContent>
 
         <TabsContent value="pipeline" className="space-y-6">
@@ -93,10 +95,10 @@ export default function FarmersPage() {
       </Tabs>
 
       {/* Farmer Profile Modal */}
-      {selectedFarmerId && (
+      {selectedFarmer && (
         <FarmerProfile 
-          farmerId={selectedFarmerId}
-          onClose={() => setSelectedFarmerId(null)}
+          farmer={selectedFarmer}
+          onClose={() => setSelectedFarmer(null)}
         />
       )}
 

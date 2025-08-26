@@ -150,13 +150,15 @@ class EnhancedFarmerService extends BaseApiService {
     return data || [];
   }
 
-  async addFarmerTag(tenantId: string, farmerId: string, tagData: Partial<FarmerTag>): Promise<FarmerTag> {
+  async addFarmerTag(tenantId: string, farmerId: string, tagData: Omit<FarmerTag, 'id' | 'tenant_id' | 'farmer_id' | 'created_at'>): Promise<FarmerTag> {
     const { data, error } = await supabase
       .from('farmer_tags')
       .insert({
         tenant_id: tenantId,
         farmer_id: farmerId,
-        ...tagData,
+        tag_name: tagData.tag_name,
+        tag_color: tagData.tag_color || '#3B82F6',
+        created_by: tagData.created_by,
       })
       .select()
       .single();
@@ -184,7 +186,12 @@ class EnhancedFarmerService extends BaseApiService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(segment => ({
+      ...segment,
+      segment_criteria: typeof segment.segment_criteria === 'object' ? 
+        segment.segment_criteria as Record<string, any> : {}
+    }));
   }
 
   async createFarmerSegment(tenantId: string, segmentData: Omit<FarmerSegment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerSegment> {
@@ -192,13 +199,22 @@ class EnhancedFarmerService extends BaseApiService {
       .from('farmer_segments')
       .insert({
         tenant_id: tenantId,
-        ...segmentData,
+        segment_name: segmentData.segment_name,
+        segment_criteria: segmentData.segment_criteria,
+        description: segmentData.description,
+        color: segmentData.color || '#10B981',
+        created_by: segmentData.created_by,
+        is_active: segmentData.is_active,
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      segment_criteria: typeof data.segment_criteria === 'object' ? 
+        data.segment_criteria as Record<string, any> : {}
+    };
   }
 
   // Farmer Notes
@@ -214,13 +230,16 @@ class EnhancedFarmerService extends BaseApiService {
     return data || [];
   }
 
-  async addFarmerNote(tenantId: string, farmerId: string, noteData: Partial<FarmerNote>): Promise<FarmerNote> {
+  async addFarmerNote(tenantId: string, farmerId: string, noteData: Omit<FarmerNote, 'id' | 'tenant_id' | 'farmer_id' | 'created_at' | 'updated_at'>): Promise<FarmerNote> {
     const { data, error } = await supabase
       .from('farmer_notes')
       .insert({
         tenant_id: tenantId,
         farmer_id: farmerId,
-        ...noteData,
+        note_content: noteData.note_content,
+        created_by: noteData.created_by,
+        is_important: noteData.is_important || false,
+        is_private: noteData.is_private || false,
       })
       .select()
       .single();
@@ -242,21 +261,38 @@ class EnhancedFarmerService extends BaseApiService {
 
     const { data, error } = await query.order('sent_at', { ascending: false });
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(comm => ({
+      ...comm,
+      metadata: typeof comm.metadata === 'object' ? 
+        comm.metadata as Record<string, any> : {}
+    }));
   }
 
-  async logCommunication(tenantId: string, communicationData: Partial<FarmerCommunication>): Promise<FarmerCommunication> {
+  async logCommunication(tenantId: string, communicationData: Omit<FarmerCommunication, 'id' | 'tenant_id' | 'sent_at'>): Promise<FarmerCommunication> {
     const { data, error } = await supabase
       .from('farmer_communications')
       .insert({
         tenant_id: tenantId,
-        ...communicationData,
+        farmer_id: communicationData.farmer_id,
+        communication_type: communicationData.communication_type,
+        message_content: communicationData.message_content,
+        delivered_at: communicationData.delivered_at,
+        read_at: communicationData.read_at,
+        response_at: communicationData.response_at,
+        status: communicationData.status,
+        metadata: communicationData.metadata || {},
+        created_by: communicationData.created_by,
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
   }
 
   // Farmer Engagement
@@ -281,7 +317,13 @@ class EnhancedFarmerService extends BaseApiService {
       .upsert({
         tenant_id: tenantId,
         farmer_id: farmerId,
-        ...engagementData,
+        app_opens_count: engagementData.app_opens_count,
+        last_app_open: engagementData.last_app_open,
+        features_used: engagementData.features_used,
+        communication_responses: engagementData.communication_responses,
+        activity_score: engagementData.activity_score,
+        churn_risk_score: engagementData.churn_risk_score,
+        engagement_level: engagementData.engagement_level,
       })
       .select()
       .single();
@@ -307,21 +349,49 @@ class EnhancedFarmerService extends BaseApiService {
 
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(lead => ({
+      ...lead,
+      location: typeof lead.location === 'object' ? 
+        lead.location as Record<string, any> : {},
+      metadata: typeof lead.metadata === 'object' ? 
+        lead.metadata as Record<string, any> : {}
+    }));
   }
 
-  async createFarmerLead(tenantId: string, leadData: Partial<FarmerLead>): Promise<FarmerLead> {
+  async createFarmerLead(tenantId: string, leadData: Omit<FarmerLead, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerLead> {
     const { data, error } = await supabase
       .from('farmer_leads')
       .insert({
         tenant_id: tenantId,
-        ...leadData,
+        lead_source: leadData.lead_source,
+        contact_name: leadData.contact_name,
+        phone: leadData.phone,
+        email: leadData.email,
+        location: leadData.location || {},
+        land_size: leadData.land_size,
+        crops_interested: leadData.crops_interested,
+        lead_score: leadData.lead_score || 0,
+        status: leadData.status || 'new',
+        assigned_to: leadData.assigned_to,
+        assigned_at: leadData.assigned_at,
+        converted_farmer_id: leadData.converted_farmer_id,
+        converted_at: leadData.converted_at,
+        next_follow_up: leadData.next_follow_up,
+        notes: leadData.notes,
+        metadata: leadData.metadata || {},
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      location: typeof data.location === 'object' ? 
+        data.location as Record<string, any> : {},
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
   }
 
   async updateLeadStatus(leadId: string, status: string, metadata?: Record<string, any>): Promise<FarmerLead> {
@@ -337,7 +407,13 @@ class EnhancedFarmerService extends BaseApiService {
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      location: typeof data.location === 'object' ? 
+        data.location as Record<string, any> : {},
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
   }
 
   // Advanced Search
@@ -382,18 +458,32 @@ class EnhancedFarmerService extends BaseApiService {
   }
 
   // Bulk Operations
-  async createBulkOperation(tenantId: string, operationData: Partial<BulkOperation>): Promise<BulkOperation> {
+  async createBulkOperation(tenantId: string, operationData: Omit<BulkOperation, 'id' | 'tenant_id' | 'created_at'>): Promise<BulkOperation> {
     const { data, error } = await supabase
       .from('bulk_operations')
       .insert({
         tenant_id: tenantId,
-        ...operationData,
+        operation_type: operationData.operation_type,
+        target_farmer_ids: operationData.target_farmer_ids,
+        operation_data: operationData.operation_data,
+        status: operationData.status || 'pending',
+        processed_count: operationData.processed_count || 0,
+        success_count: operationData.success_count || 0,
+        failed_count: operationData.failed_count || 0,
+        created_by: operationData.created_by,
+        completed_at: operationData.completed_at,
+        error_log: operationData.error_log || [],
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      operation_data: typeof data.operation_data === 'object' ? 
+        data.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(data.error_log) ? data.error_log : []
+    };
   }
 
   async getBulkOperations(tenantId: string, limit = 50): Promise<BulkOperation[]> {
@@ -405,7 +495,13 @@ class EnhancedFarmerService extends BaseApiService {
       .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(op => ({
+      ...op,
+      operation_data: typeof op.operation_data === 'object' ? 
+        op.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(op.error_log) ? op.error_log : []
+    }));
   }
 
   async updateBulkOperationStatus(operationId: string, status: string, progress?: any): Promise<BulkOperation> {
@@ -421,7 +517,12 @@ class EnhancedFarmerService extends BaseApiService {
       .single();
 
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      operation_data: typeof data.operation_data === 'object' ? 
+        data.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(data.error_log) ? data.error_log : []
+    };
   }
 
   // Export Functions
