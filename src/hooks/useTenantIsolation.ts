@@ -14,14 +14,14 @@ export const useTenantIsolation = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { user } = useAppSelector((state) => state.auth);
 
-  const getTenantId = useCallback((): string => {
+  const getTenantId = (): string => {
     if (!currentTenant?.id) {
       throw new Error('No current tenant available. Please ensure user is properly authenticated and has access to a tenant.');
     }
     return currentTenant.id;
-  }, [currentTenant?.id]);
+  };
 
-  const validateTenantAccess = useCallback((): TenantValidation => {
+  const validateTenantAccess = (): TenantValidation => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -32,17 +32,17 @@ export const useTenantIsolation = () => {
       userId: user.id,
       tenantId: currentTenant.id,
     };
-  }, [user, currentTenant]);
+  };
 
-  const createTenantQuery = useCallback((tableName: TableName) => {
+  const createTenantQuery = (tableName: TableName) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
       .select('*')
       .eq('tenant_id', tenantId);
-  }, [getTenantId]);
+  };
 
-  const createTenantInsert = useCallback((tableName: TableName, data: any) => {
+  const createTenantInsert = (tableName: TableName, data: Record<string, any>) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
@@ -50,25 +50,25 @@ export const useTenantIsolation = () => {
         ...data,
         tenant_id: tenantId,
       });
-  }, [getTenantId]);
+  };
 
-  const createTenantUpdate = useCallback((tableName: TableName, id: string, data: any) => {
+  const createTenantUpdate = (tableName: TableName, id: string, data: Record<string, any>) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
       .update(data)
       .eq('id', id)
       .eq('tenant_id', tenantId);
-  }, [getTenantId]);
+  };
 
-  const createTenantDelete = useCallback((tableName: TableName, id: string) => {
+  const createTenantDelete = (tableName: TableName, id: string) => {
     const tenantId = getTenantId();
     return supabase
       .from(tableName)
       .delete()
       .eq('id', id)
       .eq('tenant_id', tenantId);
-  }, [getTenantId]);
+  };
 
   return {
     currentTenant,

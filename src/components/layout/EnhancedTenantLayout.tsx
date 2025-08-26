@@ -39,7 +39,6 @@ import {
   Moon,
   Sun,
   Globe,
-  ChevronDown,
   Activity
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -86,15 +85,16 @@ const navigationItems = [
 ];
 
 const TenantSidebar = () => {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { currentTenant } = useTenantContext();
+  const isCollapsed = state === 'collapsed';
 
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
+    <Sidebar collapsible="icon">
       <SidebarContent className="bg-card border-r">
         {/* Tenant Branding */}
         <div className="p-4 border-b">
@@ -112,7 +112,7 @@ const TenantSidebar = () => {
                 </span>
               </div>
             )}
-            {!collapsed && (
+            {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <h2 className="font-semibold text-sm truncate">
                   {currentTenant?.name || 'Tenant Dashboard'}
@@ -134,14 +134,14 @@ const TenantSidebar = () => {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
-                    className={isActive(item.url) ? "bg-muted text-primary font-medium" : "hover:bg-muted/50"}
+                    isActive={isActive(item.url)}
                   >
                     <button
                       onClick={() => navigate(item.url)}
                       className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
                     >
                       <item.icon className="h-4 w-4" />
-                      {!collapsed && (
+                      {!isCollapsed && (
                         <>
                           <span className="flex-1 text-left">{item.title}</span>
                           {item.badge && (
@@ -160,7 +160,7 @@ const TenantSidebar = () => {
         </SidebarGroup>
 
         {/* Activity Status */}
-        {!collapsed && (
+        {!isCollapsed && (
           <div className="mt-auto p-4 border-t">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Activity className="h-4 w-4" />
@@ -324,7 +324,7 @@ export const EnhancedTenantLayout: React.FC = () => {
   }
 
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <TenantSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
