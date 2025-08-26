@@ -4,24 +4,33 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
 import NotFound from '@/pages/NotFound';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import TenantSetupPage from '@/pages/TenantSetupPage';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { queryClient } from '@/lib/queryClient';
+import { optimizedQueryClient } from '@/lib/optimizedQueryClient';
 import { OnboardingGuard } from './components/guards/OnboardingGuard';
 import { GlobalErrorProvider } from '@/components/providers/GlobalErrorProvider';
 import { TenantProvider } from '@/contexts/TenantContext';
+import { lazy, Suspense } from 'react';
+import { DashboardSkeleton } from '@/components/dashboard/presentation/DashboardSkeleton';
+
+// Lazy load heavy page components
+const LazyDashboard = lazy(() => import('@/pages/LazyDashboard'));
+const LazyEnhancedDashboardLayout = lazy(() => 
+  import('@/components/layout/EnhancedDashboardLayout').then(module => ({
+    default: module.EnhancedDashboardLayout
+  }))
+);
 
 function App() {
   return (
     <Provider store={store}>
       <GlobalErrorProvider>
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={optimizedQueryClient}>
           <IntlProvider>
             <TenantProvider>
               <Router>
@@ -32,14 +41,39 @@ function App() {
                     <Route path="/" element={<Index />} />
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    {/* Remove tenant-setup route - not needed for existing tenants */}
                     <Route path="/tenant-setup" element={<TenantSetupPage />} />
                     <Route path="/dashboard/*" element={
                       <OnboardingGuard>
-                        <Dashboard />
+                        <Suspense fallback={<DashboardSkeleton />}>
+                          <LazyEnhancedDashboardLayout>
+                            <Routes>
+                              <Route index element={<LazyDashboard />} />
+                              <Route path="farmers" element={
+                                <Suspense fallback={<DashboardSkeleton />}>
+                                  <lazy>
+                                    {() => import('@/pages/LazyFarmersPage')}
+                                  </lazy>
+                                </Suspense>
+                              } />
+                              <Route path="dealers" element={
+                                <Suspense fallback={<DashboardSkeleton />}>
+                                  <lazy>
+                                    {() => import('@/pages/LazyDealersPage')}
+                                  </lazy>
+                                </Suspense>
+                              } />
+                              <Route path="analytics" element={
+                                <Suspense fallback={<DashboardSkeleton />}>
+                                  <lazy>
+                                    {() => import('@/pages/LazyAnalyticsPage')}
+                                  </lazy>
+                                </Suspense>
+                              } />
+                            </Routes>
+                          </LazyEnhancedDashboardLayout>
+                        </Suspense>
                       </OnboardingGuard>
                     } />
-                    {/* Redirect any other routes to main page */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
