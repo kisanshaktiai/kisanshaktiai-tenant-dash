@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSession, setLoading, logout } from "@/store/slices/authSlice";
 import { TenantProvider } from "@/contexts/TenantContext";
+import { IntlProvider } from "@/components/providers/IntlProvider";
 import { OnboardingGuard } from "@/components/guards/OnboardingGuard";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -54,36 +55,38 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <TenantProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  user ? (
-                    <OnboardingGuard>
-                      <Dashboard />
-                    </OnboardingGuard>
-                  ) : (
-                    <Navigate to="/auth" replace />
-                  )
-                } 
-              />
-              <Route 
-                path="/onboarding" 
-                element={
-                  user ? (
-                    <OnboardingPage />
-                  ) : (
-                    <Navigate to="/auth" replace />
-                  )
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <IntlProvider>
+            <Toaster />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    user ? (
+                      <OnboardingGuard>
+                        <Dashboard />
+                      </OnboardingGuard>
+                    ) : (
+                      <Navigate to="/auth" replace />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/onboarding" 
+                  element={
+                    user ? (
+                      <OnboardingPage />
+                    ) : (
+                      <Navigate to="/auth" replace />
+                    )
+                  } 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </IntlProvider>
         </TenantProvider>
       </TooltipProvider>
     </QueryClientProvider>
