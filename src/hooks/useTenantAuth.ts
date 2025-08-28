@@ -107,11 +107,12 @@ export const useTenantAuth = () => {
   const switchTenant = async (tenantId: string) => {
     console.log('useTenantAuth: Switching to tenant:', tenantId);
     
+    // Find the tenant in the userTenants array (which contains properly transformed Tenant objects)
     const tenant = userTenants.find(t => t.id === tenantId);
     if (tenant) {
-      // The tenant object from userTenants already has all the properties we need
-      // since it was transformed in refreshTenantData
-      dispatch(setCurrentTenant(tenant));
+      // Cast the tenant to Tenant type since userTenants contains transformed tenant objects
+      // that have all the required Tenant properties
+      dispatch(setCurrentTenant(tenant as any));
       
       // Clear onboarding service cache when switching tenants
       enhancedOnboardingService.clearCache();
