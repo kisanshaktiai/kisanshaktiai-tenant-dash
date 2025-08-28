@@ -53,7 +53,7 @@ class OnboardingTemplateService {
         }
       },
       {
-        step_name: 'domain_and_whitelabel',
+        step_name: 'feature_selection',
         display_name: 'Feature Selection',
         step_order: 4,
         step_description: 'Select platform features and configure settings',
@@ -65,7 +65,7 @@ class OnboardingTemplateService {
         }
       },
       {
-        step_name: 'review_and_go_live',
+        step_name: 'data_import',
         display_name: 'Data Import',
         step_order: 5,
         step_description: 'Import existing data and finalize setup',
@@ -154,8 +154,10 @@ class OnboardingTemplateService {
       'company_profile': 'Business Verification',
       'billing_plan': 'Subscription Plan',
       'branding': 'Branding Configuration',
-      'domain_and_whitelabel': 'Feature Selection',
-      'review_and_go_live': 'Data Import',
+      'feature_selection': 'Feature Selection',
+      'domain_and_whitelabel': 'Feature Selection', // Legacy mapping for compatibility
+      'data_import': 'Data Import',
+      'review_and_go_live': 'Data Import', // Legacy mapping for compatibility
       'users_and_roles': 'Team Setup',
       'security_configuration': 'Security Configuration'
     };
@@ -168,13 +170,30 @@ class OnboardingTemplateService {
       'Business Verification': 'company_profile',
       'Subscription Plan': 'billing_plan',
       'Branding Configuration': 'branding',
-      'Feature Selection': 'domain_and_whitelabel',
-      'Data Import': 'review_and_go_live',
+      'Feature Selection': 'feature_selection',
+      'Data Import': 'data_import',
       'Team Setup': 'users_and_roles',
       'Security Configuration': 'security_configuration'
     };
 
     return mapping[displayName] || displayName;
+  }
+
+  // Helper method to get the correct step component name
+  getStepComponentName(stepName: string): string {
+    const componentMapping: Record<string, string> = {
+      'company_profile': 'BusinessVerificationStep',
+      'billing_plan': 'SubscriptionPlanStep', 
+      'branding': 'BrandingConfigurationStep',
+      'feature_selection': 'FeatureSelectionStep',
+      'domain_and_whitelabel': 'FeatureSelectionStep', // Legacy support
+      'data_import': 'DataImportStep',
+      'review_and_go_live': 'DataImportStep', // Legacy support
+      'users_and_roles': 'TeamInvitesStep',
+      'security_configuration': 'SecurityConfigurationStep'
+    };
+
+    return componentMapping[stepName] || stepName;
   }
 }
 

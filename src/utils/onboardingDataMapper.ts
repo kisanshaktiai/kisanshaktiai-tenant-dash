@@ -56,8 +56,11 @@ const getDefaultStepDescription = (stepName: string): string => {
     'branding': 'Configure your brand colors, logo, and visual identity', 
     'users_and_roles': 'Invite team members and set up user roles',
     'billing_plan': 'Choose your subscription plan and billing preferences',
-    'domain_and_whitelabel': 'Select platform features and configure settings',
-    'review_and_go_live': 'Import existing data and finalize setup'
+    'feature_selection': 'Select platform features and configure settings',
+    'domain_and_whitelabel': 'Select platform features and configure settings', // Legacy support
+    'data_import': 'Import existing data and finalize setup',
+    'review_and_go_live': 'Import existing data and finalize setup', // Legacy support
+    'security_configuration': 'Set up SSO, API keys, and security policies'
   };
   
   return descriptions[stepName as keyof typeof descriptions] || 'Complete this onboarding step';
@@ -70,8 +73,11 @@ const getDefaultEstimatedTime = (stepName: string): number => {
     'branding': 10, 
     'users_and_roles': 5,
     'billing_plan': 5,
-    'domain_and_whitelabel': 10,
-    'review_and_go_live': 20
+    'feature_selection': 10,
+    'domain_and_whitelabel': 10, // Legacy support
+    'data_import': 20,
+    'review_and_go_live': 20, // Legacy support
+    'security_configuration': 30
   };
   
   return times[stepName as keyof typeof times] || 10;

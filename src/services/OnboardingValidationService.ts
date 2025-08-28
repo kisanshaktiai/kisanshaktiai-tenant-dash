@@ -22,13 +22,13 @@ class OnboardingValidationService {
       if (steps.length === 0) {
         console.log('OnboardingValidationService: No steps found, creating default steps...');
         
-        // Create default steps
+        // Create default steps with correct names
         const defaultSteps = [
           { name: 'company_profile', order: 1, description: 'Complete your company profile and business verification' },
           { name: 'billing_plan', order: 2, description: 'Choose your subscription plan' },
           { name: 'branding', order: 3, description: 'Set up your brand colors and logo' },
-          { name: 'domain_and_whitelabel', order: 4, description: 'Select features for your platform' },
-          { name: 'review_and_go_live', order: 5, description: 'Import your existing data' },
+          { name: 'feature_selection', order: 4, description: 'Select features for your platform' },
+          { name: 'data_import', order: 5, description: 'Import your existing data' },
           { name: 'users_and_roles', order: 6, description: 'Invite team members' }
         ];
         
@@ -45,7 +45,8 @@ class OnboardingValidationService {
                 is_required: true,
                 estimated_time_minutes: 15,
                 step_type: 'standard',
-                step_config: {}
+                step_config: {},
+                display_name: this.getDisplayNameForStepName(step.name)
               }
             });
         }
@@ -70,6 +71,18 @@ class OnboardingValidationService {
         issues: [error instanceof Error ? error.message : 'Unknown validation error'] 
       };
     }
+  }
+  
+  private getDisplayNameForStepName(stepName: string): string {
+    const mapping: Record<string, string> = {
+      'company_profile': 'Business Verification',
+      'billing_plan': 'Subscription Plan',
+      'branding': 'Branding Configuration',
+      'feature_selection': 'Feature Selection',
+      'data_import': 'Data Import',
+      'users_and_roles': 'Team Setup'
+    };
+    return mapping[stepName] || stepName;
   }
   
   async forceRefreshOnboarding(tenantId: string) {
