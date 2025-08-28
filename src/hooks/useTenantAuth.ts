@@ -1,38 +1,49 @@
 
-import { useEffect, useState, useCallback } from 'react';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { setCurrentTenant, setUserTenants, setLoading, setError, clearTenantData } from '@/store/slices/tenantSlice';
+import { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setCurrentTenant, setUserTenants, setLoading } from '@/store/slices/tenantSlice';
 import { supabase } from '@/integrations/supabase/client';
+import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 
 export const useTenantAuth = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, loading } = useAppSelector((state) => state.tenant);
+  const { currentTenant, userTenants } = useAppSelector((state) => state.tenant);
+  const [loading, setLoadingState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const fetchUserTenants = useCallback(async (userId: string) => {
+  const refreshTenantData = async () => {
+    if (!user?.id) {
+      console.log('useTenantAuth: No user available for tenant data refresh');
+      return;
+    }
+
     try {
+      setLoadingState(true);
       dispatch(setLoading(true));
-      dispatch(setError(null));
       
-      console.log('useTenantAuth: Fetching tenant data for user:', userId);
-      
-      // Get user-tenant relationships with full tenant data
+      console.log('useTenantAuth: Refreshing tenant data for user:', user.id);
+
+      // Get user's tenants with proper RLS policies
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
-          *,
-          tenant:tenants!user_tenants_tenant_id_fkey(
-            *,
-            branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
-            features:tenant_features!tenant_features_tenant_id_fkey(*),
-            subscription:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
-              *,
-              plan:subscription_plans(*)
-            )
+          tenant_id,
+          role,
+          is_active,
+          tenants:tenant_id (
+            id,
+            name,
+            slug,
+            status,
+            subscription_plan,
+            owner_name,
+            owner_email,
+            created_at,
+            updated_at
           )
         `)
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       if (userTenantsError) {
@@ -40,200 +51,81 @@ export const useTenantAuth = () => {
         throw userTenantsError;
       }
 
-      if (!userTenantsData || userTenantsData.length === 0) {
-        console.log('useTenantAuth: User has no active tenants');
-        dispatch(setUserTenants([]));
-        dispatch(setCurrentTenant(null));
-        return;
-      }
+      const tenants = userTenantsData
+        ?.filter(ut => ut.tenants)
+        .map(ut => ({
+          ...ut.tenants,
+          userRole: ut.role
+        })) || [];
 
-      // Transform and validate tenant data
-      const transformedUserTenants = userTenantsData
-        .filter(ut => ut.tenant) // Only include records with valid tenant data
-        .map(userTenant => ({
-          ...userTenant,
-          tenant: {
-            ...userTenant.tenant,
-            status: mapTenantStatus(userTenant.tenant.status),
-            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
-            branding: Array.isArray(userTenant.tenant.branding) 
-              ? userTenant.tenant.branding[0] 
-              : userTenant.tenant.branding,
-            features: Array.isArray(userTenant.tenant.features) 
-              ? userTenant.tenant.features[0] 
-              : userTenant.tenant.features,
-            subscription: userTenant.tenant.subscription 
-              ? processSubscription(
-                  Array.isArray(userTenant.tenant.subscription) 
-                    ? userTenant.tenant.subscription[0] 
-                    : userTenant.tenant.subscription
-                )
-              : null,
-          }
-        }));
+      console.log('useTenantAuth: Found tenants:', tenants.length);
 
-      console.log('useTenantAuth: Processed user tenants:', transformedUserTenants);
-      dispatch(setUserTenants(transformedUserTenants));
+      dispatch(setUserTenants(tenants));
 
-      // Set current tenant (prefer primary, fallback to first available)
-      if (!currentTenant && transformedUserTenants.length > 0) {
-        const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
-        if (primaryTenant?.tenant) {
-          console.log('useTenantAuth: Setting current tenant:', primaryTenant.tenant);
-          dispatch(setCurrentTenant(primaryTenant.tenant));
-          
-          // Store tenant ID in localStorage for session persistence
-          localStorage.setItem('currentTenantId', primaryTenant.tenant.id);
+      // Set current tenant if not already set or if current one is invalid
+      if (!currentTenant || !tenants.find(t => t.id === currentTenant.id)) {
+        const firstTenant = tenants[0];
+        if (firstTenant) {
+          console.log('useTenantAuth: Setting current tenant:', firstTenant.id);
+          dispatch(setCurrentTenant(firstTenant));
+        } else {
+          console.log('useTenantAuth: No tenants available');
+          dispatch(setCurrentTenant(null));
         }
       }
 
       setIsInitialized(true);
     } catch (error) {
-      console.error('useTenantAuth: Error in fetchUserTenants:', error);
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
+      console.error('useTenantAuth: Error refreshing tenant data:', error);
     } finally {
+      setLoadingState(false);
       dispatch(setLoading(false));
     }
-  }, [dispatch, currentTenant]);
+  };
 
-  const switchTenant = useCallback(async (tenantId: string) => {
-    const targetUserTenant = userTenants.find(ut => ut.tenant_id === tenantId);
-    if (targetUserTenant?.tenant) {
-      console.log('useTenantAuth: Switching to tenant:', targetUserTenant.tenant);
-      dispatch(setCurrentTenant(targetUserTenant.tenant));
-      localStorage.setItem('currentTenantId', tenantId);
+  const switchTenant = async (tenantId: string) => {
+    console.log('useTenantAuth: Switching to tenant:', tenantId);
+    
+    const tenant = userTenants.find(t => t.id === tenantId);
+    if (tenant) {
+      dispatch(setCurrentTenant(tenant));
+      
+      // Clear onboarding service cache when switching tenants
+      enhancedOnboardingService.clearCache();
+      
+      console.log('useTenantAuth: Successfully switched to tenant:', tenantId);
+    } else {
+      console.error('useTenantAuth: Tenant not found in user tenants:', tenantId);
     }
-  }, [userTenants, dispatch]);
+  };
 
-  const clearTenantSession = useCallback(() => {
+  const clearTenantSession = () => {
     console.log('useTenantAuth: Clearing tenant session');
-    dispatch(clearTenantData());
-    localStorage.removeItem('currentTenantId');
+    dispatch(setCurrentTenant(null));
+    dispatch(setUserTenants([]));
     setIsInitialized(false);
-  }, [dispatch]);
+    enhancedOnboardingService.clearCache();
+  };
 
-  // Initialize tenant data when user logs in
+  // Initialize tenant data when user changes
   useEffect(() => {
-    if (!user) {
+    if (user?.id && !isInitialized) {
+      console.log('useTenantAuth: User changed, initializing tenant data');
+      refreshTenantData();
+    } else if (!user?.id) {
+      console.log('useTenantAuth: No user, clearing tenant session');
       clearTenantSession();
-      return;
     }
-
-    if (!isInitialized && !loading) {
-      // Try to restore current tenant from localStorage
-      const storedTenantId = localStorage.getItem('currentTenantId');
-      if (storedTenantId && currentTenant?.id === storedTenantId) {
-        setIsInitialized(true);
-        return;
-      }
-
-      fetchUserTenants(user.id);
-    }
-  }, [user, isInitialized, loading, fetchUserTenants, clearTenantSession, currentTenant]);
-
-  // Set up real-time subscriptions for tenant changes
-  useEffect(() => {
-    if (!user?.id) return;
-
-    console.log('useTenantAuth: Setting up real-time subscriptions for user:', user.id);
-
-    const channel = supabase
-      .channel(`tenant_changes_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_tenants',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          console.log('useTenantAuth: Real-time tenant data change detected');
-          // Debounce rapid changes
-          setTimeout(() => {
-            fetchUserTenants(user.id);
-          }, 1000);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tenants',
-        },
-        (payload) => {
-          console.log('useTenantAuth: Real-time tenant update detected:', payload.eventType);
-          // Fix TypeScript error by properly checking payload structure
-          const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
-          if (currentTenant && payloadId && payloadId === currentTenant.id) {
-            setTimeout(() => {
-              fetchUserTenants(user.id);
-            }, 500);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      console.log('useTenantAuth: Cleaning up real-time subscriptions');
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, fetchUserTenants, currentTenant]);
+  }, [user?.id, isInitialized]);
 
   return {
     currentTenant,
     userTenants,
-    loading: loading || !isInitialized,
+    loading,
     isMultiTenant: userTenants.length > 1,
     switchTenant,
-    refreshTenantData: user ? () => fetchUserTenants(user.id) : async () => {},
+    refreshTenantData,
     clearTenantSession,
-    isInitialized,
+    isInitialized
   };
-};
-
-// Helper functions
-const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
-  switch (status) {
-    case 'pending': return 'pending';
-    case 'active': return 'active';
-    case 'suspended': return 'suspended';
-    case 'cancelled':
-    case 'canceled': return 'cancelled';
-    case 'trial': return 'trial';
-    default: return 'pending';
-  }
-};
-
-const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
-  switch (plan) {
-    case 'starter':
-    case 'basic': return 'kisan';
-    case 'professional':
-    case 'growth': return 'shakti';
-    case 'enterprise':
-    case 'custom': return 'ai';
-    default: return 'kisan';
-  }
-};
-
-const processSubscription = (subscription: any) => {
-  if (!subscription) return null;
-  
-  return {
-    ...subscription,
-    status: mapSubscriptionStatus(subscription.status),
-  };
-};
-
-const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
-  switch (status) {
-    case 'trial': return 'trial';
-    case 'active': return 'active';
-    case 'canceled':
-    case 'cancelled': return 'canceled';
-    case 'past_due': return 'past_due';
-    default: return 'trial';
-  }
 };

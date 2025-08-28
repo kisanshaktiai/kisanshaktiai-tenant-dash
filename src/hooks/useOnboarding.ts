@@ -20,7 +20,10 @@ export const useOnboardingQuery = () => {
       try {
         const onboardingData = await enhancedOnboardingService.getOnboardingData(currentTenant.id);
         
-        console.log('useOnboardingQuery: Retrieved onboarding data:', onboardingData);
+        console.log('useOnboardingQuery: Retrieved onboarding data:', {
+          hasWorkflow: !!onboardingData?.workflow,
+          stepCount: onboardingData?.steps?.length || 0
+        });
         
         if (!onboardingData?.workflow) {
           console.log('useOnboardingQuery: No workflow found, initializing...');

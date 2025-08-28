@@ -1,38 +1,17 @@
 
 import type { OnboardingWorkflow, OnboardingStep } from '@/services/EnhancedOnboardingService';
+import { onboardingTemplateService } from '@/services/OnboardingTemplateService';
 
-// Database step name to display name mapping
-const STEP_NAME_MAPPING = {
-  'company_profile': 'Business Verification',
-  'branding': 'Branding Configuration', 
-  'users_and_roles': 'Team Setup',
-  'billing_plan': 'Subscription Plan',
-  'domain_and_whitelabel': 'Feature Selection',
-  'review_and_go_live': 'Data Import'
-} as const;
-
-// Reverse mapping for database operations
-const DISPLAY_TO_DB_MAPPING = Object.fromEntries(
-  Object.entries(STEP_NAME_MAPPING).map(([db, display]) => [display, db])
-) as Record<string, string>;
-
-export const mapStepNameToDisplay = (dbStepName: string): string => {
-  return STEP_NAME_MAPPING[dbStepName as keyof typeof STEP_NAME_MAPPING] || dbStepName;
-};
-
-export const mapDisplayNameToDb = (displayName: string): string => {
-  return DISPLAY_TO_DB_MAPPING[displayName] || displayName;
-};
-
-// Transform database step to frontend format
+// Transform database step to frontend format with proper name mapping
 export const transformDbStepToFrontend = (dbStep: any): OnboardingStep => {
   const stepData = typeof dbStep.step_data === 'object' ? dbStep.step_data : {};
+  const displayName = stepData.display_name || onboardingTemplateService.getDisplayNameForStep(dbStep.step_name);
   
   return {
     id: dbStep.id,
     workflow_id: dbStep.workflow_id,
-    step_order: dbStep.step_number, // Map step_number to step_order
-    step_name: mapStepNameToDisplay(dbStep.step_name),
+    step_order: dbStep.step_number,
+    step_name: displayName, // Always use display name for frontend
     step_type: stepData.step_type || 'standard',
     step_config: stepData.step_config || {},
     step_data: stepData,
@@ -42,7 +21,7 @@ export const transformDbStepToFrontend = (dbStep: any): OnboardingStep => {
     updated_at: dbStep.updated_at,
     step_number: dbStep.step_number,
     step_description: stepData.step_description || getDefaultStepDescription(dbStep.step_name),
-    is_required: stepData.is_required !== false, // Default to true
+    is_required: stepData.is_required !== false,
     estimated_time_minutes: stepData.estimated_time_minutes || getDefaultEstimatedTime(dbStep.step_name),
     started_at: dbStep.started_at || null
   };
@@ -50,7 +29,7 @@ export const transformDbStepToFrontend = (dbStep: any): OnboardingStep => {
 
 // Transform frontend step data for database storage
 export const transformFrontendStepToDb = (frontendStep: Partial<OnboardingStep>, stepData?: any) => {
-  const dbStepName = frontendStep.step_name ? mapDisplayNameToDb(frontendStep.step_name) : undefined;
+  const dbStepName = frontendStep.step_name ? onboardingTemplateService.getStepNameFromDisplay(frontendStep.step_name) : undefined;
   
   return {
     step_name: dbStepName,
@@ -62,7 +41,8 @@ export const transformFrontendStepToDb = (frontendStep: Partial<OnboardingStep>,
       step_config: frontendStep.step_config,
       step_description: frontendStep.step_description,
       is_required: frontendStep.is_required,
-      estimated_time_minutes: frontendStep.estimated_time_minutes
+      estimated_time_minutes: frontendStep.estimated_time_minutes,
+      display_name: frontendStep.step_name
     },
     completed_at: frontendStep.completed_at,
     started_at: frontendStep.started_at
