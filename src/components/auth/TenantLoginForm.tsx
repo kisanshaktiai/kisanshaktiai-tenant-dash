@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, AlertCircle } from 'lucide-react';
 
 interface TenantLoginFormProps {
   onSuccess?: () => void;
@@ -18,16 +18,21 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   
-  const { signIn } = useAuth();
+  const { signIn, error: authError, clearError } = useAuth();
   const { refreshTenantData } = useTenantContext();
   const { toast } = useToast();
+
+  // Clear auth errors when component mounts or form values change
+  useEffect(() => {
+    if (authError) {
+      clearError();
+    }
+  }, [email, password, clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
 
     try {
       console.log('TenantLoginForm: Attempting tenant login for:', email);
@@ -51,7 +56,7 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
     } catch (error) {
       console.error('TenantLoginForm: Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      setError(errorMessage);
+      
       toast({
         title: 'Login failed',
         description: errorMessage,
@@ -75,9 +80,10 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
+          {authError && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{authError}</AlertDescription>
             </Alert>
           )}
           
@@ -91,6 +97,7 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
               required
               placeholder="Enter your email"
               disabled={isLoading}
+              autoComplete="email"
             />
           </div>
           
@@ -104,6 +111,7 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
               required
               placeholder="Enter your password"
               disabled={isLoading}
+              autoComplete="current-password"
             />
           </div>
           
