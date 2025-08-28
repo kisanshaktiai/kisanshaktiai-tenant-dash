@@ -1,4 +1,5 @@
 
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -6,25 +7,43 @@ import {
 } from 'lucide-react';
 import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
 
-export const FarmerStats = () => {
+export const FarmerStats = React.memo(() => {
   const { data: farmersResponse, isLoading } = useRealTimeFarmersQuery();
   const farmers = farmersResponse?.data || [];
 
-  // Calculate stats from real data
-  const stats = {
-    totalFarmers: farmers.length,
-    activeFarmers: farmers.filter(f => f.is_verified).length,
-    newThisMonth: farmers.filter(f => {
-      const monthAgo = new Date();
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
-      return new Date(f.created_at) > monthAgo;
-    }).length,
-    churnRisk: farmers.filter(f => {
-      // Use total_app_opens as a proxy for activity since last_app_open doesn't exist
-      return (f.total_app_opens || 0) === 0;
-    }).length,
-    engagementRate: farmers.length ? (farmers.filter(f => (f.total_app_opens || 0) > 0).length / farmers.length) * 100 : 0,
-  };
+  // Memoize expensive stats calculations
+  const stats = useMemo(() => {
+    if (!farmers.length) {
+      return {
+        totalFarmers: 0,
+        activeFarmers: 0,
+        newThisMonth: 0,
+        churnRisk: 0,
+        engagementRate: 0,
+      };
+    }
+
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+    const activeFarmers = farmers.filter(f => f.is_verified).length;
+    const newThisMonth = farmers.filter(f => 
+      new Date(f.created_at) > monthAgo
+    ).length;
+    const churnRisk = farmers.filter(f => 
+      (f.total_app_opens || 0) === 0
+    ).length;
+    const engagementRate = farmers.length ? 
+      (farmers.filter(f => (f.total_app_opens || 0) > 0).length / farmers.length) * 100 : 0;
+
+    return {
+      totalFarmers: farmers.length,
+      activeFarmers,
+      newThisMonth,
+      churnRisk,
+      engagementRate,
+    };
+  }, [farmers]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -97,4 +116,6 @@ export const FarmerStats = () => {
       </Card>
     </div>
   );
-};
+});
+
+FarmerStats.displayName = 'FarmerStats';

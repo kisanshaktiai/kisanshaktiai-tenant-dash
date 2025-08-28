@@ -24,14 +24,14 @@ export const useTenantAuth = () => {
       
       console.log('useTenantAuth: Refreshing tenant data for user:', user.id);
 
-      // Get user's tenants with proper RLS policies
+      // Fix the relationship query by using a more specific relationship name
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
           tenant_id,
           role,
           is_active,
-          tenants:tenant_id (
+          tenants!user_tenants_tenant_id_fkey (
             id,
             name,
             slug,
