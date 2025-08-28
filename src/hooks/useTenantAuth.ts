@@ -109,22 +109,9 @@ export const useTenantAuth = () => {
     
     const tenant = userTenants.find(t => t.id === tenantId);
     if (tenant) {
-      // Create proper Tenant object from the user tenant data
-      const tenantForState = {
-        id: tenant.id,
-        name: tenant.name,
-        slug: tenant.slug,
-        type: tenant.type,
-        status: tenant.status,
-        subscription_plan: tenant.subscription_plan,
-        owner_name: tenant.owner_name,
-        owner_email: tenant.owner_email,
-        created_at: tenant.created_at,
-        updated_at: tenant.updated_at,
-        userRole: tenant.userRole
-      };
-      
-      dispatch(setCurrentTenant(tenantForState));
+      // The tenant object from userTenants already has all the properties we need
+      // since it was transformed in refreshTenantData
+      dispatch(setCurrentTenant(tenant));
       
       // Clear onboarding service cache when switching tenants
       enhancedOnboardingService.clearCache();
