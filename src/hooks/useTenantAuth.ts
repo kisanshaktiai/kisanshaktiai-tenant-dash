@@ -35,6 +35,7 @@ export const useTenantAuth = () => {
             id,
             name,
             slug,
+            type,
             status,
             subscription_plan,
             owner_name,
@@ -51,12 +52,16 @@ export const useTenantAuth = () => {
         throw userTenantsError;
       }
 
+      // Transform the data to proper format with type safety
       const tenants = userTenantsData
-        ?.filter(ut => ut.tenants)
-        .map(ut => ({
-          ...ut.tenants,
-          userRole: ut.role
-        })) || [];
+        ?.filter(ut => ut.tenants && typeof ut.tenants === 'object')
+        .map(ut => {
+          const tenantData = ut.tenants as any; // Safe cast since we filtered above
+          return {
+            ...tenantData,
+            userRole: ut.role
+          };
+        }) || [];
 
       console.log('useTenantAuth: Found tenants:', tenants.length);
 
@@ -67,7 +72,23 @@ export const useTenantAuth = () => {
         const firstTenant = tenants[0];
         if (firstTenant) {
           console.log('useTenantAuth: Setting current tenant:', firstTenant.id);
-          dispatch(setCurrentTenant(firstTenant));
+          
+          // Create proper Tenant object from the transformed data
+          const tenantForState = {
+            id: firstTenant.id,
+            name: firstTenant.name,
+            slug: firstTenant.slug,
+            type: firstTenant.type,
+            status: firstTenant.status,
+            subscription_plan: firstTenant.subscription_plan,
+            owner_name: firstTenant.owner_name,
+            owner_email: firstTenant.owner_email,
+            created_at: firstTenant.created_at,
+            updated_at: firstTenant.updated_at,
+            userRole: firstTenant.userRole
+          };
+          
+          dispatch(setCurrentTenant(tenantForState));
         } else {
           console.log('useTenantAuth: No tenants available');
           dispatch(setCurrentTenant(null));
