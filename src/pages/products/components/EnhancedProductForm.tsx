@@ -13,12 +13,16 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Package,
   DollarSign,
   Globe,
-  Camera,
-  Settings
+  Shield,
+  BarChart,
+  Plus,
+  X,
+  Upload
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
@@ -53,14 +57,29 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
   const queryClient = useQueryClient();
   const { getTenantId } = useTenantIsolation();
   const [activeTab, setActiveTab] = useState('basic');
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<Array<{ name: string; url: string; type: string }>>([]);
+  const [variants, setVariants] = useState<Array<{ name: string; sku: string; price_modifier: number; attributes: Record<string, string> }>>([]);
+  const [technicalSpecs, setTechnicalSpecs] = useState<Record<string, string>>({});
+  const [certifications, setCertifications] = useState<Array<{ name: string; issuer: string; certificate_number: string; issue_date: string; expiry_date?: string; document_url?: string }>>([]);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
+      name: '',
+      sku: '',
+      brand: '',
+      category_id: '',
+      description: '',
+      price_per_unit: 0,
+      unit_type: '',
+      min_order_quantity: 1,
+      max_order_quantity: undefined,
+      stock_quantity: 0,
+      availability_status: 'in_stock',
       is_active: true,
       is_featured: false,
-      min_order_quantity: 1,
-      availability_status: 'in_stock',
     },
   });
 
@@ -100,7 +119,7 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
   useEffect(() => {
     if (product) {
       form.reset({
-        name: product.name,
+        name: product.name || '',
         sku: product.sku || '',
         brand: product.brand || '',
         category_id: product.category_id || '',
@@ -114,17 +133,34 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
         is_active: product.is_active ?? true,
         is_featured: product.is_featured ?? false,
       });
+      setImages(product.images || []);
     }
   }, [product, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      // Ensure all required fields are present
+      const insertData = {
+        name: data.name,
+        sku: data.sku,
+        brand: data.brand,
+        category_id: data.category_id,
+        description: data.description,
+        price_per_unit: data.price_per_unit,
+        unit_type: data.unit_type,
+        min_order_quantity: data.min_order_quantity,
+        max_order_quantity: data.max_order_quantity,
+        stock_quantity: data.stock_quantity,
+        availability_status: data.availability_status,
+        is_active: data.is_active,
+        is_featured: data.is_featured,
+        tenant_id: getTenantId(),
+        images: images,
+      };
+
       const { error } = await supabase
         .from('products')
-        .insert({
-          ...data,
-          tenant_id: getTenantId()
-        });
+        .insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -143,9 +179,26 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
 
   const updateMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
+      const updateData = {
+        name: data.name,
+        sku: data.sku,
+        brand: data.brand,
+        category_id: data.category_id,
+        description: data.description,
+        price_per_unit: data.price_per_unit,
+        unit_type: data.unit_type,
+        min_order_quantity: data.min_order_quantity,
+        max_order_quantity: data.max_order_quantity,
+        stock_quantity: data.stock_quantity,
+        availability_status: data.availability_status,
+        is_active: data.is_active,
+        is_featured: data.is_featured,
+        images: images,
+      };
+
       const { error } = await supabase
         .from('products')
-        .update(data)
+        .update(updateData)
         .eq('id', productId)
         .eq('tenant_id', getTenantId());
       if (error) throw error;
@@ -172,10 +225,41 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
     }
   };
 
+  const addVariant = () => {
+    setVariants([...variants, { name: '', sku: '', price_modifier: 0, attributes: {} }]);
+  };
+
+  const removeVariant = (index: number) => {
+    setVariants(variants.filter((_, i) => i !== index));
+  };
+
+  const addTechnicalSpec = (key: string, value: string) => {
+    setTechnicalSpecs({ ...technicalSpecs, [key]: value });
+  };
+
+  const removeTechnicalSpec = (key: string) => {
+    const newSpecs = { ...technicalSpecs };
+    delete newSpecs[key];
+    setTechnicalSpecs(newSpecs);
+  };
+
+  const addCertification = () => {
+    setCertifications([...certifications, {
+      name: '',
+      issuer: '',
+      certificate_number: '',
+      issue_date: '',
+    }]);
+  };
+
+  const removeCertification = (index: number) => {
+    setCertifications(certifications.filter((_, i) => i !== index));
+  };
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="basic" className="flex items-center gap-1">
             <Package className="h-3 w-3" />
             Basic
@@ -188,9 +272,13 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
             <Globe className="h-3 w-3" />
             Content
           </TabsTrigger>
-          <TabsTrigger value="media" className="flex items-center gap-1">
-            <Camera className="h-3 w-3" />
-            Media
+          <TabsTrigger value="compliance" className="flex items-center gap-1">
+            <Shield className="h-3 w-3" />
+            Compliance
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-1">
+            <BarChart className="h-3 w-3" />
+            Analytics
           </TabsTrigger>
         </TabsList>
 
@@ -221,6 +309,9 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                     {...form.register('sku')}
                     placeholder="e.g., NPK-ORG-001"
                   />
+                  {form.formState.errors.sku && (
+                    <p className="text-sm text-destructive">{form.formState.errors.sku.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -230,11 +321,14 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                     {...form.register('brand')}
                     placeholder="e.g., Green Valley"
                   />
+                  {form.formState.errors.brand && (
+                    <p className="text-sm text-destructive">{form.formState.errors.brand.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Select onValueChange={(value) => form.setValue('category_id', value)}>
+                  <Select onValueChange={(value) => form.setValue('category_id', value)} value={form.watch('category_id')}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -246,6 +340,9 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                       ))}
                     </SelectContent>
                   </Select>
+                  {form.formState.errors.category_id && (
+                    <p className="text-sm text-destructive">{form.formState.errors.category_id.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -257,6 +354,51 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                   placeholder="Detailed product description..."
                   rows={4}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="unit_type">Unit Type *</Label>
+                  <Select onValueChange={(value) => form.setValue('unit_type', value)} value={form.watch('unit_type')}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">Kilogram</SelectItem>
+                      <SelectItem value="liter">Liter</SelectItem>
+                      <SelectItem value="packet">Packet</SelectItem>
+                      <SelectItem value="bag">Bag</SelectItem>
+                      <SelectItem value="bottle">Bottle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {form.formState.errors.unit_type && (
+                    <p className="text-sm text-destructive">{form.formState.errors.unit_type.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="stock_quantity">Stock Quantity</Label>
+                  <Input
+                    id="stock_quantity"
+                    type="number"
+                    {...form.register('stock_quantity', { valueAsNumber: true })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="availability_status">Availability Status</Label>
+                  <Select onValueChange={(value) => form.setValue('availability_status', value)} value={form.watch('availability_status')}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="in_stock">In Stock</SelectItem>
+                      <SelectItem value="low_stock">Low Stock</SelectItem>
+                      <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                      <SelectItem value="discontinued">Discontinued</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4">
@@ -279,6 +421,64 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
               </div>
             </CardContent>
           </Card>
+
+          {/* Product Variants Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Variants</CardTitle>
+              <CardDescription>Manage different variations of this product</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Variants</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addVariant}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Variant
+                </Button>
+              </div>
+              {variants.map((variant, index) => (
+                <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <Input
+                    placeholder="Variant Name"
+                    value={variant.name}
+                    onChange={(e) => {
+                      const newVariants = [...variants];
+                      newVariants[index].name = e.target.value;
+                      setVariants(newVariants);
+                    }}
+                  />
+                  <Input
+                    placeholder="SKU"
+                    value={variant.sku}
+                    onChange={(e) => {
+                      const newVariants = [...variants];
+                      newVariants[index].sku = e.target.value;
+                      setVariants(newVariants);
+                    }}
+                  />
+                  <Input
+                    placeholder="Price Modifier"
+                    type="number"
+                    step="0.01"
+                    value={variant.price_modifier}
+                    onChange={(e) => {
+                      const newVariants = [...variants];
+                      newVariants[index].price_modifier = Number(e.target.value);
+                      setVariants(newVariants);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeVariant(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="pricing" className="space-y-6">
@@ -297,35 +497,11 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                     step="0.01"
                     {...form.register('price_per_unit', { valueAsNumber: true })}
                   />
+                  {form.formState.errors.price_per_unit && (
+                    <p className="text-sm text-destructive">{form.formState.errors.price_per_unit.message}</p>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="unit_type">Unit Type</Label>
-                  <Select onValueChange={(value) => form.setValue('unit_type', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">Kilogram</SelectItem>
-                      <SelectItem value="liter">Liter</SelectItem>
-                      <SelectItem value="packet">Packet</SelectItem>
-                      <SelectItem value="bag">Bag</SelectItem>
-                      <SelectItem value="bottle">Bottle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="stock_quantity">Stock Quantity</Label>
-                  <Input
-                    id="stock_quantity"
-                    type="number"
-                    {...form.register('stock_quantity', { valueAsNumber: true })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="min_order_quantity">Min Order Quantity</Label>
                   <Input
@@ -344,21 +520,6 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="availability_status">Availability Status</Label>
-                <Select onValueChange={(value) => form.setValue('availability_status', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in_stock">In Stock</SelectItem>
-                    <SelectItem value="low_stock">Low Stock</SelectItem>
-                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                    <SelectItem value="discontinued">Discontinued</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -367,25 +528,142 @@ export default function EnhancedProductForm({ productId, onCancel, onSuccess }: 
           <Card>
             <CardHeader>
               <CardTitle>Content Management</CardTitle>
-              <CardDescription>Additional content and specifications</CardDescription>
+              <CardDescription>Rich media and content for this product</CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Advanced content management features like multi-language support, SEO fields, and technical specifications will be available in future updates.
-              </p>
+            <CardContent className="space-y-4">
+              {/* Media Gallery */}
+              <div className="space-y-4">
+                <Label>Product Images</Label>
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">
+                    Click to upload images or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    PNG, JPG, GIF up to 10MB
+                  </p>
+                </div>
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4">
+                    {images.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img src={image} alt={`Product ${index + 1}`} className="w-full h-32 object-cover rounded" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => setImages(images.filter((_, i) => i !== index))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Technical Specifications */}
+              <div className="space-y-4">
+                <Label>Technical Specifications</Label>
+                <div className="space-y-2">
+                  {Object.entries(technicalSpecs).map(([key, value]) => (
+                    <div key={key} className="flex items-center gap-4">
+                      <Badge variant="outline">{key}: {value}</Badge>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeTechnicalSpec(key)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="media" className="space-y-6">
+        <TabsContent value="compliance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Media Gallery</CardTitle>
-              <CardDescription>Product images and media</CardDescription>
+              <CardTitle>Quality & Compliance</CardTitle>
+              <CardDescription>Certifications and compliance information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label>Certifications</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addCertification}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Certification
+                </Button>
+              </div>
+              {certifications.map((cert, index) => (
+                <div key={index} className="grid grid-cols-2 gap-4 p-4 border rounded-lg">
+                  <Input
+                    placeholder="Certificate Name"
+                    value={cert.name}
+                    onChange={(e) => {
+                      const newCerts = [...certifications];
+                      newCerts[index].name = e.target.value;
+                      setCertifications(newCerts);
+                    }}
+                  />
+                  <Input
+                    placeholder="Issuer"
+                    value={cert.issuer}
+                    onChange={(e) => {
+                      const newCerts = [...certifications];
+                      newCerts[index].issuer = e.target.value;
+                      setCertifications(newCerts);
+                    }}
+                  />
+                  <Input
+                    placeholder="Certificate Number"
+                    value={cert.certificate_number}
+                    onChange={(e) => {
+                      const newCerts = [...certifications];
+                      newCerts[index].certificate_number = e.target.value;
+                      setCertifications(newCerts);
+                    }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      placeholder="Issue Date"
+                      value={cert.issue_date}
+                      onChange={(e) => {
+                        const newCerts = [...certifications];
+                        newCerts[index].issue_date = e.target.value;
+                        setCertifications(newCerts);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeCertification(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Analytics Configuration</CardTitle>
+              <CardDescription>Configure tracking and analytics for this product</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Media management features including image uploads, video tutorials, and document attachments will be available in future updates.
+                Product analytics and tracking configuration will be available once the product is created.
               </p>
             </CardContent>
           </Card>
