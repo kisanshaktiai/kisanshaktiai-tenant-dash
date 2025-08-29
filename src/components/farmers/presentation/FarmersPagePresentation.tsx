@@ -122,7 +122,7 @@ export const FarmersPagePresentation: React.FC<FarmersPagePresentationProps> = (
         </TabsContent>
 
         <TabsContent value="bulk">
-          <BulkOperations />
+          <BulkOperations selectedFarmers={selectedFarmers} />
         </TabsContent>
 
         <TabsContent value="engagement">
