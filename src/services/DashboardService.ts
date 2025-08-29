@@ -1,58 +1,55 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface DashboardStats {
+  farmers: {
+    total: number;
+    active: number;
+    new_this_week: number;
+    recent: Array<{
+      id: string;
+      name: string;
+      created_at: string;
+    }>;
+  };
+  campaigns: {
+    active: number;
+    total: number;
+  };
+  products: {
+    total: number;
+    categories: number;
+    out_of_stock: number;
+  };
+  dealers: {
+    total: number;
+    active: number;
+  };
+}
+
 class DashboardService {
-  async getDashboardData(tenantId: string) {
-    console.log('DashboardService: Fetching dashboard data for tenant:', tenantId);
-    
-    if (!tenantId) {
-      throw new Error('Tenant ID is required');
-    }
-    
+  async getDashboardStats(tenantId: string): Promise<DashboardStats> {
     try {
-      const [
-        farmersResult,
-        landsResult,
-        productsResult,
-        dealersResult
-      ] = await Promise.allSettled([
+      console.log('Fetching dashboard stats for tenant:', tenantId);
+
+      const [farmers, products, dealers, campaigns] = await Promise.all([
         this.getFarmersCount(tenantId),
-        this.getLandsCount(tenantId),
         this.getProductsCount(tenantId),
-        this.getDealersCount(tenantId)
+        this.getDealersCount(tenantId),
+        this.getCampaignsCount(tenantId)
       ]);
 
-      // Process results with graceful error handling
-      const farmers = farmersResult.status === 'fulfilled' ? farmersResult.value : [];
-      const lands = landsResult.status === 'fulfilled' ? landsResult.value : [];
-      const products = productsResult.status === 'fulfilled' ? productsResult.value : [];
-      const dealers = dealersResult.status === 'fulfilled' ? dealersResult.value : [];
-
-      // Log any errors
-      if (farmersResult.status === 'rejected') {
-        console.error('DashboardService: Error fetching farmers:', farmersResult.reason);
-      }
-      if (landsResult.status === 'rejected') {
-        console.error('DashboardService: Error fetching lands:', landsResult.reason);
-      }
-      if (productsResult.status === 'rejected') {
-        console.error('DashboardService: Error fetching products:', productsResult.reason);
-      }
-      if (dealersResult.status === 'rejected') {
-        console.error('DashboardService: Error fetching dealers:', dealersResult.reason);
-      }
-
-      // Calculate some recent farmers (last 7 days) safely
+      // Calculate new farmers this week
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const newFarmersThisWeek = farmers.filter(farmer => 
-        farmer.created_at && new Date(farmer.created_at) >= oneWeekAgo
+      const newFarmersThisWeek = farmers.filter(f => 
+        f.created_at && new Date(f.created_at) >= oneWeekAgo
       ).length;
 
       const dashboardData = {
         farmers: {
           total: farmers.length,
-          active: farmers.filter(f => f.phone_verified).length || farmers.length,
+          active: farmers.length, // Since we don't have a verified field, assume all are active
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
@@ -60,51 +57,32 @@ class DashboardService {
             created_at: farmer.created_at
           }))
         },
-        lands: {
-          total: lands.length,
-          totalAcres: lands.reduce((sum, land) => sum + (land.area_acres || 0), 0)
+        campaigns: {
+          active: campaigns.filter(c => c.status === 'active').length,
+          total: campaigns.length
         },
         products: {
           total: products.length,
           categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
-          out_of_stock: products.filter(p => p.stock_quantity === 0).length
+          out_of_stock: 0 // Default to 0 since we don't have stock tracking
         },
         dealers: {
           total: dealers.length,
-          active: dealers.filter(d => d.is_active !== false).length,
-          performance: 92 // Mock performance score
-        },
-        analytics: {
-          revenue: 0, // Mock data
-          growth: 15.2, // Mock growth percentage
-          satisfaction: 94 // Mock satisfaction score
-        },
-        // Add mock activity and tasks for presentation
-        recentActivity: [
-          { id: 1, message: 'New farmer registered from Karnataka', time: '2 hours ago' },
-          { id: 2, message: 'Bulk product order completed', time: '4 hours ago' },
-          { id: 3, message: 'Campaign engagement report generated', time: '6 hours ago' }
-        ],
-        upcomingTasks: [
-          { id: 1, title: 'Review farmer applications', description: 'Process pending farmer registrations', dueDate: 'Today', priority: 'high' },
-          { id: 2, title: 'Update product catalog', description: 'Add new seasonal products', dueDate: 'Tomorrow', priority: 'medium' },
-          { id: 3, title: 'Generate monthly report', description: 'Compile analytics for stakeholders', dueDate: 'Next week', priority: 'low' }
-        ]
+          active: dealers.length // Assume all are active
+        }
       };
 
-      console.log('DashboardService: Dashboard data prepared:', dashboardData);
+      console.log('Dashboard stats calculated:', dashboardData);
       return dashboardData;
     } catch (error) {
-      console.error('DashboardService: Error in getDashboardData:', error);
-      // Return empty data structure instead of throwing
+      console.error('Error fetching dashboard stats:', error);
+      
+      // Return default stats in case of error
       return {
         farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
-        lands: { total: 0, totalAcres: 0 },
+        campaigns: { active: 0, total: 0 },
         products: { total: 0, categories: 0, out_of_stock: 0 },
-        dealers: { total: 0, active: 0, performance: 0 },
-        analytics: { revenue: 0, growth: 0, satisfaction: 0 },
-        recentActivity: [],
-        upcomingTasks: []
+        dealers: { total: 0, active: 0 }
       };
     }
   }
@@ -112,52 +90,56 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, farmer_code, created_at, phone_verified')
+      .select('id, farmer_code, created_at')
       .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('Error fetching farmers:', error);
-      throw error;
+      return [];
     }
+
     return data || [];
   }
 
-  private async getLandsCount(tenantId: string) {
+  private async getCampaignsCount(tenantId: string) {
     const { data, error } = await supabase
-      .from('lands')
-      .select('id, area_acres')
+      .from('campaigns')
+      .select('id, status')
       .eq('tenant_id', tenantId);
 
     if (error) {
-      console.error('Error fetching lands:', error);
-      throw error;
+      console.error('Error fetching campaigns:', error);
+      return [];
     }
+
     return data || [];
   }
 
   private async getProductsCount(tenantId: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, stock_quantity')
+      .select('id, name')
       .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('Error fetching products:', error);
-      throw error;
+      return [];
     }
+
     return data || [];
   }
 
   private async getDealersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('dealers')
-      .select('id, is_active')
+      .select('id')
       .eq('tenant_id', tenantId);
 
     if (error) {
       console.error('Error fetching dealers:', error);
-      throw error;
+      return [];
     }
+
     return data || [];
   }
 }
