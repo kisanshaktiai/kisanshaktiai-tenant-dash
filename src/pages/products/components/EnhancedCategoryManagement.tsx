@@ -51,9 +51,10 @@ interface Category {
   is_active: boolean;
   sort_order: number;
   icon_url: string | null;
-  seo_title: string | null;
-  seo_description: string | null;
-  product_count: number;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  product_count?: number;
   children?: Category[];
 }
 
@@ -71,8 +72,6 @@ export default function EnhancedCategoryManagement() {
     parent_id: '',
     is_active: true,
     sort_order: 0,
-    seo_title: '',
-    seo_description: '',
     icon_url: ''
   });
 
@@ -88,7 +87,12 @@ export default function EnhancedCategoryManagement() {
         .eq('tenant_id', getTenantId())
         .order('sort_order', { ascending: true });
       if (error) throw error;
-      return data as Category[];
+      
+      // Transform the data to match our interface
+      return data.map(category => ({
+        ...category,
+        product_count: Array.isArray(category.product_count) ? category.product_count.length : 0
+      })) as Category[];
     },
   });
 
@@ -190,8 +194,6 @@ export default function EnhancedCategoryManagement() {
       parent_id: '',
       is_active: true,
       sort_order: 0,
-      seo_title: '',
-      seo_description: '',
       icon_url: ''
     });
     setEditingCategory(null);
@@ -206,8 +208,6 @@ export default function EnhancedCategoryManagement() {
       parent_id: category.parent_id || '',
       is_active: category.is_active,
       sort_order: category.sort_order,
-      seo_title: category.seo_title || '',
-      seo_description: category.seo_description || '',
       icon_url: category.icon_url || ''
     });
     setIsDialogOpen(true);
@@ -287,7 +287,7 @@ export default function EnhancedCategoryManagement() {
                   {!category.is_active && (
                     <Badge variant="secondary">Inactive</Badge>
                   )}
-                  {category.product_count > 0 && (
+                  {category.product_count && category.product_count > 0 && (
                     <Badge variant="outline">{category.product_count} products</Badge>
                   )}
                 </div>
@@ -452,16 +452,6 @@ export default function EnhancedCategoryManagement() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="seo_title">SEO Title</Label>
-                        <Input
-                          id="seo_title"
-                          value={formData.seo_title}
-                          onChange={(e) => setFormData(prev => ({ ...prev, seo_title: e.target.value }))}
-                          placeholder="SEO optimized title"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <Label htmlFor="sort_order">Sort Order</Label>
                         <Input
                           id="sort_order"
@@ -470,17 +460,16 @@ export default function EnhancedCategoryManagement() {
                           onChange={(e) => setFormData(prev => ({ ...prev, sort_order: Number(e.target.value) }))}
                         />
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="seo_description">SEO Description</Label>
-                      <Textarea
-                        id="seo_description"
-                        value={formData.seo_description}
-                        onChange={(e) => setFormData(prev => ({ ...prev, seo_description: e.target.value }))}
-                        placeholder="SEO meta description"
-                        rows={2}
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="icon_url">Icon URL</Label>
+                        <Input
+                          id="icon_url"
+                          value={formData.icon_url}
+                          onChange={(e) => setFormData(prev => ({ ...prev, icon_url: e.target.value }))}
+                          placeholder="Optional icon URL"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex items-center space-x-2">
@@ -509,7 +498,7 @@ export default function EnhancedCategoryManagement() {
             </div>
           </CardTitle>
           <CardDescription>
-            Organize your products into hierarchical categories with SEO optimization
+            Organize your products into hierarchical categories
           </CardDescription>
         </CardHeader>
       </Card>

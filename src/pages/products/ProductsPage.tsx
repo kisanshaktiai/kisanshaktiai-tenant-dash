@@ -198,7 +198,7 @@ export default function ProductsPage() {
 
       {/* Enhanced Product Form Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProductId ? 'Edit Product' : 'Create New Product'}
