@@ -23,7 +23,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
     dealers: {
       total: stats.dealers?.total || 0,
       active: stats.dealers?.active || 0,
-      performance: stats.dealers?.performance || 0
+      performance: 0 // Default to 0 since performance is not available in current data structure
     },
     products: {
       total: stats.products?.total || 0,
@@ -31,9 +31,9 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({
       outOfStock: stats.products?.out_of_stock || 0
     },
     analytics: {
-      revenue: stats.analytics?.revenue || 0,
-      growth: stats.analytics?.growth || 0,
-      satisfaction: stats.analytics?.satisfaction || 0
+      revenue: 0, // Default values since analytics is not available in current data structure
+      growth: 0,
+      satisfaction: 0
     }
   } : null;
 
