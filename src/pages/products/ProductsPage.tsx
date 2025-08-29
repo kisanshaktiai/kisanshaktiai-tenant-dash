@@ -1,120 +1,110 @@
 
-import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { Plus, Search, Filter, Download, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Plus, Package, BarChart3, Settings, Upload } from 'lucide-react';
-import ProductList from './components/ProductList';
-import ProductForm from './components/ProductForm';
-import CategoryManagement from './components/CategoryManagement';
-import ProductAnalytics from './components/ProductAnalytics';
-import BulkImport from './components/BulkImport';
-import PricingManagement from './components/PricingManagement';
-import { useTranslation } from '@/hooks/useTranslation';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import { ProductList } from './components/ProductList';
+import { CategoryManagement } from './components/CategoryManagement';
+import { PricingManagement } from './components/PricingManagement';
+import { BulkImport } from './components/BulkImport';
+import { ProductAnalytics } from './components/ProductAnalytics';
 
 export default function ProductsPage() {
-  const [selectedTab, setSelectedTab] = useState('products');
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<string | null>(null);
-  const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t('products.title')}</h1>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Package className="h-8 w-8" />
+            Product Catalog
+          </h1>
           <p className="text-muted-foreground">
-            {t('products.subtitle')}
+            Manage your agricultural products and inventory
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setSelectedTab('bulk-import')}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {t('products.bulkImport')}
-          </Button>
-          <Button onClick={() => setIsCreating(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('products.addProduct')}
-          </Button>
+        <div className="flex space-x-2">
+          <PermissionGuard permission="products.create">
+            <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+              <Download className="mr-2 h-4 w-4" />
+              Import Products
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Product
+            </Button>
+          </PermissionGuard>
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="products" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            {t('products.products')}
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            {t('products.categories')}
-          </TabsTrigger>
-          <TabsTrigger value="pricing" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            {t('products.pricing')}
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            {t('products.analytics')}
-          </TabsTrigger>
-          <TabsTrigger value="bulk-import" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            {t('products.importExport')}
-          </TabsTrigger>
+      {/* Search and Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Search & Filter</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products by name, SKU, or category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Advanced Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Content */}
+      <Tabs defaultValue="products" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <PermissionGuard permission="products.edit">
+            <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          </PermissionGuard>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products" className="space-y-6">
-          {isCreating || editingProduct ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {isCreating ? t('products.createNew') : t('products.edit')}
-                </CardTitle>
-                <CardDescription>
-                  {isCreating ? t('products.addNewDescription') : t('products.updateDescription')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProductForm
-                  productId={editingProduct}
-                  onCancel={() => {
-                    setIsCreating(false);
-                    setEditingProduct(null);
-                  }}
-                  onSuccess={() => {
-                    setIsCreating(false);
-                    setEditingProduct(null);
-                  }}
-                />
-              </CardContent>
-            </Card>
-          ) : (
-            <ProductList
-              onEdit={setEditingProduct}
-              onCreate={() => setIsCreating(true)}
-            />
-          )}
+        <TabsContent value="products">
+          <ProductList searchTerm={searchTerm} />
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-6">
+        <TabsContent value="categories">
           <CategoryManagement />
         </TabsContent>
 
-        <TabsContent value="pricing" className="space-y-6">
-          <PricingManagement />
-        </TabsContent>
+        <PermissionGuard permission="products.edit">
+          <TabsContent value="pricing">
+            <PricingManagement />
+          </TabsContent>
+        </PermissionGuard>
 
-        <TabsContent value="analytics" className="space-y-6">
+        <TabsContent value="analytics">
           <ProductAnalytics />
         </TabsContent>
-
-        <TabsContent value="bulk-import" className="space-y-6">
-          <BulkImport />
-        </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      {isImportModalOpen && (
+        <BulkImport
+          open={isImportModalOpen}
+          onOpenChange={setIsImportModalOpen}
+        />
+      )}
     </div>
   );
 }

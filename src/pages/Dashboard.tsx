@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { EnhancedDashboardPresentation } from '@/components/dashboard/presentation/EnhancedDashboardPresentation';
+import { CustomizableDashboard } from '@/components/dashboard/CustomizableDashboard';
 import { useRealTimeDashboard } from '@/hooks/data/useRealTimeDashboard';
 import { usePostLoginOnboardingCheck } from '@/hooks/usePostLoginOnboardingCheck';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
+import { useAppSelector } from '@/store/hooks';
 
 const Dashboard = () => {
-  const { data, isLoading, error, isLive, activeChannels } = useRealTimeDashboard();
+  const { isLive, activeChannels } = useRealTimeDashboard();
+  const { currentTenant } = useAppSelector((state) => state.tenant);
 
   // Initialize post-login onboarding check
   usePostLoginOnboardingCheck({
@@ -15,46 +17,25 @@ const Dashboard = () => {
     showNotification: true
   });
 
-  // Mock data for demonstration - replace with real data from the query
-  const dashboardData = {
-    farmers: {
-      total: data?.totalFarmers || 1234,
-      active: data?.active_farmers || 987,
-      new: data?.new_farmers_this_week || 45
-    },
-    dealers: {
-      total: data?.total_dealers || 89,
-      active: data?.active_dealers || 76,
-      performance: data?.average_dealer_performance || 92
-    },
-    products: {
-      total: data?.totalProducts || 456,
-      categories: data?.product_categories || 12,
-      outOfStock: data?.out_of_stock_products || 3
-    },
-    analytics: {
-      revenue: data?.total_revenue || 2540000,
-      growth: data?.growth_percentage || 15.8,
-      satisfaction: data?.customer_satisfaction || 94
-    }
-  };
-
-  if (error) {
-    console.error('Dashboard data error:', error);
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-muted-foreground">Loading tenant context...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Live Indicator */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <div className="flex justify-end">
         <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />
       </div>
       
-      <EnhancedDashboardPresentation 
-        data={dashboardData} 
-        isLoading={isLoading} 
-      />
+      {/* Customizable Dashboard */}
+      <CustomizableDashboard tenantId={currentTenant.id} />
     </div>
   );
 };
