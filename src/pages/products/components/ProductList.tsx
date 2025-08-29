@@ -15,7 +15,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { useTenantIsolation } from '@/hooks/useTenantIsolation';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductListProps {
@@ -25,16 +25,20 @@ interface ProductListProps {
 }
 
 export default function ProductList({ onEdit, onCreate, searchTerm }: ProductListProps) {
-  const { getTenantId } = useTenantIsolation();
+  const { currentTenant } = useTenantContextOptimized();
   const { toast } = useToast();
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products', getTenantId(), searchTerm],
+  const { data: products, isLoading, error } = useQuery({
+    queryKey: ['products', currentTenant?.id, searchTerm],
     queryFn: async () => {
+      if (!currentTenant?.id) {
+        throw new Error('No current tenant available');
+      }
+
       let query = supabase
         .from('products')
         .select('*')
-        .eq('tenant_id', getTenantId())
+        .eq('tenant_id', currentTenant.id)
         .order('created_at', { ascending: false });
 
       if (searchTerm) {
@@ -45,6 +49,7 @@ export default function ProductList({ onEdit, onCreate, searchTerm }: ProductLis
       if (error) throw error;
       return data;
     },
+    enabled: !!currentTenant?.id,
   });
 
   const getStatusBadge = (status: string) => {
@@ -59,6 +64,15 @@ export default function ProductList({ onEdit, onCreate, searchTerm }: ProductLis
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  // Show loading state while tenant is being loaded
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -78,6 +92,20 @@ export default function ProductList({ onEdit, onCreate, searchTerm }: ProductLis
           </Card>
         ))}
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Error loading products</h3>
+          <p className="text-muted-foreground text-center">
+            {error instanceof Error ? error.message : 'An unexpected error occurred'}
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
