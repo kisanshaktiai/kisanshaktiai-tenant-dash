@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import {
   BrowserRouter,
@@ -7,23 +8,23 @@ import {
 } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IntlProvider } from './components/providers/IntlProvider';
-import { Index } from './pages/Index';
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-import { TenantLoginPage } from './pages/auth/TenantLoginPage';
-import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { PasswordSetupPage } from './pages/invitation/PasswordSetupPage';
+import Index from './pages/Index';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import TenantLoginPage from './pages/auth/TenantLoginPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import PasswordSetupPage from './pages/invitation/PasswordSetupPage';
 import Dashboard from './pages/Dashboard';
-import { FarmersPage } from './pages/farmers/FarmersPage';
-import { ProductsPage } from './pages/products/ProductsPage';
-import { DealersPage } from './pages/dealers/DealersPage';
-import { CampaignsPage } from './pages/CampaignsPage';
+import FarmersPage from './pages/farmers/FarmersPage';
+import ProductsPage from './pages/products/ProductsPage';
+import DealersPage from './pages/dealers/DealersPage';
+import CampaignsPage from './pages/CampaignsPage';
 import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
-import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { SubscriptionPage } from './pages/subscription/SubscriptionPage';
-import { OnboardingPage } from './pages/onboarding/OnboardingPage';
+import IntegrationsPage from './pages/integrations/IntegrationsPage';
+import SettingsPage from './pages/SettingsPage';
+import SubscriptionPage from './pages/subscription/SubscriptionPage';
+import OnboardingPage from './pages/onboarding/OnboardingPage';
 import NotFound from './pages/NotFound';
 import { OnboardingGuardOptimized } from './components/guards/OnboardingGuardOptimized';
 import { ProfilePage } from './pages/ProfilePage';
@@ -79,3 +80,4 @@ function App() {
 }
 
 export default App;
+
