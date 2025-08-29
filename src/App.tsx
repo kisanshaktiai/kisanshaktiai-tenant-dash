@@ -27,14 +27,23 @@ import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import DealersPage from '@/pages/dealers/DealersPage';
 import CampaignsPage from '@/pages/CampaignsPage';
-import AnalyticsPage from '@/pages/analytics/AnalyticsPage';
+import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import OrganizationPage from '@/pages/settings/OrganizationPage';
 import UsersPage from '@/pages/settings/UsersPage';
-import ProfilePage from '@/pages/ProfilePage';
 import SubscriptionPage from '@/pages/subscription/SubscriptionPage';
 import NotFound from '@/pages/NotFound';
+
+// Create ProfilePage component since it's missing
+const ProfilePage = () => {
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Profile</h1>
+      <p>Profile page content coming soon...</p>
+    </div>
+  );
+};
 
 // Create query client
 const queryClient = new QueryClient({
@@ -66,7 +75,7 @@ function App() {
                 <Route path="/invitation/password-setup" element={<PasswordSetupPage />} />
 
                 {/* Protected Routes with Onboarding Guard */}
-                <Route element={<OnboardingGuardOptimized />}>
+                <Route element={<OnboardingGuardOptimized><div /></OnboardingGuardOptimized>}>
                   <Route element={<EnhancedDashboardLayout />}>
                     {/* Main Dashboard Routes */}
                     <Route path="/dashboard" element={<Dashboard />} />

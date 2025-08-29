@@ -27,6 +27,8 @@ interface Campaign {
   start_date: string;
   end_date: string;
   created_at: string;
+  description?: string;
+  campaign_type?: string;
 }
 
 const CampaignsPage = () => {
@@ -46,7 +48,21 @@ const CampaignsPage = () => {
       setLoading(true);
       console.log('Loading campaigns for tenant:', currentTenant.id);
       const data = await campaignService.getCampaigns(currentTenant.id);
-      setCampaigns(data);
+      
+      // Transform the data to match our Campaign interface
+      const transformedCampaigns = data.map((campaign: any) => ({
+        id: campaign.id,
+        name: campaign.name || campaign.title || 'Untitled Campaign',
+        status: campaign.status || 'draft',
+        type: campaign.campaign_type || campaign.type || 'promotional',
+        target_audience: campaign.target_audience || 'All farmers',
+        start_date: campaign.start_date || campaign.created_at,
+        end_date: campaign.end_date || campaign.created_at,
+        created_at: campaign.created_at,
+        description: campaign.description
+      }));
+      
+      setCampaigns(transformedCampaigns);
     } catch (error) {
       console.error('Error loading campaigns:', error);
       setCampaigns([]);
@@ -511,7 +527,7 @@ const CampaignsPage = () => {
       {showWizard && (
         <CampaignWizard
           onClose={() => setShowWizard(false)}
-          onComplete={loadCampaigns}
+          onSave={loadCampaigns}
         />
       )}
     </div>
