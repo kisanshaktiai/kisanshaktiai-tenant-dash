@@ -10,8 +10,14 @@ export const useAuth = () => {
   const { user, session, loading, initialized, error } = useAppSelector((state) => state.auth);
   const initializationRef = useRef(false);
   const subscriptionRef = useRef<any>(null);
+  const isMountedRef = useRef(true);
 
   const handleAuthStateChange = useCallback((event: string, session: any) => {
+    if (!isMountedRef.current) {
+      console.log('useAuth: Component unmounted, ignoring auth change');
+      return;
+    }
+
     console.log('useAuth: Auth state change event:', event);
     console.log('useAuth: Session user:', session?.user?.email || 'No user');
     
@@ -47,7 +53,8 @@ export const useAuth = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    // Prevent multiple initializations
+    isMountedRef.current = true;
+
     if (initializationRef.current) {
       console.log('useAuth: Already initialized, skipping');
       return;
@@ -60,11 +67,9 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         
-        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
         subscriptionRef.current = subscription;
 
-        // Get initial session
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -72,23 +77,31 @@ export const useAuth = () => {
           dispatch(setError(sessionError.message));
         } else {
           console.log('useAuth: Initial session retrieved:', initialSession?.user?.email || 'No user');
-          dispatch(setSession(initialSession));
+          if (isMountedRef.current) {
+            dispatch(setSession(initialSession));
+          }
         }
 
       } catch (error) {
         console.error('useAuth: Error initializing auth:', error);
-        dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
+        if (isMountedRef.current) {
+          dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
+        }
       } finally {
-        dispatch(setLoading(false));
+        if (isMountedRef.current) {
+          dispatch(setLoading(false));
+        }
       }
     };
 
     initializeAuth();
 
-    // Cleanup function
     return () => {
-      console.log('useAuth: Cleaning up auth subscription');
+      console.log('useAuth: Component unmounting');
+      isMountedRef.current = false;
+      
       if (subscriptionRef.current) {
+        console.log('useAuth: Cleaning up auth subscription');
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
@@ -197,6 +210,39 @@ export const useAuth = () => {
     }
   };
 
+  const refreshSession = async () => {
+    try {
+      console.log('useAuth: Refreshing session...');
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error('useAuth: Session refresh failed:', error);
+        return { error };
+      }
+
+      console.log('useAuth: Session refreshed successfully');
+      return { data, error: null };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Session refresh failed';
+      console.error('useAuth: Session refresh error:', errorMessage);
+      return { error: { message: errorMessage } };
+    }
+  };
+
+  const isSessionExpired = useCallback(() => {
+    if (!session?.expires_at) return false;
+    
+    const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+    const now = Date.now();
+    const isExpired = now >= expiresAt;
+    
+    if (isExpired) {
+      console.log('useAuth: Session expired');
+    }
+    
+    return isExpired;
+  }, [session?.expires_at]);
+
   return {
     user,
     session,
@@ -207,6 +253,8 @@ export const useAuth = () => {
     signUp,
     signOut,
     resetPassword,
+    refreshSession,
+    isSessionExpired,
     clearError: () => dispatch(clearError()),
   };
 };
