@@ -30,10 +30,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
     data, 
     isLoading, 
     error 
-  } = useDashboardQuery(tenantId, {
-    refetchInterval: 30000, // Refresh every 30 seconds
-    staleTime: 10000, // Consider data stale after 10 seconds
-  });
+  } = useDashboardQuery();
 
   const handleCustomizeMode = useCallback(() => {
     setIsCustomizing(!isCustomizing);
@@ -45,7 +42,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
 
   if (error) {
     return (
-      <Card className="border-destructive/20 bg-destructive/5 shadow-soft">
+      <Card className="border-destructive/20 bg-destructive/5 shadow-lg">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
             <Activity className="h-6 w-6 text-destructive" />
@@ -69,122 +66,127 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
   };
 
   return (
-    <div className="space-y-6">
-      {/* Enhanced Control Panel */}
-      <Card className="border-0 shadow-soft bg-gradient-to-r from-card via-card to-muted/10">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <LayoutGrid className="h-4 w-4 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-primary/5">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Enhanced Control Panel */}
+        <Card className="border-0 shadow-xl bg-gradient-to-r from-card via-card to-muted/10 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                  <LayoutGrid className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                    Dashboard Overview
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Real-time insights into your agricultural network
+                  </p>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-xl">Dashboard Overview</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Real-time insights into your agricultural network
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="gap-1.5">
-                <Sparkles className="h-3 w-3" />
-                Live Data
-              </Badge>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={toggleViewMode}
-                className="gap-2"
-              >
-                {viewMode === 'expanded' ? (
-                  <>
-                    <Minimize2 className="h-4 w-4" />
-                    Compact
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="h-4 w-4" />
-                    Expanded
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-3">
+                <Badge variant="outline" className="gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Live Data
+                </Badge>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleViewMode}
+                  className="gap-2 hover:shadow-md transition-all duration-200"
+                >
+                  {viewMode === 'expanded' ? (
+                    <>
+                      <Minimize2 className="h-4 w-4" />
+                      Compact
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="h-4 w-4" />
+                      Expanded
+                    </>
+                  )}
+                </Button>
 
-              <Button
-                variant={isCustomizing ? "default" : "outline"}
-                size="sm"
-                onClick={handleCustomizeMode}
-                className="gap-2"
-              >
-                {isCustomizing ? (
-                  <>
-                    <Settings className="h-4 w-4" />
-                    Done
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    Customize
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Customization Notice */}
-      {isCustomizing && (
-        <Card className="border-primary/20 bg-primary/5 shadow-soft">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Settings className="h-4 w-4 text-primary" />
+                <Button
+                  variant={isCustomizing ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleCustomizeMode}
+                  className="gap-2 hover:shadow-md transition-all duration-200"
+                >
+                  {isCustomizing ? (
+                    <>
+                      <Settings className="h-4 w-4" />
+                      Done
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Customize
+                    </>
+                  )}
+                </Button>
               </div>
-              <div>
-                <h4 className="font-medium text-primary">Customization Mode</h4>
-                <p className="text-sm text-muted-foreground">
-                  Drag and drop widgets to customize your dashboard layout.
-                </p>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Customization Notice */}
+        {isCustomizing && (
+          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10 shadow-lg backdrop-blur-sm">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Settings className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-primary text-lg">Customization Mode</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Drag and drop widgets to customize your dashboard layout.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Enhanced Dashboard Content */}
+        <div className={cn(
+          "transition-all duration-300",
+          viewMode === 'compact' && "space-y-6",
+          viewMode === 'expanded' && "space-y-8"
+        )}>
+          <EnhancedDashboardPresentation 
+            data={mockData}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {/* Quick Actions Footer */}
+        <Card className="border-0 shadow-xl bg-gradient-to-r from-muted/20 via-card to-muted/20 backdrop-blur-sm">
+          <CardContent className="py-6">
+            <div className="flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <TrendingUp className="h-4 w-4" />
+                Dashboard last updated: {new Date().toLocaleTimeString()}
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" className="gap-2 hover:bg-muted/50 transition-colors">
+                  <Users className="h-4 w-4" />
+                  View All Farmers
+                </Button>
+                <Button variant="ghost" size="sm" className="hover:bg-muted/50 transition-colors">
+                  Export Data
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {/* Enhanced Dashboard Content */}
-      <div className={cn(
-        "transition-all duration-300",
-        viewMode === 'compact' && "space-y-4",
-        viewMode === 'expanded' && "space-y-6"
-      )}>
-        <EnhancedDashboardPresentation 
-          data={mockData}
-          isLoading={isLoading}
-        />
       </div>
-
-      {/* Quick Actions Footer */}
-      <Card className="border-0 shadow-soft bg-gradient-to-r from-muted/20 to-card">
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <TrendingUp className="h-4 w-4" />
-              Dashboard last updated: {new Date().toLocaleTimeString()}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <Users className="h-4 w-4" />
-                View All Farmers
-              </Button>
-              <Button variant="ghost" size="sm">
-                Export Data
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
