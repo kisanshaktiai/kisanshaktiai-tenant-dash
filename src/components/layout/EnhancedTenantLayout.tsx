@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -88,7 +88,7 @@ const TenantSidebar = () => {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const isCollapsed = state === 'collapsed';
 
   const isActive = (path: string) => location.pathname === path;
@@ -176,7 +176,7 @@ const TenantSidebar = () => {
 
 const TopBar = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, switchTenant } = useTenantContext();
+  const { currentTenant, userTenants, switchTenant } = useTenantContextOptimized();
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [notifications] = useState(3); // Mock notification count
@@ -298,7 +298,7 @@ const TopBar = () => {
 };
 
 export const EnhancedTenantLayout: React.FC = () => {
-  const { currentTenant, loading } = useTenantContext();
+  const { currentTenant, loading } = useTenantContextOptimized();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
