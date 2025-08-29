@@ -16,14 +16,14 @@ export interface Campaign {
   spent_budget: number;
   target_audience_size: number;
   channels: string[];
-  content_config: Record<string, any>;
-  personalization_config: Record<string, any>;
+  content_config: any;
+  personalization_config: any;
   is_automated: boolean;
-  automation_config: Record<string, any>;
-  trigger_config: Record<string, any>;
-  ab_testing_config: Record<string, any>;
+  automation_config: any;
+  trigger_config: any;
+  ab_testing_config: any;
   tags: string[];
-  metadata: Record<string, any>;
+  metadata: any;
   created_by?: string;
   created_at: string;
   updated_at: string;
@@ -35,12 +35,12 @@ export interface CampaignSegment {
   name: string;
   description?: string;
   segment_type: string;
-  criteria: Record<string, any>;
+  criteria: any;
   logic_operator: 'AND' | 'OR';
-  geographic_filters: Record<string, any>;
-  behavioral_filters: Record<string, any>;
-  crop_filters: Record<string, any>;
-  exclusion_rules: Record<string, any>;
+  geographic_filters: any;
+  behavioral_filters: any;
+  crop_filters: any;
+  exclusion_rules: any;
   estimated_size: number;
   last_calculated_at?: string;
   is_active: boolean;
@@ -56,10 +56,10 @@ export interface CampaignTemplate {
   description?: string;
   template_type: string;
   category?: string;
-  content: Record<string, any>;
-  layout_config: Record<string, any>;
-  style_config: Record<string, any>;
-  language_versions: Record<string, any>;
+  content: any;
+  layout_config: any;
+  style_config: any;
+  language_versions: any;
   default_language: string;
   usage_count: number;
   performance_score?: number;
@@ -76,8 +76,8 @@ export interface CampaignExecution {
   tenant_id: string;
   farmer_id?: string;
   channel: string;
-  message_content?: Record<string, any>;
-  personalized_content?: Record<string, any>;
+  message_content?: any;
+  personalized_content?: any;
   status: 'pending' | 'sent' | 'delivered' | 'read' | 'clicked' | 'converted' | 'failed' | 'bounced';
   sent_at?: string;
   delivered_at?: string;
@@ -88,7 +88,7 @@ export interface CampaignExecution {
   conversion_value?: number;
   error_message?: string;
   retry_count: number;
-  metadata: Record<string, any>;
+  metadata: any;
   created_at: string;
   updated_at: string;
 }
@@ -125,9 +125,9 @@ export interface CampaignAutomation {
   name: string;
   description?: string;
   automation_type: 'trigger_based' | 'drip_sequence' | 'event_based' | 'seasonal' | 'follow_up' | 'response_based';
-  trigger_conditions: Record<string, any>;
+  trigger_conditions: any;
   workflow_steps: any[];
-  timing_config: Record<string, any>;
+  timing_config: any;
   is_active: boolean;
   total_executions: number;
   success_rate?: number;
@@ -152,7 +152,17 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(campaign => ({
+      ...campaign,
+      channels: Array.isArray(campaign.channels) ? campaign.channels : [],
+      content_config: campaign.content_config || {},
+      personalization_config: campaign.personalization_config || {},
+      automation_config: campaign.automation_config || {},
+      trigger_config: campaign.trigger_config || {},
+      ab_testing_config: campaign.ab_testing_config || {},
+      tags: Array.isArray(campaign.tags) ? campaign.tags : [],
+      metadata: campaign.metadata || {}
+    })) as Campaign[];
   }
 
   async getCampaignById(id: string): Promise<Campaign | null> {
@@ -165,36 +175,94 @@ class CampaignService {
       .single();
 
     if (error) throw error;
-    return data;
+    if (!data) return null;
+    
+    return {
+      ...data,
+      channels: Array.isArray(data.channels) ? data.channels : [],
+      content_config: data.content_config || {},
+      personalization_config: data.personalization_config || {},
+      automation_config: data.automation_config || {},
+      trigger_config: data.trigger_config || {},
+      ab_testing_config: data.ab_testing_config || {},
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      metadata: data.metadata || {}
+    } as Campaign;
   }
 
   async createCampaign(campaignData: Partial<Campaign>): Promise<Campaign> {
     const tenantId = this.getTenantId();
+    
+    // Ensure required fields are present
+    if (!campaignData.name || !campaignData.campaign_type) {
+      throw new Error('Campaign name and type are required');
+    }
+
+    const insertData = {
+      name: campaignData.name,
+      description: campaignData.description,
+      campaign_type: campaignData.campaign_type,
+      status: campaignData.status || 'draft',
+      start_date: campaignData.start_date,
+      end_date: campaignData.end_date,
+      timezone: campaignData.timezone || 'UTC',
+      total_budget: campaignData.total_budget,
+      spent_budget: campaignData.spent_budget || 0,
+      target_audience_size: campaignData.target_audience_size || 0,
+      channels: campaignData.channels || [],
+      content_config: campaignData.content_config || {},
+      personalization_config: campaignData.personalization_config || {},
+      is_automated: campaignData.is_automated || false,
+      automation_config: campaignData.automation_config || {},
+      trigger_config: campaignData.trigger_config || {},
+      ab_testing_config: campaignData.ab_testing_config || {},
+      tags: campaignData.tags || [],
+      metadata: campaignData.metadata || {},
+      created_by: campaignData.created_by
+    };
+
     const { data, error } = await supabase
       .from('campaigns')
-      .insert({
-        ...campaignData,
-        tenant_id: tenantId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformCampaignData(data);
   }
 
   async updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign> {
     const tenantId = this.getTenantId();
     const { data, error } = await supabase
       .from('campaigns')
-      .update(updates)
+      .update({
+        name: updates.name,
+        description: updates.description,
+        campaign_type: updates.campaign_type,
+        status: updates.status,
+        start_date: updates.start_date,
+        end_date: updates.end_date,
+        timezone: updates.timezone,
+        total_budget: updates.total_budget,
+        spent_budget: updates.spent_budget,
+        target_audience_size: updates.target_audience_size,
+        channels: updates.channels,
+        content_config: updates.content_config,
+        personalization_config: updates.personalization_config,
+        is_automated: updates.is_automated,
+        automation_config: updates.automation_config,
+        trigger_config: updates.trigger_config,
+        ab_testing_config: updates.ab_testing_config,
+        tags: updates.tags,
+        metadata: updates.metadata
+      })
       .eq('id', id)
       .eq('tenant_id', tenantId)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformCampaignData(data);
   }
 
   async deleteCampaign(id: string): Promise<void> {
@@ -219,22 +287,46 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(segment => ({
+      ...segment,
+      criteria: segment.criteria || {},
+      geographic_filters: segment.geographic_filters || {},
+      behavioral_filters: segment.behavioral_filters || {},
+      crop_filters: segment.crop_filters || {},
+      exclusion_rules: segment.exclusion_rules || {}
+    })) as CampaignSegment[];
   }
 
   async createSegment(segmentData: Partial<CampaignSegment>): Promise<CampaignSegment> {
     const tenantId = this.getTenantId();
+    
+    if (!segmentData.name) {
+      throw new Error('Segment name is required');
+    }
+
+    const insertData = {
+      name: segmentData.name,
+      description: segmentData.description,
+      segment_type: segmentData.segment_type || 'custom',
+      criteria: segmentData.criteria || {},
+      logic_operator: segmentData.logic_operator || 'AND',
+      geographic_filters: segmentData.geographic_filters || {},
+      behavioral_filters: segmentData.behavioral_filters || {},
+      crop_filters: segmentData.crop_filters || {},
+      exclusion_rules: segmentData.exclusion_rules || {},
+      estimated_size: segmentData.estimated_size || 0,
+      is_active: segmentData.is_active !== false,
+      created_by: segmentData.created_by
+    };
+
     const { data, error } = await supabase
       .from('campaign_segments')
-      .insert({
-        ...segmentData,
-        tenant_id: tenantId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformSegmentData(data);
   }
 
   async calculateSegmentSize(criteria: Record<string, any>): Promise<number> {
@@ -259,22 +351,47 @@ class CampaignService {
     const { data, error } = await query.order('usage_count', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(template => ({
+      ...template,
+      content: template.content || {},
+      layout_config: template.layout_config || {},
+      style_config: template.style_config || {},
+      language_versions: template.language_versions || {}
+    })) as CampaignTemplate[];
   }
 
   async createTemplate(templateData: Partial<CampaignTemplate>): Promise<CampaignTemplate> {
     const tenantId = this.getTenantId();
+    
+    if (!templateData.name || !templateData.template_type) {
+      throw new Error('Template name and type are required');
+    }
+
+    const insertData = {
+      name: templateData.name,
+      description: templateData.description,
+      template_type: templateData.template_type,
+      category: templateData.category,
+      content: templateData.content || {},
+      layout_config: templateData.layout_config || {},
+      style_config: templateData.style_config || {},
+      language_versions: templateData.language_versions || {},
+      default_language: templateData.default_language || 'en',
+      usage_count: templateData.usage_count || 0,
+      performance_score: templateData.performance_score,
+      is_public: templateData.is_public || false,
+      is_active: templateData.is_active !== false,
+      created_by: templateData.created_by
+    };
+
     const { data, error } = await supabase
       .from('campaign_templates')
-      .insert({
-        ...templateData,
-        tenant_id: tenantId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformTemplateData(data);
   }
 
   // Campaign execution
@@ -288,7 +405,12 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(execution => ({
+      ...execution,
+      message_content: execution.message_content || {},
+      personalized_content: execution.personalized_content || {},
+      metadata: execution.metadata || {}
+    })) as CampaignExecution[];
   }
 
   async executeCampaign(campaignId: string): Promise<void> {
@@ -355,7 +477,7 @@ class CampaignService {
   }
 
   private getChannelBreakdown(analytics: CampaignAnalytics[]) {
-    const channels = {};
+    const channels: any = {};
     analytics.forEach(a => {
       if (!channels[a.channel]) {
         channels[a.channel] = {
@@ -383,22 +505,42 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map(automation => ({
+      ...automation,
+      trigger_conditions: automation.trigger_conditions || {},
+      workflow_steps: Array.isArray(automation.workflow_steps) ? automation.workflow_steps : [],
+      timing_config: automation.timing_config || {}
+    })) as CampaignAutomation[];
   }
 
   async createAutomation(automationData: Partial<CampaignAutomation>): Promise<CampaignAutomation> {
     const tenantId = this.getTenantId();
+    
+    if (!automationData.name || !automationData.automation_type) {
+      throw new Error('Automation name and type are required');
+    }
+
+    const insertData = {
+      name: automationData.name,
+      description: automationData.description,
+      automation_type: automationData.automation_type,
+      trigger_conditions: automationData.trigger_conditions || {},
+      workflow_steps: automationData.workflow_steps || [],
+      timing_config: automationData.timing_config || {},
+      is_active: automationData.is_active !== false,
+      total_executions: automationData.total_executions || 0,
+      success_rate: automationData.success_rate,
+      created_by: automationData.created_by
+    };
+
     const { data, error } = await supabase
       .from('campaign_automations')
-      .insert({
-        ...automationData,
-        tenant_id: tenantId,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformAutomationData(data);
   }
 
   async toggleAutomation(id: string, isActive: boolean): Promise<void> {
@@ -410,6 +552,51 @@ class CampaignService {
       .eq('tenant_id', tenantId);
 
     if (error) throw error;
+  }
+
+  // Helper methods to transform data
+  private transformCampaignData(data: any): Campaign {
+    return {
+      ...data,
+      channels: Array.isArray(data.channels) ? data.channels : [],
+      content_config: data.content_config || {},
+      personalization_config: data.personalization_config || {},
+      automation_config: data.automation_config || {},
+      trigger_config: data.trigger_config || {},
+      ab_testing_config: data.ab_testing_config || {},
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      metadata: data.metadata || {}
+    };
+  }
+
+  private transformSegmentData(data: any): CampaignSegment {
+    return {
+      ...data,
+      criteria: data.criteria || {},
+      geographic_filters: data.geographic_filters || {},
+      behavioral_filters: data.behavioral_filters || {},
+      crop_filters: data.crop_filters || {},
+      exclusion_rules: data.exclusion_rules || {}
+    };
+  }
+
+  private transformTemplateData(data: any): CampaignTemplate {
+    return {
+      ...data,
+      content: data.content || {},
+      layout_config: data.layout_config || {},
+      style_config: data.style_config || {},
+      language_versions: data.language_versions || {}
+    };
+  }
+
+  private transformAutomationData(data: any): CampaignAutomation {
+    return {
+      ...data,
+      trigger_conditions: data.trigger_conditions || {},
+      workflow_steps: Array.isArray(data.workflow_steps) ? data.workflow_steps : [],
+      timing_config: data.timing_config || {}
+    };
   }
 }
 
