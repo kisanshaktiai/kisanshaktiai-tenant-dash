@@ -14,19 +14,16 @@ export const useDashboardQuery = () => {
         console.warn('useDashboardQuery: No tenant available, returning empty data');
         return {
           farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
-          lands: { total: 0, totalAcres: 0 },
+          campaigns: { active: 0, total: 0 },
           products: { total: 0, categories: 0, out_of_stock: 0 },
-          dealers: { total: 0, active: 0, performance: 0 },
-          analytics: { revenue: 0, growth: 0, satisfaction: 0 },
-          recentActivity: [],
-          upcomingTasks: []
+          dealers: { total: 0, active: 0 },
         };
       }
       
       console.log('useDashboardQuery: Fetching dashboard data for tenant:', currentTenant.id);
       
       try {
-        const data = await dashboardService.getDashboardData(currentTenant.id);
+        const data = await dashboardService.getDashboardStats(currentTenant.id);
         console.log('useDashboardQuery: Successfully fetched data:', data);
         return data;
       } catch (error) {
@@ -34,12 +31,9 @@ export const useDashboardQuery = () => {
         // Return empty data instead of throwing
         return {
           farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
-          lands: { total: 0, totalAcres: 0 },
+          campaigns: { active: 0, total: 0 },
           products: { total: 0, categories: 0, out_of_stock: 0 },
-          dealers: { total: 0, active: 0, performance: 0 },
-          analytics: { revenue: 0, growth: 0, satisfaction: 0 },
-          recentActivity: [],
-          upcomingTasks: []
+          dealers: { total: 0, active: 0 },
         };
       }
     },
