@@ -11,14 +11,14 @@ import { CampaignSchedule } from './wizard/CampaignSchedule';
 import { CampaignReview } from './wizard/CampaignReview';
 
 interface CampaignWizardProps {
-  isOpen: boolean;
   onClose: () => void;
+  onSave: () => Promise<void>;
   campaignId?: string;
 }
 
 export const CampaignWizard: React.FC<CampaignWizardProps> = ({
-  isOpen,
   onClose,
+  onSave,
   campaignId,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -75,20 +75,25 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({
     }));
   };
 
-  const handleSave = async (status: 'draft' | 'scheduled') => {
+  const handleSaveCampaign = async (status: 'draft' | 'scheduled') => {
     try {
       // Save campaign logic here
       console.log('Saving campaign:', { ...campaignData, status });
+      await onSave();
       onClose();
     } catch (error) {
       console.error('Error saving campaign:', error);
     }
   };
 
-  const CurrentStepComponent = steps[currentStep].component;
+  const CurrentStepComponent = steps[currentStep]?.component;
+
+  if (!CurrentStepComponent) {
+    return null;
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
@@ -135,13 +140,13 @@ export const CampaignWizard: React.FC<CampaignWizardProps> = ({
             </Button>
 
             <div className="space-x-2">
-              <Button variant="outline" onClick={() => handleSave('draft')}>
+              <Button variant="outline" onClick={() => handleSaveCampaign('draft')}>
                 <Save className="w-4 h-4 mr-2" />
                 Save Draft
               </Button>
 
               {currentStep === steps.length - 1 ? (
-                <Button onClick={() => handleSave('scheduled')}>
+                <Button onClick={() => handleSaveCampaign('scheduled')}>
                   Create Campaign
                 </Button>
               ) : (

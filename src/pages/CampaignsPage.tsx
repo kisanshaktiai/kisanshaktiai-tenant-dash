@@ -54,7 +54,7 @@ const CampaignsPage = () => {
         id: campaign.id,
         name: campaign.name || campaign.title || 'Untitled Campaign',
         status: campaign.status || 'draft',
-        type: campaign.campaign_type || campaign.type || 'promotional',
+        type: campaign.campaign_type || 'promotional',
         target_audience: campaign.target_audience || 'All farmers',
         start_date: campaign.start_date || campaign.created_at,
         end_date: campaign.end_date || campaign.created_at,
