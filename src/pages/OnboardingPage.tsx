@@ -2,6 +2,9 @@
 import React from 'react';
 import OnboardingPageComponent from './onboarding/OnboardingPage';
 
-export const OnboardingPage = () => {
+const OnboardingPage = () => {
   return <OnboardingPageComponent />;
 };
+
+export default OnboardingPage;
+export { OnboardingPage };

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const AcceptInvitationPage = () => {
+const AcceptInvitationPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
@@ -21,3 +21,6 @@ export const AcceptInvitationPage = () => {
     </div>
   );
 };
+
+export default AcceptInvitationPage;
+export { AcceptInvitationPage };

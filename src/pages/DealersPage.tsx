@@ -2,6 +2,9 @@
 import React from 'react';
 import { DealersPageContainer } from '@/components/dealers/containers/DealersPageContainer';
 
-export const DealersPage = () => {
+const DealersPage = () => {
   return <DealersPageContainer />;
 };
+
+export default DealersPage;
+export { DealersPage };

@@ -4,25 +4,25 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from '@/components/ErrorFallback';
+import ErrorFallback from '@/components/ErrorFallback';
 import { Layout } from '@/components/layout/Layout';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
-import DashboardPageComponent from '@/pages/DashboardPage';
-import FarmersPageComponent from '@/pages/FarmersPage';
-import ProductsPageComponent from '@/pages/ProductsPage';
-import DealersPageComponent from '@/pages/DealersPage';
+import { DashboardPage } from '@/pages/DashboardPage';
+import { FarmersPage } from '@/pages/FarmersPage';
+import { ProductsPage } from '@/pages/ProductsPage';
+import { DealersPage } from '@/pages/DealersPage';
 import CampaignsPage from '@/pages/CampaignsPage';
-import AnalyticsPageComponent from '@/pages/AnalyticsPage';
-import IntegrationsPageComponent from '@/pages/IntegrationsPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { IntegrationsPage } from '@/pages/IntegrationsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
-import OrganizationSettingsPageComponent from '@/pages/OrganizationSettingsPage';
-import UserManagementPageComponent from '@/pages/UserManagementPage';
-import SubscriptionPageComponent from '@/pages/SubscriptionPage';
-import OnboardingPageComponent from '@/pages/OnboardingPage';
-import TenantRegistrationPageComponent from '@/pages/TenantRegistrationPage';
-import AcceptInvitationPageComponent from '@/pages/AcceptInvitationPage';
-import SetupPasswordPageComponent from '@/pages/SetupPasswordPage';
+import { OrganizationSettingsPage } from '@/pages/OrganizationSettingsPage';
+import { UserManagementPage } from '@/pages/UserManagementPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { OnboardingPage } from '@/pages/OnboardingPage';
+import { TenantRegistrationPage } from '@/pages/TenantRegistrationPage';
+import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
+import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
@@ -63,31 +63,31 @@ const App: React.FC = () => {
         <Router>
           <Routes>
             {/* Public routes that don't need tenant context */}
-            <Route path="/register-tenant" element={<TenantRegistrationPageComponent />} />
-            <Route path="/accept-invitation" element={<AcceptInvitationPageComponent />} />
-            <Route path="/setup-password" element={<SetupPasswordPageComponent />} />
+            <Route path="/register-tenant" element={<TenantRegistrationPage />} />
+            <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+            <Route path="/setup-password" element={<SetupPasswordPage />} />
             
             {/* Protected routes with tenant context */}
-            <Route path="/onboarding" element={<OnboardingPageComponent />} />
+            <Route path="/onboarding" element={<OnboardingPage />} />
             
             {/* Main app routes - wrapped with EnhancedTenantLayout */}
             <Route path="/*" element={
               <EnhancedTenantLayout>
                 <Routes>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPageComponent />} />
-                  <Route path="/farmers" element={<FarmersPageComponent />} />
-                  <Route path="/products" element={<ProductsPageComponent />} />
-                  <Route path="/dealers" element={<DealersPageComponent />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
+                  <Route path="/farmers" element={<FarmersPage />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/dealers" element={<DealersPage />} />
                   <Route path="/campaigns" element={<CampaignsPage />} />
-                  <Route path="/analytics" element={<AnalyticsPageComponent />} />
-                  <Route path="/integrations" element={<IntegrationsPageComponent />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/integrations" element={<IntegrationsPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/settings/organization" element={<OrganizationSettingsPageComponent />} />
-                  <Route path="/settings/users" element={<UserManagementPageComponent />} />
+                  <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
+                  <Route path="/settings/users" element={<UserManagementPage />} />
                   <Route path="/settings/invitations" element={<UserInvitationsPage />} />
-                  <Route path="/subscription" element={<SubscriptionPageComponent />} />
+                  <Route path="/subscription" element={<SubscriptionPage />} />
                 </Routes>
               </EnhancedTenantLayout>
             } />
