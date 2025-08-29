@@ -9,21 +9,21 @@ import ErrorFallback from '@/components/ErrorFallback';
 import { Layout } from '@/components/layout/Layout';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 import Dashboard from '@/pages/Dashboard';
-import FarmersPage from '@/pages/FarmersPage';
-import ProductsPage from '@/pages/ProductsPage';
-import DealersPage from '@/pages/DealersPage';
-import CampaignsPage from '@/pages/CampaignsPage';
-import AnalyticsPage from '@/pages/AnalyticsPage';
-import IntegrationsPage from '@/pages/IntegrationsPage';
+import { FarmersPage } from '@/pages/FarmersPage';
+import { ProductsPage } from '@/pages/ProductsPage';
+import { DealersPage } from '@/pages/DealersPage';
+import { CampaignsPage } from '@/pages/CampaignsPage';
+import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { IntegrationsPage } from '@/pages/IntegrationsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
-import SettingsPage from '@/pages/SettingsPage';
-import OrganizationSettingsPage from '@/pages/OrganizationSettingsPage';
-import UserManagementPage from '@/pages/UserManagementPage';
-import SubscriptionPage from '@/pages/SubscriptionPage';
-import OnboardingPage from '@/pages/OnboardingPage';
-import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
-import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
-import SetupPasswordPage from '@/pages/SetupPasswordPage';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { OrganizationSettingsPage } from '@/pages/OrganizationSettingsPage';
+import { UserManagementPage } from '@/pages/UserManagementPage';
+import { SubscriptionPage } from '@/pages/SubscriptionPage';
+import { OnboardingPage } from '@/pages/OnboardingPage';
+import { TenantRegistrationPage } from '@/pages/TenantRegistrationPage';
+import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
+import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
@@ -49,7 +49,7 @@ const App = () => {
           <Router>
             <Routes>
               {/* Public routes */}
-              <Route path="/auth/*" element={<Layout />} />
+              <Route path="/auth/*" element={<Layout><div /></Layout>} />
               <Route path="/register-tenant" element={<TenantRegistrationPage />} />
               <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route path="/setup-password" element={<SetupPasswordPage />} />

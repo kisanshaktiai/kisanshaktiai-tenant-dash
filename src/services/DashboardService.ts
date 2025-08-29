@@ -52,11 +52,11 @@ class DashboardService {
       const dashboardData = {
         farmers: {
           total: farmers.length,
-          active: farmers.filter(f => f.is_verified).length || farmers.length,
+          active: farmers.filter(f => f.phone_verified).length || farmers.length,
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.farmer_code || farmer.full_name || 'Unknown Farmer',
+            name: farmer.farmer_code || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -66,8 +66,8 @@ class DashboardService {
         },
         products: {
           total: products.length,
-          categories: [...new Set(products.map(p => p.category || p.name?.split(' ')[0]).filter(Boolean))].length,
-          out_of_stock: 0 // We don't have stock info, so default to 0
+          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
+          out_of_stock: products.filter(p => p.stock_quantity === 0).length
         },
         dealers: {
           total: dealers.length,
@@ -112,7 +112,7 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, farmer_code, full_name, created_at, is_verified')
+      .select('id, farmer_code, created_at, phone_verified')
       .eq('tenant_id', tenantId);
 
     if (error) {
@@ -138,7 +138,7 @@ class DashboardService {
   private async getProductsCount(tenantId: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('id, name, category')
+      .select('id, name, stock_quantity')
       .eq('tenant_id', tenantId);
 
     if (error) {
