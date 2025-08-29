@@ -5,6 +5,10 @@ class DashboardService {
   async getDashboardData(tenantId: string) {
     console.log('DashboardService: Fetching dashboard data for tenant:', tenantId);
     
+    if (!tenantId) {
+      throw new Error('Tenant ID is required');
+    }
+    
     try {
       const [
         farmersResult,
@@ -38,7 +42,7 @@ class DashboardService {
         console.error('DashboardService: Error fetching dealers:', dealersResult.reason);
       }
 
-      // Calculate some recent farmers (last 7 days)
+      // Calculate some recent farmers (last 7 days) safely
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
       const newFarmersThisWeek = farmers.filter(farmer => 
@@ -48,11 +52,11 @@ class DashboardService {
       const dashboardData = {
         farmers: {
           total: farmers.length,
-          active: farmers.length, // Since we don't have is_active, assume all are active
+          active: farmers.filter(f => f.is_verified).length || farmers.length,
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.farmer_code || 'Unknown Farmer', // Use farmer_code as name fallback
+            name: farmer.farmer_code || farmer.full_name || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -62,19 +66,30 @@ class DashboardService {
         },
         products: {
           total: products.length,
-          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
+          categories: [...new Set(products.map(p => p.category || p.name?.split(' ')[0]).filter(Boolean))].length,
           out_of_stock: 0 // We don't have stock info, so default to 0
         },
         dealers: {
           total: dealers.length,
-          active: dealers.filter(d => d.is_active).length,
+          active: dealers.filter(d => d.is_active !== false).length,
           performance: 92 // Mock performance score
         },
         analytics: {
           revenue: 0, // Mock data
           growth: 15.2, // Mock growth percentage
           satisfaction: 94 // Mock satisfaction score
-        }
+        },
+        // Add mock activity and tasks for presentation
+        recentActivity: [
+          { id: 1, message: 'New farmer registered from Karnataka', time: '2 hours ago' },
+          { id: 2, message: 'Bulk product order completed', time: '4 hours ago' },
+          { id: 3, message: 'Campaign engagement report generated', time: '6 hours ago' }
+        ],
+        upcomingTasks: [
+          { id: 1, title: 'Review farmer applications', description: 'Process pending farmer registrations', dueDate: 'Today', priority: 'high' },
+          { id: 2, title: 'Update product catalog', description: 'Add new seasonal products', dueDate: 'Tomorrow', priority: 'medium' },
+          { id: 3, title: 'Generate monthly report', description: 'Compile analytics for stakeholders', dueDate: 'Next week', priority: 'low' }
+        ]
       };
 
       console.log('DashboardService: Dashboard data prepared:', dashboardData);
@@ -87,7 +102,9 @@ class DashboardService {
         lands: { total: 0, totalAcres: 0 },
         products: { total: 0, categories: 0, out_of_stock: 0 },
         dealers: { total: 0, active: 0, performance: 0 },
-        analytics: { revenue: 0, growth: 0, satisfaction: 0 }
+        analytics: { revenue: 0, growth: 0, satisfaction: 0 },
+        recentActivity: [],
+        upcomingTasks: []
       };
     }
   }
@@ -95,10 +112,13 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, farmer_code, created_at')
+      .select('id, farmer_code, full_name, created_at, is_verified')
       .eq('tenant_id', tenantId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching farmers:', error);
+      throw error;
+    }
     return data || [];
   }
 
@@ -108,17 +128,23 @@ class DashboardService {
       .select('id, area_acres')
       .eq('tenant_id', tenantId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching lands:', error);
+      throw error;
+    }
     return data || [];
   }
 
   private async getProductsCount(tenantId: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('id, name')
+      .select('id, name, category')
       .eq('tenant_id', tenantId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching products:', error);
+      throw error;
+    }
     return data || [];
   }
 
@@ -128,7 +154,10 @@ class DashboardService {
       .select('id, is_active')
       .eq('tenant_id', tenantId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching dealers:', error);
+      throw error;
+    }
     return data || [];
   }
 }

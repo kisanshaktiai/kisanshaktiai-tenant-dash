@@ -10,9 +10,19 @@ export const useDashboardQuery = () => {
   return useQuery({
     queryKey: queryKeys.dashboardStats(currentTenant?.id || ''),
     queryFn: async () => {
-      if (!currentTenant) {
-        throw new Error('No tenant selected');
+      if (!currentTenant?.id) {
+        console.warn('useDashboardQuery: No tenant available, returning empty data');
+        return {
+          farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
+          lands: { total: 0, totalAcres: 0 },
+          products: { total: 0, categories: 0, out_of_stock: 0 },
+          dealers: { total: 0, active: 0, performance: 0 },
+          analytics: { revenue: 0, growth: 0, satisfaction: 0 },
+          recentActivity: [],
+          upcomingTasks: []
+        };
       }
+      
       console.log('useDashboardQuery: Fetching dashboard data for tenant:', currentTenant.id);
       
       try {
@@ -21,15 +31,24 @@ export const useDashboardQuery = () => {
         return data;
       } catch (error) {
         console.error('useDashboardQuery: Error fetching dashboard data:', error);
-        throw error;
+        // Return empty data instead of throwing
+        return {
+          farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
+          lands: { total: 0, totalAcres: 0 },
+          products: { total: 0, categories: 0, out_of_stock: 0 },
+          dealers: { total: 0, active: 0, performance: 0 },
+          analytics: { revenue: 0, growth: 0, satisfaction: 0 },
+          recentActivity: [],
+          upcomingTasks: []
+        };
       }
     },
-    enabled: !!currentTenant,
+    enabled: true, // Always enabled, but will return empty data if no tenant
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error: any) => {
       // Don't retry if it's a tenant-related error
-      if (error?.message?.includes('No tenant')) {
+      if (error?.message?.includes('No tenant') || error?.message?.includes('Tenant ID is required')) {
         return false;
       }
       return failureCount < 2;

@@ -13,7 +13,8 @@ export const useTenantRealtime = () => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
-    if (!currentTenant) {
+    if (!currentTenant?.id) {
+      console.log('useTenantRealtime: No tenant available, skipping realtime setup');
       setIsConnected(false);
       return;
     }
@@ -42,6 +43,9 @@ export const useTenantRealtime = () => {
             queryClient.invalidateQueries({ 
               queryKey: queryKeys.farmerStats(currentTenant.id)
             });
+            queryClient.invalidateQueries({ 
+              queryKey: queryKeys.dashboardStats(currentTenant.id)
+            });
           }
         );
 
@@ -63,6 +67,9 @@ export const useTenantRealtime = () => {
             queryClient.invalidateQueries({ 
               queryKey: queryKeys.dealers(currentTenant.id)
             });
+            queryClient.invalidateQueries({ 
+              queryKey: queryKeys.dashboardStats(currentTenant.id)
+            });
           }
         );
 
@@ -83,6 +90,9 @@ export const useTenantRealtime = () => {
             
             queryClient.invalidateQueries({ 
               queryKey: queryKeys.products(currentTenant.id)
+            });
+            queryClient.invalidateQueries({ 
+              queryKey: queryKeys.dashboardStats(currentTenant.id)
             });
           }
         );

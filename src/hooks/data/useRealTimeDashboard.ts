@@ -7,7 +7,10 @@ export const useRealTimeDashboard = () => {
   const { isConnected, activeChannels, lastUpdate } = useTenantRealtime();
 
   return {
-    ...dashboardQuery,
+    data: dashboardQuery.data,
+    isLoading: dashboardQuery.isLoading,
+    error: dashboardQuery.error,
+    refetch: dashboardQuery.refetch,
     isLive: isConnected,
     activeChannels,
     lastUpdate

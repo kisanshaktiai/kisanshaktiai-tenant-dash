@@ -1,13 +1,14 @@
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from 'react-error-boundary';
+import { TenantProvider } from '@/contexts/TenantContext';
 import ErrorFallback from '@/components/ErrorFallback';
 import { Layout } from '@/components/layout/Layout';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
-import DashboardPage from '@/pages/DashboardPage';
+import Dashboard from '@/pages/Dashboard';
 import FarmersPage from '@/pages/FarmersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import DealersPage from '@/pages/DealersPage';
@@ -26,71 +27,59 @@ import SetupPasswordPage from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
-import { TenantProvider } from '@/contexts/TenantContext';
-import { supabase } from '@/integrations/supabase/client';
+import { queryClient } from '@/lib/queryClient';
 
-const App: React.FC = () => {
-  const { user, loading } = useAuth();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+const App = () => {
+  const { loading: authLoading } = useAuth();
+  const { currentTenant, loading: tenantLoading } = useAppSelector((state) => state.tenant);
 
-  if (loading) {
+  // Show loading state while auth is initializing
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="w-full max-w-md p-6">
-            <Auth
-              supabaseClient={supabase}
-              appearance={{ theme: ThemeSupa }}
-              providers={['google']}
-            />
-          </div>
-        </div>
-      </ErrorBoundary>
-    );
-  }
-
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <QueryClientProvider client={queryClient}>
       <TenantProvider>
-        <Router>
-          <Routes>
-            {/* Public routes that don't need tenant context */}
-            <Route path="/register-tenant" element={<TenantRegistrationPage />} />
-            <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
-            <Route path="/setup-password" element={<SetupPasswordPage />} />
-            
-            {/* Protected routes with tenant context */}
-            <Route path="/onboarding" element={<OnboardingPage />} />
-            
-            {/* Main app routes - using EnhancedTenantLayout as a route element */}
-            <Route path="/" element={<EnhancedTenantLayout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="farmers" element={<FarmersPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="dealers" element={<DealersPage />} />
-              <Route path="campaigns" element={<CampaignsPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="settings/organization" element={<OrganizationSettingsPage />} />
-              <Route path="settings/users" element={<UserManagementPage />} />
-              <Route path="settings/invitations" element={<UserInvitationsPage />} />
-              <Route path="subscription" element={<SubscriptionPage />} />
-            </Route>
-          </Routes>
-        </Router>
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/auth/*" element={<Layout />} />
+              <Route path="/register-tenant" element={<TenantRegistrationPage />} />
+              <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+              <Route path="/setup-password" element={<SetupPasswordPage />} />
+              
+              {/* Protected routes with tenant context */}
+              <Route path="/onboarding" element={<OnboardingPage />} />
+              
+              {/* Main app routes - using EnhancedTenantLayout as a route element */}
+              <Route path="/" element={<EnhancedTenantLayout />}>
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="farmers" element={<FarmersPage />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="dealers" element={<DealersPage />} />
+                <Route path="campaigns" element={<CampaignsPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="integrations" element={<IntegrationsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="settings/organization" element={<OrganizationSettingsPage />} />
+                <Route path="settings/users" element={<UserManagementPage />} />
+                <Route path="settings/invitations" element={<UserInvitationsPage />} />
+                <Route path="subscription" element={<SubscriptionPage />} />
+              </Route>
+            </Routes>
+          </Router>
+        </ErrorBoundary>
       </TenantProvider>
-    </ErrorBoundary>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 };
 

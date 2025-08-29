@@ -33,6 +33,17 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
     );
   }
 
+  // Use safe defaults if data is not available
+  const safeStats = stats || {
+    farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
+    lands: { total: 0, totalAcres: 0 },
+    products: { total: 0, categories: 0, out_of_stock: 0 },
+    dealers: { total: 0, active: 0, performance: 0 },
+    analytics: { revenue: 0, growth: 0, satisfaction: 0 },
+    recentActivity: [],
+    upcomingTasks: []
+  };
+
   return (
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between mb-8">
@@ -57,13 +68,13 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{stats?.totalFarmers.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.farmers.total.toLocaleString()}</div>
             )}
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs px-2 py-1 bg-success/10 text-success border-success/20">
-                +{stats?.growthRate || 0}%
+                +{safeStats.farmers.new_this_week}
               </Badge>
-              <span className="text-xs text-muted-foreground">growth rate</span>
+              <span className="text-xs text-muted-foreground">this week</span>
             </div>
           </CardContent>
         </Card>
@@ -79,9 +90,11 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{stats?.activeLands.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.lands.total.toLocaleString()}</div>
             )}
-            <p className="text-xs text-muted-foreground">Currently registered</p>
+            <p className="text-xs text-muted-foreground">
+              {safeStats.lands.totalAcres.toLocaleString()} acres total
+            </p>
           </CardContent>
         </Card>
 
@@ -96,26 +109,30 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{stats?.totalProducts.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.products.total.toLocaleString()}</div>
             )}
-            <p className="text-xs text-muted-foreground">Available in catalog</p>
+            <p className="text-xs text-muted-foreground">
+              {safeStats.products.categories} categories
+            </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Pending Issues</CardTitle>
-            <div className="p-3 rounded-xl bg-gradient-to-br from-warning/10 to-warning/5 group-hover:from-warning/15 group-hover:to-warning/10 transition-all duration-300">
-              <AlertCircle className="h-5 w-5 text-warning" />
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Active Dealers</CardTitle>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-success/5 group-hover:from-success/15 group-hover:to-success/10 transition-all duration-300">
+              <CheckCircle className="h-5 w-5 text-success" />
             </div>
           </CardHeader>
           <CardContent className="pb-6">
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-warning mb-2">{stats?.pendingIssues}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.dealers.active.toLocaleString()}</div>
             )}
-            <p className="text-xs text-muted-foreground">Require attention</p>
+            <p className="text-xs text-muted-foreground">
+              {safeStats.dealers.performance}% performance
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -142,8 +159,8 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
                   </div>
                 </div>
               ))
-            ) : (
-              stats?.recentActivity.map((activity: any) => (
+            ) : safeStats.recentActivity.length > 0 ? (
+              safeStats.recentActivity.map((activity: any) => (
                 <div key={activity.id} className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent hover:from-muted/40 hover:to-muted/10 transition-all duration-300">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                     <Users className="h-5 w-5 text-primary" />
@@ -154,6 +171,11 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No recent activity</p>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -179,8 +201,8 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
                   </div>
                 </div>
               ))
-            ) : (
-              stats?.upcomingTasks.map((task: any) => (
+            ) : safeStats.upcomingTasks.length > 0 ? (
+              safeStats.upcomingTasks.map((task: any) => (
                 <div key={task.id} className="flex items-start space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent hover:from-muted/40 hover:to-muted/10 transition-all duration-300">
                   <div className="mt-1">
                     {task.priority === 'high' ? (
@@ -215,6 +237,11 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
                   </div>
                 </div>
               ))
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No upcoming tasks</p>
+              </div>
             )}
           </CardContent>
         </Card>
