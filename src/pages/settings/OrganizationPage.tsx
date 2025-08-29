@@ -64,6 +64,7 @@ export const OrganizationPage: React.FC = () => {
                   <Label htmlFor="industry">Industry</Label>
                   <Input
                     id="industry"
+                    defaultValue={currentTenant?.type || ''}
                     placeholder="e.g., Agriculture, NGO, University"
                   />
                 </div>
@@ -100,6 +101,7 @@ export const OrganizationPage: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
+                    defaultValue={currentTenant?.owner_email || ''}
                     placeholder="contact@organization.com"
                   />
                 </div>
@@ -155,10 +157,22 @@ export const OrganizationPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Active Since</span>
+                  <span className="text-sm">Status</span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {new Date(currentTenant?.created_at || Date.now()).toLocaleDateString()}
+                <Badge 
+                  variant={currentTenant?.status === 'active' ? 'default' : 'secondary'}
+                  className="capitalize"
+                >
+                  {currentTenant?.status || 'Unknown'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Plan</span>
+                </div>
+                <span className="text-sm text-muted-foreground capitalize">
+                  {currentTenant?.subscription_plan || 'Free'}
                 </span>
               </div>
             </CardContent>
