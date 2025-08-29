@@ -7,5 +7,9 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  return <EnhancedTenantLayout>{children}</EnhancedTenantLayout>;
+  return (
+    <div className="min-h-screen bg-background">
+      {children}
+    </div>
+  );
 };
