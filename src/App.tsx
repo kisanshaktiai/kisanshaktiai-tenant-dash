@@ -3,13 +3,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAuth } from "@/hooks/useAuth";
+import { useSessionManager } from "@/hooks/useSessionManager";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { IntlProvider } from "@/components/providers/IntlProvider";
 import { OnboardingGuard } from "@/components/guards/OnboardingGuard";
-import { useAuth } from "@/hooks/useAuth";
-import { useSessionManager } from "@/hooks/useSessionManager";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -23,8 +21,16 @@ function App() {
   const { user, loading, initialized } = useAuth();
   const { isSessionActive } = useSessionManager();
 
+  console.log('App: Auth state:', { 
+    user: user?.email || 'No user', 
+    loading, 
+    initialized,
+    isSessionActive
+  });
+
   // Show loading while initializing auth
-  if (!initialized || loading) {
+  if (!initialized) {
+    console.log('App: Auth not initialized, showing loading');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -41,7 +47,16 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
+                <Route 
+                  path="/auth" 
+                  element={
+                    user && isSessionActive ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <Auth />
+                    )
+                  } 
+                />
                 <Route 
                   path="/dashboard" 
                   element={

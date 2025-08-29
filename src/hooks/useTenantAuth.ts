@@ -7,28 +7,29 @@ import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService'
 
 export const useTenantAuth = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, initialized: authInitialized } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants } = useAppSelector((state) => state.tenant);
   const [loading, setLoadingState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Use refs to track state and prevent loops
-  const hasUserRef = useRef(false);
-  const hasClearedSessionRef = useRef(false);
+  // Use refs to prevent multiple operations and track state
+  const hasUserRef = useRef<string | null>(null);
+  const hasClearedRef = useRef(false);
+  const isRefreshingRef = useRef(false);
 
   const refreshTenantData = async () => {
-    if (!user?.id) {
-      console.log('useTenantAuth: No user available for tenant data refresh');
+    if (!user?.id || isRefreshingRef.current) {
+      console.log('useTenantAuth: Cannot refresh - no user or already refreshing');
       return;
     }
 
     try {
+      isRefreshingRef.current = true;
       setLoadingState(true);
       dispatch(setLoading(true));
       
       console.log('useTenantAuth: Refreshing tenant data for user:', user.id);
 
-      // Fix the relationship query by using a more specific relationship name
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
@@ -56,11 +57,10 @@ export const useTenantAuth = () => {
         throw userTenantsError;
       }
 
-      // Transform the data to proper format with type safety
       const tenants = userTenantsData
         ?.filter(ut => ut.tenants && typeof ut.tenants === 'object')
         .map(ut => {
-          const tenantData = ut.tenants as any; // Safe cast since we filtered above
+          const tenantData = ut.tenants as any;
           return {
             ...tenantData,
             userRole: ut.role
@@ -71,13 +71,11 @@ export const useTenantAuth = () => {
 
       dispatch(setUserTenants(tenants));
 
-      // Set current tenant if not already set or if current one is invalid
       if (!currentTenant || !tenants.find(t => t.id === currentTenant.id)) {
         const firstTenant = tenants[0];
         if (firstTenant) {
           console.log('useTenantAuth: Setting current tenant:', firstTenant.id);
           
-          // Create proper Tenant object from the transformed data
           const tenantForState = {
             id: firstTenant.id,
             name: firstTenant.name,
@@ -100,28 +98,23 @@ export const useTenantAuth = () => {
       }
 
       setIsInitialized(true);
-      hasClearedSessionRef.current = false; // Reset the clear flag when we have data
+      hasClearedRef.current = false;
     } catch (error) {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
     } finally {
       setLoadingState(false);
       dispatch(setLoading(false));
+      isRefreshingRef.current = false;
     }
   };
 
   const switchTenant = async (tenantId: string) => {
     console.log('useTenantAuth: Switching to tenant:', tenantId);
     
-    // Find the tenant in the userTenants array (which contains properly transformed Tenant objects)
     const tenant = userTenants.find(t => t.id === tenantId);
     if (tenant) {
-      // Cast the tenant to Tenant type since userTenants contains transformed tenant objects
-      // that have all the required Tenant properties
       dispatch(setCurrentTenant(tenant as any));
-      
-      // Clear onboarding service cache when switching tenants
       enhancedOnboardingService.clearCache();
-      
       console.log('useTenantAuth: Successfully switched to tenant:', tenantId);
     } else {
       console.error('useTenantAuth: Tenant not found in user tenants:', tenantId);
@@ -129,37 +122,48 @@ export const useTenantAuth = () => {
   };
 
   const clearTenantSession = () => {
-    // Prevent multiple calls to clearTenantSession
-    if (hasClearedSessionRef.current) {
+    if (hasClearedRef.current) {
       console.log('useTenantAuth: Session already cleared, skipping');
       return;
     }
     
     console.log('useTenantAuth: Clearing tenant session');
-    hasClearedSessionRef.current = true;
+    hasClearedRef.current = true;
     dispatch(setCurrentTenant(null));
     dispatch(setUserTenants([]));
     setIsInitialized(false);
     enhancedOnboardingService.clearCache();
   };
 
-  // Handle user state changes
+  // Handle user state changes - only when auth is properly initialized
   useEffect(() => {
-    const currentHasUser = !!user?.id;
+    if (!authInitialized) {
+      console.log('useTenantAuth: Auth not initialized yet, waiting...');
+      return;
+    }
+
+    const currentUserId = user?.id || null;
+    const previousUserId = hasUserRef.current;
     
-    // Track if the user state has actually changed
-    if (hasUserRef.current !== currentHasUser) {
-      hasUserRef.current = currentHasUser;
+    console.log('useTenantAuth: User state change check:', {
+      currentUserId,
+      previousUserId,
+      hasChanged: currentUserId !== previousUserId
+    });
+    
+    // Only act if the user ID has actually changed
+    if (currentUserId !== previousUserId) {
+      hasUserRef.current = currentUserId;
       
-      if (currentHasUser && !isInitialized) {
-        console.log('useTenantAuth: User logged in, initializing tenant data for:', user.id);
+      if (currentUserId && !isInitialized) {
+        console.log('useTenantAuth: User logged in, initializing tenant data');
         refreshTenantData();
-      } else if (!currentHasUser) {
+      } else if (!currentUserId) {
         console.log('useTenantAuth: User logged out, clearing tenant session');
         clearTenantSession();
       }
     }
-  }, [user?.id]); // Only depend on user.id, not isInitialized to prevent loops
+  }, [user?.id, authInitialized]); // Only depend on user.id and authInitialized
 
   return {
     currentTenant,

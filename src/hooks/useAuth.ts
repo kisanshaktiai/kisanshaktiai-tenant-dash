@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSession, setLoading, setError, logout, clearError } from '@/store/slices/authSlice';
@@ -8,61 +8,75 @@ export const useAuth = () => {
   const dispatch = useAppDispatch();
   const { user, session, loading, initialized, error } = useAppSelector((state) => state.auth);
 
+  const handleAuthStateChange = useCallback((event: string, session: any) => {
+    console.log('useAuth: Auth state change event:', event);
+    console.log('useAuth: Session user:', session?.user?.email || 'No user');
+    
+    switch (event) {
+      case 'INITIAL_SESSION':
+        console.log('useAuth: Handling initial session');
+        dispatch(setSession(session));
+        dispatch(clearError());
+        break;
+      case 'SIGNED_IN':
+        console.log('useAuth: User signed in');
+        dispatch(setSession(session));
+        dispatch(clearError());
+        break;
+      case 'SIGNED_OUT':
+        console.log('useAuth: User signed out');
+        dispatch(logout());
+        dispatch(clearTenantData());
+        localStorage.removeItem('supabase.auth.token');
+        break;
+      case 'TOKEN_REFRESHED':
+        console.log('useAuth: Token refreshed');
+        dispatch(setSession(session));
+        break;
+      case 'USER_UPDATED':
+        console.log('useAuth: User updated');
+        dispatch(setSession(session));
+        break;
+      default:
+        console.log('useAuth: Unknown auth event:', event);
+        dispatch(setSession(session));
+    }
+  }, [dispatch]);
+
   useEffect(() => {
     let mounted = true;
+    console.log('useAuth: Initializing auth system');
 
     const initializeAuth = async () => {
       try {
         dispatch(setLoading(true));
         
-        // Get initial session
+        // Set up auth state listener first
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            if (!mounted) {
+              console.log('useAuth: Component unmounted, ignoring auth change');
+              return;
+            }
+            handleAuthStateChange(event, session);
+          }
+        );
+
+        // Then get initial session
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('useAuth: Error getting initial session:', sessionError);
-          dispatch(setError(sessionError.message));
+          if (mounted) {
+            dispatch(setError(sessionError.message));
+          }
         } else if (mounted) {
-          console.log('useAuth: Initial session loaded:', initialSession?.user?.email || 'No user');
+          console.log('useAuth: Initial session retrieved:', initialSession?.user?.email || 'No user');
           dispatch(setSession(initialSession));
         }
 
-        // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            console.log('useAuth: Auth state change:', event, session?.user?.email || 'No user');
-            
-            if (!mounted) return;
-
-            switch (event) {
-              case 'INITIAL_SESSION':
-                // Handle initial session load - this should only happen once
-                dispatch(setSession(session));
-                dispatch(clearError());
-                break;
-              case 'SIGNED_IN':
-                dispatch(setSession(session));
-                dispatch(clearError());
-                break;
-              case 'SIGNED_OUT':
-                dispatch(logout());
-                dispatch(clearTenantData());
-                // Clear any stored session data
-                localStorage.removeItem('supabase.auth.token');
-                break;
-              case 'TOKEN_REFRESHED':
-                console.log('useAuth: Token refreshed for user:', session?.user?.email || 'No user');
-                dispatch(setSession(session));
-                break;
-              case 'USER_UPDATED':
-                dispatch(setSession(session));
-                break;
-              default:
-                dispatch(setSession(session));
-            }
-          }
-        );
-
         return () => {
+          console.log('useAuth: Cleaning up auth subscription');
           subscription.unsubscribe();
         };
       } catch (error) {
@@ -77,10 +91,11 @@ export const useAuth = () => {
     const cleanup = initializeAuth();
     
     return () => {
+      console.log('useAuth: Component unmounting');
       mounted = false;
       cleanup?.then(unsub => unsub?.());
     };
-  }, [dispatch]);
+  }, [dispatch, handleAuthStateChange]);
 
   const signIn = async (email: string, password: string) => {
     try {
