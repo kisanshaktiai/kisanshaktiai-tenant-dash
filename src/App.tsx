@@ -7,6 +7,7 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 
 // Layout Components
@@ -61,53 +62,55 @@ function App() {
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="system" storageKey="kisanshakti-ui-theme">
-          <Router>
-            <div className="min-h-screen bg-background font-sans antialiased">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/auth/login" element={<LoginPage />} />
-                <Route path="/auth/register" element={<RegisterPage />} />
-                <Route path="/auth/tenant-login" element={<TenantLoginPage />} />
-                <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/invitation/password-setup" element={<PasswordSetupPage />} />
+          <TenantProviderOptimized>
+            <Router>
+              <div className="min-h-screen bg-background font-sans antialiased">
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/auth/login" element={<LoginPage />} />
+                  <Route path="/auth/register" element={<RegisterPage />} />
+                  <Route path="/auth/tenant-login" element={<TenantLoginPage />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/invitation/password-setup" element={<PasswordSetupPage />} />
 
-                {/* Protected Routes with Onboarding Guard */}
-                <Route element={<OnboardingGuardOptimized><div /></OnboardingGuardOptimized>}>
-                  <Route element={<EnhancedDashboardLayout />}>
-                    {/* Main Dashboard Routes */}
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/onboarding" element={<OnboardingPage />} />
-                    
-                    {/* Management Routes */}
-                    <Route path="/farmers/*" element={<FarmersPage />} />
-                    <Route path="/products/*" element={<ProductsPage />} />
-                    <Route path="/dealers/*" element={<DealersPage />} />
-                    <Route path="/campaigns/*" element={<CampaignsPage />} />
-                    
-                    {/* Analytics Routes */}
-                    <Route path="/analytics/*" element={<AnalyticsPage />} />
-                    
-                    {/* Integration Routes */}
-                    <Route path="/integrations/*" element={<IntegrationsPage />} />
-                    
-                    {/* Settings Routes */}
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/settings/organization" element={<OrganizationPage />} />
-                    <Route path="/settings/users" element={<UsersPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/subscription" element={<SubscriptionPage />} />
+                  {/* Protected Routes with Onboarding Guard */}
+                  <Route element={<OnboardingGuardOptimized><div /></OnboardingGuardOptimized>}>
+                    <Route element={<EnhancedDashboardLayout />}>
+                      {/* Main Dashboard Routes */}
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/onboarding" element={<OnboardingPage />} />
+                      
+                      {/* Management Routes */}
+                      <Route path="/farmers/*" element={<FarmersPage />} />
+                      <Route path="/products/*" element={<ProductsPage />} />
+                      <Route path="/dealers/*" element={<DealersPage />} />
+                      <Route path="/campaigns/*" element={<CampaignsPage />} />
+                      
+                      {/* Analytics Routes */}
+                      <Route path="/analytics/*" element={<AnalyticsPage />} />
+                      
+                      {/* Integration Routes */}
+                      <Route path="/integrations/*" element={<IntegrationsPage />} />
+                      
+                      {/* Settings Routes */}
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/settings/organization" element={<OrganizationPage />} />
+                      <Route path="/settings/users" element={<UsersPage />} />
+                      <Route path="/profile" element={<ProfilePage />} />
+                      <Route path="/subscription" element={<SubscriptionPage />} />
+                    </Route>
                   </Route>
-                </Route>
 
-                {/* Fallback Routes */}
-                <Route path="/404" element={<NotFound />} />
-                <Route path="*" element={<Navigate to="/404" replace />} />
-              </Routes>
-            </div>
-          </Router>
+                  {/* Fallback Routes */}
+                  <Route path="/404" element={<NotFound />} />
+                  <Route path="*" element={<Navigate to="/404" replace />} />
+                </Routes>
+              </div>
+            </Router>
+          </TenantProviderOptimized>
           
           {/* Global Components */}
           <Toaster />
