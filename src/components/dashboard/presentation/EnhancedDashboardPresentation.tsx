@@ -28,7 +28,7 @@ interface DashboardData {
 }
 
 interface EnhancedDashboardPresentationProps {
-  data: DashboardData;
+  data: DashboardData | null | undefined;
   isLoading: boolean;
 }
 
@@ -36,11 +36,19 @@ export const EnhancedDashboardPresentation: React.FC<EnhancedDashboardPresentati
   data,
   isLoading
 }) => {
+  // Handle null/undefined data
+  const safeData = data || {
+    farmers: { total: 0, active: 0, new: 0 },
+    dealers: { total: 0, active: 0, performance: 0 },
+    products: { total: 0, categories: 0, outOfStock: 0 },
+    analytics: { revenue: 0, growth: 0, satisfaction: 0 }
+  };
+
   const kpiCards = [
     {
       title: 'Total Farmers',
-      value: data.farmers.total,
-      change: `+${data.farmers.new} this week`,
+      value: safeData.farmers.total,
+      change: `+${safeData.farmers.new} this week`,
       icon: Users,
       trend: 'up',
       color: 'text-primary',
@@ -48,8 +56,8 @@ export const EnhancedDashboardPresentation: React.FC<EnhancedDashboardPresentati
     },
     {
       title: 'Active Dealers',
-      value: data.dealers.active,
-      change: `${data.dealers.performance}% performance`,
+      value: safeData.dealers.active,
+      change: `${safeData.dealers.performance}% performance`,
       icon: Building,
       trend: 'up',
       color: 'text-success',
@@ -57,17 +65,17 @@ export const EnhancedDashboardPresentation: React.FC<EnhancedDashboardPresentati
     },
     {
       title: 'Products',
-      value: data.products.total,
-      change: `${data.products.outOfStock} out of stock`,
+      value: safeData.products.total,
+      change: `${safeData.products.outOfStock} out of stock`,
       icon: Package,
-      trend: data.products.outOfStock > 0 ? 'down' : 'up',
-      color: data.products.outOfStock > 0 ? 'text-warning' : 'text-info',
-      bgColor: data.products.outOfStock > 0 ? 'bg-warning/10' : 'bg-info/10'
+      trend: safeData.products.outOfStock > 0 ? 'down' : 'up',
+      color: safeData.products.outOfStock > 0 ? 'text-warning' : 'text-info',
+      bgColor: safeData.products.outOfStock > 0 ? 'bg-warning/10' : 'bg-info/10'
     },
     {
       title: 'Revenue Growth',
-      value: `${data.analytics.growth}%`,
-      change: `₹${data.analytics.revenue.toLocaleString()}`,
+      value: `${safeData.analytics.growth}%`,
+      change: `₹${safeData.analytics.revenue.toLocaleString()}`,
       icon: TrendingUp,
       trend: 'up',
       color: 'text-success',
@@ -256,15 +264,15 @@ export const EnhancedDashboardPresentation: React.FC<EnhancedDashboardPresentati
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Active Users</span>
-                  <Badge variant="secondary">{data.farmers.active}</Badge>
+                  <Badge variant="secondary">{safeData.farmers.active}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">New Registrations</span>
-                  <Badge variant="outline">{data.farmers.new}</Badge>
+                  <Badge variant="outline">{safeData.farmers.new}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Satisfaction Score</span>
-                  <Badge variant="default">{data.analytics.satisfaction}%</Badge>
+                  <Badge variant="default">{safeData.analytics.satisfaction}%</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -297,13 +305,13 @@ export const EnhancedDashboardPresentation: React.FC<EnhancedDashboardPresentati
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {data.products.outOfStock > 0 && (
+                {safeData.products.outOfStock > 0 && (
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-warning/20 bg-warning/5">
                     <AlertTriangle className="h-5 w-5 text-warning" />
                     <div>
                       <p className="font-medium text-warning">Stock Alert</p>
                       <p className="text-sm text-muted-foreground">
-                        {data.products.outOfStock} products are out of stock
+                        {safeData.products.outOfStock} products are out of stock
                       </p>
                     </div>
                   </div>

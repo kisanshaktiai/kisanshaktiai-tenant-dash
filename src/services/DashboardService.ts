@@ -52,9 +52,7 @@ class DashboardService {
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.first_name && farmer.last_name 
-              ? `${farmer.first_name} ${farmer.last_name}`.trim()
-              : farmer.first_name || farmer.last_name || 'Unknown Farmer',
+            name: farmer.full_name || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -97,7 +95,7 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, first_name, last_name, created_at')
+      .select('id, full_name, created_at')
       .eq('tenant_id', tenantId);
 
     if (error) throw error;
