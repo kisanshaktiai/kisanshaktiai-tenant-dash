@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter,
@@ -5,32 +6,33 @@ import {
   Route,
 } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
-import { IntlProvider } from './IntlProvider';
-import { Index } from './pages';
-import { Login as LoginPage } from './pages/auth/Login';
-import { Register as RegisterPage } from './pages/auth/Register';
-import { TenantLogin as TenantLoginPage } from './pages/auth/TenantLogin';
-import { ForgotPassword as ForgotPasswordPage } from './pages/auth/ForgotPassword';
-import { ResetPassword as ResetPasswordPage } from './pages/auth/ResetPassword';
-import { PasswordSetup as PasswordSetupPage } from './pages/auth/PasswordSetup';
-import { Dashboard } from './pages/Dashboard';
-import { Farmers as FarmersPage } from './pages/Farmers';
-import { Products as ProductsPage } from './pages/Products';
-import { Dealers as DealersPage } from './pages/Dealers';
-import { Campaigns as CampaignsPage } from './pages/Campaigns';
-import { Analytics as AnalyticsPage } from './pages/Analytics';
-import { Integrations as IntegrationsPage } from './pages/Integrations';
-import { Settings as SettingsPage } from './pages/Settings';
-import { Subscription as SubscriptionPage } from './pages/Subscription';
-import { Onboarding as OnboardingPage } from './pages/Onboarding';
-import { NotFound } from './pages/NotFound';
-import { OnboardingGuardOptimized } from './components/auth/OnboardingGuardOptimized';
+import { IntlProvider } from './components/providers/IntlProvider';
+import { Index } from './pages/Index';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
+import { TenantLoginPage } from './pages/auth/TenantLoginPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { PasswordSetupPage } from './pages/invitation/PasswordSetupPage';
+import Dashboard from './pages/Dashboard';
+import { FarmersPage } from './pages/farmers/FarmersPage';
+import { ProductsPage } from './pages/products/ProductsPage';
+import { DealersPage } from './pages/dealers/DealersPage';
+import { CampaignsPage } from './pages/CampaignsPage';
+import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
+import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { SubscriptionPage } from './pages/subscription/SubscriptionPage';
+import { OnboardingPage } from './pages/onboarding/OnboardingPage';
+import NotFound from './pages/NotFound';
+import { OnboardingGuardOptimized } from './components/guards/OnboardingGuardOptimized';
 import { ProfilePage } from './pages/ProfilePage';
 import { EnhancedDashboardLayout } from './components/layout/EnhancedDashboardLayout';
+import ErrorFallback from './components/ErrorFallback';
 
 function App() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
       <IntlProvider>
         <BrowserRouter>
           <Routes>
