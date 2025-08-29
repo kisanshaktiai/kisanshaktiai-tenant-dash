@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -20,20 +19,26 @@ export const useAuth = () => {
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('Error getting initial session:', sessionError);
+          console.error('useAuth: Error getting initial session:', sessionError);
           dispatch(setError(sessionError.message));
         } else if (mounted) {
+          console.log('useAuth: Initial session loaded:', initialSession?.user?.email || 'No user');
           dispatch(setSession(initialSession));
         }
 
         // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            console.log('Auth state change:', event, session?.user?.email);
+            console.log('useAuth: Auth state change:', event, session?.user?.email || 'No user');
             
             if (!mounted) return;
 
             switch (event) {
+              case 'INITIAL_SESSION':
+                // Handle initial session load - this should only happen once
+                dispatch(setSession(session));
+                dispatch(clearError());
+                break;
               case 'SIGNED_IN':
                 dispatch(setSession(session));
                 dispatch(clearError());
@@ -45,6 +50,7 @@ export const useAuth = () => {
                 localStorage.removeItem('supabase.auth.token');
                 break;
               case 'TOKEN_REFRESHED':
+                console.log('useAuth: Token refreshed for user:', session?.user?.email || 'No user');
                 dispatch(setSession(session));
                 break;
               case 'USER_UPDATED':
@@ -60,7 +66,7 @@ export const useAuth = () => {
           subscription.unsubscribe();
         };
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('useAuth: Error initializing auth:', error);
         if (mounted) {
           dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
           dispatch(setLoading(false));
@@ -184,7 +190,7 @@ export const useAuth = () => {
       const { data: { session }, error } = await supabase.auth.refreshSession();
       
       if (error) {
-        console.error('Error refreshing session:', error);
+        console.error('useAuth: Error refreshing session:', error);
         dispatch(setError(error.message));
         return { session: null, error };
       }

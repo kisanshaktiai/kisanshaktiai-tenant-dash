@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setLoading } from '@/store/slices/tenantSlice';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,10 @@ export const useTenantAuth = () => {
   const { currentTenant, userTenants } = useAppSelector((state) => state.tenant);
   const [loading, setLoadingState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Use refs to track state and prevent loops
+  const hasUserRef = useRef(false);
+  const hasClearedSessionRef = useRef(false);
 
   const refreshTenantData = async () => {
     if (!user?.id) {
@@ -96,6 +100,7 @@ export const useTenantAuth = () => {
       }
 
       setIsInitialized(true);
+      hasClearedSessionRef.current = false; // Reset the clear flag when we have data
     } catch (error) {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
     } finally {
@@ -124,23 +129,37 @@ export const useTenantAuth = () => {
   };
 
   const clearTenantSession = () => {
+    // Prevent multiple calls to clearTenantSession
+    if (hasClearedSessionRef.current) {
+      console.log('useTenantAuth: Session already cleared, skipping');
+      return;
+    }
+    
     console.log('useTenantAuth: Clearing tenant session');
+    hasClearedSessionRef.current = true;
     dispatch(setCurrentTenant(null));
     dispatch(setUserTenants([]));
     setIsInitialized(false);
     enhancedOnboardingService.clearCache();
   };
 
-  // Initialize tenant data when user changes
+  // Handle user state changes
   useEffect(() => {
-    if (user?.id && !isInitialized) {
-      console.log('useTenantAuth: User changed, initializing tenant data');
-      refreshTenantData();
-    } else if (!user?.id) {
-      console.log('useTenantAuth: No user, clearing tenant session');
-      clearTenantSession();
+    const currentHasUser = !!user?.id;
+    
+    // Track if the user state has actually changed
+    if (hasUserRef.current !== currentHasUser) {
+      hasUserRef.current = currentHasUser;
+      
+      if (currentHasUser && !isInitialized) {
+        console.log('useTenantAuth: User logged in, initializing tenant data for:', user.id);
+        refreshTenantData();
+      } else if (!currentHasUser) {
+        console.log('useTenantAuth: User logged out, clearing tenant session');
+        clearTenantSession();
+      }
     }
-  }, [user?.id, isInitialized]);
+  }, [user?.id]); // Only depend on user.id, not isInitialized to prevent loops
 
   return {
     currentTenant,
