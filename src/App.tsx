@@ -17,7 +17,7 @@ import FarmersPage from "./pages/farmers/FarmersPage";
 import ProductsPage from "./pages/products/ProductsPage";
 import DealersPage from "./pages/dealers/DealersPage";
 import CampaignsPage from "./pages/CampaignsPage";
-import AnalyticsPage from "./pages/analytics/AnalyticsPage";
+import { AnalyticsPage } from "./pages/analytics/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import "./App.css";

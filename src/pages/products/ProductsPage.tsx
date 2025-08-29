@@ -6,16 +6,25 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionGuard } from '@/components/guards/PermissionGuard';
-import { ProductList } from './components/ProductList';
-import { CategoryManagement } from './components/CategoryManagement';
-import { PricingManagement } from './components/PricingManagement';
-import { BulkImport } from './components/BulkImport';
-import { ProductAnalytics } from './components/ProductAnalytics';
+import ProductList from './components/ProductList';
+import CategoryManagement from './components/CategoryManagement';
+import PricingManagement from './components/PricingManagement';
+import BulkImport from './components/BulkImport';
+import ProductAnalytics from './components/ProductAnalytics';
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  const handleEdit = (productId: string) => {
+    console.log('Edit product:', productId);
+    // TODO: Implement edit functionality
+  };
+
+  const handleCreate = () => {
+    setIsCreateModalOpen(true);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -36,7 +45,7 @@ export default function ProductsPage() {
               <Download className="mr-2 h-4 w-4" />
               Import Products
             </Button>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Button onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -80,7 +89,7 @@ export default function ProductsPage() {
         </TabsList>
 
         <TabsContent value="products">
-          <ProductList searchTerm={searchTerm} />
+          <ProductList onEdit={handleEdit} onCreate={handleCreate} />
         </TabsContent>
 
         <TabsContent value="categories">

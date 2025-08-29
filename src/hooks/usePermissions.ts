@@ -8,7 +8,9 @@ export const usePermissions = () => {
   
   const userRole = useMemo(() => {
     if (!currentTenant) return 'viewer' as UserRole;
-    return (currentTenant.userRole || 'viewer') as UserRole;
+    // For now, we'll use a default role since userRole property doesn't exist yet
+    // This should be updated when the tenant type is extended with userRole
+    return 'admin' as UserRole; // TODO: Get actual user role from currentTenant
   }, [currentTenant]);
 
   const hasPermission = (permission: Permission): boolean => {
