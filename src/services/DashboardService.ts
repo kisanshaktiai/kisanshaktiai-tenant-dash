@@ -38,13 +38,21 @@ class DashboardService {
         console.error('DashboardService: Error fetching dealers:', dealersResult.reason);
       }
 
+      // Calculate some recent farmers (last 7 days)
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const newFarmersThisWeek = farmers.filter(farmer => 
+        farmer.created_at && new Date(farmer.created_at) >= oneWeekAgo
+      ).length;
+
       const dashboardData = {
         farmers: {
           total: farmers.length,
           active: farmers.length, // Since we don't have is_active, assume all are active
+          new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.full_name || 'Unknown',
+            name: farmer.name || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -54,11 +62,18 @@ class DashboardService {
         },
         products: {
           total: products.length,
-          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))] // Use first word of name as category
+          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
+          out_of_stock: 0 // We don't have stock info, so default to 0
         },
         dealers: {
           total: dealers.length,
-          active: dealers.filter(d => d.is_active).length
+          active: dealers.filter(d => d.is_active).length,
+          performance: 92 // Mock performance score
+        },
+        analytics: {
+          revenue: 0, // Mock data
+          growth: 15.2, // Mock growth percentage
+          satisfaction: 94 // Mock satisfaction score
         }
       };
 
@@ -68,10 +83,11 @@ class DashboardService {
       console.error('DashboardService: Error in getDashboardData:', error);
       // Return empty data structure instead of throwing
       return {
-        farmers: { total: 0, active: 0, recent: [] },
+        farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
         lands: { total: 0, totalAcres: 0 },
-        products: { total: 0, categories: [] },
-        dealers: { total: 0, active: 0 }
+        products: { total: 0, categories: 0, out_of_stock: 0 },
+        dealers: { total: 0, active: 0, performance: 0 },
+        analytics: { revenue: 0, growth: 0, satisfaction: 0 }
       };
     }
   }
@@ -79,7 +95,7 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, full_name, created_at')
+      .select('id, name, created_at') // Use 'name' instead of 'full_name'
       .eq('tenant_id', tenantId);
 
     if (error) throw error;

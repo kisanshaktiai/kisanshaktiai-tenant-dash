@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,24 +64,24 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
   // Transform dashboard stats to expected format for EnhancedDashboardPresentation
   const transformedData = dashboardStats ? {
     farmers: { 
-      total: dashboardStats.totalFarmers || 0, 
-      active: dashboardStats.active_farmers || Math.floor((dashboardStats.totalFarmers || 0) * 0.8), 
-      new: dashboardStats.new_farmers_this_week || 0 
+      total: dashboardStats.farmers.total, 
+      active: dashboardStats.farmers.active, 
+      new: dashboardStats.farmers.new_this_week 
     },
     dealers: { 
-      total: dashboardStats.total_dealers || 0, 
-      active: dashboardStats.active_dealers || Math.floor((dashboardStats.total_dealers || 0) * 0.8), 
-      performance: dashboardStats.average_dealer_performance || 92 
+      total: dashboardStats.dealers.total, 
+      active: dashboardStats.dealers.active, 
+      performance: dashboardStats.dealers.performance 
     },
     products: { 
-      total: dashboardStats.totalProducts || 0, 
-      categories: dashboardStats.product_categories || 12, 
-      outOfStock: dashboardStats.out_of_stock_products || 0 
+      total: dashboardStats.products.total, 
+      categories: dashboardStats.products.categories, 
+      outOfStock: dashboardStats.products.out_of_stock 
     },
     analytics: { 
-      revenue: dashboardStats.total_revenue || 0, 
-      growth: dashboardStats.growth_percentage || dashboardStats.growthRate || 0, 
-      satisfaction: dashboardStats.customer_satisfaction || 94 
+      revenue: dashboardStats.analytics.revenue, 
+      growth: dashboardStats.analytics.growth, 
+      satisfaction: dashboardStats.analytics.satisfaction 
     }
   } : null;
 
