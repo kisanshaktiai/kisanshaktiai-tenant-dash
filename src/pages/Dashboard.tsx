@@ -7,11 +7,11 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { useAppSelector } from '@/store/hooks';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Activity, Zap, Sparkles } from 'lucide-react';
+import { Activity, Zap, Sparkles, AlertTriangle, Loader2 } from 'lucide-react';
 
 const Dashboard = () => {
   const { isLive, activeChannels } = useRealTimeDashboard();
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant, loading: tenantLoading } = useAppSelector((state) => state.tenant);
 
   // Initialize post-login onboarding check
   usePostLoginOnboardingCheck({
@@ -20,14 +20,15 @@ const Dashboard = () => {
     showNotification: true
   });
 
-  if (!currentTenant) {
+  // Show loading state while tenant is being loaded
+  if (tenantLoading) {
     return (
       <div className="flex items-center justify-center min-h-[70vh] px-6">
         <Card className="p-12 shadow-strong border-0 bg-gradient-to-br from-card/95 via-card to-background/90 backdrop-blur-sm max-w-md mx-auto">
           <CardContent className="flex flex-col items-center space-y-6 p-0">
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Activity className="h-8 w-8 text-primary-foreground animate-pulse" />
+                <Loader2 className="h-8 w-8 text-primary-foreground animate-spin" />
               </div>
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-harvest rounded-full flex items-center justify-center">
                 <Sparkles className="h-3 w-3 text-primary-foreground" />
@@ -40,13 +41,31 @@ const Dashboard = () => {
               <p className="text-muted-foreground text-lg leading-relaxed">
                 Initializing tenant context...
               </p>
-              <div className="flex justify-center pt-2">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show error state if no tenant is found
+  if (!currentTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh] px-6">
+        <Card className="p-12 shadow-strong border-0 bg-gradient-to-br from-card/95 via-card to-background/90 backdrop-blur-sm max-w-md mx-auto">
+          <CardContent className="flex flex-col items-center space-y-6 p-0">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center shadow-glow">
+                <AlertTriangle className="h-8 w-8 text-destructive animate-pulse" />
               </div>
+            </div>
+            <div className="text-center space-y-3">
+              <h3 className="font-bold text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                No Tenant Found
+              </h3>
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                Unable to load tenant information. Please contact support.
+              </p>
             </div>
           </CardContent>
         </Card>

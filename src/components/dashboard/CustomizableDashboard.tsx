@@ -12,7 +12,8 @@ import {
   Sparkles,
   TrendingUp,
   Users,
-  Activity
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
 import { useDashboardQuery } from '@/hooks/data/useDashboardQuery';
 import { EnhancedDashboardPresentation } from './presentation/EnhancedDashboardPresentation';
@@ -27,7 +28,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
   const [viewMode, setViewMode] = useState<'expanded' | 'compact'>('expanded');
   
   const { 
-    data, 
+    data: dashboardStats, 
     isLoading, 
     error 
   } = useDashboardQuery();
@@ -45,7 +46,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
       <Card className="border-destructive/20 bg-destructive/5 shadow-lg">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-            <Activity className="h-6 w-6 text-destructive" />
+            <AlertTriangle className="h-6 w-6 text-destructive" />
           </div>
           <h3 className="font-semibold text-lg text-destructive mb-2">
             Unable to Load Dashboard
@@ -53,17 +54,37 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
           <p className="text-muted-foreground text-center max-w-md">
             We encountered an error while loading your dashboard data. Please refresh the page or contact support if the issue persists.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Error: {error.message || 'Unknown error occurred'}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const mockData = {
-    farmers: { total: 2547, active: 1823, new: 127 },
-    dealers: { total: 89, active: 76, performance: 94 },
-    products: { total: 456, categories: 23, outOfStock: 12 },
-    analytics: { revenue: 2340000, growth: 18.5, satisfaction: 96 }
-  };
+  // Transform dashboard stats to expected format for EnhancedDashboardPresentation
+  const transformedData = dashboardStats ? {
+    farmers: { 
+      total: dashboardStats.totalFarmers || 0, 
+      active: dashboardStats.active_farmers || Math.floor((dashboardStats.totalFarmers || 0) * 0.8), 
+      new: dashboardStats.new_farmers_this_week || 0 
+    },
+    dealers: { 
+      total: dashboardStats.total_dealers || 0, 
+      active: dashboardStats.active_dealers || Math.floor((dashboardStats.total_dealers || 0) * 0.8), 
+      performance: dashboardStats.average_dealer_performance || 92 
+    },
+    products: { 
+      total: dashboardStats.totalProducts || 0, 
+      categories: dashboardStats.product_categories || 12, 
+      outOfStock: dashboardStats.out_of_stock_products || 0 
+    },
+    analytics: { 
+      revenue: dashboardStats.total_revenue || 0, 
+      growth: dashboardStats.growth_percentage || dashboardStats.growthRate || 0, 
+      satisfaction: dashboardStats.customer_satisfaction || 94 
+    }
+  } : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-primary/5">
@@ -160,7 +181,7 @@ export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ te
           viewMode === 'expanded' && "space-y-8"
         )}>
           <EnhancedDashboardPresentation 
-            data={mockData}
+            data={transformedData}
             isLoading={isLoading}
           />
         </div>
