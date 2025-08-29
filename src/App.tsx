@@ -5,16 +5,17 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useAppSelector } from '@/store/hooks';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantAuthOptimized } from '@/hooks/useTenantAuthOptimized';
+import { supabase } from '@/integrations/supabase/client';
 import { Layout } from '@/components/layout/Layout';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { FarmersPage } from '@/pages/FarmersPage';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { DealersPage } from '@/pages/DealersPage';
-import { CampaignsPage } from '@/pages/CampaignsPage';
+import CampaignsPage from '@/pages/CampaignsPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { IntegrationsPage } from '@/pages/IntegrationsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
-import { SettingsPage } from '@/pages/SettingsPage';
+import SettingsPage from '@/pages/SettingsPage';
 import { OrganizationSettingsPage } from '@/pages/OrganizationSettingsPage';
 import { UserManagementPage } from '@/pages/UserManagementPage';
 import { SubscriptionPage } from '@/pages/SubscriptionPage';
@@ -25,20 +26,20 @@ import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from './pages/UserInvitationsPage';
 
 function App() {
-  const { authUser, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const { isInitialized } = useTenantAuthOptimized();
   const { isOnboardingComplete } = useAppSelector((state) => state.onboarding);
   const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
-    if (!authUser && !isLoading) {
+    if (!user && !loading) {
       setShowAuth(true);
     } else {
       setShowAuth(false);
     }
-  }, [authUser, isLoading]);
+  }, [user, loading]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -81,7 +82,7 @@ function App() {
           <Route
             path="/"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 isOnboardingComplete ? (
                   <Navigate to="/dashboard" replace />
                 ) : (
@@ -96,7 +97,7 @@ function App() {
           <Route
             path="/onboarding"
             element={
-              authUser ? (
+              user ? (
                 isOnboardingComplete ? (
                   <Navigate to="/dashboard" replace />
                 ) : (
@@ -113,7 +114,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <DashboardPage />
                 </Layout>
@@ -125,7 +126,7 @@ function App() {
           <Route
             path="/farmers"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <FarmersPage />
                 </Layout>
@@ -137,7 +138,7 @@ function App() {
           <Route
             path="/products"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <ProductsPage />
                 </Layout>
@@ -149,7 +150,7 @@ function App() {
           <Route
             path="/dealers"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <DealersPage />
                 </Layout>
@@ -161,7 +162,7 @@ function App() {
           <Route
             path="/campaigns"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <CampaignsPage />
                 </Layout>
@@ -173,7 +174,7 @@ function App() {
           <Route
             path="/analytics"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <AnalyticsPage />
                 </Layout>
@@ -185,7 +186,7 @@ function App() {
           <Route
             path="/integrations"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <IntegrationsPage />
                 </Layout>
@@ -197,7 +198,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <ProfilePage />
                 </Layout>
@@ -209,7 +210,7 @@ function App() {
           <Route
             path="/settings"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <SettingsPage />
                 </Layout>
@@ -221,7 +222,7 @@ function App() {
           <Route
             path="/settings/organization"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <OrganizationSettingsPage />
                 </Layout>
@@ -233,7 +234,7 @@ function App() {
           <Route
             path="/settings/users"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <UserManagementPage />
                 </Layout>
@@ -246,7 +247,7 @@ function App() {
           <Route
             path="/subscription"
             element={
-              authUser && isInitialized ? (
+              user && isInitialized ? (
                 <Layout>
                   <SubscriptionPage />
                 </Layout>

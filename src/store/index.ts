@@ -1,18 +1,21 @@
+
 import { configureStore } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import tenantSlice from './slices/tenantSlice';
-import uiSlice from './slices/uiSlice';
+import authReducer from './slices/authSlice';
+import tenantReducer from './slices/tenantSlice';
+import uiReducer from './slices/uiSlice';
+import onboardingReducer from './slices/onboardingSlice';
 
 export const store = configureStore({
   reducer: {
-    auth: authSlice,
-    tenant: tenantSlice,
-    ui: uiSlice,
+    auth: authReducer,
+    tenant: tenantReducer,
+    ui: uiReducer,
+    onboarding: onboardingReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
 });
