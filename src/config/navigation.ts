@@ -1,3 +1,4 @@
+
 import {
   LayoutDashboard,
   Users,
@@ -6,16 +7,11 @@ import {
   Megaphone,
   BarChart3,
   Settings,
-  FileText,
   Zap,
-  Globe,
-  Bell,
-  Shield,
-  CreditCard,
-  UserPlus,
+  User,
   Building2,
-  Activity,
-  User
+  UserPlus,
+  CreditCard
 } from 'lucide-react';
 import { Permission } from '@/types/permissions';
 
@@ -93,7 +89,7 @@ export const navigationConfig: NavigationItem[] = [
     category: 'analytics'
   },
 
-  // Integrations (New section)
+  // Integrations
   {
     id: 'integrations',
     title: 'Integrations',
@@ -125,30 +121,30 @@ export const navigationConfig: NavigationItem[] = [
     category: 'settings',
     children: [
       {
-        id: 'tenant-settings',
+        id: 'organization',
         title: 'Organization',
         href: '/settings/organization',
         icon: Building2,
-        description: 'Tenant configuration',
+        description: 'Organization settings',
         category: 'settings'
       },
       {
-        id: 'user-management',
+        id: 'users',
         title: 'User Management',
         href: '/settings/users',
         icon: UserPlus,
         description: 'Team & permissions',
         category: 'settings'
-      },
-      {
-        id: 'subscription',
-        title: 'Subscription',
-        href: '/subscription',
-        icon: CreditCard,
-        description: 'Billing & plans',
-        category: 'settings'
       }
     ]
+  },
+  {
+    id: 'subscription',
+    title: 'Subscription',
+    href: '/subscription',
+    icon: CreditCard,
+    description: 'Billing & plans',
+    category: 'settings'
   }
 ];
 

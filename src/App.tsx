@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import {
   BrowserRouter,
@@ -24,6 +23,8 @@ import CampaignsPage from './pages/CampaignsPage';
 import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
 import IntegrationsPage from './pages/integrations/IntegrationsPage';
 import SettingsPage from './pages/SettingsPage';
+import OrganizationPage from './pages/settings/OrganizationPage';
+import UsersPage from './pages/settings/UsersPage';
 import SubscriptionPage from './pages/subscription/SubscriptionPage';
 import OnboardingPage from './pages/onboarding/OnboardingPage';
 import NotFound from './pages/NotFound';
@@ -68,6 +69,8 @@ function App() {
                 <Route path="integrations" element={<IntegrationsPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="settings/organization" element={<OrganizationPage />} />
+                <Route path="settings/users" element={<UsersPage />} />
                 <Route path="subscription" element={<SubscriptionPage />} />
                 <Route path="onboarding" element={<OnboardingPage />} />
               </Route>
@@ -83,4 +86,3 @@ function App() {
 }
 
 export default App;
-
