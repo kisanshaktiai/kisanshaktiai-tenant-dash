@@ -11,7 +11,9 @@ import {
   User,
   Building2,
   UserPlus,
-  CreditCard
+  CreditCard,
+  FileText,
+  Wrench
 } from 'lucide-react';
 import { Permission } from '@/types/permissions';
 
@@ -135,6 +137,16 @@ export const navigationConfig: NavigationItem[] = [
         icon: UserPlus,
         description: 'Team & permissions',
         category: 'settings'
+      },
+      {
+        id: 'invitations',
+        title: 'User Invitations',
+        href: '/settings/invitations',
+        icon: UserPlus,
+        badge: 'New',
+        description: 'Invite new users',
+        category: 'settings',
+        isNew: true
       }
     ]
   },

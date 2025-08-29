@@ -17,7 +17,7 @@ import {
   User, Mail, Phone, Building, MapPin, Calendar, 
   Settings, Shield, Activity, Bell, Key, Trash2,
   Camera, Edit3, Save, X, Monitor, Smartphone, Globe,
-  Clock, AlertCircle, CheckCircle, Crown, Users
+  Clock, AlertCircle, CheckCircle, Crown, Users, UserPlus
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +33,10 @@ export const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    bio: ''
+    bio: '',
+    phone: '',
+    department: '',
+    designation: ''
   });
 
   React.useEffect(() => {
@@ -41,7 +44,10 @@ export const ProfilePage: React.FC = () => {
       setFormData({
         full_name: profile.full_name || '',
         email: profile.email || '',
-        bio: ''
+        bio: '',
+        phone: '',
+        department: '',
+        designation: ''
       });
     }
   }, [profile]);
@@ -211,6 +217,12 @@ export const ProfilePage: React.FC = () => {
                       <Globe className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground capitalize">{currentTenant.type?.replace('_', ' ')}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        {currentTenant.subscription_plan?.replace('_', ' ').toUpperCase()} Plan
+                      </span>
+                    </div>
                   </div>
                 </>
               )}
@@ -223,6 +235,14 @@ export const ProfilePage: React.FC = () => {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {hasPermission('settings.view') && (
+                <Button variant="outline" className="w-full justify-start" size="sm" asChild>
+                  <a href="/settings/invitations">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Invite Users
+                  </a>
+                </Button>
+              )}
               <Button variant="outline" className="w-full justify-start" size="sm" disabled>
                 <Key className="w-4 h-4 mr-2" />
                 Change Password
@@ -280,8 +300,9 @@ export const ProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-3 w-full">
+                <TabsList className="grid grid-cols-4 w-full">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
+                  <TabsTrigger value="organization">Organization</TabsTrigger>
                   <TabsTrigger value="security">Security</TabsTrigger>
                   <TabsTrigger value="sessions">Sessions</TabsTrigger>
                 </TabsList>
@@ -308,6 +329,27 @@ export const ProfilePage: React.FC = () => {
                         className="bg-muted"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        disabled={!isEditing}
+                        placeholder="Enter your phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="department">Department</Label>
+                      <Input
+                        id="department"
+                        value={formData.department}
+                        onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                        disabled={!isEditing}
+                        placeholder="Your department"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bio">Bio</Label>
@@ -320,6 +362,59 @@ export const ProfilePage: React.FC = () => {
                       placeholder="Tell us about yourself..."
                     />
                   </div>
+                </TabsContent>
+
+                <TabsContent value="organization" className="space-y-6 mt-6">
+                  {currentTenant && (
+                    <div className="space-y-4">
+                      <Card className="border-primary/20 bg-primary/5">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                              <Building className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-lg">{currentTenant.name}</h4>
+                              <p className="text-muted-foreground capitalize">
+                                {currentTenant.type?.replace('_', ' ')} Organization
+                              </p>
+                              <div className="flex items-center gap-4 mt-3">
+                                <Badge variant="outline">
+                                  {currentTenant.subscription_plan?.replace('_', ' ').toUpperCase()}
+                                </Badge>
+                                <Badge variant={currentTenant.status === 'active' ? 'default' : 'secondary'}>
+                                  {currentTenant.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Your Role</Label>
+                          <div className="p-3 border rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-2">
+                              {getRoleIcon(profile.role)}
+                              <span className="font-medium capitalize">
+                                {profile.role.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {getRoleDescription(profile.role)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Organization Slug</Label>
+                          <div className="p-3 border rounded-lg bg-muted/50">
+                            <code className="text-sm font-mono">{currentTenant.slug}</code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="security" className="space-y-6 mt-6">
@@ -416,4 +511,25 @@ export const ProfilePage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Helper functions
+const getRoleIcon = (role: string) => {
+  switch (role) {
+    case 'super_admin': return <Crown className="w-4 h-4" />;
+    case 'platform_admin': return <Shield className="w-4 h-4" />;
+    case 'tenant_admin': return <Users className="w-4 h-4" />;
+    default: return <User className="w-4 h-4" />;
+  }
+};
+
+const getRoleDescription = (role: string) => {
+  switch (role) {
+    case 'super_admin': return 'Full system access and control';
+    case 'platform_admin': return 'Platform-wide administrative access';
+    case 'tenant_admin': return 'Administrative access within organization';
+    case 'tenant_manager': return 'Management access within organization';
+    case 'manager': return 'Team management capabilities';
+    default: return 'Standard user access';
+  }
 };
