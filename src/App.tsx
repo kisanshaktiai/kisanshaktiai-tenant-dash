@@ -8,6 +8,7 @@ import {
 } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { IntlProvider } from './components/providers/IntlProvider';
+import { TenantProviderOptimized } from './contexts/TenantContextOptimized';
 import Index from './pages/Index';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -35,45 +36,47 @@ function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <IntlProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/tenant-login" element={<TenantLoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/invitation/:token" element={<PasswordSetupPage />} />
-            
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            
-            {/* Protected Routes with Onboarding Guard */}
-            <Route
-              path="/*"
-              element={
-                <OnboardingGuardOptimized>
-                  <EnhancedDashboardLayout />
-                </OnboardingGuardOptimized>
-              }
-            >
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="farmers" element={<FarmersPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="dealers" element={<DealersPage />} />
-              <Route path="campaigns" element={<CampaignsPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="integrations" element={<IntegrationsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="subscription" element={<SubscriptionPage />} />
-              <Route path="onboarding" element={<OnboardingPage />} />
-            </Route>
+        <TenantProviderOptimized>
+          <BrowserRouter>
+            <Routes>
+              {/* Auth Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/tenant-login" element={<TenantLoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/invitation/:token" element={<PasswordSetupPage />} />
+              
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              
+              {/* Protected Routes with Onboarding Guard */}
+              <Route
+                path="/*"
+                element={
+                  <OnboardingGuardOptimized>
+                    <EnhancedDashboardLayout />
+                  </OnboardingGuardOptimized>
+                }
+              >
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="farmers" element={<FarmersPage />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="dealers" element={<DealersPage />} />
+                <Route path="campaigns" element={<CampaignsPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="integrations" element={<IntegrationsPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="subscription" element={<SubscriptionPage />} />
+                <Route path="onboarding" element={<OnboardingPage />} />
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              {/* Fallback */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TenantProviderOptimized>
       </IntlProvider>
     </ErrorBoundary>
   );
