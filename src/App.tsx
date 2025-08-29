@@ -7,22 +7,22 @@ import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
 import { Layout } from '@/components/layout/Layout';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { FarmersPage } from '@/pages/FarmersPage';
-import { ProductsPage } from '@/pages/ProductsPage';
-import { DealersPage } from '@/pages/DealersPage';
+import DashboardPage from '@/pages/DashboardPage';
+import FarmersPage from '@/pages/FarmersPage';
+import ProductsPage from '@/pages/ProductsPage';
+import DealersPage from '@/pages/DealersPage';
 import CampaignsPage from '@/pages/CampaignsPage';
-import { AnalyticsPage } from '@/pages/AnalyticsPage';
-import { IntegrationsPage } from '@/pages/IntegrationsPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import IntegrationsPage from '@/pages/IntegrationsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
-import { OrganizationSettingsPage } from '@/pages/OrganizationSettingsPage';
-import { UserManagementPage } from '@/pages/UserManagementPage';
-import { SubscriptionPage } from '@/pages/SubscriptionPage';
-import { OnboardingPage } from '@/pages/OnboardingPage';
-import { TenantRegistrationPage } from '@/pages/TenantRegistrationPage';
-import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
-import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
+import OrganizationSettingsPage from '@/pages/OrganizationSettingsPage';
+import UserManagementPage from '@/pages/UserManagementPage';
+import SubscriptionPage from '@/pages/SubscriptionPage';
+import OnboardingPage from '@/pages/OnboardingPage';
+import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
+import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
+import SetupPasswordPage from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppSelector } from '@/store/hooks';
@@ -70,27 +70,23 @@ const App: React.FC = () => {
             {/* Protected routes with tenant context */}
             <Route path="/onboarding" element={<OnboardingPage />} />
             
-            {/* Main app routes - wrapped with EnhancedTenantLayout */}
-            <Route path="/*" element={
-              <EnhancedTenantLayout>
-                <Routes>
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route path="/farmers" element={<FarmersPage />} />
-                  <Route path="/products" element={<ProductsPage />} />
-                  <Route path="/dealers" element={<DealersPage />} />
-                  <Route path="/campaigns" element={<CampaignsPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
-                  <Route path="/integrations" element={<IntegrationsPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
-                  <Route path="/settings/users" element={<UserManagementPage />} />
-                  <Route path="/settings/invitations" element={<UserInvitationsPage />} />
-                  <Route path="/subscription" element={<SubscriptionPage />} />
-                </Routes>
-              </EnhancedTenantLayout>
-            } />
+            {/* Main app routes - using EnhancedTenantLayout as a route element */}
+            <Route path="/" element={<EnhancedTenantLayout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="farmers" element={<FarmersPage />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="dealers" element={<DealersPage />} />
+              <Route path="campaigns" element={<CampaignsPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="integrations" element={<IntegrationsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings/organization" element={<OrganizationSettingsPage />} />
+              <Route path="settings/users" element={<UserManagementPage />} />
+              <Route path="settings/invitations" element={<UserInvitationsPage />} />
+              <Route path="subscription" element={<SubscriptionPage />} />
+            </Route>
           </Routes>
         </Router>
       </TenantProvider>
