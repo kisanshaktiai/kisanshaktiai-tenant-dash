@@ -105,7 +105,7 @@ export const useTenantAuth = () => {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
       dispatch(setCurrentTenant(null));
       dispatch(setUserTenants([]));
-      setIsInitialized(true); // Still set initialized even on error
+      setIsInitialized(true); // Still set initialized even on error to prevent infinite loading
     } finally {
       setLoadingState(false);
       dispatch(setLoading(false));
@@ -147,6 +147,7 @@ export const useTenantAuth = () => {
 
   // Handle user state changes - only when auth is properly initialized
   useEffect(() => {
+    // Wait for auth to be fully initialized before proceeding
     if (!authInitialized) {
       console.log('useTenantAuth: Auth not initialized yet, waiting...');
       return;
@@ -167,11 +168,11 @@ export const useTenantAuth = () => {
       hasUserRef.current = currentUserId;
       
       if (currentUserId && !isInitialized) {
-        console.log('useTenantAuth: User logged in, initializing tenant data with delay');
+        console.log('useTenantAuth: User logged in, initializing tenant data');
         // Add a small delay to ensure auth is fully settled
         initializationTimeoutRef.current = setTimeout(() => {
           refreshTenantData();
-        }, 100);
+        }, 500); // Increased delay to ensure stability
       } else if (!currentUserId) {
         console.log('useTenantAuth: User logged out, clearing tenant session');
         clearTenantSession();

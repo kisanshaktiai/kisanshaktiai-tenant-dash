@@ -1,4 +1,3 @@
-
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -67,14 +66,18 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         
+        // Set up auth state listener first
         const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
         subscriptionRef.current = subscription;
 
+        // Get initial session
         const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error('useAuth: Error getting initial session:', sessionError);
-          dispatch(setError(sessionError.message));
+          if (isMountedRef.current) {
+            dispatch(setError(sessionError.message));
+          }
         } else {
           console.log('useAuth: Initial session retrieved:', initialSession?.user?.email || 'No user');
           if (isMountedRef.current) {
@@ -82,13 +85,17 @@ export const useAuth = () => {
           }
         }
 
+        // Ensure loading is cleared after a maximum timeout
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            dispatch(setLoading(false));
+          }
+        }, 3000); // Maximum 3 seconds for auth initialization
+
       } catch (error) {
         console.error('useAuth: Error initializing auth:', error);
         if (isMountedRef.current) {
           dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
-        }
-      } finally {
-        if (isMountedRef.current) {
           dispatch(setLoading(false));
         }
       }
