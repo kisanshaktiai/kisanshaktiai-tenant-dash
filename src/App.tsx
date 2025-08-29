@@ -28,59 +28,50 @@ import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import LoginPage from '@/pages/auth/LoginPage';
 import Auth from '@/pages/Auth';
-import { useAuth } from '@/hooks/useAuth';
+import Loading from '@/components/Loading';
 import { queryClient } from '@/lib/queryClient';
 
 const App = () => {
-  const { loading: authLoading } = useAuth();
-
-  // Show loading state while auth is initializing
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TenantProvider>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Router>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/auth/login" element={<LoginPage />} />
-              <Route path="/auth/*" element={<Auth />} />
-              <Route path="/register-tenant" element={<TenantRegistrationPage />} />
-              <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
-              <Route path="/setup-password" element={<SetupPasswordPage />} />
-              
-              {/* Protected routes with tenant context */}
-              <Route path="/onboarding" element={
-                <AuthGuard>
-                  <OnboardingPage />
-                </AuthGuard>
-              } />
-              
-              {/* Main app routes - protected by AuthGuard */}
-              <Route path="/" element={<AuthGuard><EnhancedTenantLayout /></AuthGuard>}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="farmers" element={<FarmersPage />} />
-                <Route path="products" element={<ProductsPage />} />
-                <Route path="dealers" element={<DealersPage />} />
-                <Route path="campaigns" element={<CampaignsPage />} />
-                <Route path="analytics" element={<AnalyticsPage />} />
-                <Route path="integrations" element={<IntegrationsPage />} />
-                <Route path="profile" element={<ProfilePage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="settings/organization" element={<OrganizationSettingsPage />} />
-                <Route path="settings/users" element={<UserManagementPage />} />
-                <Route path="settings/invitations" element={<UserInvitationsPage />} />
-                <Route path="subscription" element={<SubscriptionPage />} />
-              </Route>
-            </Routes>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/auth/login" element={<LoginPage />} />
+                <Route path="/auth/*" element={<Auth />} />
+                <Route path="/register-tenant" element={<TenantRegistrationPage />} />
+                <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+                <Route path="/setup-password" element={<SetupPasswordPage />} />
+                
+                {/* Onboarding route - requires auth but not tenant */}
+                <Route path="/onboarding" element={
+                  <AuthGuard>
+                    <OnboardingPage />
+                  </AuthGuard>
+                } />
+                
+                {/* Main app routes - protected by AuthGuard */}
+                <Route path="/" element={<AuthGuard><EnhancedTenantLayout /></AuthGuard>}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="farmers" element={<FarmersPage />} />
+                  <Route path="products" element={<ProductsPage />} />
+                  <Route path="dealers" element={<DealersPage />} />
+                  <Route path="campaigns" element={<CampaignsPage />} />
+                  <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="settings/organization" element={<OrganizationSettingsPage />} />
+                  <Route path="settings/users" element={<UserManagementPage />} />
+                  <Route path="settings/invitations" element={<UserInvitationsPage />} />
+                  <Route path="subscription" element={<SubscriptionPage />} />
+                </Route>
+              </Routes>
+            </Suspense>
           </Router>
         </ErrorBoundary>
       </TenantProvider>

@@ -16,10 +16,11 @@ export const useTenantAuth = () => {
   const hasUserRef = useRef<string | null>(null);
   const hasClearedRef = useRef(false);
   const isRefreshingRef = useRef(false);
+  const initializationTimeoutRef = useRef<NodeJS.Timeout>();
 
   const refreshTenantData = async () => {
-    if (!user?.id || isRefreshingRef.current) {
-      console.log('useTenantAuth: Cannot refresh - no user or already refreshing');
+    if (!user?.id || isRefreshingRef.current || !authInitialized) {
+      console.log('useTenantAuth: Cannot refresh - no user, already refreshing, or auth not initialized');
       return;
     }
 
@@ -93,7 +94,7 @@ export const useTenantAuth = () => {
           
           dispatch(setCurrentTenant(tenantForState));
         } else {
-          console.log('useTenantAuth: No tenants available');
+          console.log('useTenantAuth: No tenants available for user');
           dispatch(setCurrentTenant(null));
         }
       }
@@ -102,9 +103,9 @@ export const useTenantAuth = () => {
       hasClearedRef.current = false;
     } catch (error) {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
-      // Don't throw error to prevent breaking the auth flow
       dispatch(setCurrentTenant(null));
       dispatch(setUserTenants([]));
+      setIsInitialized(true); // Still set initialized even on error
     } finally {
       setLoadingState(false);
       dispatch(setLoading(false));
@@ -137,6 +138,11 @@ export const useTenantAuth = () => {
     dispatch(setUserTenants([]));
     setIsInitialized(false);
     enhancedOnboardingService.clearCache();
+    
+    // Clear any pending initialization
+    if (initializationTimeoutRef.current) {
+      clearTimeout(initializationTimeoutRef.current);
+    }
   };
 
   // Handle user state changes - only when auth is properly initialized
@@ -152,7 +158,8 @@ export const useTenantAuth = () => {
     console.log('useTenantAuth: User state change check:', {
       currentUserId,
       previousUserId,
-      hasChanged: currentUserId !== previousUserId
+      hasChanged: currentUserId !== previousUserId,
+      authInitialized
     });
     
     // Only act if the user ID has actually changed
@@ -160,13 +167,22 @@ export const useTenantAuth = () => {
       hasUserRef.current = currentUserId;
       
       if (currentUserId && !isInitialized) {
-        console.log('useTenantAuth: User logged in, initializing tenant data');
-        refreshTenantData();
+        console.log('useTenantAuth: User logged in, initializing tenant data with delay');
+        // Add a small delay to ensure auth is fully settled
+        initializationTimeoutRef.current = setTimeout(() => {
+          refreshTenantData();
+        }, 100);
       } else if (!currentUserId) {
         console.log('useTenantAuth: User logged out, clearing tenant session');
         clearTenantSession();
       }
     }
+
+    return () => {
+      if (initializationTimeoutRef.current) {
+        clearTimeout(initializationTimeoutRef.current);
+      }
+    };
   }, [user?.id, authInitialized, isInitialized]);
 
   return {
