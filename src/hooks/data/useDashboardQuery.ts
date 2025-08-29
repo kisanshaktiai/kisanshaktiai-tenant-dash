@@ -13,14 +13,14 @@ export const useDashboardQuery = () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
       }
-      console.log('useDashboardQuery: Fetching dashboard stats for tenant:', currentTenant.id);
+      console.log('useDashboardQuery: Fetching dashboard data for tenant:', currentTenant.id);
       
       try {
-        const stats = await dashboardService.getDashboardStats(currentTenant.id);
-        console.log('useDashboardQuery: Successfully fetched stats:', stats);
-        return stats;
+        const data = await dashboardService.getDashboardData(currentTenant.id);
+        console.log('useDashboardQuery: Successfully fetched data:', data);
+        return data;
       } catch (error) {
-        console.error('useDashboardQuery: Error fetching dashboard stats:', error);
+        console.error('useDashboardQuery: Error fetching dashboard data:', error);
         throw error;
       }
     },

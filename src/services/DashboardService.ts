@@ -41,10 +41,10 @@ class DashboardService {
       const dashboardData = {
         farmers: {
           total: farmers.length,
-          active: farmers.filter(f => f.is_active).length,
+          active: farmers.length, // Since we don't have is_active, assume all are active
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            farmer_code: farmer.farmer_code,
+            name: farmer.full_name || 'Unknown',
             created_at: farmer.created_at
           }))
         },
@@ -54,7 +54,7 @@ class DashboardService {
         },
         products: {
           total: products.length,
-          categories: [...new Set(products.map(p => p.category).filter(Boolean))]
+          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))] // Use first word of name as category
         },
         dealers: {
           total: dealers.length,
@@ -79,7 +79,7 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, farmer_code, is_active, created_at')
+      .select('id, full_name, created_at')
       .eq('tenant_id', tenantId);
 
     if (error) throw error;
@@ -99,7 +99,7 @@ class DashboardService {
   private async getProductsCount(tenantId: string) {
     const { data, error } = await supabase
       .from('products')
-      .select('id, category')
+      .select('id, name')
       .eq('tenant_id', tenantId);
 
     if (error) throw error;
