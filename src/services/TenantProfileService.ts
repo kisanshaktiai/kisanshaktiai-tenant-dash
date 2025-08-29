@@ -22,20 +22,25 @@ export interface TenantBrandingData {
 }
 
 export interface TenantFeaturesData {
+  // Core Features
+  farmer_management?: boolean;
   basic_analytics?: boolean;
+  mobile_app?: boolean;
+  
+  // Communication Features
+  sms_notifications?: boolean;
+  whatsapp_integration?: boolean;
+  voice_calls?: boolean;
+  
+  // Advanced Analytics Features
   advanced_analytics?: boolean;
-  ai_chat?: boolean;
-  weather_forecast?: boolean;
-  marketplace?: boolean;
-  community_forum?: boolean;
-  soil_testing?: boolean;
-  satellite_imagery?: boolean;
-  drone_monitoring?: boolean;
-  iot_integration?: boolean;
   predictive_analytics?: boolean;
   custom_reports?: boolean;
-  api_access?: boolean;
-  webhook_support?: boolean;
+  
+  // Technology Features
+  weather_forecast?: boolean;
+  satellite_imagery?: boolean;
+  iot_integration?: boolean;
 }
 
 export interface TeamInviteData {
@@ -92,7 +97,26 @@ class TenantProfileService {
       .from('tenant_features')
       .upsert({
         tenant_id: tenantId,
-        ...data,
+        // Core Features
+        farmer_management: data.farmer_management ?? true,
+        basic_analytics: data.basic_analytics ?? true,
+        mobile_app: data.mobile_app ?? true,
+        
+        // Communication Features
+        sms_notifications: data.sms_notifications ?? false,
+        whatsapp_integration: data.whatsapp_integration ?? false,
+        voice_calls: data.voice_calls ?? false,
+        
+        // Advanced Analytics Features
+        advanced_analytics: data.advanced_analytics ?? false,
+        predictive_analytics: data.predictive_analytics ?? false,
+        custom_reports: data.custom_reports ?? false,
+        
+        // Technology Features
+        weather_forecast: data.weather_forecast ?? false,
+        satellite_imagery: data.satellite_imagery ?? false,
+        iot_integration: data.iot_integration ?? false,
+        
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'tenant_id'
