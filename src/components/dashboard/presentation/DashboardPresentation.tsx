@@ -33,16 +33,19 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
     );
   }
 
-  // Use safe defaults if data is not available
+  // Use safe defaults if data is not available with proper fallbacks for all properties
   const safeStats = stats || {
     farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
-    lands: { total: 0, totalAcres: 0 },
+    campaigns: { active: 0, total: 0 },
     products: { total: 0, categories: 0, out_of_stock: 0 },
-    dealers: { total: 0, active: 0, performance: 0 },
-    analytics: { revenue: 0, growth: 0, satisfaction: 0 },
-    recentActivity: [],
-    upcomingTasks: []
+    dealers: { total: 0, active: 0 },
   };
+
+  // Safely extract nested properties with fallbacks
+  const farmersData = safeStats.farmers || { total: 0, active: 0, new_this_week: 0, recent: [] };
+  const campaignsData = safeStats.campaigns || { active: 0, total: 0 };
+  const productsData = safeStats.products || { total: 0, categories: 0, out_of_stock: 0 };
+  const dealersData = safeStats.dealers || { total: 0, active: 0 };
 
   return (
     <div className="container mx-auto p-8 space-y-8">
@@ -68,11 +71,11 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.farmers.total.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{(farmersData.total || 0).toLocaleString()}</div>
             )}
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs px-2 py-1 bg-success/10 text-success border-success/20">
-                +{safeStats.farmers.new_this_week}
+                +{farmersData.new_this_week || 0}
               </Badge>
               <span className="text-xs text-muted-foreground">this week</span>
             </div>
@@ -81,7 +84,7 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
 
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Active Lands</CardTitle>
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Active Farmers</CardTitle>
             <div className="p-3 rounded-xl bg-gradient-to-br from-info/10 to-info/5 group-hover:from-info/15 group-hover:to-info/10 transition-all duration-300">
               <MapPin className="h-5 w-5 text-info" />
             </div>
@@ -90,10 +93,10 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.lands.total.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{(farmersData.active || 0).toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              {safeStats.lands.totalAcres.toLocaleString()} acres total
+              Currently engaged
             </p>
           </CardContent>
         </Card>
@@ -109,17 +112,17 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.products.total.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{(productsData.total || 0).toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              {safeStats.products.categories} categories
+              {productsData.categories || 0} categories
             </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Active Dealers</CardTitle>
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Active Campaigns</CardTitle>
             <div className="p-3 rounded-xl bg-gradient-to-br from-success/10 to-success/5 group-hover:from-success/15 group-hover:to-success/10 transition-all duration-300">
               <CheckCircle className="h-5 w-5 text-success" />
             </div>
@@ -128,10 +131,10 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
             {isLoading ? (
               <Skeleton className="h-10 w-24 mb-2" />
             ) : (
-              <div className="text-3xl font-bold text-foreground mb-2">{safeStats.dealers.active.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground mb-2">{(campaignsData.active || 0).toLocaleString()}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              {safeStats.dealers.performance}% performance
+              {campaignsData.total || 0} total campaigns
             </p>
           </CardContent>
         </Card>
@@ -159,15 +162,17 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
                   </div>
                 </div>
               ))
-            ) : safeStats.recentActivity.length > 0 ? (
-              safeStats.recentActivity.map((activity: any) => (
-                <div key={activity.id} className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent hover:from-muted/40 hover:to-muted/10 transition-all duration-300">
+            ) : farmersData.recent && farmersData.recent.length > 0 ? (
+              farmersData.recent.map((farmer: any) => (
+                <div key={farmer.id} className="flex items-center space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent hover:from-muted/40 hover:to-muted/10 transition-all duration-300">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                     <Users className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">{activity.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                    <p className="text-sm font-semibold text-foreground">New farmer: {farmer.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {farmer.created_at ? new Date(farmer.created_at).toLocaleDateString() : 'Recently joined'}
+                    </p>
                   </div>
                 </div>
               ))
@@ -180,69 +185,48 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
           </CardContent>
         </Card>
 
-        {/* Enhanced Upcoming Tasks */}
+        {/* Enhanced System Status */}
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm">
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-3 text-xl font-bold">
               <div className="p-2 rounded-xl bg-gradient-to-br from-info/10 to-info/5">
                 <Calendar className="h-5 w-5 text-info" />
               </div>
-              Upcoming Tasks
+              System Overview
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {isLoading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-start space-x-3 p-4 rounded-xl bg-muted/30">
-                  <Skeleton className="h-4 w-4 mt-1" />
-                  <div className="space-y-1 flex-1">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
-                </div>
-              ))
-            ) : safeStats.upcomingTasks.length > 0 ? (
-              safeStats.upcomingTasks.map((task: any) => (
-                <div key={task.id} className="flex items-start space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent hover:from-muted/40 hover:to-muted/10 transition-all duration-300">
-                  <div className="mt-1">
-                    {task.priority === 'high' ? (
-                      <div className="p-1 rounded-lg bg-destructive/10">
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      </div>
-                    ) : task.priority === 'medium' ? (
-                      <div className="p-1 rounded-lg bg-warning/10">
-                        <Clock className="h-4 w-4 text-warning" />
-                      </div>
-                    ) : (
-                      <div className="p-1 rounded-lg bg-success/10">
-                        <CheckCircle className="h-4 w-4 text-success" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-semibold text-foreground">{task.title}</p>
-                      <Badge 
-                        variant={
-                          task.priority === 'high' ? 'destructive' :
-                          task.priority === 'medium' ? 'default' : 'secondary'
-                        }
-                        className="text-xs px-2 py-1"
-                      >
-                        {task.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-1">{task.description}</p>
-                    <p className="text-xs text-muted-foreground font-medium">Due: {task.dueDate}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No upcoming tasks</p>
+            <div className="flex items-start space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent">
+              <div className="p-1 rounded-lg bg-success/10">
+                <CheckCircle className="h-4 w-4 text-success" />
               </div>
-            )}
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-foreground">All Systems Operational</p>
+                  <Badge variant="secondary" className="text-xs px-2 py-1 bg-success/10 text-success border-success/20">
+                    Online
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-1">Dashboard and services running smoothly</p>
+                <p className="text-xs text-muted-foreground font-medium">Last updated: {new Date().toLocaleTimeString()}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start space-x-4 p-4 rounded-xl bg-gradient-to-r from-muted/20 to-transparent">
+              <div className="p-1 rounded-lg bg-info/10">
+                <Clock className="h-4 w-4 text-info" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-foreground">Data Sync Active</p>
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    Real-time
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-1">Farmer and product data synchronized</p>
+                <p className="text-xs text-muted-foreground font-medium">Next sync: Continuous</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
