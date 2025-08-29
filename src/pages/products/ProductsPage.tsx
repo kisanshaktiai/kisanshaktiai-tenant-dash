@@ -86,6 +86,7 @@ export default function ProductsPage() {
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
           </PermissionGuard>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="import">Import/Export</TabsTrigger>
         </TabsList>
 
         <TabsContent value="products">
@@ -105,15 +106,11 @@ export default function ProductsPage() {
         <TabsContent value="analytics">
           <ProductAnalytics />
         </TabsContent>
-      </Tabs>
 
-      {/* Modals */}
-      {isImportModalOpen && (
-        <BulkImport
-          open={isImportModalOpen}
-          onOpenChange={setIsImportModalOpen}
-        />
-      )}
+        <TabsContent value="import">
+          <BulkImport />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

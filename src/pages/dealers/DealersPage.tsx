@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionGuard } from '@/components/guards/PermissionGuard';
-import { DealerDirectory } from './components/DealerDirectory';
-import { TerritoryManagement } from './components/TerritoryManagement';
-import { PerformanceTracking } from './components/PerformanceTracking';
-import { CommunicationTools } from './components/CommunicationTools';
-import { IncentiveManagement } from './components/IncentiveManagement';
-import { DealerOnboarding } from './components/DealerOnboarding';
+import DealerDirectory from './components/DealerDirectory';
+import TerritoryManagement from './components/TerritoryManagement';
+import PerformanceTracking from './components/PerformanceTracking';
+import CommunicationTools from './components/CommunicationTools';
+import IncentiveManagement from './components/IncentiveManagement';
+import DealerOnboarding from './components/DealerOnboarding';
 
 export default function DealersPage() {
   const [searchTerm, setSearchTerm] = useState('');
