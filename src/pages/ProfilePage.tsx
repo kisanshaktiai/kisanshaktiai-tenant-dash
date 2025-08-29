@@ -11,36 +11,107 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAppSelector } from '@/store/hooks';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { 
   User, Mail, Phone, Building, MapPin, Calendar, 
   Settings, Shield, Activity, Bell, Key, Trash2,
-  Camera, Edit3, Save, X
+  Camera, Edit3, Save, X, Monitor, Smartphone, Globe,
+  Clock, AlertCircle, CheckCircle, Crown, Users
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 export const ProfilePage: React.FC = () => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { currentTenant } = useTenantContext();
   const { userRole, hasPermission } = usePermissions();
+  const { profile, sessions, loading, error, updateProfile } = useUserProfile();
+  const { signOut } = useAuth();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    bio: ''
+  });
 
-  // Mock user data - replace with actual data from your auth system
-  const userData = {
-    id: '1',
-    email: 'admin@kisanshakti.com',
-    name: 'Admin User',
-    phone: '+91 98765 43210',
-    avatar: '',
-    role: userRole,
-    joinedAt: '2024-01-15',
-    lastActive: '2025-01-20T10:30:00Z',
-    department: 'Operations',
-    bio: 'Passionate about agricultural technology and farmer empowerment.'
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        email: profile.email || '',
+        bio: ''
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    const success = await updateProfile({
+      full_name: formData.full_name
+    });
+
+    if (success) {
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+    } else {
+      toast({
+        title: "Update failed",
+        description: "Failed to update your profile. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSave = () => {
-    // Implement save logic here
-    setIsEditing(false);
+  const handleSignOut = async () => {
+    await signOut();
   };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'super_admin': return 'default';
+      case 'platform_admin': return 'secondary';
+      case 'tenant_admin': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
+  const formatLastSeen = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 5) return 'Active now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-muted-foreground">{error || 'Unable to load profile'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -55,11 +126,20 @@ export const ProfilePage: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">
-            {userRole.replace('_', ' ')}
+          <Badge variant={getRoleBadgeVariant(profile.role)} className="capitalize">
+            {profile.role === 'super_admin' && <Crown className="w-3 h-3 mr-1" />}
+            {profile.role === 'platform_admin' && <Shield className="w-3 h-3 mr-1" />}
+            {profile.role === 'tenant_admin' && <Users className="w-3 h-3 mr-1" />}
+            {profile.role.replace('_', ' ')}
           </Badge>
-          <Badge variant="secondary">
-            {currentTenant?.subscription_plan || 'Free'}
+          {currentTenant && (
+            <Badge variant="outline">
+              {currentTenant.subscription_plan?.toUpperCase() || 'FREE'}
+            </Badge>
+          )}
+          <Badge variant={profile.is_active ? 'default' : 'secondary'} className="gap-1">
+            <div className={`w-2 h-2 rounded-full ${profile.is_active ? 'bg-green-500' : 'bg-gray-400'}`} />
+            {profile.is_active ? 'Active' : 'Inactive'}
           </Badge>
         </div>
       </div>
@@ -71,39 +151,43 @@ export const ProfilePage: React.FC = () => {
             <CardHeader className="text-center pb-2">
               <div className="relative inline-block">
                 <Avatar className="w-24 h-24 mx-auto ring-4 ring-primary/10">
-                  <AvatarImage src={userData.avatar} alt={userData.name} />
+                  <AvatarImage src="" alt={profile.full_name || profile.email} />
                   <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
-                    {userData.name.split(' ').map(n => n[0]).join('')}
+                    {profile.full_name ? getInitials(profile.full_name) : profile.email.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <Button 
                   size="sm" 
                   variant="outline" 
                   className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                  disabled
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
               </div>
               <div className="space-y-2 pt-4">
-                <h3 className="text-xl font-semibold">{userData.name}</h3>
-                <p className="text-muted-foreground">{userData.email}</p>
+                <h3 className="text-xl font-semibold">{profile.full_name || 'No name set'}</h3>
+                <p className="text-muted-foreground">{profile.email}</p>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Role</p>
-                  <Badge variant="outline" className="capitalize">
-                    {userData.role.replace('_', ' ')}
+                  <Badge variant={getRoleBadgeVariant(profile.role)} className="capitalize text-xs">
+                    {profile.role.replace('_', ' ')}
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-muted-foreground">Department</p>
-                  <p className="font-medium">{userData.department}</p>
+                  <p className="text-muted-foreground">Status</p>
+                  <div className="flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-green-500" />
+                    <span className="text-green-600 text-xs font-medium">Verified</span>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Joined</p>
-                  <p className="font-medium">{new Date(userData.joinedAt).toLocaleDateString()}</p>
+                  <p className="font-medium text-xs">{new Date(profile.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-muted-foreground">Last Active</p>
@@ -114,17 +198,22 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
               
-              <Separator />
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Profile Completion</span>
-                  <span className="text-sm font-medium">85%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div className="bg-gradient-to-r from-primary to-primary/70 h-2 rounded-full w-[85%] transition-all duration-300"></div>
-                </div>
-              </div>
+              {currentTenant && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Current Organization</p>
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm">{currentTenant.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground capitalize">{currentTenant.type?.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -134,21 +223,26 @@ export const ProfilePage: React.FC = () => {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button variant="outline" className="w-full justify-start" size="sm" disabled>
                 <Key className="w-4 h-4 mr-2" />
                 Change Password
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button variant="outline" className="w-full justify-start" size="sm" disabled>
                 <Bell className="w-4 h-4 mr-2" />
                 Notification Settings
               </Button>
-              <Button variant="outline" className="w-full justify-start" size="sm">
+              <Button variant="outline" className="w-full justify-start" size="sm" disabled>
                 <Activity className="w-4 h-4 mr-2" />
                 Activity Log
               </Button>
-              <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive" size="sm">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start text-destructive hover:text-destructive" 
+                size="sm"
+                onClick={handleSignOut}
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete Account
+                Sign Out
               </Button>
             </CardContent>
           </Card>
@@ -186,29 +280,22 @@ export const ProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-4 w-full">
+                <TabsList className="grid grid-cols-3 w-full">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
-                  <TabsTrigger value="contact">Contact</TabsTrigger>
                   <TabsTrigger value="security">Security</TabsTrigger>
-                  <TabsTrigger value="preferences">Preferences</TabsTrigger>
+                  <TabsTrigger value="sessions">Sessions</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="personal" className="space-y-6 mt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="full_name">Full Name</Label>
                       <Input
-                        id="firstName"
-                        defaultValue={userData.name.split(' ')[0]}
+                        id="full_name"
+                        value={formData.full_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                         disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        defaultValue={userData.name.split(' ').slice(1).join(' ')}
-                        disabled={!isEditing}
+                        placeholder="Enter your full name"
                       />
                     </div>
                     <div className="space-y-2">
@@ -216,16 +303,9 @@ export const ProfilePage: React.FC = () => {
                       <Input
                         id="email"
                         type="email"
-                        defaultValue={userData.email}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="department">Department</Label>
-                      <Input
-                        id="department"
-                        defaultValue={userData.department}
-                        disabled={!isEditing}
+                        value={formData.email}
+                        disabled
+                        className="bg-muted"
                       />
                     </div>
                   </div>
@@ -234,47 +314,11 @@ export const ProfilePage: React.FC = () => {
                     <Textarea
                       id="bio"
                       rows={4}
-                      defaultValue={userData.bio}
+                      value={formData.bio}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
                       disabled={!isEditing}
                       placeholder="Tell us about yourself..."
                     />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="contact" className="space-y-6 mt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        defaultValue={userData.phone}
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
-                      <Input
-                        id="location"
-                        placeholder="City, Country"
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        placeholder="https://example.com"
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin">LinkedIn</Label>
-                      <Input
-                        id="linkedin"
-                        placeholder="LinkedIn profile URL"
-                        disabled={!isEditing}
-                      />
-                    </div>
                   </div>
                 </TabsContent>
 
@@ -288,7 +332,7 @@ export const ProfilePage: React.FC = () => {
                             <h4 className="font-semibold text-yellow-800">Two-Factor Authentication</h4>
                             <p className="text-sm text-yellow-600">Add an extra layer of security to your account</p>
                           </div>
-                          <Button variant="outline" className="ml-auto">
+                          <Button variant="outline" className="ml-auto" disabled>
                             Enable 2FA
                           </Button>
                         </div>
@@ -299,47 +343,70 @@ export const ProfilePage: React.FC = () => {
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">Password</h4>
-                          <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
+                          <p className="text-sm text-muted-foreground">Manage via Supabase Auth</p>
                         </div>
-                        <Button variant="outline" size="sm">Change</Button>
+                        <Button variant="outline" size="sm" disabled>Change</Button>
                       </div>
                       
                       <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                           <h4 className="font-medium">Active Sessions</h4>
-                          <p className="text-sm text-muted-foreground">3 active sessions</p>
+                          <p className="text-sm text-muted-foreground">{sessions.length} active session(s)</p>
                         </div>
-                        <Button variant="outline" size="sm">Manage</Button>
+                        <Button variant="outline" size="sm" onClick={() => setActiveTab('sessions')}>
+                          View
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="preferences" className="space-y-6 mt-6">
+                <TabsContent value="sessions" className="space-y-6 mt-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">Email Notifications</h4>
-                        <p className="text-sm text-muted-foreground">Receive email updates about your account</p>
-                      </div>
-                      <input type="checkbox" className="toggle" defaultChecked />
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Active Sessions</h4>
+                      <Badge variant="outline">{sessions.length} sessions</Badge>
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">SMS Notifications</h4>
-                        <p className="text-sm text-muted-foreground">Receive SMS alerts for important updates</p>
+                    {sessions.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Monitor className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>No active sessions found</p>
                       </div>
-                      <input type="checkbox" className="toggle" />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">Marketing Emails</h4>
-                        <p className="text-sm text-muted-foreground">Receive promotional content and updates</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {sessions.map((session) => (
+                          <div key={session.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-muted rounded-lg">
+                                {session.user_agent?.includes('Mobile') ? (
+                                  <Smartphone className="w-4 h-4" />
+                                ) : (
+                                  <Monitor className="w-4 h-4" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {session.user_agent?.includes('Chrome') ? 'Chrome' : 
+                                   session.user_agent?.includes('Firefox') ? 'Firefox' : 
+                                   session.user_agent?.includes('Safari') ? 'Safari' : 'Unknown Browser'}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{session.ip_address || 'Unknown IP'}</span>
+                                  <span>•</span>
+                                  <Clock className="w-3 h-3" />
+                                  <span>{formatLastSeen(session.last_active_at)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-xs text-green-600">Active</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <input type="checkbox" className="toggle" />
-                    </div>
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
