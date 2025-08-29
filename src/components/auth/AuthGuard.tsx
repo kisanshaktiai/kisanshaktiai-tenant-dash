@@ -24,11 +24,10 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     tenantInitialized,
     currentTenant: !!currentTenant,
     userTenantsCount: userTenants.length,
-    pathname: location.pathname,
-    authError: authError
+    pathname: location.pathname
   });
 
-  // Handle auth errors first
+  // Handle auth errors
   if (authError) {
     console.error('AuthGuard: Auth error detected:', authError);
     return (
@@ -50,55 +49,52 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     );
   }
 
-  // Show loading while auth is initializing (with timeout safety)
+  // Show loading only if auth is actually loading AND not initialized
   if (authLoading && !authInitialized) {
-    console.log('AuthGuard: Showing loading - auth initializing');
     return <Loading message="Initializing authentication..." />;
   }
 
-  // If not authenticated after initialization, redirect to login
+  // If auth is initialized but no user, redirect to login
   if (authInitialized && !user) {
     console.log('AuthGuard: No user after auth initialization, redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // If we have a user but auth isn't fully initialized yet, wait a bit more
-  if (user && !authInitialized) {
-    console.log('AuthGuard: User exists but auth not fully initialized');
-    return <Loading message="Finalizing authentication..." />;
+  // If we don't have a user yet but auth isn't fully initialized, wait briefly
+  if (!user && !authInitialized) {
+    return <Loading message="Loading..." />;
   }
 
-  // Show loading while tenant data is being fetched (only if we have a user)
-  if (user && tenantLoading && !tenantInitialized) {
-    console.log('AuthGuard: Showing loading - tenant data loading');
-    return <Loading message="Loading organization data..." />;
-  }
-
-  // If user has no tenants after tenant initialization, redirect to tenant registration
-  if (user && tenantInitialized && userTenants.length === 0) {
-    console.log('AuthGuard: No tenants after initialization, redirecting to tenant registration');
-    return <Navigate to="/register-tenant" replace />;
-  }
-
-  // If user has tenants but no current tenant is set, redirect to onboarding
-  if (user && tenantInitialized && userTenants.length > 0 && !currentTenant) {
-    console.log('AuthGuard: Has tenants but no current tenant, redirecting to onboarding');
-    return <Navigate to="/onboarding" replace />;
-  }
-
-  // All checks passed - show the protected content
-  if (user && authInitialized && tenantInitialized && currentTenant) {
-    console.log('AuthGuard: All checks passed, showing protected content');
-    return <>{children}</>;
-  }
-
-  // Final fallback - if we have a user but something is still loading
+  // From this point, we have a user - now check tenant status
   if (user) {
-    console.log('AuthGuard: User exists but waiting for final initialization');
-    return <Loading message="Preparing your dashboard..." />;
+    // If tenant is loading and not initialized, show loading
+    if (tenantLoading && !tenantInitialized) {
+      return <Loading message="Loading organization data..." />;
+    }
+
+    // If tenant is initialized but no tenants exist, redirect to tenant registration
+    if (tenantInitialized && userTenants.length === 0) {
+      console.log('AuthGuard: No tenants found, redirecting to tenant registration');
+      return <Navigate to="/register-tenant" replace />;
+    }
+
+    // If has tenants but no current tenant set, redirect to onboarding
+    if (tenantInitialized && userTenants.length > 0 && !currentTenant) {
+      console.log('AuthGuard: Has tenants but no current tenant, redirecting to onboarding');
+      return <Navigate to="/onboarding" replace />;
+    }
+
+    // All good - show protected content
+    if (tenantInitialized && currentTenant) {
+      return <>{children}</>;
+    }
+
+    // If tenant stuff isn't initialized yet, show brief loading
+    if (!tenantInitialized) {
+      return <Loading message="Preparing dashboard..." />;
+    }
   }
 
-  // Ultimate fallback - redirect to login
-  console.log('AuthGuard: Ultimate fallback - redirecting to login');
-  return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  // Final fallback
+  return <Loading message="Loading..." />;
 };

@@ -10,15 +10,20 @@ export const useAuth = () => {
   const initializationRef = useRef(false);
   const subscriptionRef = useRef<any>(null);
   const isMountedRef = useRef(true);
+  const initTimeoutRef = useRef<NodeJS.Timeout>();
 
   const handleAuthStateChange = useCallback((event: string, session: any) => {
     if (!isMountedRef.current) {
-      console.log('useAuth: Component unmounted, ignoring auth change');
       return;
     }
 
     console.log('useAuth: Auth state change event:', event);
-    console.log('useAuth: Session user:', session?.user?.email || 'No user');
+    
+    // Clear any pending initialization timeout
+    if (initTimeoutRef.current) {
+      clearTimeout(initTimeoutRef.current);
+      initTimeoutRef.current = undefined;
+    }
     
     switch (event) {
       case 'INITIAL_SESSION':
@@ -55,7 +60,6 @@ export const useAuth = () => {
     isMountedRef.current = true;
 
     if (initializationRef.current) {
-      console.log('useAuth: Already initialized, skipping');
       return;
     }
 
@@ -70,27 +74,46 @@ export const useAuth = () => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
         subscriptionRef.current = subscription;
 
-        // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('useAuth: Error getting initial session:', sessionError);
-          if (isMountedRef.current) {
-            dispatch(setError(sessionError.message));
+        // Get initial session with shorter timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => {
+          initTimeoutRef.current = setTimeout(() => reject(new Error('Session timeout')), 2000);
+        });
+
+        try {
+          const { data: { session: initialSession }, error: sessionError } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]) as any;
+
+          if (initTimeoutRef.current) {
+            clearTimeout(initTimeoutRef.current);
+            initTimeoutRef.current = undefined;
           }
-        } else {
-          console.log('useAuth: Initial session retrieved:', initialSession?.user?.email || 'No user');
+          
+          if (sessionError) {
+            console.error('useAuth: Error getting initial session:', sessionError);
+            if (isMountedRef.current) {
+              dispatch(setError(sessionError.message));
+            }
+          } else {
+            console.log('useAuth: Initial session retrieved');
+            if (isMountedRef.current) {
+              dispatch(setSession(initialSession));
+            }
+          }
+        } catch (error: any) {
+          console.warn('useAuth: Session initialization timed out or failed:', error.message);
+          // Continue without session - user might not be logged in
           if (isMountedRef.current) {
-            dispatch(setSession(initialSession));
+            dispatch(setSession(null));
           }
         }
 
-        // Ensure loading is cleared after a maximum timeout
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            dispatch(setLoading(false));
-          }
-        }, 3000); // Maximum 3 seconds for auth initialization
+        // Always clear loading after initialization attempt
+        if (isMountedRef.current) {
+          dispatch(setLoading(false));
+        }
 
       } catch (error) {
         console.error('useAuth: Error initializing auth:', error);
@@ -108,10 +131,15 @@ export const useAuth = () => {
       isMountedRef.current = false;
       
       if (subscriptionRef.current) {
-        console.log('useAuth: Cleaning up auth subscription');
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
+      
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = undefined;
+      }
+      
       initializationRef.current = false;
     };
   }, [dispatch, handleAuthStateChange]);
@@ -239,7 +267,7 @@ export const useAuth = () => {
   const isSessionExpired = useCallback(() => {
     if (!session?.expires_at) return false;
     
-    const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+    const expiresAt = session.expires_at * 1000;
     const now = Date.now();
     const isExpired = now >= expiresAt;
     

@@ -12,15 +12,15 @@ export const useTenantAuth = () => {
   const [loading, setLoadingState] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Use refs to prevent multiple operations and track state
   const hasUserRef = useRef<string | null>(null);
   const hasClearedRef = useRef(false);
   const isRefreshingRef = useRef(false);
   const initializationTimeoutRef = useRef<NodeJS.Timeout>();
+  const maxInitTimeoutRef = useRef<NodeJS.Timeout>();
 
   const refreshTenantData = async () => {
     if (!user?.id || isRefreshingRef.current || !authInitialized) {
-      console.log('useTenantAuth: Cannot refresh - no user, already refreshing, or auth not initialized');
+      console.log('useTenantAuth: Cannot refresh - conditions not met');
       return;
     }
 
@@ -31,7 +31,12 @@ export const useTenantAuth = () => {
       
       console.log('useTenantAuth: Refreshing tenant data for user:', user.id);
 
-      const { data: userTenantsData, error: userTenantsError } = await supabase
+      // Create timeout promise to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Tenant data fetch timeout')), 5000);
+      });
+
+      const fetchPromise = supabase
         .from('user_tenants')
         .select(`
           tenant_id,
@@ -53,6 +58,11 @@ export const useTenantAuth = () => {
         .eq('user_id', user.id)
         .eq('is_active', true);
 
+      const { data: userTenantsData, error: userTenantsError } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
+
       if (userTenantsError) {
         console.error('useTenantAuth: Error fetching user tenants:', userTenantsError);
         throw userTenantsError;
@@ -72,7 +82,6 @@ export const useTenantAuth = () => {
 
       dispatch(setUserTenants(tenants));
 
-      // Only set current tenant if we don't have one or if it's not in the list
       if (!currentTenant || !tenants.find(t => t.id === currentTenant.id)) {
         const firstTenant = tenants[0];
         if (firstTenant) {
@@ -101,11 +110,13 @@ export const useTenantAuth = () => {
 
       setIsInitialized(true);
       hasClearedRef.current = false;
-    } catch (error) {
+    } catch (error: any) {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
-      dispatch(setCurrentTenant(null));
-      dispatch(setUserTenants([]));
-      setIsInitialized(true); // Still set initialized even on error to prevent infinite loading
+      if (error.message !== 'Tenant data fetch timeout') {
+        dispatch(setCurrentTenant(null));
+        dispatch(setUserTenants([]));
+      }
+      setIsInitialized(true);
     } finally {
       setLoadingState(false);
       dispatch(setLoading(false));
@@ -128,7 +139,6 @@ export const useTenantAuth = () => {
 
   const clearTenantSession = () => {
     if (hasClearedRef.current) {
-      console.log('useTenantAuth: Session already cleared, skipping');
       return;
     }
     
@@ -139,40 +149,41 @@ export const useTenantAuth = () => {
     setIsInitialized(false);
     enhancedOnboardingService.clearCache();
     
-    // Clear any pending initialization
     if (initializationTimeoutRef.current) {
       clearTimeout(initializationTimeoutRef.current);
     }
+    if (maxInitTimeoutRef.current) {
+      clearTimeout(maxInitTimeoutRef.current);
+    }
   };
 
-  // Handle user state changes - only when auth is properly initialized
   useEffect(() => {
-    // Wait for auth to be fully initialized before proceeding
     if (!authInitialized) {
-      console.log('useTenantAuth: Auth not initialized yet, waiting...');
       return;
     }
 
     const currentUserId = user?.id || null;
     const previousUserId = hasUserRef.current;
     
-    console.log('useTenantAuth: User state change check:', {
-      currentUserId,
-      previousUserId,
-      hasChanged: currentUserId !== previousUserId,
-      authInitialized
-    });
-    
-    // Only act if the user ID has actually changed
     if (currentUserId !== previousUserId) {
       hasUserRef.current = currentUserId;
       
       if (currentUserId && !isInitialized) {
         console.log('useTenantAuth: User logged in, initializing tenant data');
-        // Add a small delay to ensure auth is fully settled
+        
+        // Set maximum initialization timeout
+        maxInitTimeoutRef.current = setTimeout(() => {
+          if (!isInitialized) {
+            console.log('useTenantAuth: Max timeout reached, forcing initialization');
+            setIsInitialized(true);
+            setLoadingState(false);
+            dispatch(setLoading(false));
+          }
+        }, 8000);
+        
         initializationTimeoutRef.current = setTimeout(() => {
           refreshTenantData();
-        }, 500); // Increased delay to ensure stability
+        }, 300);
       } else if (!currentUserId) {
         console.log('useTenantAuth: User logged out, clearing tenant session');
         clearTenantSession();
@@ -182,6 +193,9 @@ export const useTenantAuth = () => {
     return () => {
       if (initializationTimeoutRef.current) {
         clearTimeout(initializationTimeoutRef.current);
+      }
+      if (maxInitTimeoutRef.current) {
+        clearTimeout(maxInitTimeoutRef.current);
       }
     };
   }, [user?.id, authInitialized, isInitialized]);
