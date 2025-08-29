@@ -77,31 +77,112 @@ function App() {
                   <Route path="/invitation/password-setup" element={<PasswordSetupPage />} />
 
                   {/* Protected Routes with Onboarding Guard */}
-                  <Route element={<OnboardingGuardOptimized><div /></OnboardingGuardOptimized>}>
-                    <Route element={<EnhancedDashboardLayout />}>
-                      {/* Main Dashboard Routes */}
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/onboarding" element={<OnboardingPage />} />
-                      
-                      {/* Management Routes */}
-                      <Route path="/farmers/*" element={<FarmersPage />} />
-                      <Route path="/products/*" element={<ProductsPage />} />
-                      <Route path="/dealers/*" element={<DealersPage />} />
-                      <Route path="/campaigns/*" element={<CampaignsPage />} />
-                      
-                      {/* Analytics Routes */}
-                      <Route path="/analytics/*" element={<AnalyticsPage />} />
-                      
-                      {/* Integration Routes */}
-                      <Route path="/integrations/*" element={<IntegrationsPage />} />
-                      
-                      {/* Settings Routes */}
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/settings/organization" element={<OrganizationPage />} />
-                      <Route path="/settings/users" element={<UsersPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="/subscription" element={<SubscriptionPage />} />
-                    </Route>
+                  <Route path="/dashboard" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<Dashboard />} />
+                  </Route>
+                  
+                  <Route path="/onboarding" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<OnboardingPage />} />
+                  </Route>
+                  
+                  {/* Management Routes */}
+                  <Route path="/farmers/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<FarmersPage />} />
+                  </Route>
+                  
+                  <Route path="/products/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<ProductsPage />} />
+                  </Route>
+                  
+                  <Route path="/dealers/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<DealersPage />} />
+                  </Route>
+                  
+                  <Route path="/campaigns/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<CampaignsPage />} />
+                  </Route>
+                  
+                  {/* Analytics Routes */}
+                  <Route path="/analytics/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<AnalyticsPage />} />
+                  </Route>
+                  
+                  {/* Integration Routes */}
+                  <Route path="/integrations/*" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route path="*" element={<IntegrationsPage />} />
+                  </Route>
+                  
+                  {/* Settings Routes */}
+                  <Route path="/settings" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<SettingsPage />} />
+                  </Route>
+                  
+                  <Route path="/settings/organization" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<OrganizationPage />} />
+                  </Route>
+                  
+                  <Route path="/settings/users" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<UsersPage />} />
+                  </Route>
+                  
+                  <Route path="/profile" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<ProfilePage />} />
+                  </Route>
+                  
+                  <Route path="/subscription" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedDashboardLayout />
+                    </OnboardingGuardOptimized>
+                  }>
+                    <Route index element={<SubscriptionPage />} />
                   </Route>
 
                   {/* Fallback Routes */}
