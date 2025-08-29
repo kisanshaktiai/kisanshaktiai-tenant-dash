@@ -82,7 +82,7 @@ class DashboardService {
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.farmer_code || farmer.name || 'Unknown Farmer',
+            name: farmer.farmer_code || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -113,7 +113,7 @@ class DashboardService {
     try {
       const { data, error } = await supabase
         .from('farmers')
-        .select('id, farmer_code, name, created_at')
+        .select('id, farmer_code, created_at')
         .eq('tenant_id', tenantId);
 
       if (error) {
