@@ -152,17 +152,7 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(campaign => ({
-      ...campaign,
-      channels: Array.isArray(campaign.channels) ? campaign.channels : [],
-      content_config: campaign.content_config || {},
-      personalization_config: campaign.personalization_config || {},
-      automation_config: campaign.automation_config || {},
-      trigger_config: campaign.trigger_config || {},
-      ab_testing_config: campaign.ab_testing_config || {},
-      tags: Array.isArray(campaign.tags) ? campaign.tags : [],
-      metadata: campaign.metadata || {}
-    })) as Campaign[];
+    return (data || []).map(this.transformCampaignData);
   }
 
   async getCampaignById(id: string): Promise<Campaign | null> {
@@ -177,17 +167,7 @@ class CampaignService {
     if (error) throw error;
     if (!data) return null;
     
-    return {
-      ...data,
-      channels: Array.isArray(data.channels) ? data.channels : [],
-      content_config: data.content_config || {},
-      personalization_config: data.personalization_config || {},
-      automation_config: data.automation_config || {},
-      trigger_config: data.trigger_config || {},
-      ab_testing_config: data.ab_testing_config || {},
-      tags: Array.isArray(data.tags) ? data.tags : [],
-      metadata: data.metadata || {}
-    } as Campaign;
+    return this.transformCampaignData(data);
   }
 
   async createCampaign(campaignData: Partial<Campaign>): Promise<Campaign> {
@@ -199,6 +179,7 @@ class CampaignService {
     }
 
     const insertData = {
+      tenant_id: tenantId,
       name: campaignData.name,
       description: campaignData.description,
       campaign_type: campaignData.campaign_type,
@@ -287,14 +268,7 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(segment => ({
-      ...segment,
-      criteria: segment.criteria || {},
-      geographic_filters: segment.geographic_filters || {},
-      behavioral_filters: segment.behavioral_filters || {},
-      crop_filters: segment.crop_filters || {},
-      exclusion_rules: segment.exclusion_rules || {}
-    })) as CampaignSegment[];
+    return (data || []).map(this.transformSegmentData);
   }
 
   async createSegment(segmentData: Partial<CampaignSegment>): Promise<CampaignSegment> {
@@ -305,6 +279,7 @@ class CampaignService {
     }
 
     const insertData = {
+      tenant_id: tenantId,
       name: segmentData.name,
       description: segmentData.description,
       segment_type: segmentData.segment_type || 'custom',
@@ -351,13 +326,7 @@ class CampaignService {
     const { data, error } = await query.order('usage_count', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(template => ({
-      ...template,
-      content: template.content || {},
-      layout_config: template.layout_config || {},
-      style_config: template.style_config || {},
-      language_versions: template.language_versions || {}
-    })) as CampaignTemplate[];
+    return (data || []).map(this.transformTemplateData);
   }
 
   async createTemplate(templateData: Partial<CampaignTemplate>): Promise<CampaignTemplate> {
@@ -368,6 +337,7 @@ class CampaignService {
     }
 
     const insertData = {
+      tenant_id: tenantId,
       name: templateData.name,
       description: templateData.description,
       template_type: templateData.template_type,
@@ -410,7 +380,7 @@ class CampaignService {
       message_content: execution.message_content || {},
       personalized_content: execution.personalized_content || {},
       metadata: execution.metadata || {}
-    })) as CampaignExecution[];
+    } as CampaignExecution));
   }
 
   async executeCampaign(campaignId: string): Promise<void> {
@@ -505,12 +475,7 @@ class CampaignService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(automation => ({
-      ...automation,
-      trigger_conditions: automation.trigger_conditions || {},
-      workflow_steps: Array.isArray(automation.workflow_steps) ? automation.workflow_steps : [],
-      timing_config: automation.timing_config || {}
-    })) as CampaignAutomation[];
+    return (data || []).map(this.transformAutomationData);
   }
 
   async createAutomation(automationData: Partial<CampaignAutomation>): Promise<CampaignAutomation> {
@@ -521,6 +486,7 @@ class CampaignService {
     }
 
     const insertData = {
+      tenant_id: tenantId,
       name: automationData.name,
       description: automationData.description,
       automation_type: automationData.automation_type,
