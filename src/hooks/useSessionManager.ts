@@ -24,7 +24,7 @@ export const useSessionManager = () => {
     const scheduleRefresh = () => {
       if (!session?.expires_at) return;
 
-      const expiresAt = session.expires_at * 1000; // Convert to milliseconds
+      const expiresAt = session.expires_at * 1000;
       const now = Date.now();
       const timeUntilExpiry = expiresAt - now;
       
@@ -33,18 +33,23 @@ export const useSessionManager = () => {
 
       if (refreshTime > 0) {
         refreshTimeoutRef.current = setTimeout(async () => {
-          console.log('Auto-refreshing session...');
+          console.log('SessionManager: Auto-refreshing session...');
           
-          const { error } = await refreshSession();
-          if (error) {
-            console.error('Failed to refresh session:', error);
-            // If refresh fails, sign out the user
+          try {
+            const { error } = await refreshSession();
+            if (error) {
+              console.error('SessionManager: Failed to refresh session:', error);
+              await signOut();
+            } else {
+              console.log('SessionManager: Session refreshed successfully');
+            }
+          } catch (error) {
+            console.error('SessionManager: Session refresh error:', error);
             await signOut();
           }
         }, refreshTime);
       } else if (isSessionExpired()) {
-        // Session is already expired or about to expire
-        console.log('Session expired, signing out...');
+        console.log('SessionManager: Session expired, signing out...');
         signOut();
       }
     };
@@ -55,7 +60,7 @@ export const useSessionManager = () => {
     // Set up periodic check every 5 minutes
     refreshIntervalRef.current = setInterval(() => {
       if (isSessionExpired()) {
-        console.log('Session expired during periodic check, signing out...');
+        console.log('SessionManager: Session expired during periodic check, signing out...');
         signOut();
       }
     }, 5 * 60 * 1000);

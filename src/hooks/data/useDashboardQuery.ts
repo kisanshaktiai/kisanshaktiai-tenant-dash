@@ -11,7 +11,7 @@ export const useDashboardQuery = () => {
     queryKey: queryKeys.dashboardStats(currentTenant?.id || ''),
     queryFn: async () => {
       if (!currentTenant?.id) {
-        console.warn('useDashboardQuery: No tenant available, returning empty data');
+        console.warn('useDashboardQuery: No tenant available, returning default empty data');
         return {
           farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
           campaigns: { active: 0, total: 0 },
@@ -28,7 +28,7 @@ export const useDashboardQuery = () => {
         return data;
       } catch (error) {
         console.error('useDashboardQuery: Error fetching dashboard data:', error);
-        // Return empty data instead of throwing
+        // Return safe default data structure
         return {
           farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
           campaigns: { active: 0, total: 0 },
@@ -37,12 +37,11 @@ export const useDashboardQuery = () => {
         };
       }
     },
-    enabled: true, // Always enabled, but will return empty data if no tenant
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    enabled: true,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: (failureCount, error: any) => {
-      // Don't retry if it's a tenant-related error
-      if (error?.message?.includes('No tenant') || error?.message?.includes('Tenant ID is required')) {
+      if (error?.message?.includes('No tenant') || !currentTenant?.id) {
         return false;
       }
       return failureCount < 2;

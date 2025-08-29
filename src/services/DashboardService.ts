@@ -27,33 +27,62 @@ export interface DashboardStats {
   };
 }
 
+// Default empty stats to prevent undefined errors
+const getDefaultStats = (): DashboardStats => ({
+  farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
+  campaigns: { active: 0, total: 0 },
+  products: { total: 0, categories: 0, out_of_stock: 0 },
+  dealers: { total: 0, active: 0 }
+});
+
 class DashboardService {
   async getDashboardStats(tenantId: string): Promise<DashboardStats> {
-    try {
-      console.log('Fetching dashboard stats for tenant:', tenantId);
+    if (!tenantId) {
+      console.warn('DashboardService: No tenantId provided, returning default stats');
+      return getDefaultStats();
+    }
 
-      const [farmers, products, dealers, campaigns] = await Promise.all([
+    try {
+      console.log('DashboardService: Fetching dashboard stats for tenant:', tenantId);
+
+      // Use Promise.allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled([
         this.getFarmersCount(tenantId),
         this.getProductsCount(tenantId),
         this.getDealersCount(tenantId),
         this.getCampaignsCount(tenantId)
       ]);
 
-      // Calculate new farmers this week
+      // Extract results with fallbacks
+      const farmers = results[0].status === 'fulfilled' ? results[0].value : [];
+      const products = results[1].status === 'fulfilled' ? results[1].value : [];
+      const dealers = results[2].status === 'fulfilled' ? results[2].value : [];
+      const campaigns = results[3].status === 'fulfilled' ? results[3].value : [];
+
+      // Log any failures
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const names = ['farmers', 'products', 'dealers', 'campaigns'];
+          console.error(`DashboardService: Failed to fetch ${names[index]}:`, result.reason);
+        }
+      });
+
+      // Calculate metrics safely
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
       const newFarmersThisWeek = farmers.filter(f => 
         f.created_at && new Date(f.created_at) >= oneWeekAgo
       ).length;
 
-      const dashboardData = {
+      const dashboardData: DashboardStats = {
         farmers: {
           total: farmers.length,
-          active: farmers.length, // Since we don't have a verified field, assume all are active
+          active: farmers.length,
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.farmer_code || 'Unknown Farmer',
+            name: farmer.farmer_code || farmer.name || 'Unknown Farmer',
             created_at: farmer.created_at
           }))
         },
@@ -64,83 +93,96 @@ class DashboardService {
         products: {
           total: products.length,
           categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
-          out_of_stock: 0 // Default to 0 since we don't have stock tracking
+          out_of_stock: 0
         },
         dealers: {
           total: dealers.length,
-          active: dealers.length // Assume all are active
+          active: dealers.length
         }
       };
 
-      console.log('Dashboard stats calculated:', dashboardData);
+      console.log('DashboardService: Successfully calculated stats:', dashboardData);
       return dashboardData;
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      
-      // Return default stats in case of error
-      return {
-        farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
-        campaigns: { active: 0, total: 0 },
-        products: { total: 0, categories: 0, out_of_stock: 0 },
-        dealers: { total: 0, active: 0 }
-      };
+      console.error('DashboardService: Critical error fetching dashboard stats:', error);
+      return getDefaultStats();
     }
   }
 
   private async getFarmersCount(tenantId: string) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('id, farmer_code, created_at')
-      .eq('tenant_id', tenantId);
+    try {
+      const { data, error } = await supabase
+        .from('farmers')
+        .select('id, farmer_code, name, created_at')
+        .eq('tenant_id', tenantId);
 
-    if (error) {
-      console.error('Error fetching farmers:', error);
+      if (error) {
+        console.error('DashboardService: Error fetching farmers:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch farmers:', error);
       return [];
     }
-
-    return data || [];
   }
 
   private async getCampaignsCount(tenantId: string) {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('id, status')
-      .eq('tenant_id', tenantId);
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, status')
+        .eq('tenant_id', tenantId);
 
-    if (error) {
-      console.error('Error fetching campaigns:', error);
+      if (error) {
+        console.error('DashboardService: Error fetching campaigns:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch campaigns:', error);
       return [];
     }
-
-    return data || [];
   }
 
   private async getProductsCount(tenantId: string) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('id, name')
-      .eq('tenant_id', tenantId);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('tenant_id', tenantId);
 
-    if (error) {
-      console.error('Error fetching products:', error);
+      if (error) {
+        console.error('DashboardService: Error fetching products:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch products:', error);
       return [];
     }
-
-    return data || [];
   }
 
   private async getDealersCount(tenantId: string) {
-    const { data, error } = await supabase
-      .from('dealers')
-      .select('id')
-      .eq('tenant_id', tenantId);
+    try {
+      const { data, error } = await supabase
+        .from('dealers')
+        .select('id, name')
+        .eq('tenant_id', tenantId);
 
-    if (error) {
-      console.error('Error fetching dealers:', error);
+      if (error) {
+        console.error('DashboardService: Error fetching dealers:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch dealers:', error);
       return [];
     }
-
-    return data || [];
   }
 }
 
