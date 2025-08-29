@@ -1,4 +1,3 @@
-
 import {
   LayoutDashboard,
   Users,
@@ -15,7 +14,8 @@ import {
   CreditCard,
   UserPlus,
   Building2,
-  Activity
+  Activity,
+  User
 } from 'lucide-react';
 import { Permission } from '@/types/permissions';
 
@@ -107,6 +107,14 @@ export const navigationConfig: NavigationItem[] = [
   },
 
   // Settings & Configuration
+  {
+    id: 'profile',
+    title: 'Profile',
+    href: '/profile',
+    icon: User,
+    description: 'User profile & settings',
+    category: 'settings'
+  },
   {
     id: 'settings',
     title: 'Settings',

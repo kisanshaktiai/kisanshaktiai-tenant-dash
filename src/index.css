@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -135,8 +136,15 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    @apply h-full w-full;
+    margin: 0;
+    padding: 0;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
 }
 
@@ -187,6 +195,11 @@
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
+
+  /* Responsive utilities */
+  .container-responsive {
+    @apply w-full max-w-none px-4 sm:px-6 lg:px-8;
+  }
 }
 
 @keyframes fadeIn {
@@ -208,5 +221,16 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    @apply hidden;
+  }
+  
+  .mobile-full {
+    @apply w-full;
   }
 }
