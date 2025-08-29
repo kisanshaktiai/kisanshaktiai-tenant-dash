@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface TenantBasicData {
@@ -93,37 +92,49 @@ class TenantProfileService {
   }
 
   async upsertFeatures(tenantId: string, data: TenantFeaturesData) {
-    const { error } = await supabase
-      .from('tenant_features')
-      .upsert({
-        tenant_id: tenantId,
-        // Core Features
-        farmer_management: data.farmer_management ?? true,
-        basic_analytics: data.basic_analytics ?? true,
-        mobile_app: data.mobile_app ?? true,
-        
-        // Communication Features
-        sms_notifications: data.sms_notifications ?? false,
-        whatsapp_integration: data.whatsapp_integration ?? false,
-        voice_calls: data.voice_calls ?? false,
-        
-        // Advanced Analytics Features
-        advanced_analytics: data.advanced_analytics ?? false,
-        predictive_analytics: data.predictive_analytics ?? false,
-        custom_reports: data.custom_reports ?? false,
-        
-        // Technology Features
-        weather_forecast: data.weather_forecast ?? false,
-        satellite_imagery: data.satellite_imagery ?? false,
-        iot_integration: data.iot_integration ?? false,
-        
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'tenant_id'
-      });
+    try {
+      console.log('TenantProfileService: Upserting features for tenant:', tenantId, data);
+      
+      const { error } = await supabase
+        .from('tenant_features')
+        .upsert({
+          tenant_id: tenantId,
+          // Core Features
+          farmer_management: data.farmer_management ?? true,
+          basic_analytics: data.basic_analytics ?? true,
+          mobile_app: data.mobile_app ?? true,
+          
+          // Communication Features
+          sms_notifications: data.sms_notifications ?? false,
+          whatsapp_integration: data.whatsapp_integration ?? false,
+          voice_calls: data.voice_calls ?? false,
+          
+          // Advanced Analytics Features
+          advanced_analytics: data.advanced_analytics ?? false,
+          predictive_analytics: data.predictive_analytics ?? false,
+          custom_reports: data.custom_reports ?? false,
+          
+          // Technology Features
+          weather_forecast: data.weather_forecast ?? false,
+          satellite_imagery: data.satellite_imagery ?? false,
+          iot_integration: data.iot_integration ?? false,
+          
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'tenant_id'
+        });
 
-    if (error) throw error;
-    return true;
+      if (error) {
+        console.error('TenantProfileService: Error upserting features:', error);
+        throw error;
+      }
+      
+      console.log('TenantProfileService: Features upserted successfully');
+      return true;
+    } catch (error) {
+      console.error('TenantProfileService: Failed to upsert features:', error);
+      throw error;
+    }
   }
 
   async createDataMigrationJob(tenantId: string, migrationData: any) {

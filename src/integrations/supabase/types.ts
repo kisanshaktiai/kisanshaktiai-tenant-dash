@@ -6627,21 +6627,26 @@ export type Database = {
           custom_reports: boolean | null
           drone_monitoring: boolean | null
           ecommerce: boolean | null
+          farmer_management: boolean | null
           id: string
           inventory_management: boolean | null
           iot_integration: boolean | null
           logistics_tracking: boolean | null
           marketplace: boolean | null
+          mobile_app: boolean | null
           payment_gateway: boolean | null
           predictive_analytics: boolean | null
           promo_enabled: boolean | null
           satellite_imagery: boolean | null
+          sms_notifications: boolean | null
           soil_testing: boolean | null
           tenant_id: string | null
           third_party_integrations: boolean | null
           updated_at: string | null
+          voice_calls: boolean | null
           weather_forecast: boolean | null
           webhook_support: boolean | null
+          whatsapp_integration: boolean | null
           white_label_mobile_app: boolean | null
         }
         Insert: {
@@ -6654,21 +6659,26 @@ export type Database = {
           custom_reports?: boolean | null
           drone_monitoring?: boolean | null
           ecommerce?: boolean | null
+          farmer_management?: boolean | null
           id?: string
           inventory_management?: boolean | null
           iot_integration?: boolean | null
           logistics_tracking?: boolean | null
           marketplace?: boolean | null
+          mobile_app?: boolean | null
           payment_gateway?: boolean | null
           predictive_analytics?: boolean | null
           promo_enabled?: boolean | null
           satellite_imagery?: boolean | null
+          sms_notifications?: boolean | null
           soil_testing?: boolean | null
           tenant_id?: string | null
           third_party_integrations?: boolean | null
           updated_at?: string | null
+          voice_calls?: boolean | null
           weather_forecast?: boolean | null
           webhook_support?: boolean | null
+          whatsapp_integration?: boolean | null
           white_label_mobile_app?: boolean | null
         }
         Update: {
@@ -6681,28 +6691,33 @@ export type Database = {
           custom_reports?: boolean | null
           drone_monitoring?: boolean | null
           ecommerce?: boolean | null
+          farmer_management?: boolean | null
           id?: string
           inventory_management?: boolean | null
           iot_integration?: boolean | null
           logistics_tracking?: boolean | null
           marketplace?: boolean | null
+          mobile_app?: boolean | null
           payment_gateway?: boolean | null
           predictive_analytics?: boolean | null
           promo_enabled?: boolean | null
           satellite_imagery?: boolean | null
+          sms_notifications?: boolean | null
           soil_testing?: boolean | null
           tenant_id?: string | null
           third_party_integrations?: boolean | null
           updated_at?: string | null
+          voice_calls?: boolean | null
           weather_forecast?: boolean | null
           webhook_support?: boolean | null
+          whatsapp_integration?: boolean | null
           white_label_mobile_app?: boolean | null
         }
         Relationships: [
           {
             foreignKeyName: "tenant_features_tenant_id_fkey"
             columns: ["tenant_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
