@@ -71,6 +71,7 @@ export const useTenantAuth = () => {
 
       dispatch(setUserTenants(tenants));
 
+      // Only set current tenant if we don't have one or if it's not in the list
       if (!currentTenant || !tenants.find(t => t.id === currentTenant.id)) {
         const firstTenant = tenants[0];
         if (firstTenant) {
@@ -101,6 +102,9 @@ export const useTenantAuth = () => {
       hasClearedRef.current = false;
     } catch (error) {
       console.error('useTenantAuth: Error refreshing tenant data:', error);
+      // Don't throw error to prevent breaking the auth flow
+      dispatch(setCurrentTenant(null));
+      dispatch(setUserTenants([]));
     } finally {
       setLoadingState(false);
       dispatch(setLoading(false));
@@ -163,7 +167,7 @@ export const useTenantAuth = () => {
         clearTenantSession();
       }
     }
-  }, [user?.id, authInitialized]); // Only depend on user.id and authInitialized
+  }, [user?.id, authInitialized, isInitialized]);
 
   return {
     currentTenant,

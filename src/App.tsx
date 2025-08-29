@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from 'react-error-boundary';
 import { TenantProvider } from '@/contexts/TenantContext';
 import ErrorFallback from '@/components/ErrorFallback';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Layout } from '@/components/layout/Layout';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 import Dashboard from '@/pages/Dashboard';
@@ -25,13 +26,13 @@ import { TenantRegistrationPage } from '@/pages/TenantRegistrationPage';
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage';
 import { SetupPasswordPage } from '@/pages/SetupPasswordPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
+import LoginPage from '@/pages/auth/LoginPage';
+import Auth from '@/pages/Auth';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppSelector } from '@/store/hooks';
 import { queryClient } from '@/lib/queryClient';
 
 const App = () => {
   const { loading: authLoading } = useAuth();
-  const { currentTenant, loading: tenantLoading } = useAppSelector((state) => state.tenant);
 
   // Show loading state while auth is initializing
   if (authLoading) {
@@ -49,16 +50,21 @@ const App = () => {
           <Router>
             <Routes>
               {/* Public routes */}
-              <Route path="/auth/*" element={<Layout><div /></Layout>} />
+              <Route path="/auth/login" element={<LoginPage />} />
+              <Route path="/auth/*" element={<Auth />} />
               <Route path="/register-tenant" element={<TenantRegistrationPage />} />
               <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route path="/setup-password" element={<SetupPasswordPage />} />
               
               {/* Protected routes with tenant context */}
-              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/onboarding" element={
+                <AuthGuard>
+                  <OnboardingPage />
+                </AuthGuard>
+              } />
               
-              {/* Main app routes - using EnhancedTenantLayout as a route element */}
-              <Route path="/" element={<EnhancedTenantLayout />}>
+              {/* Main app routes - protected by AuthGuard */}
+              <Route path="/" element={<AuthGuard><EnhancedTenantLayout /></AuthGuard>}>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="farmers" element={<FarmersPage />} />
