@@ -7,6 +7,7 @@ export type Permission =
   | 'dealers.view' | 'dealers.create' | 'dealers.edit' | 'dealers.delete'
   | 'campaigns.view' | 'campaigns.create' | 'campaigns.edit' | 'campaigns.delete'
   | 'analytics.view' | 'analytics.export'
+  | 'integrations.view' | 'integrations.create' | 'integrations.edit' | 'integrations.delete'
   | 'settings.view' | 'settings.edit'
   | 'users.view' | 'users.invite' | 'users.manage';
 
@@ -17,6 +18,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'dealers.view', 'dealers.create', 'dealers.edit', 'dealers.delete',
     'campaigns.view', 'campaigns.create', 'campaigns.edit', 'campaigns.delete',
     'analytics.view', 'analytics.export',
+    'integrations.view', 'integrations.create', 'integrations.edit', 'integrations.delete',
     'settings.view', 'settings.edit',
     'users.view', 'users.invite', 'users.manage'
   ],
@@ -26,6 +28,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'dealers.view', 'dealers.create', 'dealers.edit', 'dealers.delete',
     'campaigns.view', 'campaigns.create', 'campaigns.edit', 'campaigns.delete',
     'analytics.view', 'analytics.export',
+    'integrations.view', 'integrations.create', 'integrations.edit', 'integrations.delete',
     'settings.view', 'settings.edit',
     'users.view', 'users.invite', 'users.manage'
   ],
@@ -35,6 +38,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'dealers.view', 'dealers.create', 'dealers.edit', 'dealers.delete',
     'campaigns.view', 'campaigns.create', 'campaigns.edit', 'campaigns.delete',
     'analytics.view', 'analytics.export',
+    'integrations.view', 'integrations.create', 'integrations.edit',
     'settings.view', 'settings.edit',
     'users.view', 'users.invite'
   ],
@@ -43,13 +47,15 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'products.view', 'products.create', 'products.edit',
     'dealers.view', 'dealers.create', 'dealers.edit',
     'campaigns.view', 'campaigns.create', 'campaigns.edit',
-    'analytics.view'
+    'analytics.view',
+    'integrations.view'
   ],
   viewer: [
     'farmers.view',
     'products.view',
     'dealers.view',
     'campaigns.view',
-    'analytics.view'
+    'analytics.view',
+    'integrations.view'
   ]
 };
