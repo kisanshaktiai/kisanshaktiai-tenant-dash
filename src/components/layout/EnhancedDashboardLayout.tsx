@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { DashboardSidebar } from './DashboardSidebar';
+import { ModernSidebar } from './ModernSidebar';
 import { EnhancedTopbar } from './EnhancedTopbar';
 import NotificationPanel from '../notifications/NotificationPanel';
 import { CommandPalette } from '../ui/command-palette';
@@ -18,7 +18,7 @@ export const EnhancedDashboardLayout: React.FC = () => {
   const { isConnected, activeChannels } = useTenantRealtime();
 
   return (
-    <div className="h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Enhanced Command Palette */}
       <CommandPalette
         open={showCommandPalette}
@@ -28,22 +28,25 @@ export const EnhancedDashboardLayout: React.FC = () => {
       <PanelGroup direction="horizontal" className="h-full">
         {/* Sidebar Panel */}
         <Panel
-          defaultSize={18}
-          minSize={15}
-          maxSize={25}
+          defaultSize={isMinimized ? 5 : 18}
+          minSize={isMinimized ? 5 : 15}
+          maxSize={isMinimized ? 5 : 25}
           className={cn(
-            "transition-all duration-300",
-            isMinimized && "min-w-[60px] max-w-[60px]"
+            "transition-all duration-300 relative",
+            isMinimized && "min-w-[64px] max-w-[64px]"
           )}
         >
           <div className="relative h-full">
-            <DashboardSidebar isMinimized={isMinimized} />
+            <ModernSidebar isMinimized={isMinimized} />
             
-            {/* Minimize/Maximize Button */}
+            {/* Modern Toggle Button */}
             <Button
               variant="ghost"
               size="sm"
-              className="absolute -right-3 top-4 z-10 h-6 w-6 rounded-full border bg-background shadow-md hover:shadow-lg"
+              className={cn(
+                "absolute -right-3 top-6 z-20 h-6 w-6 rounded-full border bg-background/95 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200",
+                "hover:bg-accent hover:border-accent-foreground/20"
+              )}
               onClick={() => setIsMinimized(!isMinimized)}
             >
               {isMinimized ? (
@@ -55,10 +58,12 @@ export const EnhancedDashboardLayout: React.FC = () => {
           </div>
         </Panel>
 
-        <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors" />
+        {!isMinimized && (
+          <PanelResizeHandle className="w-1 bg-border/50 hover:bg-primary/30 transition-colors duration-200" />
+        )}
 
         {/* Main Content Panel */}
-        <Panel defaultSize={82} minSize={60}>
+        <Panel defaultSize={isMinimized ? 95 : 82} minSize={60}>
           <div className="flex h-full flex-col">
             {/* Enhanced Topbar */}
             <EnhancedTopbar
@@ -71,33 +76,38 @@ export const EnhancedDashboardLayout: React.FC = () => {
             {/* Main Content Area */}
             <div className="flex flex-1 overflow-hidden">
               <main className="flex-1 overflow-auto">
-                <div className="container mx-auto p-6 space-y-6">
+                <div className="container mx-auto p-6 space-y-6 max-w-none">
                   <Outlet />
                 </div>
               </main>
 
               {/* Notification Panel */}
               {showNotifications && (
-                <div className="w-80 border-l bg-card shadow-lg">
+                <div className="w-80 border-l bg-card/95 backdrop-blur-sm shadow-xl">
                   <NotificationPanel />
                 </div>
               )}
             </div>
 
-            {/* Real-time Connection Status */}
-            <div className="border-t bg-muted/30 px-4 py-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full",
-                    isConnected ? "bg-success animate-pulse" : "bg-destructive"
-                  )} />
-                  <span>
-                    {isConnected ? `Connected (${activeChannels} channels)` : 'Disconnected'}
-                  </span>
+            {/* Enhanced Status Bar */}
+            <div className="border-t bg-gradient-to-r from-muted/50 via-background/80 to-muted/30 backdrop-blur-sm px-6 py-3">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "h-2 w-2 rounded-full transition-all duration-200",
+                      isConnected ? "bg-emerald-500 shadow-lg shadow-emerald-500/30 animate-pulse" : "bg-red-500"
+                    )} />
+                    <span className="text-muted-foreground font-medium">
+                      {isConnected ? `Connected • ${activeChannels} active channels` : 'Disconnected'}
+                    </span>
+                  </div>
+                  <div className="h-3 w-px bg-border" />
+                  <span className="text-muted-foreground">Multi-Tenant SaaS Platform</span>
                 </div>
-                <div>
-                  KisanShakti AI © 2025
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span>KisanShakti AI</span>
+                  <span>© 2025</span>
                 </div>
               </div>
             </div>

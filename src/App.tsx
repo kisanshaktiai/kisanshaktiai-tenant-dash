@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -18,6 +17,7 @@ import ProductsPage from "./pages/products/ProductsPage";
 import DealersPage from "./pages/dealers/DealersPage";
 import CampaignsPage from "./pages/CampaignsPage";
 import { AnalyticsPage } from "./pages/analytics/AnalyticsPage";
+import IntegrationsPage from "./pages/integrations/IntegrationsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import "./App.css";
@@ -94,6 +94,7 @@ function App() {
                   <Route path="dealers" element={<DealersPage />} />
                   <Route path="campaigns" element={<CampaignsPage />} />
                   <Route path="analytics" element={<AnalyticsPage />} />
+                  <Route path="integrations" element={<IntegrationsPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
                 
