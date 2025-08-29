@@ -6,12 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
-import { DealerDirectory } from '@/pages/dealers/components/DealerDirectory';
-import { DealerOnboarding } from '@/pages/dealers/components/DealerOnboarding';
-import { TerritoryManagement } from '@/pages/dealers/components/TerritoryManagement';
-import { PerformanceTracking } from '@/pages/dealers/components/PerformanceTracking';
-import { CommunicationTools } from '@/pages/dealers/components/CommunicationTools';
-import { IncentiveManagement } from '@/pages/dealers/components/IncentiveManagement';
+import DealerDirectory from '@/pages/dealers/components/DealerDirectory';
+import DealerOnboarding from '@/pages/dealers/components/DealerOnboarding';
+import TerritoryManagement from '@/pages/dealers/components/TerritoryManagement';
+import PerformanceTracking from '@/pages/dealers/components/PerformanceTracking';
+import CommunicationTools from '@/pages/dealers/components/CommunicationTools';
+import IncentiveManagement from '@/pages/dealers/components/IncentiveManagement';
 import type { Dealer } from '@/services/DealersService';
 
 interface DealersPagePresentationProps {
@@ -98,7 +98,7 @@ export const DealersPagePresentation: React.FC<DealersPagePresentationProps> = (
         </TabsList>
 
         <TabsContent value="directory">
-          <DealerDirectory dealers={dealers} loading={isLoading} />
+          <DealerDirectory searchTerm={searchTerm} />
         </TabsContent>
 
         <TabsContent value="onboarding">
