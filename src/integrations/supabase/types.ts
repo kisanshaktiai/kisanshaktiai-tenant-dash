@@ -853,6 +853,424 @@ export type Database = {
           },
         ]
       }
+      campaign_analytics: {
+        Row: {
+          bounce_rate: number | null
+          campaign_id: string
+          channel: string
+          click_rate: number | null
+          conversion_rate: number | null
+          cost_per_message: number | null
+          created_at: string | null
+          customer_lifetime_value: number | null
+          date_period: string
+          engagement_score: number | null
+          hour_period: number | null
+          id: string
+          messages_delivered: number | null
+          messages_failed: number | null
+          messages_sent: number | null
+          open_rate: number | null
+          revenue_generated: number | null
+          roi: number | null
+          tenant_id: string
+          total_cost: number | null
+          unsubscribe_rate: number | null
+          updated_at: string | null
+          viral_coefficient: number | null
+        }
+        Insert: {
+          bounce_rate?: number | null
+          campaign_id: string
+          channel: string
+          click_rate?: number | null
+          conversion_rate?: number | null
+          cost_per_message?: number | null
+          created_at?: string | null
+          customer_lifetime_value?: number | null
+          date_period: string
+          engagement_score?: number | null
+          hour_period?: number | null
+          id?: string
+          messages_delivered?: number | null
+          messages_failed?: number | null
+          messages_sent?: number | null
+          open_rate?: number | null
+          revenue_generated?: number | null
+          roi?: number | null
+          tenant_id: string
+          total_cost?: number | null
+          unsubscribe_rate?: number | null
+          updated_at?: string | null
+          viral_coefficient?: number | null
+        }
+        Update: {
+          bounce_rate?: number | null
+          campaign_id?: string
+          channel?: string
+          click_rate?: number | null
+          conversion_rate?: number | null
+          cost_per_message?: number | null
+          created_at?: string | null
+          customer_lifetime_value?: number | null
+          date_period?: string
+          engagement_score?: number | null
+          hour_period?: number | null
+          id?: string
+          messages_delivered?: number | null
+          messages_failed?: number | null
+          messages_sent?: number | null
+          open_rate?: number | null
+          revenue_generated?: number | null
+          roi?: number | null
+          tenant_id?: string
+          total_cost?: number | null
+          unsubscribe_rate?: number | null
+          updated_at?: string | null
+          viral_coefficient?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_automations: {
+        Row: {
+          automation_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          success_rate: number | null
+          tenant_id: string
+          timing_config: Json | null
+          total_executions: number | null
+          trigger_conditions: Json
+          updated_at: string | null
+          workflow_steps: Json
+        }
+        Insert: {
+          automation_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          success_rate?: number | null
+          tenant_id: string
+          timing_config?: Json | null
+          total_executions?: number | null
+          trigger_conditions?: Json
+          updated_at?: string | null
+          workflow_steps?: Json
+        }
+        Update: {
+          automation_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          success_rate?: number | null
+          tenant_id?: string
+          timing_config?: Json | null
+          total_executions?: number | null
+          trigger_conditions?: Json
+          updated_at?: string | null
+          workflow_steps?: Json
+        }
+        Relationships: []
+      }
+      campaign_executions: {
+        Row: {
+          campaign_id: string
+          channel: string
+          clicked_at: string | null
+          conversion_value: number | null
+          converted_at: string | null
+          created_at: string | null
+          delivered_at: string | null
+          engagement_score: number | null
+          error_message: string | null
+          farmer_id: string | null
+          id: string
+          message_content: Json | null
+          metadata: Json | null
+          personalized_content: Json | null
+          read_at: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_id: string
+          channel: string
+          clicked_at?: string | null
+          conversion_value?: number | null
+          converted_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          engagement_score?: number | null
+          error_message?: string | null
+          farmer_id?: string | null
+          id?: string
+          message_content?: Json | null
+          metadata?: Json | null
+          personalized_content?: Json | null
+          read_at?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          channel?: string
+          clicked_at?: string | null
+          conversion_value?: number | null
+          converted_at?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          engagement_score?: number | null
+          error_message?: string | null
+          farmer_id?: string | null
+          id?: string
+          message_content?: Json | null
+          metadata?: Json | null
+          personalized_content?: Json | null
+          read_at?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_executions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_segments: {
+        Row: {
+          behavioral_filters: Json | null
+          created_at: string | null
+          created_by: string | null
+          criteria: Json
+          crop_filters: Json | null
+          description: string | null
+          estimated_size: number | null
+          exclusion_rules: Json | null
+          geographic_filters: Json | null
+          id: string
+          is_active: boolean | null
+          last_calculated_at: string | null
+          logic_operator: string | null
+          name: string
+          segment_type: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          behavioral_filters?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria?: Json
+          crop_filters?: Json | null
+          description?: string | null
+          estimated_size?: number | null
+          exclusion_rules?: Json | null
+          geographic_filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_calculated_at?: string | null
+          logic_operator?: string | null
+          name: string
+          segment_type?: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          behavioral_filters?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria?: Json
+          crop_filters?: Json | null
+          description?: string | null
+          estimated_size?: number | null
+          exclusion_rules?: Json | null
+          geographic_filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_calculated_at?: string | null
+          logic_operator?: string | null
+          name?: string
+          segment_type?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      campaign_templates: {
+        Row: {
+          category: string | null
+          content: Json
+          created_at: string | null
+          created_by: string | null
+          default_language: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_public: boolean | null
+          language_versions: Json | null
+          layout_config: Json | null
+          name: string
+          performance_score: number | null
+          style_config: Json | null
+          template_type: string
+          tenant_id: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          default_language?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_public?: boolean | null
+          language_versions?: Json | null
+          layout_config?: Json | null
+          name: string
+          performance_score?: number | null
+          style_config?: Json | null
+          template_type: string
+          tenant_id?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          default_language?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_public?: boolean | null
+          language_versions?: Json | null
+          layout_config?: Json | null
+          name?: string
+          performance_score?: number | null
+          style_config?: Json | null
+          template_type?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          ab_testing_config: Json | null
+          automation_config: Json | null
+          campaign_type: string
+          channels: Json | null
+          content_config: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_automated: boolean | null
+          metadata: Json | null
+          name: string
+          personalization_config: Json | null
+          spent_budget: number | null
+          start_date: string | null
+          status: string
+          tags: Json | null
+          target_audience_size: number | null
+          tenant_id: string
+          timezone: string | null
+          total_budget: number | null
+          trigger_config: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ab_testing_config?: Json | null
+          automation_config?: Json | null
+          campaign_type: string
+          channels?: Json | null
+          content_config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_automated?: boolean | null
+          metadata?: Json | null
+          name: string
+          personalization_config?: Json | null
+          spent_budget?: number | null
+          start_date?: string | null
+          status?: string
+          tags?: Json | null
+          target_audience_size?: number | null
+          tenant_id: string
+          timezone?: string | null
+          total_budget?: number | null
+          trigger_config?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ab_testing_config?: Json | null
+          automation_config?: Json | null
+          campaign_type?: string
+          channels?: Json | null
+          content_config?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_automated?: boolean | null
+          metadata?: Json | null
+          name?: string
+          personalization_config?: Json | null
+          spent_budget?: number | null
+          start_date?: string | null
+          status?: string
+          tags?: Json | null
+          target_audience_size?: number | null
+          tenant_id?: string
+          timezone?: string | null
+          total_budget?: number | null
+          trigger_config?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       collaborative_notes: {
         Row: {
           assigned_to: string | null

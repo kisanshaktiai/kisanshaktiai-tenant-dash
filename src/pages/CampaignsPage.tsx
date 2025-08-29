@@ -1,71 +1,54 @@
 
-import React, { useState } from 'react';
-import { Plus, Search, Filter, Download, Megaphone, Calendar, Users, BarChart3 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Filter, Download, Megaphone, Calendar, Users, BarChart3, Play, Pause, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PermissionGuard } from '@/components/guards/PermissionGuard';
-
-interface Campaign {
-  id: string;
-  name: string;
-  type: 'promotional' | 'educational' | 'seasonal' | 'government_scheme';
-  status: 'draft' | 'active' | 'paused' | 'completed';
-  startDate: string;
-  endDate: string;
-  targetAudience: number;
-  reached: number;
-  budget: number;
-  spent: number;
-  channels: string[];
-}
-
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    name: 'Summer Fertilizer Campaign',
-    type: 'promotional',
-    status: 'active',
-    startDate: '2024-03-01',
-    endDate: '2024-05-31',
-    targetAudience: 5000,
-    reached: 3200,
-    budget: 50000,
-    spent: 32000,
-    channels: ['SMS', 'WhatsApp', 'App']
-  },
-  {
-    id: '2',
-    name: 'Organic Farming Workshop Series',
-    type: 'educational',
-    status: 'active',
-    startDate: '2024-04-01',
-    endDate: '2024-06-30',
-    targetAudience: 1500,
-    reached: 890,
-    budget: 25000,
-    spent: 15600,
-    channels: ['App', 'Email']
-  }
-];
+import { CampaignWizard } from '@/components/campaigns/CampaignWizard';
+import { campaignService, Campaign } from '@/services/CampaignService';
+import { toast } from 'sonner';
 
 export default function CampaignsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [campaigns] = useState<Campaign[]>(mockCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      setLoading(true);
+      const data = await campaignService.getCampaigns();
+      setCampaigns(data);
+    } catch (error) {
+      console.error('Error loading campaigns:', error);
+      toast.error('Failed to load campaigns');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: Campaign['status']) => {
     switch (status) {
       case 'active': return 'bg-green-500';
       case 'draft': return 'bg-gray-500';
+      case 'scheduled': return 'bg-blue-500';
       case 'paused': return 'bg-yellow-500';
-      case 'completed': return 'bg-blue-500';
+      case 'completed': return 'bg-purple-500';
+      case 'cancelled': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
   };
 
-  const getTypeColor = (type: Campaign['type']) => {
+  const getTypeColor = (type: Campaign['campaign_type']) => {
     switch (type) {
       case 'promotional': return 'bg-purple-500';
       case 'educational': return 'bg-blue-500';
@@ -74,6 +57,46 @@ export default function CampaignsPage() {
       default: return 'bg-gray-500';
     }
   };
+
+  const handleCampaignAction = async (action: string, campaignId: string) => {
+    try {
+      switch (action) {
+        case 'start':
+          await campaignService.updateCampaign(campaignId, { status: 'active' });
+          toast.success('Campaign started successfully');
+          break;
+        case 'pause':
+          await campaignService.updateCampaign(campaignId, { status: 'paused' });
+          toast.success('Campaign paused');
+          break;
+        case 'stop':
+          await campaignService.updateCampaign(campaignId, { status: 'completed' });
+          toast.success('Campaign stopped');
+          break;
+        case 'execute':
+          await campaignService.executeCampaign(campaignId);
+          toast.success('Campaign execution started');
+          break;
+      }
+      loadCampaigns();
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+      toast.error('Failed to update campaign');
+    }
+  };
+
+  const filteredCampaigns = campaigns.filter(campaign =>
+    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    campaign.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Calculate stats
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length;
+  const draftCampaigns = campaigns.filter(c => c.status === 'draft').length;
+  const totalReach = campaigns.reduce((sum, c) => sum + c.target_audience_size, 0);
+  const totalBudget = campaigns.reduce((sum, c) => sum + (c.total_budget || 0), 0);
+  const totalSpent = campaigns.reduce((sum, c) => sum + c.spent_budget, 0);
+  const budgetUtilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -94,7 +117,7 @@ export default function CampaignsPage() {
             Export Reports
           </Button>
           <PermissionGuard permission="campaigns.create">
-            <Button>
+            <Button onClick={() => setWizardOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Create Campaign
             </Button>
@@ -110,11 +133,9 @@ export default function CampaignsPage() {
             <Megaphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {campaigns.filter(c => c.status === 'active').length}
-            </div>
+            <div className="text-2xl font-bold">{activeCampaigns}</div>
             <p className="text-xs text-muted-foreground">
-              {campaigns.filter(c => c.status === 'draft').length} drafts pending
+              {draftCampaigns} drafts pending
             </p>
           </CardContent>
         </Card>
@@ -125,11 +146,9 @@ export default function CampaignsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {campaigns.reduce((sum, c) => sum + c.reached, 0).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">{totalReach.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {campaigns.reduce((sum, c) => sum + c.targetAudience, 0).toLocaleString()} target
+              Target audience size
             </p>
           </CardContent>
         </Card>
@@ -140,11 +159,9 @@ export default function CampaignsPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {Math.round((campaigns.reduce((sum, c) => sum + c.spent, 0) / campaigns.reduce((sum, c) => sum + c.budget, 0)) * 100)}%
-            </div>
+            <div className="text-2xl font-bold">{budgetUtilization}%</div>
             <p className="text-xs text-muted-foreground">
-              ₹{campaigns.reduce((sum, c) => sum + c.spent, 0).toLocaleString()} spent
+              ₹{totalSpent.toLocaleString()} of ₹{totalBudget.toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -155,7 +172,11 @@ export default function CampaignsPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">
+              {campaigns.filter(c => 
+                new Date(c.created_at).getMonth() === new Date().getMonth()
+              ).length}
+            </div>
             <p className="text-xs text-muted-foreground">
               Campaigns launched
             </p>
@@ -194,72 +215,139 @@ export default function CampaignsPage() {
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="audiences">Audiences</TabsTrigger>
+          <TabsTrigger value="automations">Automations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="campaigns">
-          <div className="grid gap-4">
-            {campaigns.map((campaign) => (
-              <Card key={campaign.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <Badge className={`${getTypeColor(campaign.type)} text-white`}>
-                            {campaign.type.replace('_', ' ')}
-                          </Badge>
-                          <Badge className={`${getStatusColor(campaign.status)} text-white`}>
-                            {campaign.status}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}
-                          </span>
+          {loading ? (
+            <div className="grid gap-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-muted rounded w-1/4 mb-4"></div>
+                    <div className="h-3 bg-muted rounded w-full mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredCampaigns.map((campaign) => (
+                <Card key={campaign.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold">{campaign.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {campaign.description}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-3">
+                            <Badge className={`${getTypeColor(campaign.campaign_type)} text-white`}>
+                              {campaign.campaign_type.replace('_', ' ')}
+                            </Badge>
+                            <Badge className={`${getStatusColor(campaign.status)} text-white`}>
+                              {campaign.status}
+                            </Badge>
+                            {campaign.start_date && (
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(campaign.start_date).toLocaleDateString()}
+                                {campaign.end_date && ` - ${new Date(campaign.end_date).toLocaleDateString()}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Target Reach</div>
+                        <div className="text-lg font-semibold">
+                          {campaign.target_audience_size.toLocaleString()}
+                        </div>
+                        {campaign.total_budget && (
+                          <div className="text-sm text-muted-foreground">
+                            Budget: ₹{campaign.spent_budget.toLocaleString()} / ₹{campaign.total_budget.toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm text-muted-foreground">Channels:</span>
+                          {campaign.channels?.map((channel) => (
+                            <Badge key={channel} variant="outline">{channel.toUpperCase()}</Badge>
+                          ))}
+                        </div>
+                        <div className="flex space-x-2">
+                          <PermissionGuard permission="campaigns.view">
+                            <Button variant="outline" size="sm">View Details</Button>
+                          </PermissionGuard>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              {campaign.status === 'draft' && (
+                                <DropdownMenuItem onClick={() => handleCampaignAction('start', campaign.id)}>
+                                  <Play className="w-4 h-4 mr-2" />
+                                  Start Campaign
+                                </DropdownMenuItem>
+                              )}
+                              {campaign.status === 'active' && (
+                                <DropdownMenuItem onClick={() => handleCampaignAction('pause', campaign.id)}>
+                                  <Pause className="w-4 h-4 mr-2" />
+                                  Pause Campaign
+                                </DropdownMenuItem>
+                              )}
+                              {campaign.status === 'scheduled' && (
+                                <DropdownMenuItem onClick={() => handleCampaignAction('execute', campaign.id)}>
+                                  Execute Now
+                                </DropdownMenuItem>
+                              )}
+                              <PermissionGuard permission="campaigns.edit">
+                                <DropdownMenuItem>Edit Campaign</DropdownMenuItem>
+                              </PermissionGuard>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-muted-foreground">Reach</div>
-                      <div className="text-lg font-semibold">
-                        {campaign.reached.toLocaleString()} / {campaign.targetAudience.toLocaleString()}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Budget: ₹{campaign.spent.toLocaleString()} / ₹{campaign.budget.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">Channels:</span>
-                        {campaign.channels.map((channel) => (
-                          <Badge key={channel} variant="outline">{channel}</Badge>
-                        ))}
-                      </div>
-                      <div className="flex space-x-2">
-                        <PermissionGuard permission="campaigns.view">
-                          <Button variant="outline" size="sm">View Details</Button>
-                        </PermissionGuard>
-                        <PermissionGuard permission="campaigns.edit">
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </PermissionGuard>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="analytics">
           <Card>
             <CardHeader>
-              <CardTitle>Campaign Analytics</CardTitle>
+              <CardTitle>Campaign Performance Analytics</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Detailed campaign performance analytics will be displayed here.</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">85%</div>
+                  <div className="text-sm text-blue-700">Avg Delivery Rate</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">42%</div>
+                  <div className="text-sm text-green-700">Avg Open Rate</div>
+                </div>
+                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">15%</div>
+                  <div className="text-sm text-yellow-700">Avg Click Rate</div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">4.2%</div>
+                  <div className="text-sm text-purple-700">Avg Conversion Rate</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -278,14 +366,31 @@ export default function CampaignsPage() {
         <TabsContent value="audiences">
           <Card>
             <CardHeader>
-              <CardTitle>Target Audiences</CardTitle>
+              <CardTitle>Target Audiences & Segments</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Manage and segment your target audiences.</p>
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="automations">
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Automations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Set up automated campaign triggers and workflows.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <CampaignWizard
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        campaignId={selectedCampaign}
+      />
     </div>
   );
 }
