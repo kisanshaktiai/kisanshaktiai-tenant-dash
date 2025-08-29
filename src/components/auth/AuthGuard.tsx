@@ -3,7 +3,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContext } from '@/contexts/TenantContext';
-import { Loading } from '@/components/Loading';
+import Loading from '@/components/Loading';
 
 interface AuthGuardProps {
   children: React.ReactNode;
