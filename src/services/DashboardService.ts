@@ -52,7 +52,7 @@ class DashboardService {
           new_this_week: newFarmersThisWeek,
           recent: farmers.slice(0, 5).map(farmer => ({
             id: farmer.id,
-            name: farmer.full_name || 'Unknown Farmer',
+            name: farmer.farmer_code || 'Unknown Farmer', // Use farmer_code as name fallback
             created_at: farmer.created_at
           }))
         },
@@ -95,7 +95,7 @@ class DashboardService {
   private async getFarmersCount(tenantId: string) {
     const { data, error } = await supabase
       .from('farmers')
-      .select('id, full_name, created_at')
+      .select('id, farmer_code, created_at')
       .eq('tenant_id', tenantId);
 
     if (error) throw error;
