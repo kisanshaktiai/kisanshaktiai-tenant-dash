@@ -1,192 +1,190 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Settings, Plus } from 'lucide-react';
-import { WidgetContainer, Widget } from './widgets/WidgetContainer';
-import { WidgetLibrary } from './widgets/WidgetLibrary';
-import { useAppSelector } from '@/store/hooks';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Plus, 
+  Settings, 
+  LayoutGrid, 
+  Maximize2, 
+  Minimize2,
+  Sparkles,
+  TrendingUp,
+  Users,
+  Activity
+} from 'lucide-react';
+import { useDashboardQuery } from '@/hooks/data/useDashboardQuery';
+import { EnhancedDashboardPresentation } from './presentation/EnhancedDashboardPresentation';
+import { cn } from '@/lib/utils';
 
 interface CustomizableDashboardProps {
   tenantId: string;
 }
 
 export const CustomizableDashboard: React.FC<CustomizableDashboardProps> = ({ tenantId }) => {
-  const [widgets, setWidgets] = useState<Widget[]>([]);
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const [showWidgetLibrary, setShowWidgetLibrary] = useState(false);
+  const [viewMode, setViewMode] = useState<'expanded' | 'compact'>('expanded');
   
-  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const { 
+    data, 
+    isLoading, 
+    error 
+  } = useDashboardQuery(tenantId, {
+    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
+  });
 
-  // Load widgets from localStorage or default set
-  useEffect(() => {
-    const savedWidgets = localStorage.getItem(`dashboard-widgets-${tenantId}`);
-    if (savedWidgets) {
-      setWidgets(JSON.parse(savedWidgets));
-    } else {
-      // Default widgets
-      setWidgets([
-        {
-          id: 'farmer-count',
-          title: 'Total Farmers',
-          type: 'stat',
-          size: 'small',
-          position: { x: 0, y: 0 },
-          data: { value: 1234, change: '+12%' }
-        },
-        {
-          id: 'product-count',
-          title: 'Product Catalog',
-          type: 'stat',
-          size: 'small',
-          position: { x: 1, y: 0 },
-          data: { value: 456, change: '+5%' }
-        },
-        {
-          id: 'recent-activity',
-          title: 'Recent Activity',
-          type: 'list',
-          size: 'medium',
-          position: { x: 0, y: 1 },
-          data: {
-            items: [
-              'New farmer registration: Raj Kumar',
-              'Product update: Wheat Seeds',
-              'Campaign launched: Summer Fertilizer'
-            ]
-          }
-        }
-      ]);
-    }
-  }, [tenantId]);
+  const handleCustomizeMode = useCallback(() => {
+    setIsCustomizing(!isCustomizing);
+  }, [isCustomizing]);
 
-  // Save widgets to localStorage
-  const saveWidgets = (newWidgets: Widget[]) => {
-    setWidgets(newWidgets);
-    localStorage.setItem(`dashboard-widgets-${tenantId}`, JSON.stringify(newWidgets));
-  };
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prev => prev === 'expanded' ? 'compact' : 'expanded');
+  }, []);
 
-  const addWidget = (template: any) => {
-    const newWidget: Widget = {
-      id: `${template.id}-${Date.now()}`,
-      title: template.title,
-      type: template.type,
-      size: template.size,
-      position: { x: 0, y: widgets.length },
-      data: {}
-    };
-    saveWidgets([...widgets, newWidget]);
-    setShowWidgetLibrary(false);
-  };
-
-  const removeWidget = (widgetId: string) => {
-    saveWidgets(widgets.filter(w => w.id !== widgetId));
-  };
-
-  const configureWidget = (widgetId: string) => {
-    console.log('Configure widget:', widgetId);
-    // TODO: Open widget configuration modal
-  };
-
-  const renderWidgetContent = (widget: Widget) => {
-    switch (widget.type) {
-      case 'stat':
-        return (
-          <div className="text-center">
-            <div className="text-2xl font-bold">{widget.data?.value || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {widget.data?.change || '+0%'} from last month
-            </p>
+  if (error) {
+    return (
+      <Card className="border-destructive/20 bg-destructive/5 shadow-soft">
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+            <Activity className="h-6 w-6 text-destructive" />
           </div>
-        );
-      case 'list':
-        return (
-          <div className="space-y-2">
-            {widget.data?.items?.slice(0, 3).map((item: string, index: number) => (
-              <div key={index} className="text-sm text-muted-foreground">
-                • {item}
-              </div>
-            ))}
-          </div>
-        );
-      case 'chart':
-        return (
-          <div className="h-32 flex items-center justify-center text-muted-foreground">
-            Chart visualization would go here
-          </div>
-        );
-      default:
-        return (
-          <div className="text-center text-muted-foreground">
-            Widget content loading...
-          </div>
-        );
-    }
+          <h3 className="font-semibold text-lg text-destructive mb-2">
+            Unable to Load Dashboard
+          </h3>
+          <p className="text-muted-foreground text-center max-w-md">
+            We encountered an error while loading your dashboard data. Please refresh the page or contact support if the issue persists.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const mockData = {
+    farmers: { total: 2547, active: 1823, new: 127 },
+    dealers: { total: 89, active: 76, performance: 94 },
+    products: { total: 456, categories: 23, outOfStock: 12 },
+    analytics: { revenue: 2340000, growth: 18.5, satisfaction: 96 }
   };
 
   return (
     <div className="space-y-6">
-      {/* Dashboard Controls */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Welcome back!</h2>
-          <p className="text-muted-foreground">
-            {currentTenant?.name} Dashboard
-          </p>
-        </div>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowWidgetLibrary(!showWidgetLibrary)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Widget
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsCustomizing(!isCustomizing)}
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            {isCustomizing ? 'Done' : 'Customize'}
-          </Button>
-        </div>
-      </div>
+      {/* Enhanced Control Panel */}
+      <Card className="border-0 shadow-soft bg-gradient-to-r from-card via-card to-muted/10">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Dashboard Overview</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Real-time insights into your agricultural network
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1.5">
+                <Sparkles className="h-3 w-3" />
+                Live Data
+              </Badge>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleViewMode}
+                className="gap-2"
+              >
+                {viewMode === 'expanded' ? (
+                  <>
+                    <Minimize2 className="h-4 w-4" />
+                    Compact
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="h-4 w-4" />
+                    Expanded
+                  </>
+                )}
+              </Button>
 
-      {/* Widget Library */}
-      {showWidgetLibrary && (
-        <WidgetLibrary onAddWidget={addWidget} />
-      )}
+              <Button
+                variant={isCustomizing ? "default" : "outline"}
+                size="sm"
+                onClick={handleCustomizeMode}
+                className="gap-2"
+              >
+                {isCustomizing ? (
+                  <>
+                    <Settings className="h-4 w-4" />
+                    Done
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Customize
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
-      {/* Dashboard Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-min">
-        {widgets.map((widget) => (
-          <WidgetContainer
-            key={widget.id}
-            widget={widget}
-            onRemove={removeWidget}
-            onConfigure={configureWidget}
-          >
-            {renderWidgetContent(widget)}
-          </WidgetContainer>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {widgets.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Settings className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Customize Your Dashboard</h3>
-            <p className="text-muted-foreground mb-4 text-center">
-              Add widgets to create your personalized dashboard experience
-            </p>
-            <Button onClick={() => setShowWidgetLibrary(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Widget
-            </Button>
+      {/* Customization Notice */}
+      {isCustomizing && (
+        <Card className="border-primary/20 bg-primary/5 shadow-soft">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Settings className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-medium text-primary">Customization Mode</h4>
+                <p className="text-sm text-muted-foreground">
+                  Drag and drop widgets to customize your dashboard layout.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Enhanced Dashboard Content */}
+      <div className={cn(
+        "transition-all duration-300",
+        viewMode === 'compact' && "space-y-4",
+        viewMode === 'expanded' && "space-y-6"
+      )}>
+        <EnhancedDashboardPresentation 
+          data={mockData}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Quick Actions Footer */}
+      <Card className="border-0 shadow-soft bg-gradient-to-r from-muted/20 to-card">
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              Dashboard last updated: {new Date().toLocaleTimeString()}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <Users className="h-4 w-4" />
+                View All Farmers
+              </Button>
+              <Button variant="ghost" size="sm">
+                Export Data
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
