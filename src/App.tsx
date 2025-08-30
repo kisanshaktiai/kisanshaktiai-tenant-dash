@@ -6,7 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { IntlProvider } from './components/providers/IntlProvider';
 import { Toaster } from '@/components/ui/toaster';
-import ErrorFallback from './components/ErrorFallback';
+import { EnhancedTenantLayout } from './components/layout/EnhancedTenantLayout';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -16,6 +16,8 @@ import DealersPage from './pages/DealersPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SubscriptionPage from './pages/SubscriptionPage';
 import AppManagementPage from './pages/settings/AppManagementPage';
+import OrganizationSettingsPage from './pages/OrganizationSettingsPage';
+import UserManagementPage from './pages/UserManagementPage';
 import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { TenantThemeProvider } from '@/contexts/TenantThemeContext';
 
@@ -32,16 +34,20 @@ function App() {
                 <div className="min-h-screen bg-background font-sans antialiased">
                   <Toaster />
                   <Routes>
-                    <Route path="/dashboard" element={<DashboardPage />} />
-                    <Route path="/farmers" element={<FarmersPage />} />
-                    <Route path="/products" element={<ProductsPage />} />
-                    <Route path="/dealers" element={<DealersPage />} />
-                    <Route path="/analytics" element={<AnalyticsPage />} />
-                    <Route path="/subscription" element={<SubscriptionPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/settings/app-management" element={<AppManagementPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/*" element={<EnhancedTenantLayout />}>
+                      <Route path="dashboard" element={<DashboardPage />} />
+                      <Route path="farmers" element={<FarmersPage />} />
+                      <Route path="products" element={<ProductsPage />} />
+                      <Route path="dealers" element={<DealersPage />} />
+                      <Route path="analytics" element={<AnalyticsPage />} />
+                      <Route path="subscription" element={<SubscriptionPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                      <Route path="settings/app-management" element={<AppManagementPage />} />
+                      <Route path="settings/organization" element={<OrganizationSettingsPage />} />
+                      <Route path="settings/users" element={<UserManagementPage />} />
+                      <Route path="profile" element={<ProfilePage />} />
+                      <Route index element={<DashboardPage />} />
+                    </Route>
                   </Routes>
                 </div>
               </Router>
