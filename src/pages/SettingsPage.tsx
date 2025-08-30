@@ -52,7 +52,7 @@ const SettingsPage = () => {
     },
     {
       title: 'Appearance',
-      description: 'Customize theme, colors, and branding for your dashboard',
+      description: 'Customize the look and feel of your dashboard',
       icon: Palette,
       href: '/settings/appearance',
       color: 'text-purple-500'
