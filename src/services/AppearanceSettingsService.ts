@@ -36,7 +36,11 @@ class AppearanceSettingsService {
       return this.getDefaultSettings(tenantId);
     }
 
-    return data;
+    // Cast theme_mode to the correct type
+    return {
+      ...data,
+      theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
+    };
   }
 
   async upsertAppearanceSettings(settings: Partial<AppearanceSettings> & { tenant_id: string }): Promise<AppearanceSettings> {
@@ -65,7 +69,11 @@ class AppearanceSettingsService {
       throw error;
     }
 
-    return data;
+    // Cast theme_mode to the correct type
+    return {
+      ...data,
+      theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
+    };
   }
 
   private getDefaultSettings(tenantId: string): AppearanceSettings {
