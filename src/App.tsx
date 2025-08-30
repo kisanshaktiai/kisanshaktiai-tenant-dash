@@ -10,8 +10,8 @@ import { IntlProvider } from '@/components/providers/IntlProvider';
 import { ThemeInitializer } from '@/components/layout/ThemeInitializer';
 import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from 'react-error-boundary';
-import { ErrorFallback } from '@/components/ErrorFallback';
-import AuthGuard from '@/components/auth/AuthGuard';
+import ErrorFallback from '@/components/ErrorFallback';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 
 // Pages
