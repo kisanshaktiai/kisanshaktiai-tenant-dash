@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Provider } from 'react-redux';
@@ -49,28 +49,37 @@ function App() {
                   <Route path="/" element={<Index />} />
                   
                   {/* Protected routes */}
-                  <Route element={<AuthGuard><Layout /></AuthGuard>}>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/farmers" element={<FarmersPage />} />
-                    <Route path="/products" element={<ProductsPage />} />
-                    <Route path="/campaigns" element={<CampaignsPage />} />
-                    <Route path="/dealers" element={<DealersPage />} />
-                    <Route path="/analytics" element={<AnalyticsPage />} />
-                    <Route path="/integrations" element={<IntegrationsPage />} />
-                    <Route path="/subscription" element={<SubscriptionPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    
-                    {/* Settings routes */}
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/settings/organization" element={<OrganizationPage />} />
-                    <Route path="/settings/security" element={<SecurityPage />} />
-                    <Route path="/settings/notifications" element={<NotificationsPage />} />
-                    <Route path="/settings/appearance" element={<AppearancePage />} />
-                    <Route path="/settings/data-privacy" element={<DataPrivacyPage />} />
-                  </Route>
-                  
-                  {/* 404 */}
-                  <Route path="*" element={<NotFound />} />
+                  <Route 
+                    path="/*" 
+                    element={
+                      <AuthGuard>
+                        <Layout>
+                          <Routes>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/farmers" element={<FarmersPage />} />
+                            <Route path="/products" element={<ProductsPage />} />
+                            <Route path="/campaigns" element={<CampaignsPage />} />
+                            <Route path="/dealers" element={<DealersPage />} />
+                            <Route path="/analytics" element={<AnalyticsPage />} />
+                            <Route path="/integrations" element={<IntegrationsPage />} />
+                            <Route path="/subscription" element={<SubscriptionPage />} />
+                            <Route path="/profile" element={<ProfilePage />} />
+                            
+                            {/* Settings routes */}
+                            <Route path="/settings" element={<SettingsPage />} />
+                            <Route path="/settings/organization" element={<OrganizationPage />} />
+                            <Route path="/settings/security" element={<SecurityPage />} />
+                            <Route path="/settings/notifications" element={<NotificationsPage />} />
+                            <Route path="/settings/appearance" element={<AppearancePage />} />
+                            <Route path="/settings/data-privacy" element={<DataPrivacyPage />} />
+                            
+                            {/* 404 */}
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </Layout>
+                      </AuthGuard>
+                    } 
+                  />
                 </Routes>
               </Router>
               <Toaster />

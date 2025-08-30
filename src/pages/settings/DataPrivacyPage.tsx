@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,12 +84,32 @@ const DataPrivacyPage = () => {
   React.useEffect(() => {
     if (settings) {
       form.reset({
-        data_retention_policy: settings.data_retention_policy || form.getValues('data_retention_policy'),
-        anonymization_settings: settings.anonymization_settings || form.getValues('anonymization_settings'),
-        gdpr_settings: settings.gdpr_settings || form.getValues('gdpr_settings'),
-        backup_settings: settings.backup_settings || form.getValues('backup_settings'),
-        encryption_settings: settings.encryption_settings || form.getValues('encryption_settings'),
-        third_party_sharing: settings.third_party_sharing || form.getValues('third_party_sharing'),
+        data_retention_policy: settings.data_retention_policy || {
+          retention_period: 90,
+          automatic_deletion: true,
+        },
+        anonymization_settings: settings.anonymization_settings || {
+          anonymize_data: false,
+          anonymization_delay: 14,
+        },
+        gdpr_settings: settings.gdpr_settings || {
+          consent_tracking: true,
+          data_portability: true,
+          right_to_be_forgotten: true,
+        },
+        backup_settings: settings.backup_settings || {
+          automatic_backups: true,
+          backup_frequency: 'weekly' as const,
+          backup_location: '',
+        },
+        encryption_settings: settings.encryption_settings || {
+          data_encryption: true,
+          encryption_type: 'AES-256' as const,
+        },
+        third_party_sharing: settings.third_party_sharing || {
+          allow_third_party_sharing: false,
+          shared_data_types: [],
+        },
       });
     }
   }, [settings, form]);

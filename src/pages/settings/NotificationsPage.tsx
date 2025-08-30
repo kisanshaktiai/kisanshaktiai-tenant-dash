@@ -84,11 +84,33 @@ const NotificationsPage = () => {
   React.useEffect(() => {
     if (settings) {
       form.reset({
-        email_notifications: settings.email_notifications || form.getValues('email_notifications'),
-        push_notifications: settings.push_notifications || form.getValues('push_notifications'),
-        sms_notifications: settings.sms_notifications || form.getValues('sms_notifications'),
-        in_app_notifications: settings.in_app_notifications || form.getValues('in_app_notifications'),
-        notification_schedule: settings.notification_schedule || form.getValues('notification_schedule'),
+        email_notifications: settings.email_notifications || {
+          new_followers: true,
+          new_messages: true,
+          new_comments: true,
+          updates_and_announcements: true,
+        },
+        push_notifications: settings.push_notifications || {
+          new_followers: true,
+          new_messages: true,
+          new_comments: true,
+          updates_and_announcements: true,
+        },
+        sms_notifications: settings.sms_notifications || {
+          security_alerts: true,
+          critical_updates: true,
+        },
+        in_app_notifications: settings.in_app_notifications || {
+          new_followers: true,
+          new_messages: true,
+          new_comments: true,
+          updates_and_announcements: true,
+        },
+        notification_schedule: settings.notification_schedule || {
+          daily_summary: true,
+          weekly_report: true,
+          monthly_newsletter: true,
+        },
       });
     }
   }, [settings, form]);
