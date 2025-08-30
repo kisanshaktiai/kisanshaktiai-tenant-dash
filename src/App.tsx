@@ -15,6 +15,7 @@ import ProductsPage from '@/pages/ProductsPage';
 import DealersPage from '@/pages/DealersPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import SettingsPage from '@/pages/SettingsPage';
+import AppearancePage from '@/pages/settings/AppearancePage';
 import OnboardingPage from '@/pages/OnboardingPage';
 import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
 import NotFound from '@/pages/NotFound';
@@ -41,6 +42,7 @@ function App() {
             <Route path="dealers" element={<DealersPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/appearance" element={<AppearancePage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
             <Route index element={<Navigate to="/dashboard" replace />} />
           </Route>
