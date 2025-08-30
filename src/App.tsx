@@ -4,12 +4,13 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Provider } from 'react-redux';
+import { ErrorBoundary } from 'react-error-boundary';
 import { store } from '@/store';
 import { queryClient } from '@/lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-import ErrorBoundary from '@/components/ErrorFallback';
+import ErrorFallback from '@/components/ErrorFallback';
 
 // Pages
 import Index from '@/pages/Index';
@@ -38,7 +39,12 @@ import { Layout } from '@/components/layout/Layout';
 
 function App() {
   return (
-    <ErrorBoundary>
+    <ErrorBoundary 
+      FallbackComponent={ErrorFallback}
+      onError={(error, errorInfo) => {
+        console.error('App Error:', error, errorInfo);
+      }}
+    >
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>

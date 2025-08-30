@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 import type {
@@ -23,12 +24,15 @@ class SettingsService extends BaseApiService {
       
       return { 
         data: {
-          ...data,
-          business_hours: data.business_hours,
-          contact_info: data.contact_info,
-          social_links: data.social_links,
-          compliance_settings: data.compliance_settings,
-          custom_fields: data.custom_fields,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          business_hours: data.business_hours as any,
+          contact_info: data.contact_info as any,
+          social_links: data.social_links as any,
+          compliance_settings: data.compliance_settings as any,
+          custom_fields: data.custom_fields as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as OrganizationSettings, 
         error 
       };
@@ -41,11 +45,11 @@ class SettingsService extends BaseApiService {
         .from('organization_settings')
         .upsert({
           tenant_id: tenantId,
-          business_hours: settings.business_hours,
-          contact_info: settings.contact_info,
-          social_links: settings.social_links,
-          compliance_settings: settings.compliance_settings,
-          custom_fields: settings.custom_fields,
+          business_hours: settings.business_hours as any,
+          contact_info: settings.contact_info as any,
+          social_links: settings.social_links as any,
+          compliance_settings: settings.compliance_settings as any,
+          custom_fields: settings.custom_fields as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
@@ -53,12 +57,15 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          business_hours: data.business_hours,
-          contact_info: data.contact_info,
-          social_links: data.social_links,
-          compliance_settings: data.compliance_settings,
-          custom_fields: data.custom_fields,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          business_hours: data.business_hours as any,
+          contact_info: data.contact_info as any,
+          social_links: data.social_links as any,
+          compliance_settings: data.compliance_settings as any,
+          custom_fields: data.custom_fields as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as OrganizationSettings, 
         error 
       };
@@ -78,13 +85,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          password_policy: data.password_policy,
-          session_settings: data.session_settings,
-          mfa_settings: data.mfa_settings,
-          ip_whitelist: data.ip_whitelist,
-          login_restrictions: data.login_restrictions,
-          audit_settings: data.audit_settings,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          password_policy: data.password_policy as any,
+          session_settings: data.session_settings as any,
+          mfa_settings: data.mfa_settings as any,
+          ip_whitelist: data.ip_whitelist as any,
+          login_restrictions: data.login_restrictions as any,
+          audit_settings: data.audit_settings as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as SecuritySettings, 
         error 
       };
@@ -97,12 +107,12 @@ class SettingsService extends BaseApiService {
         .from('security_settings')
         .upsert({
           tenant_id: tenantId,
-          password_policy: settings.password_policy,
-          session_settings: settings.session_settings,
-          mfa_settings: settings.mfa_settings,
-          ip_whitelist: settings.ip_whitelist,
-          login_restrictions: settings.login_restrictions,
-          audit_settings: settings.audit_settings,
+          password_policy: settings.password_policy as any,
+          session_settings: settings.session_settings as any,
+          mfa_settings: settings.mfa_settings as any,
+          ip_whitelist: settings.ip_whitelist as any,
+          login_restrictions: settings.login_restrictions as any,
+          audit_settings: settings.audit_settings as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
@@ -110,13 +120,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          password_policy: data.password_policy,
-          session_settings: data.session_settings,
-          mfa_settings: data.mfa_settings,
-          ip_whitelist: data.ip_whitelist,
-          login_restrictions: data.login_restrictions,
-          audit_settings: data.audit_settings,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          password_policy: data.password_policy as any,
+          session_settings: data.session_settings as any,
+          mfa_settings: data.mfa_settings as any,
+          ip_whitelist: data.ip_whitelist as any,
+          login_restrictions: data.login_restrictions as any,
+          audit_settings: data.audit_settings as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as SecuritySettings, 
         error 
       };
@@ -137,12 +150,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          email_notifications: data.email_notifications,
-          push_notifications: data.push_notifications,
-          sms_notifications: data.sms_notifications,
-          in_app_notifications: data.in_app_notifications,
-          notification_schedule: data.notification_schedule,
+          id: data.id,
+          user_id: data.user_id,
+          tenant_id: data.tenant_id,
+          email_notifications: data.email_notifications as any,
+          push_notifications: data.push_notifications as any,
+          sms_notifications: data.sms_notifications as any,
+          in_app_notifications: data.in_app_notifications as any,
+          notification_schedule: data.notification_schedule as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as NotificationPreferences, 
         error 
       };
@@ -156,11 +173,11 @@ class SettingsService extends BaseApiService {
         .upsert({
           user_id: userId,
           tenant_id: tenantId,
-          email_notifications: preferences.email_notifications,
-          push_notifications: preferences.push_notifications,
-          sms_notifications: preferences.sms_notifications,
-          in_app_notifications: preferences.in_app_notifications,
-          notification_schedule: preferences.notification_schedule,
+          email_notifications: preferences.email_notifications as any,
+          push_notifications: preferences.push_notifications as any,
+          sms_notifications: preferences.sms_notifications as any,
+          in_app_notifications: preferences.in_app_notifications as any,
+          notification_schedule: preferences.notification_schedule as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
@@ -168,12 +185,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          email_notifications: data.email_notifications,
-          push_notifications: data.push_notifications,
-          sms_notifications: data.sms_notifications,
-          in_app_notifications: data.in_app_notifications,
-          notification_schedule: data.notification_schedule,
+          id: data.id,
+          user_id: data.user_id,
+          tenant_id: data.tenant_id,
+          email_notifications: data.email_notifications as any,
+          push_notifications: data.push_notifications as any,
+          sms_notifications: data.sms_notifications as any,
+          in_app_notifications: data.in_app_notifications as any,
+          notification_schedule: data.notification_schedule as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as NotificationPreferences, 
         error 
       };
@@ -193,13 +214,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          data_retention_policy: data.data_retention_policy,
-          anonymization_settings: data.anonymization_settings,
-          gdpr_settings: data.gdpr_settings,
-          backup_settings: data.backup_settings,
-          encryption_settings: data.encryption_settings,
-          third_party_sharing: data.third_party_sharing,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          data_retention_policy: data.data_retention_policy as any,
+          anonymization_settings: data.anonymization_settings as any,
+          gdpr_settings: data.gdpr_settings as any,
+          backup_settings: data.backup_settings as any,
+          encryption_settings: data.encryption_settings as any,
+          third_party_sharing: data.third_party_sharing as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as DataPrivacySettings, 
         error 
       };
@@ -212,12 +236,12 @@ class SettingsService extends BaseApiService {
         .from('data_privacy_settings')
         .upsert({
           tenant_id: tenantId,
-          data_retention_policy: settings.data_retention_policy,
-          anonymization_settings: settings.anonymization_settings,
-          gdpr_settings: settings.gdpr_settings,
-          backup_settings: settings.backup_settings,
-          encryption_settings: settings.encryption_settings,
-          third_party_sharing: settings.third_party_sharing,
+          data_retention_policy: settings.data_retention_policy as any,
+          anonymization_settings: settings.anonymization_settings as any,
+          gdpr_settings: settings.gdpr_settings as any,
+          backup_settings: settings.backup_settings as any,
+          encryption_settings: settings.encryption_settings as any,
+          third_party_sharing: settings.third_party_sharing as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
@@ -225,13 +249,16 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          data_retention_policy: data.data_retention_policy,
-          anonymization_settings: data.anonymization_settings,
-          gdpr_settings: data.gdpr_settings,
-          backup_settings: data.backup_settings,
-          encryption_settings: data.encryption_settings,
-          third_party_sharing: data.third_party_sharing,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          data_retention_policy: data.data_retention_policy as any,
+          anonymization_settings: data.anonymization_settings as any,
+          gdpr_settings: data.gdpr_settings as any,
+          backup_settings: data.backup_settings as any,
+          encryption_settings: data.encryption_settings as any,
+          third_party_sharing: data.third_party_sharing as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as DataPrivacySettings, 
         error 
       };
@@ -251,11 +278,19 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          supported_languages: data.supported_languages,
-          number_format: data.number_format,
-          regional_settings: data.regional_settings,
-          custom_translations: data.custom_translations,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          default_language: data.default_language,
+          supported_languages: data.supported_languages as any,
+          timezone: data.timezone,
+          date_format: data.date_format,
+          time_format: data.time_format,
+          currency: data.currency,
+          number_format: data.number_format as any,
+          regional_settings: data.regional_settings as any,
+          custom_translations: data.custom_translations as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as LocalizationSettings, 
         error 
       };
@@ -269,14 +304,14 @@ class SettingsService extends BaseApiService {
         .upsert({
           tenant_id: tenantId,
           default_language: settings.default_language,
-          supported_languages: settings.supported_languages,
+          supported_languages: settings.supported_languages as any,
           timezone: settings.timezone,
           date_format: settings.date_format,
           time_format: settings.time_format,
           currency: settings.currency,
-          number_format: settings.number_format,
-          regional_settings: settings.regional_settings,
-          custom_translations: settings.custom_translations,
+          number_format: settings.number_format as any,
+          regional_settings: settings.regional_settings as any,
+          custom_translations: settings.custom_translations as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
@@ -284,11 +319,19 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          supported_languages: data.supported_languages,
-          number_format: data.number_format,
-          regional_settings: data.regional_settings,
-          custom_translations: data.custom_translations,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          default_language: data.default_language,
+          supported_languages: data.supported_languages as any,
+          timezone: data.timezone,
+          date_format: data.date_format,
+          time_format: data.time_format,
+          currency: data.currency,
+          number_format: data.number_format as any,
+          regional_settings: data.regional_settings as any,
+          custom_translations: data.custom_translations as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as LocalizationSettings, 
         error 
       };
@@ -308,14 +351,18 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          billing_contact: data.billing_contact,
-          payment_methods: data.payment_methods,
-          billing_history: data.billing_history,
-          usage_quotas: data.usage_quotas,
-          feature_limits: data.feature_limits,
-          billing_alerts: data.billing_alerts,
-          cancellation_settings: data.cancellation_settings,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          billing_contact: data.billing_contact as any,
+          payment_methods: data.payment_methods as any,
+          billing_history: data.billing_history as any,
+          usage_quotas: data.usage_quotas as any,
+          feature_limits: data.feature_limits as any,
+          auto_billing: data.auto_billing,
+          billing_alerts: data.billing_alerts as any,
+          cancellation_settings: data.cancellation_settings as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as SubscriptionSettings, 
         error 
       };
@@ -343,14 +390,18 @@ class SettingsService extends BaseApiService {
 
       return { 
         data: {
-          ...data,
-          billing_contact: data.billing_contact,
-          payment_methods: data.payment_methods,
-          billing_history: data.billing_history,
-          usage_quotas: data.usage_quotas,
-          feature_limits: data.feature_limits,
-          billing_alerts: data.billing_alerts,
-          cancellation_settings: data.cancellation_settings,
+          id: data.id,
+          tenant_id: data.tenant_id,
+          billing_contact: data.billing_contact as any,
+          payment_methods: data.payment_methods as any,
+          billing_history: data.billing_history as any,
+          usage_quotas: data.usage_quotas as any,
+          feature_limits: data.feature_limits as any,
+          auto_billing: data.auto_billing,
+          billing_alerts: data.billing_alerts as any,
+          cancellation_settings: data.cancellation_settings as any,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
         } as SubscriptionSettings, 
         error 
       };

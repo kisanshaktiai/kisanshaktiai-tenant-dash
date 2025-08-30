@@ -83,34 +83,35 @@ const DataPrivacyPage = () => {
 
   React.useEffect(() => {
     if (settings) {
-      form.reset({
-        data_retention_policy: settings.data_retention_policy || {
-          retention_period: 90,
-          automatic_deletion: true,
+      const formData: DataPrivacyFormData = {
+        data_retention_policy: {
+          retention_period: settings.data_retention_policy?.retention_period || 90,
+          automatic_deletion: settings.data_retention_policy?.automatic_deletion || true,
         },
-        anonymization_settings: settings.anonymization_settings || {
-          anonymize_data: false,
-          anonymization_delay: 14,
+        anonymization_settings: {
+          anonymize_data: settings.anonymization_settings?.anonymize_data || false,
+          anonymization_delay: settings.anonymization_settings?.anonymization_delay || 14,
         },
-        gdpr_settings: settings.gdpr_settings || {
-          consent_tracking: true,
-          data_portability: true,
-          right_to_be_forgotten: true,
+        gdpr_settings: {
+          consent_tracking: settings.gdpr_settings?.consent_tracking || true,
+          data_portability: settings.gdpr_settings?.data_portability || true,
+          right_to_be_forgotten: settings.gdpr_settings?.right_to_be_forgotten || true,
         },
-        backup_settings: settings.backup_settings || {
-          automatic_backups: true,
-          backup_frequency: 'weekly' as const,
-          backup_location: '',
+        backup_settings: {
+          automatic_backups: settings.backup_settings?.automatic_backups || true,
+          backup_frequency: (settings.backup_settings?.backup_frequency as 'daily' | 'weekly' | 'monthly') || 'weekly',
+          backup_location: settings.backup_settings?.backup_location || '',
         },
-        encryption_settings: settings.encryption_settings || {
-          data_encryption: true,
-          encryption_type: 'AES-256' as const,
+        encryption_settings: {
+          data_encryption: settings.encryption_settings?.data_encryption || true,
+          encryption_type: (settings.encryption_settings?.encryption_type as 'AES-256' | 'RSA') || 'AES-256',
         },
-        third_party_sharing: settings.third_party_sharing || {
-          allow_third_party_sharing: false,
-          shared_data_types: [],
+        third_party_sharing: {
+          allow_third_party_sharing: settings.third_party_sharing?.allow_third_party_sharing || false,
+          shared_data_types: settings.third_party_sharing?.shared_data_types || [],
         },
-      });
+      };
+      form.reset(formData);
     }
   }, [settings, form]);
 

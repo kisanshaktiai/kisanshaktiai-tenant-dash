@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,35 +84,36 @@ const NotificationsPage = () => {
 
   React.useEffect(() => {
     if (settings) {
-      form.reset({
-        email_notifications: settings.email_notifications || {
-          new_followers: true,
-          new_messages: true,
-          new_comments: true,
-          updates_and_announcements: true,
+      const formData: NotificationFormData = {
+        email_notifications: {
+          new_followers: settings.email_notifications?.new_followers || true,
+          new_messages: settings.email_notifications?.new_messages || true,
+          new_comments: settings.email_notifications?.new_comments || true,
+          updates_and_announcements: settings.email_notifications?.updates_and_announcements || true,
         },
-        push_notifications: settings.push_notifications || {
-          new_followers: true,
-          new_messages: true,
-          new_comments: true,
-          updates_and_announcements: true,
+        push_notifications: {
+          new_followers: settings.push_notifications?.new_followers || true,
+          new_messages: settings.push_notifications?.new_messages || true,
+          new_comments: settings.push_notifications?.new_comments || true,
+          updates_and_announcements: settings.push_notifications?.updates_and_announcements || true,
         },
-        sms_notifications: settings.sms_notifications || {
-          security_alerts: true,
-          critical_updates: true,
+        sms_notifications: {
+          security_alerts: settings.sms_notifications?.security_alerts || true,
+          critical_updates: settings.sms_notifications?.critical_updates || true,
         },
-        in_app_notifications: settings.in_app_notifications || {
-          new_followers: true,
-          new_messages: true,
-          new_comments: true,
-          updates_and_announcements: true,
+        in_app_notifications: {
+          new_followers: settings.in_app_notifications?.new_followers || true,
+          new_messages: settings.in_app_notifications?.new_messages || true,
+          new_comments: settings.in_app_notifications?.new_comments || true,
+          updates_and_announcements: settings.in_app_notifications?.updates_and_announcements || true,
         },
-        notification_schedule: settings.notification_schedule || {
-          daily_summary: true,
-          weekly_report: true,
-          monthly_newsletter: true,
+        notification_schedule: {
+          daily_summary: settings.notification_schedule?.daily_summary || true,
+          weekly_report: settings.notification_schedule?.weekly_report || true,
+          monthly_newsletter: settings.notification_schedule?.monthly_newsletter || true,
         },
-      });
+      };
+      form.reset(formData);
     }
   }, [settings, form]);
 
