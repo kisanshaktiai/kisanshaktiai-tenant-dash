@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { appearanceSettingsService, AppearanceSettings } from '@/services/AppearanceSettingsService';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export const useAppearanceSettings = () => {
   const { currentTenant } = useTenantIsolation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const currentTenantIdRef = useRef<string | null>(null);
 
   const {
     data: settings,
@@ -51,17 +52,23 @@ export const useAppearanceSettings = () => {
     }
   });
 
-  // Apply theme colors when settings are loaded
+  // Apply theme colors when settings are loaded or tenant changes
   useEffect(() => {
-    if (settings) {
+    if (settings && currentTenant?.id) {
       appearanceSettingsService.applyThemeColors(settings);
+      currentTenantIdRef.current = currentTenant.id;
     }
-    
+  }, [settings, currentTenant?.id]);
+
+  // Only reset theme colors when tenant actually changes, not on component unmount
+  useEffect(() => {
     return () => {
-      // Cleanup on unmount
-      appearanceSettingsService.resetThemeColors();
+      // Only reset if tenant changed (not just navigation)
+      if (currentTenantIdRef.current !== currentTenant?.id) {
+        appearanceSettingsService.resetThemeColors();
+      }
     };
-  }, [settings]);
+  }, [currentTenant?.id]);
 
   return {
     settings,
