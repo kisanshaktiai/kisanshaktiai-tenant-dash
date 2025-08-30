@@ -25,12 +25,48 @@ import {
 } from 'lucide-react';
 
 const presetColors = [
-  { name: 'Emerald', primary: '#10b981', secondary: '#059669', accent: '#14b8a6' },
-  { name: 'Blue', primary: '#3b82f6', secondary: '#2563eb', accent: '#1d4ed8' },
-  { name: 'Purple', primary: '#8b5cf6', secondary: '#7c3aed', accent: '#6d28d9' },
-  { name: 'Orange', primary: '#f97316', secondary: '#ea580c', accent: '#c2410c' },
-  { name: 'Rose', primary: '#f43f5e', secondary: '#e11d48', accent: '#be123c' },
-  { name: 'Teal', primary: '#14b8a6', secondary: '#0d9488', accent: '#0f766e' }
+  { 
+    name: 'Emerald', 
+    primary: '#10b981', 
+    secondary: '#059669', 
+    accent: '#14b8a6',
+    description: 'Fresh green theme perfect for agriculture'
+  },
+  { 
+    name: 'Blue', 
+    primary: '#3b82f6', 
+    secondary: '#2563eb', 
+    accent: '#1d4ed8',
+    description: 'Professional blue theme'
+  },
+  { 
+    name: 'Purple', 
+    primary: '#8b5cf6', 
+    secondary: '#7c3aed', 
+    accent: '#6d28d9',
+    description: 'Modern purple theme'
+  },
+  { 
+    name: 'Orange', 
+    primary: '#f97316', 
+    secondary: '#ea580c', 
+    accent: '#c2410c',
+    description: 'Warm orange theme'
+  },
+  { 
+    name: 'Rose', 
+    primary: '#f43f5e', 
+    secondary: '#e11d48', 
+    accent: '#be123c',
+    description: 'Elegant rose theme'
+  },
+  { 
+    name: 'Teal', 
+    primary: '#14b8a6', 
+    secondary: '#0d9488', 
+    accent: '#0f766e',
+    description: 'Calm teal theme'
+  }
 ];
 
 const fontOptions = [
@@ -55,6 +91,7 @@ const AppearancePage = () => {
   };
 
   const handlePresetSelect = (preset: typeof presetColors[0]) => {
+    console.log('Applying color preset:', preset);
     updateSettings({
       primary_color: preset.primary,
       secondary_color: preset.secondary,
@@ -179,24 +216,28 @@ const AppearancePage = () => {
             {/* Color Presets */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">Color Presets</Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {presetColors.map((preset) => (
                   <Button
                     key={preset.name}
                     variant="outline"
                     onClick={() => handlePresetSelect(preset)}
-                    className="h-auto p-3 flex-col gap-2 hover:scale-[1.02] transition-all"
+                    className="h-auto p-4 flex items-center gap-4 hover:scale-[1.02] transition-all justify-start"
+                    disabled={isUpdating}
                   >
                     <div className="flex gap-1">
                       {[preset.primary, preset.secondary, preset.accent].map((color, i) => (
                         <div
                           key={i}
-                          className="w-4 h-4 rounded-full border"
+                          className="w-6 h-6 rounded-lg border shadow-sm"
                           style={{ backgroundColor: color }}
                         />
                       ))}
                     </div>
-                    <span className="text-xs font-medium">{preset.name}</span>
+                    <div className="text-left">
+                      <div className="font-medium">{preset.name}</div>
+                      <div className="text-xs text-muted-foreground">{preset.description}</div>
+                    </div>
                   </Button>
                 ))}
               </div>
@@ -280,7 +321,7 @@ const AppearancePage = () => {
                 checked={previewMode}
                 onCheckedChange={setPreviewMode}
               />
-              <Label htmlFor="preview-mode" className="text-sm">
+              <Label htmlFor="preview-mode" className="text-sm flex items-center gap-1">
                 {previewMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 Live Preview
               </Label>

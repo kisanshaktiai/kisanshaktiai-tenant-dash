@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { hexToHsl, generateSidebarColors } from '@/utils/colorUtils';
 
 export interface AppearanceSettings {
   id?: string;
@@ -35,7 +36,7 @@ class AppearanceSettingsService {
       return this.getDefaultSettings(tenantId);
     }
 
-    return data as AppearanceSettings;
+    return data;
   }
 
   async upsertAppearanceSettings(settings: Partial<AppearanceSettings> & { tenant_id: string }): Promise<AppearanceSettings> {
@@ -64,7 +65,7 @@ class AppearanceSettingsService {
       throw error;
     }
 
-    return data as AppearanceSettings;
+    return data;
   }
 
   private getDefaultSettings(tenantId: string): AppearanceSettings {
@@ -83,12 +84,51 @@ class AppearanceSettingsService {
   applyThemeColors(settings: AppearanceSettings) {
     const root = document.documentElement;
     
-    // Apply CSS custom properties
-    root.style.setProperty('--primary', settings.primary_color);
-    root.style.setProperty('--secondary', settings.secondary_color);
-    root.style.setProperty('--accent', settings.accent_color);
-    root.style.setProperty('--background', settings.background_color);
-    root.style.setProperty('--foreground', settings.text_color);
+    // Convert HEX colors to HSL format
+    const primaryHsl = hexToHsl(settings.primary_color);
+    const secondaryHsl = hexToHsl(settings.secondary_color);
+    const accentHsl = hexToHsl(settings.accent_color);
+    const backgroundHsl = hexToHsl(settings.background_color);
+    const textHsl = hexToHsl(settings.text_color);
+    
+    // Apply general CSS custom properties (HSL format)
+    root.style.setProperty('--primary', primaryHsl);
+    root.style.setProperty('--secondary', secondaryHsl);
+    root.style.setProperty('--accent', accentHsl);
+    root.style.setProperty('--background', backgroundHsl);
+    root.style.setProperty('--foreground', textHsl);
+    
+    // Generate and apply sidebar-specific colors
+    const sidebarColors = generateSidebarColors(primaryHsl);
+    root.style.setProperty('--sidebar-background', sidebarColors.background);
+    root.style.setProperty('--sidebar-foreground', sidebarColors.foreground);
+    root.style.setProperty('--sidebar-primary', primaryHsl);
+    root.style.setProperty('--sidebar-primary-foreground', backgroundHsl);
+    root.style.setProperty('--sidebar-accent', sidebarColors.accent);
+    root.style.setProperty('--sidebar-accent-foreground', sidebarColors.accentForeground);
+    root.style.setProperty('--sidebar-border', sidebarColors.border);
+    root.style.setProperty('--sidebar-ring', primaryHsl);
+    
+    // Apply card colors (ensure proper contrast)
+    root.style.setProperty('--card', backgroundHsl);
+    root.style.setProperty('--card-foreground', textHsl);
+    
+    // Apply muted colors (slightly darker/lighter variants)
+    const [h, s, l] = backgroundHsl.split(' ').map((v, i) => {
+      if (i === 0) return parseInt(v);
+      return parseInt(v.replace('%', ''));
+    });
+    
+    const mutedHsl = `${h} ${s}% ${Math.max(l - 5, 5)}%`;
+    const mutedForegroundHsl = `${h} ${Math.max(s - 20, 10)}% ${Math.max(l - 40, 25)}%`;
+    
+    root.style.setProperty('--muted', mutedHsl);
+    root.style.setProperty('--muted-foreground', mutedForegroundHsl);
+    
+    // Apply border and input colors
+    root.style.setProperty('--border', mutedHsl);
+    root.style.setProperty('--input', mutedHsl);
+    root.style.setProperty('--ring', primaryHsl);
     
     // Apply font family
     root.style.setProperty('--font-family', settings.font_family);
@@ -103,16 +143,43 @@ class AppearanceSettingsService {
       }
       customStyleElement.textContent = settings.custom_css;
     }
+    
+    console.log('Applied theme colors:', {
+      primary: primaryHsl,
+      sidebar: sidebarColors,
+      settings
+    });
   }
 
   resetThemeColors() {
     const root = document.documentElement;
+    
+    // Remove general properties
     root.style.removeProperty('--primary');
     root.style.removeProperty('--secondary');
     root.style.removeProperty('--accent');
     root.style.removeProperty('--background');
     root.style.removeProperty('--foreground');
     root.style.removeProperty('--font-family');
+    
+    // Remove sidebar properties
+    root.style.removeProperty('--sidebar-background');
+    root.style.removeProperty('--sidebar-foreground');
+    root.style.removeProperty('--sidebar-primary');
+    root.style.removeProperty('--sidebar-primary-foreground');
+    root.style.removeProperty('--sidebar-accent');
+    root.style.removeProperty('--sidebar-accent-foreground');
+    root.style.removeProperty('--sidebar-border');
+    root.style.removeProperty('--sidebar-ring');
+    
+    // Remove other properties
+    root.style.removeProperty('--card');
+    root.style.removeProperty('--card-foreground');
+    root.style.removeProperty('--muted');
+    root.style.removeProperty('--muted-foreground');
+    root.style.removeProperty('--border');
+    root.style.removeProperty('--input');
+    root.style.removeProperty('--ring');
     
     // Remove custom styles
     const customStyleElement = document.getElementById('tenant-custom-styles');
