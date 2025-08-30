@@ -3,13 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { appearanceSettingsService, AppearanceSettings } from '@/services/AppearanceSettingsService';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 export const useAppearanceSettings = () => {
   const { currentTenant } = useTenantIsolation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const currentTenantIdRef = useRef<string | null>(null);
 
   const {
     data: settings,
@@ -36,7 +35,11 @@ export const useAppearanceSettings = () => {
       queryClient.setQueryData(['appearance-settings', currentTenant?.id], data);
       
       // Apply theme changes immediately
+      console.log('Theme updated successfully, applying colors:', data);
       appearanceSettingsService.applyThemeColors(data);
+      
+      // Update sessionStorage for persistence
+      sessionStorage.setItem('current-theme-settings', JSON.stringify(data));
       
       toast({
         title: "Appearance updated",
@@ -52,23 +55,16 @@ export const useAppearanceSettings = () => {
     }
   });
 
-  // Apply theme colors when settings are loaded or tenant changes
+  // Apply theme colors when settings are first loaded
   useEffect(() => {
     if (settings && currentTenant?.id) {
+      console.log('Settings loaded, applying theme colors:', settings);
       appearanceSettingsService.applyThemeColors(settings);
-      currentTenantIdRef.current = currentTenant.id;
+      
+      // Update sessionStorage
+      sessionStorage.setItem('current-theme-settings', JSON.stringify(settings));
     }
   }, [settings, currentTenant?.id]);
-
-  // Only reset theme colors when tenant actually changes, not on component unmount
-  useEffect(() => {
-    return () => {
-      // Only reset if tenant changed (not just navigation)
-      if (currentTenantIdRef.current !== currentTenant?.id) {
-        appearanceSettingsService.resetThemeColors();
-      }
-    };
-  }, [currentTenant?.id]);
 
   return {
     settings,

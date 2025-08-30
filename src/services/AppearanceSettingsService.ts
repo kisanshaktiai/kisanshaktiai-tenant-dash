@@ -92,6 +92,8 @@ class AppearanceSettingsService {
   applyThemeColors(settings: AppearanceSettings) {
     const root = document.documentElement;
     
+    console.log('Applying theme colors to DOM:', settings);
+    
     // Convert HEX colors to HSL format
     const primaryHsl = hexToHsl(settings.primary_color);
     const secondaryHsl = hexToHsl(settings.secondary_color);
@@ -152,7 +154,7 @@ class AppearanceSettingsService {
       customStyleElement.textContent = settings.custom_css;
     }
     
-    console.log('Applied theme colors:', {
+    console.log('Theme colors applied successfully:', {
       primary: primaryHsl,
       sidebar: sidebarColors,
       settings
@@ -161,6 +163,8 @@ class AppearanceSettingsService {
 
   resetThemeColors() {
     const root = document.documentElement;
+    
+    console.log('Resetting theme colors');
     
     // Remove general properties
     root.style.removeProperty('--primary');
@@ -194,6 +198,9 @@ class AppearanceSettingsService {
     if (customStyleElement) {
       customStyleElement.remove();
     }
+    
+    // Clear sessionStorage
+    sessionStorage.removeItem('current-theme-settings');
   }
 }
 
