@@ -1,4 +1,3 @@
-
 import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
@@ -17,6 +16,7 @@ export const queryKeys = {
   tenantSettings: (tenantId: string) => ['tenant-settings', tenantId] as const,
   tenantBranding: (tenantId: string) => ['tenant-branding', tenantId] as const,
   tenantFeatures: (tenantId: string) => ['tenant-features', tenantId] as const,
+  appearanceSettings: (tenantId: string) => ['appearance-settings', tenantId] as const,
   
   // Farmer-related queries
   farmers: (tenantId: string, options?: any) => ['farmers', tenantId, options] as const,
