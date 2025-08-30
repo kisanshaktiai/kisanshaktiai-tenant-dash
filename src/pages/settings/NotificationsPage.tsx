@@ -16,31 +16,31 @@ import { Bell, Mail, Smartphone, Monitor, Clock } from 'lucide-react';
 
 const notificationSchema = z.object({
   email_notifications: z.object({
-    new_followers: z.boolean(),
-    new_messages: z.boolean(),
-    new_comments: z.boolean(),
-    updates_and_announcements: z.boolean(),
+    system: z.boolean(),
+    marketing: z.boolean(),
+    security: z.boolean(),
+    campaigns: z.boolean(),
   }),
   push_notifications: z.object({
-    new_followers: z.boolean(),
-    new_messages: z.boolean(),
-    new_comments: z.boolean(),
-    updates_and_announcements: z.boolean(),
+    enabled: z.boolean(),
+    sound: z.boolean(),
+    badge: z.boolean(),
   }),
   sms_notifications: z.object({
+    enabled: z.boolean(),
     security_alerts: z.boolean(),
-    critical_updates: z.boolean(),
   }),
   in_app_notifications: z.object({
-    new_followers: z.boolean(),
-    new_messages: z.boolean(),
-    new_comments: z.boolean(),
-    updates_and_announcements: z.boolean(),
+    enabled: z.boolean(),
+    popup: z.boolean(),
+    sound: z.boolean(),
   }),
   notification_schedule: z.object({
-    daily_summary: z.boolean(),
-    weekly_report: z.boolean(),
-    monthly_newsletter: z.boolean(),
+    quiet_hours: z.object({
+      enabled: z.boolean(),
+      start: z.string(),
+      end: z.string(),
+    }),
   }),
 });
 
@@ -53,31 +53,31 @@ const NotificationsPage = () => {
     resolver: zodResolver(notificationSchema),
     defaultValues: {
       email_notifications: {
-        new_followers: true,
-        new_messages: true,
-        new_comments: true,
-        updates_and_announcements: true,
+        system: true,
+        marketing: true,
+        security: true,
+        campaigns: true,
       },
       push_notifications: {
-        new_followers: true,
-        new_messages: true,
-        new_comments: true,
-        updates_and_announcements: true,
+        enabled: true,
+        sound: true,
+        badge: true,
       },
       sms_notifications: {
+        enabled: true,
         security_alerts: true,
-        critical_updates: true,
       },
       in_app_notifications: {
-        new_followers: true,
-        new_messages: true,
-        new_comments: true,
-        updates_and_announcements: true,
+        enabled: true,
+        popup: true,
+        sound: true,
       },
       notification_schedule: {
-        daily_summary: true,
-        weekly_report: true,
-        monthly_newsletter: true,
+        quiet_hours: {
+          enabled: false,
+          start: '22:00',
+          end: '08:00',
+        },
       },
     },
   });
@@ -86,31 +86,31 @@ const NotificationsPage = () => {
     if (settings) {
       const formData: NotificationFormData = {
         email_notifications: {
-          new_followers: settings.email_notifications?.new_followers || true,
-          new_messages: settings.email_notifications?.new_messages || true,
-          new_comments: settings.email_notifications?.new_comments || true,
-          updates_and_announcements: settings.email_notifications?.updates_and_announcements || true,
+          system: settings.email_notifications?.system || true,
+          marketing: settings.email_notifications?.marketing || true,
+          security: settings.email_notifications?.security || true,
+          campaigns: settings.email_notifications?.campaigns || true,
         },
         push_notifications: {
-          new_followers: settings.push_notifications?.new_followers || true,
-          new_messages: settings.push_notifications?.new_messages || true,
-          new_comments: settings.push_notifications?.new_comments || true,
-          updates_and_announcements: settings.push_notifications?.updates_and_announcements || true,
+          enabled: settings.push_notifications?.enabled || true,
+          sound: settings.push_notifications?.sound || true,
+          badge: settings.push_notifications?.badge || true,
         },
         sms_notifications: {
+          enabled: settings.sms_notifications?.enabled || true,
           security_alerts: settings.sms_notifications?.security_alerts || true,
-          critical_updates: settings.sms_notifications?.critical_updates || true,
         },
         in_app_notifications: {
-          new_followers: settings.in_app_notifications?.new_followers || true,
-          new_messages: settings.in_app_notifications?.new_messages || true,
-          new_comments: settings.in_app_notifications?.new_comments || true,
-          updates_and_announcements: settings.in_app_notifications?.updates_and_announcements || true,
+          enabled: settings.in_app_notifications?.enabled || true,
+          popup: settings.in_app_notifications?.popup || true,
+          sound: settings.in_app_notifications?.sound || true,
         },
         notification_schedule: {
-          daily_summary: settings.notification_schedule?.daily_summary || true,
-          weekly_report: settings.notification_schedule?.weekly_report || true,
-          monthly_newsletter: settings.notification_schedule?.monthly_newsletter || true,
+          quiet_hours: {
+            enabled: settings.notification_schedule?.quiet_hours?.enabled || false,
+            start: settings.notification_schedule?.quiet_hours?.start || '22:00',
+            end: settings.notification_schedule?.quiet_hours?.end || '08:00',
+          },
         },
       };
       form.reset(formData);
@@ -149,12 +149,12 @@ const NotificationsPage = () => {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="email_notifications.new_followers"
+                  name="email_notifications.system"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Followers</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone starts following you</p>
+                        <FormLabel>System Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Receive notifications about system updates and maintenance</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -164,12 +164,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="email_notifications.new_messages"
+                  name="email_notifications.marketing"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Messages</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when you receive a new direct message</p>
+                        <FormLabel>Marketing Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Receive marketing updates and promotional content</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -179,12 +179,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="email_notifications.new_comments"
+                  name="email_notifications.security"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Comments</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone comments on your posts</p>
+                        <FormLabel>Security Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Receive alerts about security events and login attempts</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -194,12 +194,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="email_notifications.updates_and_announcements"
+                  name="email_notifications.campaigns"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Updates and Announcements</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive important product updates and announcements</p>
+                        <FormLabel>Campaign Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Receive notifications about campaign updates and results</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -224,12 +224,12 @@ const NotificationsPage = () => {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="push_notifications.new_followers"
+                  name="push_notifications.enabled"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Followers</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone starts following you</p>
+                        <FormLabel>Enable Push Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Allow push notifications to be sent to your devices</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -239,12 +239,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="push_notifications.new_messages"
+                  name="push_notifications.sound"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Messages</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when you receive a new direct message</p>
+                        <FormLabel>Sound</FormLabel>
+                        <p className="text-sm text-muted-foreground">Play sound when receiving push notifications</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -254,27 +254,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="push_notifications.new_comments"
+                  name="push_notifications.badge"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Comments</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone comments on your posts</p>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="push_notifications.updates_and_announcements"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <FormLabel>Updates and Announcements</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive important product updates and announcements</p>
+                        <FormLabel>Badge</FormLabel>
+                        <p className="text-sm text-muted-foreground">Show badge count on app icon</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -299,12 +284,12 @@ const NotificationsPage = () => {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="sms_notifications.security_alerts"
+                  name="sms_notifications.enabled"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Security Alerts</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify about suspicious activity or security breaches</p>
+                        <FormLabel>Enable SMS</FormLabel>
+                        <p className="text-sm text-muted-foreground">Allow SMS notifications to be sent to your phone</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -314,12 +299,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="sms_notifications.critical_updates"
+                  name="sms_notifications.security_alerts"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Critical Updates</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive notifications about critical system updates</p>
+                        <FormLabel>Security Alerts</FormLabel>
+                        <p className="text-sm text-muted-foreground">Receive SMS for security events and suspicious activity</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -344,12 +329,12 @@ const NotificationsPage = () => {
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="in_app_notifications.new_followers"
+                  name="in_app_notifications.enabled"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Followers</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone starts following you</p>
+                        <FormLabel>Enable In-App Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Show notifications within the application</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -359,12 +344,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="in_app_notifications.new_messages"
+                  name="in_app_notifications.popup"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Messages</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when you receive a new direct message</p>
+                        <FormLabel>Popup Notifications</FormLabel>
+                        <p className="text-sm text-muted-foreground">Show popup notifications in the app</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -374,27 +359,12 @@ const NotificationsPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="in_app_notifications.new_comments"
+                  name="in_app_notifications.sound"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>New Comments</FormLabel>
-                        <p className="text-sm text-muted-foreground">Notify when someone comments on your posts</p>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="in_app_notifications.updates_and_announcements"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <FormLabel>Updates and Announcements</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive important product updates and announcements</p>
+                        <FormLabel>Sound</FormLabel>
+                        <p className="text-sm text-muted-foreground">Play sound for in-app notifications</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -413,18 +383,18 @@ const NotificationsPage = () => {
                   Notification Schedule
                 </CardTitle>
                 <CardDescription>
-                  Configure the frequency of summary notifications
+                  Configure quiet hours and notification timing
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="notification_schedule.daily_summary"
+                  name="notification_schedule.quiet_hours.enabled"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Daily Summary</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive a daily summary of important updates</p>
+                        <FormLabel>Quiet Hours</FormLabel>
+                        <p className="text-sm text-muted-foreground">Enable quiet hours to pause non-critical notifications</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -432,36 +402,36 @@ const NotificationsPage = () => {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="notification_schedule.weekly_report"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <FormLabel>Weekly Report</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive a weekly report of key metrics and activities</p>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="notification_schedule.monthly_newsletter"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <FormLabel>Monthly Newsletter</FormLabel>
-                        <p className="text-sm text-muted-foreground">Receive a monthly newsletter with product updates and tips</p>
-                      </div>
-                      <FormControl>
-                        <Switch checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+                {form.watch('notification_schedule.quiet_hours.enabled') && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="notification_schedule.quiet_hours.start"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Time</FormLabel>
+                          <FormControl>
+                            <input {...field} type="time" className="border rounded px-3 py-2 w-full" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="notification_schedule.quiet_hours.end"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Time</FormLabel>
+                          <FormControl>
+                            <input {...field} type="time" className="border rounded px-3 py-2 w-full" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
               </CardContent>
             </Card>
 
