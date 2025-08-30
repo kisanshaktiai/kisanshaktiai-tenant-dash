@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -25,7 +24,7 @@ import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
 import SettingsPage from '@/pages/SettingsPage';
-import ProfilePage from '@/pages/ProfilePage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import SubscriptionPage from '@/pages/SubscriptionPage';
 import NotFound from '@/pages/NotFound';
 import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
@@ -37,7 +36,7 @@ import SetupPasswordPage from '@/pages/SetupPasswordPage';
 // Settings Pages
 import OrganizationSettingsPage from '@/pages/OrganizationSettingsPage';
 import UserManagementPage from '@/pages/UserManagementPage';
-import UserInvitationsPage from '@/pages/UserInvitationsPage';
+import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
 
 import './App.css';
