@@ -1,31 +1,34 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 
 const UserManagementPage = () => {
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage team members, roles, and permissions
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="User Management"
+        description="Manage team members, roles, and permissions"
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Members</CardTitle>
-          <CardDescription>
-            Invite and manage your team members
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            This feature is under development.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+      <PageContent>
+        <Card>
+          <CardHeader>
+            <CardTitle>Team Members</CardTitle>
+            <CardDescription>
+              Invite and manage your team members
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              This feature is under development.
+            </p>
+          </CardContent>
+        </Card>
+      </PageContent>
+    </PageLayout>
   );
 };
 

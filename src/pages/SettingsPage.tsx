@@ -14,6 +14,9 @@ import {
   Globe,
   ArrowRight
 } from 'lucide-react';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
@@ -78,71 +81,68 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          Settings
-        </h1>
-        <p className="text-muted-foreground">
-          Manage your account preferences and system configuration
-        </p>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Settings"
+        description="Manage your account preferences and system configuration"
+      />
 
-      {/* Settings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {settingsCategories.map((category) => (
-          <Card 
-            key={category.href} 
-            className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
-            onClick={() => navigate(category.href)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg bg-muted/50`}>
-                    <category.icon className={`h-5 w-5 ${category.color}`} />
+      <PageContent>
+        {/* Settings Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {settingsCategories.map((category) => (
+            <Card 
+              key={category.href} 
+              className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+              onClick={() => navigate(category.href)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`p-2 rounded-lg bg-muted/50`}>
+                      <category.icon className={`h-5 w-5 ${category.color}`} />
+                    </div>
+                    <CardTitle className="text-lg">{category.title}</CardTitle>
                   </div>
-                  <CardTitle className="text-lg">{category.title}</CardTitle>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-sm leading-relaxed">
-                {category.description}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-sm leading-relaxed">
+                  {category.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common settings and administrative tasks
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/organization')}>
-              <Building2 className="mr-2 h-4 w-4" />
-              Update Organization Info
-            </Button>
-            <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/users')}>
-              <Users className="mr-2 h-4 w-4" />
-              Invite Team Members
-            </Button>
-            <Button variant="outline" className="justify-start" onClick={() => navigate('/subscription')}>
-              <Shield className="mr-2 h-4 w-4" />
-              Manage Subscription
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>
+              Common settings and administrative tasks
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/organization')}>
+                <Building2 className="mr-2 h-4 w-4" />
+                Update Organization Info
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/users')}>
+                <Users className="mr-2 h-4 w-4" />
+                Invite Team Members
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/subscription')}>
+                <Shield className="mr-2 h-4 w-4" />
+                Manage Subscription
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </PageContent>
+    </PageLayout>
   );
 };
 
