@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { DashboardLayoutWrapper } from '@/components/layout/DashboardLayoutWrapper';
 
 // Import pages
 import Index from '@/pages/Index';
@@ -47,11 +47,13 @@ function App() {
                     <Route path="/auth/*" element={<Auth />} />
                     <Route path="/register" element={<TenantRegistrationPage />} />
                     
-                    {/* Protected routes */}
+                    {/* Protected routes with sidebar */}
                     <Route path="/dashboard" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <Dashboard />
+                          <DashboardLayoutWrapper>
+                            <Dashboard />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -59,7 +61,9 @@ function App() {
                     <Route path="/farmers" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <FarmersPage />
+                          <DashboardLayoutWrapper>
+                            <FarmersPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -67,7 +71,9 @@ function App() {
                     <Route path="/products" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <ProductsPage />
+                          <DashboardLayoutWrapper>
+                            <ProductsPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -75,7 +81,9 @@ function App() {
                     <Route path="/dealers" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <DealersPage />
+                          <DashboardLayoutWrapper>
+                            <DealersPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -83,7 +91,9 @@ function App() {
                     <Route path="/campaigns" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <CampaignsPage />
+                          <DashboardLayoutWrapper>
+                            <CampaignsPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -91,7 +101,9 @@ function App() {
                     <Route path="/analytics" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <AnalyticsPage />
+                          <DashboardLayoutWrapper>
+                            <AnalyticsPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -99,7 +111,9 @@ function App() {
                     <Route path="/settings" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <SettingsPage />
+                          <DashboardLayoutWrapper>
+                            <SettingsPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -107,7 +121,9 @@ function App() {
                     <Route path="/settings/organization" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <OrganizationSettingsPage />
+                          <DashboardLayoutWrapper>
+                            <OrganizationSettingsPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -115,7 +131,9 @@ function App() {
                     <Route path="/settings/users" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <UserManagementPage />
+                          <DashboardLayoutWrapper>
+                            <UserManagementPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -123,7 +141,9 @@ function App() {
                     <Route path="/settings/appearance" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <AppearancePage />
+                          <DashboardLayoutWrapper>
+                            <AppearancePage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />
@@ -131,7 +151,9 @@ function App() {
                     <Route path="/subscription" element={
                       <AuthGuard>
                         <OnboardingGuardOptimized>
-                          <SubscriptionPage />
+                          <DashboardLayoutWrapper>
+                            <SubscriptionPage />
+                          </DashboardLayoutWrapper>
                         </OnboardingGuardOptimized>
                       </AuthGuard>
                     } />

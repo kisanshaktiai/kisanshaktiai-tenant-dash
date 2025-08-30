@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { EnhancedTenantLayout } from './EnhancedTenantLayout';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { ModernSidebar } from './ModernSidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,8 +9,13 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-background">
-      {children}
-    </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <ModernSidebar />
+        <SidebarInset>
+          {children}
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
