@@ -18,6 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
   useSidebar
 } from '@/components/ui/sidebar';
 import {
@@ -113,17 +114,18 @@ export const ModernSidebar: React.FC = () => {
     <Sidebar 
       variant="inset" 
       className="border-r bg-gradient-to-b from-card via-card to-card/95"
+      collapsible="icon"
     >
-      {/* Header */}
+      {/* Header with Toggle */}
       <SidebarHeader className="p-4 border-b bg-gradient-to-r from-background/50 to-muted/20">
-        {!isCollapsed ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-sm">
-                <span className="text-primary-foreground font-bold text-lg">
-                  {currentTenant?.name?.charAt(0) || 'KS'}
-                </span>
-              </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-sm">
+              <span className="text-primary-foreground font-bold text-lg">
+                {currentTenant?.name?.charAt(0) || 'KS'}
+              </span>
+            </div>
+            {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-foreground truncate">
                   {currentTenant?.name || 'KisanShakti'}
@@ -134,24 +136,25 @@ export const ModernSidebar: React.FC = () => {
                   </Badge>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Activity className="h-3 w-3 text-emerald-500 animate-pulse" />
-                <span>Live System</span>
-              </div>
-              <Badge variant="secondary" className="text-xs px-2 py-0.5 capitalize">
-                {userRole.replace('_', ' ')}
-              </Badge>
-            </div>
+            )}
           </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-primary-foreground font-bold text-lg">
-                {currentTenant?.name?.charAt(0) || 'KS'}
-              </span>
+          <SidebarTrigger className="h-8 w-8" />
+        </div>
+        
+        {!isCollapsed && (
+          <div className="flex items-center justify-between text-xs mt-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Activity className="h-3 w-3 text-emerald-500 animate-pulse" />
+              <span>Live System</span>
             </div>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 capitalize">
+              {userRole.replace('_', ' ')}
+            </Badge>
+          </div>
+        )}
+        
+        {isCollapsed && (
+          <div className="flex flex-col items-center gap-2 mt-2">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
           </div>
         )}
