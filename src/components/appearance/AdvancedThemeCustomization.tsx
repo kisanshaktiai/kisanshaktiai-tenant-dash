@@ -1,19 +1,11 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ColorPaletteManager } from './ColorPaletteManager';
-import { TypographyManager } from './TypographyManager';
-import { BrandIdentityManager } from './BrandIdentityManager';
-import { ComponentThemeManager } from './ComponentThemeManager';
-import { LayoutCustomizer } from './LayoutCustomizer';
-import { ThemePreviewPanel } from './ThemePreviewPanel';
-import { ThemeImportExport } from './ThemeImportExport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
   Palette,
@@ -22,38 +14,31 @@ import {
   Layout,
   Puzzle,
   Eye,
-  Download,
-  Upload,
   Save,
   RefreshCw,
   Sparkles,
-  Crown,
-  Monitor,
-  Smartphone,
-  Tablet
+  Crown
 } from 'lucide-react';
 
 export const AdvancedThemeCustomization: React.FC = () => {
-  const { currentTenant } = useTenantContextOptimized();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('colors');
   const [previewMode, setPreviewMode] = useState(false);
-  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSaveTheme = async () => {
     setIsLoading(true);
     try {
-      // Save theme logic here
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      // Simulate save
+      await new Promise(resolve => setTimeout(resolve, 1000));
       toast({
         title: "Theme saved successfully",
-        description: "Your custom theme has been applied across your organization.",
+        description: "Your custom theme has been applied.",
       });
     } catch (error) {
       toast({
         title: "Failed to save theme",
-        description: "There was an error saving your theme. Please try again.",
+        description: "There was an error saving your theme.",
         variant: "destructive",
       });
     } finally {
@@ -110,12 +95,11 @@ export const AdvancedThemeCustomization: React.FC = () => {
             </Badge>
           </div>
           <p className="text-muted-foreground">
-            Design and customize your organization's visual identity with professional tools
+            Design and customize your organization's visual identity
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Preview Controls */}
           <div className="flex items-center gap-2">
             <Label htmlFor="preview-mode" className="text-sm font-medium">Live Preview</Label>
             <Switch
@@ -124,26 +108,6 @@ export const AdvancedThemeCustomization: React.FC = () => {
               onCheckedChange={setPreviewMode}
             />
           </div>
-          
-          {previewMode && (
-            <div className="flex items-center border rounded-lg p-1">
-              {[
-                { value: 'desktop', icon: Monitor, label: 'Desktop' },
-                { value: 'tablet', icon: Tablet, label: 'Tablet' },
-                { value: 'mobile', icon: Smartphone, label: 'Mobile' }
-              ].map((device) => (
-                <Button
-                  key={device.value}
-                  variant={previewDevice === device.value ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPreviewDevice(device.value as any)}
-                  className="h-8 px-3"
-                >
-                  <device.icon className="w-4 h-4" />
-                </Button>
-              ))}
-            </div>
-          )}
           
           <Button
             onClick={handleSaveTheme}
@@ -189,23 +153,96 @@ export const AdvancedThemeCustomization: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="colors" className="space-y-6">
-                  <ColorPaletteManager />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Color Palette</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[
+                        { name: 'Primary', color: 'hsl(var(--primary))', var: '--primary' },
+                        { name: 'Secondary', color: 'hsl(var(--secondary))', var: '--secondary' },
+                        { name: 'Accent', color: 'hsl(var(--accent))', var: '--accent' },
+                        { name: 'Muted', color: 'hsl(var(--muted))', var: '--muted' }
+                      ].map((colorItem) => (
+                        <div key={colorItem.name} className="space-y-2">
+                          <Label className="text-sm font-medium">{colorItem.name}</Label>
+                          <div 
+                            className="w-full h-12 rounded-lg border cursor-pointer hover:scale-105 transition-transform"
+                            style={{ backgroundColor: colorItem.color }}
+                          />
+                          <p className="text-xs text-muted-foreground font-mono">{colorItem.var}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="typography" className="space-y-6">
-                  <TypographyManager />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Typography Settings</h3>
+                    <div className="space-y-4">
+                      <h1 className="text-4xl font-bold">Heading 1</h1>
+                      <h2 className="text-3xl font-semibold">Heading 2</h2>
+                      <h3 className="text-2xl font-medium">Heading 3</h3>
+                      <p className="text-base">Body text - Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                      <p className="text-sm text-muted-foreground">Small text - Secondary information</p>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="branding" className="space-y-6">
-                  <BrandIdentityManager />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Brand Identity</h3>
+                    <p className="text-muted-foreground">Upload your logo and manage brand assets</p>
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                      <Image className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-sm text-muted-foreground">Upload your logo</p>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="layout" className="space-y-6">
-                  <LayoutCustomizer />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Layout Options</h3>
+                    <p className="text-muted-foreground">Customize spacing, borders, and layout structure</p>
+                    <div className="space-y-2">
+                      <Label>Border Radius</Label>
+                      <div className="flex gap-2">
+                        {['None', 'Small', 'Medium', 'Large'].map((radius) => (
+                          <Button key={radius} variant="outline" size="sm">
+                            {radius}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="components" className="space-y-6">
-                  <ComponentThemeManager />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Component Styles</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="mb-2 block">Buttons</Label>
+                        <div className="flex gap-2">
+                          <Button>Primary</Button>
+                          <Button variant="secondary">Secondary</Button>
+                          <Button variant="outline">Outline</Button>
+                          <Button variant="ghost">Ghost</Button>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="mb-2 block">Cards</Label>
+                        <Card className="w-full max-w-sm">
+                          <CardHeader>
+                            <CardTitle>Sample Card</CardTitle>
+                            <CardDescription>This is a sample card description</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm">Card content goes here</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -216,10 +253,52 @@ export const AdvancedThemeCustomization: React.FC = () => {
         <div className="xl:col-span-4">
           <div className="sticky top-6 space-y-4">
             {previewMode && (
-              <ThemePreviewPanel device={previewDevice} />
+              <Card className="border-0 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="w-4 h-4" />
+                    Live Preview
+                  </CardTitle>
+                  <CardDescription>
+                    See your changes in real-time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg p-4 bg-background">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary rounded" />
+                        <div>
+                          <h4 className="font-semibold">Sample Dashboard</h4>
+                          <p className="text-sm text-muted-foreground">Preview your theme</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button size="sm">Action</Button>
+                        <Button variant="outline" size="sm">Cancel</Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
             
-            <ThemeImportExport />
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle>Theme Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full">
+                  Import Theme
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Export Theme
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Reset to Default
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
