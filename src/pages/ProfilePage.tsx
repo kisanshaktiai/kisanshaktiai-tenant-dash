@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,18 +11,20 @@ import { Separator } from '@/components/ui/separator';
 import { useAppSelector } from '@/store/hooks';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { ThemeCustomization } from '@/components/profile/ThemeCustomization';
 import { 
   User, Mail, Phone, Building, MapPin, Calendar, 
   Settings, Shield, Activity, Bell, Key, Trash2,
   Camera, Edit3, Save, X, Monitor, Smartphone, Globe,
-  Clock, AlertCircle, CheckCircle, Crown, Users, UserPlus
+  Clock, AlertCircle, CheckCircle, Crown, Users, UserPlus,
+  Palette
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export const ProfilePage: React.FC = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const { userRole, hasPermission } = usePermissions();
   const { profile, sessions, loading, error, updateProfile } = useUserProfile();
   const { signOut } = useAuth();
@@ -300,9 +301,13 @@ export const ProfilePage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid grid-cols-4 w-full">
+                <TabsList className="grid grid-cols-5 w-full">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
                   <TabsTrigger value="organization">Organization</TabsTrigger>
+                  <TabsTrigger value="appearance">
+                    <Palette className="w-4 h-4 mr-1" />
+                    Appearance
+                  </TabsTrigger>
                   <TabsTrigger value="security">Security</TabsTrigger>
                   <TabsTrigger value="sessions">Sessions</TabsTrigger>
                 </TabsList>
@@ -415,6 +420,10 @@ export const ProfilePage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </TabsContent>
+
+                <TabsContent value="appearance" className="space-y-6 mt-6">
+                  <ThemeCustomization />
                 </TabsContent>
 
                 <TabsContent value="security" className="space-y-6 mt-6">
