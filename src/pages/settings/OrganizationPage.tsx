@@ -1,410 +1,197 @@
 
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Building2, Users, MapPin, Globe, Phone, Mail } from 'lucide-react';
+import { useAppSelector } from '@/store/hooks';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContent } from '@/components/layout/PageContent';
-import { useOrganizationSettings } from '@/hooks/useSettingsData';
-import Loading from '@/components/Loading';
-import { Building2, Clock, Globe, Shield } from 'lucide-react';
 
-const organizationSchema = z.object({
-  contact_info: z.object({
-    address: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    postal_code: z.string().optional(),
-    country: z.string().optional(),
-    phone: z.string().optional(),
-    email: z.string().email().optional(),
-    website: z.string().url().optional(),
-  }),
-  social_links: z.object({
-    website: z.string().url().optional(),
-    linkedin: z.string().url().optional(),
-    twitter: z.string().url().optional(),
-    facebook: z.string().url().optional(),
-    instagram: z.string().url().optional(),
-  }),
-  business_hours: z.object({
-    monday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    tuesday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    wednesday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    thursday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    friday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    saturday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-    sunday: z.object({
-      open: z.string(),
-      close: z.string(),
-      closed: z.boolean(),
-    }),
-  }),
-});
-
-type OrganizationFormData = z.infer<typeof organizationSchema>;
-
-const OrganizationPage = () => {
-  const { data: settings, isLoading, update, isUpdating } = useOrganizationSettings();
-
-  const form = useForm<OrganizationFormData>({
-    resolver: zodResolver(organizationSchema),
-    defaultValues: {
-      contact_info: {
-        address: '',
-        city: '',
-        state: '',
-        postal_code: '',
-        country: '',
-        phone: '',
-        email: '',
-        website: '',
-      },
-      social_links: {
-        website: '',
-        linkedin: '',
-        twitter: '',
-        facebook: '',
-        instagram: '',
-      },
-      business_hours: {
-        monday: { open: '09:00', close: '17:00', closed: false },
-        tuesday: { open: '09:00', close: '17:00', closed: false },
-        wednesday: { open: '09:00', close: '17:00', closed: false },
-        thursday: { open: '09:00', close: '17:00', closed: false },
-        friday: { open: '09:00', close: '17:00', closed: false },
-        saturday: { open: '09:00', close: '17:00', closed: true },
-        sunday: { open: '09:00', close: '17:00', closed: true },
-      },
-    },
-  });
-
-  React.useEffect(() => {
-    if (settings) {
-      form.reset({
-        contact_info: settings.contact_info || form.getValues('contact_info'),
-        social_links: settings.social_links || form.getValues('social_links'),
-        business_hours: settings.business_hours || form.getValues('business_hours'),
-      });
-    }
-  }, [settings, form]);
-
-  const onSubmit = (data: OrganizationFormData) => {
-    update(data);
-  };
-
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+export const OrganizationPage: React.FC = () => {
+  const { currentTenant } = useAppSelector((state) => state.tenant);
 
   return (
     <PageLayout>
       <PageHeader
         title="Organization Settings"
-        description="Manage your organization profile and business information"
+        description="Manage your organization profile and configuration"
+        badge={{
+          text: currentTenant?.subscription_plan || 'Free Plan',
+          variant: 'outline'
+        }}
       />
 
       <PageContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Contact Information */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Organization Info */}
+          <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
+                  Organization Information
+                </CardTitle>
+                <CardDescription>
+                  Basic information about your organization
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="orgName">Organization Name</Label>
+                    <Input
+                      id="orgName"
+                      defaultValue={currentTenant?.name || ''}
+                      placeholder="Enter organization name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="orgSlug">Organization Slug</Label>
+                    <Input
+                      id="orgSlug"
+                      defaultValue={currentTenant?.slug || ''}
+                      placeholder="organization-slug"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="industry">Industry</Label>
+                    <Input
+                      id="industry"
+                      defaultValue={currentTenant?.type || ''}
+                      placeholder="e.g., Agriculture, NGO, University"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="size">Organization Size</Label>
+                    <Input
+                      id="size"
+                      placeholder="e.g., 1-50, 51-200, 200+"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    rows={3}
+                    placeholder="Brief description of your organization"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
                   Contact Information
                 </CardTitle>
-                <CardDescription>
-                  Update your organization's contact details and address
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="contact_info.address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Enter your full address" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="contact_info.city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="City" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      defaultValue={currentTenant?.owner_email || ''}
+                      placeholder="contact@organization.com"
                     />
-                    <FormField
-                      control={form.control}
-                      name="contact_info.state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State/Province</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="State or Province" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      placeholder="https://organization.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Input
+                      id="timezone"
+                      defaultValue="UTC"
+                      placeholder="UTC"
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="contact_info.postal_code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Postal Code</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Postal Code" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contact_info.country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Country" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="contact_info.phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Phone number" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="contact_info.email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder="contact@example.com" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="contact_info.website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="https://www.example.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Social Links */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Social Links
-                </CardTitle>
-                <CardDescription>
-                  Add your social media profiles and online presence
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="social_links.linkedin"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>LinkedIn</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://linkedin.com/company/..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="social_links.twitter"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Twitter</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://twitter.com/..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="social_links.facebook"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Facebook</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://facebook.com/..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="social_links.instagram"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instagram</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://instagram.com/..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    rows={3}
+                    placeholder="Full organization address"
                   />
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Business Hours */}
+          {/* Sidebar */}
+          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Business Hours
-                </CardTitle>
-                <CardDescription>
-                  Set your operating hours for each day of the week
-                </CardDescription>
+                <CardTitle className="text-lg">Quick Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {days.map((day) => (
-                  <div key={day} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="w-24 capitalize font-medium">{day}</div>
-                    <FormField
-                      control={form.control}
-                      name={`business_hours.${day}.closed` as any}
-                      render={({ field }) => (
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <Switch
-                              checked={!field.value}
-                              onCheckedChange={(checked) => field.onChange(!checked)}
-                            />
-                          </FormControl>
-                          <FormLabel className="text-sm">Open</FormLabel>
-                        </FormItem>
-                      )}
-                    />
-                    {!form.watch(`business_hours.${day}.closed` as any) && (
-                      <>
-                        <FormField
-                          control={form.control}
-                          name={`business_hours.${day}.open` as any}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input {...field} type="time" className="w-32" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <span>to</span>
-                        <FormField
-                          control={form.control}
-                          name={`business_hours.${day}.close` as any}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input {...field} type="time" className="w-32" />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                      </>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Total Users</span>
                   </div>
-                ))}
+                  <Badge variant="secondary">5</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Status</span>
+                  </div>
+                  <Badge 
+                    variant={currentTenant?.status === 'active' ? 'default' : 'secondary'}
+                    className="capitalize"
+                  >
+                    {currentTenant?.status || 'Unknown'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Plan</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {currentTenant?.subscription_plan || 'Free'}
+                  </span>
+                </div>
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full">Save Changes</Button>
+                <Button variant="outline" className="w-full">
+                  Export Settings
+                </Button>
+                <Button variant="outline" className="w-full text-destructive hover:text-destructive">
+                  Delete Organization
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </PageContent>
     </PageLayout>
   );
