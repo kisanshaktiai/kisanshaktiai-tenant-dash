@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,43 +7,39 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContent } from '@/components/layout/PageContent';
 import { useDataPrivacySettings } from '@/hooks/useSettingsData';
-import { Loading } from '@/components/Loading';
-import { Database, Shield, Clock, Download } from 'lucide-react';
+import Loading from '@/components/Loading';
+import { Database, Shield, Clock, HardDrive } from 'lucide-react';
 
 const dataPrivacySchema = z.object({
   data_retention_policy: z.object({
-    user_data_days: z.number().min(30),
-    audit_logs_days: z.number().min(90),
-    analytics_days: z.number().min(30),
+    retention_period: z.number().min(30).max(365),
+    automatic_deletion: z.boolean(),
   }),
   anonymization_settings: z.object({
-    auto_anonymize: z.boolean(),
-    anonymize_after_days: z.number().min(30),
+    anonymize_data: z.boolean(),
+    anonymization_delay: z.number().min(7).max(30),
   }),
   gdpr_settings: z.object({
-    enabled: z.boolean(),
-    consent_required: z.boolean(),
+    consent_tracking: z.boolean(),
     data_portability: z.boolean(),
+    right_to_be_forgotten: z.boolean(),
   }),
   backup_settings: z.object({
-    enabled: z.boolean(),
-    frequency: z.enum(['daily', 'weekly', 'monthly']),
-    retention_days: z.number().min(7),
+    automatic_backups: z.boolean(),
+    backup_frequency: z.enum(['daily', 'weekly', 'monthly']),
+    backup_location: z.string().optional(),
   }),
   encryption_settings: z.object({
-    at_rest: z.boolean(),
-    in_transit: z.boolean(),
-    key_rotation_days: z.number().min(30),
+    data_encryption: z.boolean(),
+    encryption_type: z.enum(['AES-256', 'RSA']),
   }),
   third_party_sharing: z.object({
-    analytics: z.boolean(),
-    marketing: z.boolean(),
-    required_only: z.boolean(),
+    allow_third_party_sharing: z.boolean(),
+    shared_data_types: z.array(z.string()).optional(),
   }),
 });
 
@@ -57,33 +52,30 @@ const DataPrivacyPage = () => {
     resolver: zodResolver(dataPrivacySchema),
     defaultValues: {
       data_retention_policy: {
-        user_data_days: 2555,
-        audit_logs_days: 2555,
-        analytics_days: 1095,
+        retention_period: 90,
+        automatic_deletion: true,
       },
       anonymization_settings: {
-        auto_anonymize: false,
-        anonymize_after_days: 365,
+        anonymize_data: false,
+        anonymization_delay: 14,
       },
       gdpr_settings: {
-        enabled: true,
-        consent_required: true,
+        consent_tracking: true,
         data_portability: true,
+        right_to_be_forgotten: true,
       },
       backup_settings: {
-        enabled: true,
-        frequency: 'daily',
-        retention_days: 30,
+        automatic_backups: true,
+        backup_frequency: 'weekly',
+        backup_location: '',
       },
       encryption_settings: {
-        at_rest: true,
-        in_transit: true,
-        key_rotation_days: 90,
+        data_encryption: true,
+        encryption_type: 'AES-256',
       },
       third_party_sharing: {
-        analytics: false,
-        marketing: false,
-        required_only: true,
+        allow_third_party_sharing: false,
+        shared_data_types: [],
       },
     },
   });
@@ -119,85 +111,69 @@ const DataPrivacyPage = () => {
       <PageContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Data Retention */}
+            {/* Data Retention Policy */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
+                  <Clock className="h-5 w-5" />
                   Data Retention Policy
                 </CardTitle>
                 <CardDescription>
-                  Configure how long different types of data are retained
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="data_retention_policy.user_data_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>User Data (days)</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">Personal and profile data</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="data_retention_policy.audit_logs_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Audit Logs (days)</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">Security and action logs</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="data_retention_policy.analytics_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Analytics Data (days)</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">Usage and performance data</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* GDPR Compliance */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  GDPR Compliance
-                </CardTitle>
-                <CardDescription>
-                  Configure General Data Protection Regulation compliance
+                  Set the data retention period and automatic deletion settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="gdpr_settings.enabled"
+                  name="data_retention_policy.retention_period"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Retention Period (days)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="data_retention_policy.automatic_deletion"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Enable GDPR Compliance</FormLabel>
-                        <p className="text-sm text-muted-foreground">Activate GDPR compliance features</p>
+                        <FormLabel>Automatic Deletion</FormLabel>
+                        <p className="text-sm text-muted-foreground">Automatically delete data after the retention period</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Anonymization Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Anonymization Settings
+                </CardTitle>
+                <CardDescription>
+                  Configure data anonymization settings for privacy
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="anonymization_settings.anonymize_data"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <FormLabel>Anonymize Data</FormLabel>
+                        <p className="text-sm text-muted-foreground">Anonymize personal data to protect user privacy</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -207,12 +183,40 @@ const DataPrivacyPage = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="gdpr_settings.consent_required"
+                  name="anonymization_settings.anonymization_delay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Anonymization Delay (days)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* GDPR Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  GDPR Settings
+                </CardTitle>
+                <CardDescription>
+                  Manage GDPR compliance settings and user rights
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="gdpr_settings.consent_tracking"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Require Explicit Consent</FormLabel>
-                        <p className="text-sm text-muted-foreground">Users must explicitly consent to data processing</p>
+                        <FormLabel>Consent Tracking</FormLabel>
+                        <p className="text-sm text-muted-foreground">Track user consent for data processing</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -226,7 +230,7 @@ const DataPrivacyPage = () => {
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Enable Data Portability</FormLabel>
+                        <FormLabel>Data Portability</FormLabel>
                         <p className="text-sm text-muted-foreground">Allow users to export their data</p>
                       </div>
                       <FormControl>
@@ -235,44 +239,18 @@ const DataPrivacyPage = () => {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-
-            {/* Data Anonymization */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Anonymization</CardTitle>
-                <CardDescription>
-                  Configure automatic data anonymization policies
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="anonymization_settings.auto_anonymize"
+                  name="gdpr_settings.right_to_be_forgotten"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Auto-Anonymize Data</FormLabel>
-                        <p className="text-sm text-muted-foreground">Automatically anonymize old data</p>
+                        <FormLabel>Right to be Forgotten</FormLabel>
+                        <p className="text-sm text-muted-foreground">Enable users to request data deletion</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="anonymization_settings.anonymize_after_days"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Anonymize After (days)</FormLabel>
-                      <FormControl>
-                        <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
-                      </FormControl>
-                      <p className="text-sm text-muted-foreground">Days after which data is automatically anonymized</p>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -283,22 +261,22 @@ const DataPrivacyPage = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
+                  <HardDrive className="h-5 w-5" />
                   Backup Settings
                 </CardTitle>
                 <CardDescription>
-                  Configure automatic data backup policies
+                  Configure automatic data backups and storage settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="backup_settings.enabled"
+                  name="backup_settings.automatic_backups"
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <FormLabel>Enable Automatic Backups</FormLabel>
-                        <p className="text-sm text-muted-foreground">Automatically create data backups</p>
+                        <FormLabel>Automatic Backups</FormLabel>
+                        <p className="text-sm text-muted-foreground">Enable automatic data backups</p>
                       </div>
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -306,44 +284,36 @@ const DataPrivacyPage = () => {
                     </FormItem>
                   )}
                 />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="backup_settings.frequency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Backup Frequency</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select frequency" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="backup_settings.retention_days"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Backup Retention (days)</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">How long to keep backups</p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="backup_settings.backup_frequency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Backup Frequency</FormLabel>
+                      <FormControl>
+                        <select {...field} className="border rounded px-3 py-2 w-full">
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="backup_settings.backup_location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Backup Location</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., AWS S3, Google Cloud Storage" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
@@ -352,52 +322,37 @@ const DataPrivacyPage = () => {
               <CardHeader>
                 <CardTitle>Encryption Settings</CardTitle>
                 <CardDescription>
-                  Configure data encryption and security policies
+                  Configure data encryption settings for enhanced security
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="encryption_settings.at_rest"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <FormLabel>Encryption at Rest</FormLabel>
-                          <p className="text-sm text-muted-foreground">Encrypt stored data</p>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="encryption_settings.in_transit"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 border rounded-lg">
-                        <div>
-                          <FormLabel>Encryption in Transit</FormLabel>
-                          <p className="text-sm text-muted-foreground">Encrypt data transmission</p>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
                 <FormField
                   control={form.control}
-                  name="encryption_settings.key_rotation_days"
+                  name="encryption_settings.data_encryption"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <FormLabel>Data Encryption</FormLabel>
+                        <p className="text-sm text-muted-foreground">Enable data encryption to protect sensitive information</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="encryption_settings.encryption_type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Key Rotation Period (days)</FormLabel>
+                      <FormLabel>Encryption Type</FormLabel>
                       <FormControl>
-                        <Input {...field} type="number" onChange={(e) => field.onChange(parseInt(e.target.value))} />
+                        <select {...field} className="border rounded px-3 py-2 w-full">
+                          <option value="AES-256">AES-256</option>
+                          <option value="RSA">RSA</option>
+                        </select>
                       </FormControl>
-                      <p className="text-sm text-muted-foreground">How often to rotate encryption keys</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -405,9 +360,51 @@ const DataPrivacyPage = () => {
               </CardContent>
             </Card>
 
+            {/* Third-Party Sharing */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Third-Party Sharing</CardTitle>
+                <CardDescription>
+                  Control data sharing with third-party services and applications
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="third_party_sharing.allow_third_party_sharing"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <FormLabel>Allow Third-Party Sharing</FormLabel>
+                        <p className="text-sm text-muted-foreground">Allow data sharing with third-party services</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                {form.watch('third_party_sharing.allow_third_party_sharing') && (
+                  <FormField
+                    control={form.control}
+                    name="third_party_sharing.shared_data_types"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shared Data Types</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., User data, Analytics data" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
             <div className="flex justify-end">
               <Button type="submit" disabled={isUpdating}>
-                {isUpdating ? 'Saving...' : 'Save Privacy Settings'}
+                {isUpdating ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>

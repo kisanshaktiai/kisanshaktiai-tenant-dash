@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 import type {
@@ -18,9 +17,21 @@ class SettingsService extends BaseApiService {
         .from('organization_settings')
         .select('*')
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle();
 
-      return { data, error };
+      if (!data) return { data: null, error };
+      
+      return { 
+        data: {
+          ...data,
+          business_hours: data.business_hours as any,
+          contact_info: data.contact_info as any,
+          social_links: data.social_links as any,
+          compliance_settings: data.compliance_settings as any,
+          custom_fields: data.custom_fields as any,
+        } as OrganizationSettings, 
+        error 
+      };
     });
   }
 
@@ -30,13 +41,27 @@ class SettingsService extends BaseApiService {
         .from('organization_settings')
         .upsert({
           tenant_id: tenantId,
-          ...settings,
+          business_hours: settings.business_hours as any,
+          contact_info: settings.contact_info as any,
+          social_links: settings.social_links as any,
+          compliance_settings: settings.compliance_settings as any,
+          custom_fields: settings.custom_fields as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
         .single();
 
-      return { data, error };
+      return { 
+        data: {
+          ...data,
+          business_hours: data.business_hours as any,
+          contact_info: data.contact_info as any,
+          social_links: data.social_links as any,
+          compliance_settings: data.compliance_settings as any,
+          custom_fields: data.custom_fields as any,
+        } as OrganizationSettings, 
+        error 
+      };
     });
   }
 
@@ -47,9 +72,22 @@ class SettingsService extends BaseApiService {
         .from('security_settings')
         .select('*')
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle();
 
-      return { data, error };
+      if (!data) return { data: null, error };
+
+      return { 
+        data: {
+          ...data,
+          password_policy: data.password_policy as any,
+          session_settings: data.session_settings as any,
+          mfa_settings: data.mfa_settings as any,
+          ip_whitelist: data.ip_whitelist as any,
+          login_restrictions: data.login_restrictions as any,
+          audit_settings: data.audit_settings as any,
+        } as SecuritySettings, 
+        error 
+      };
     });
   }
 
@@ -59,13 +97,29 @@ class SettingsService extends BaseApiService {
         .from('security_settings')
         .upsert({
           tenant_id: tenantId,
-          ...settings,
+          password_policy: settings.password_policy as any,
+          session_settings: settings.session_settings as any,
+          mfa_settings: settings.mfa_settings as any,
+          ip_whitelist: settings.ip_whitelist as any,
+          login_restrictions: settings.login_restrictions as any,
+          audit_settings: settings.audit_settings as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
         .single();
 
-      return { data, error };
+      return { 
+        data: {
+          ...data,
+          password_policy: data.password_policy as any,
+          session_settings: data.session_settings as any,
+          mfa_settings: data.mfa_settings as any,
+          ip_whitelist: data.ip_whitelist as any,
+          login_restrictions: data.login_restrictions as any,
+          audit_settings: data.audit_settings as any,
+        } as SecuritySettings, 
+        error 
+      };
     });
   }
 
@@ -77,9 +131,21 @@ class SettingsService extends BaseApiService {
         .select('*')
         .eq('user_id', userId)
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle();
 
-      return { data, error };
+      if (!data) return { data: null, error };
+
+      return { 
+        data: {
+          ...data,
+          email_notifications: data.email_notifications as any,
+          push_notifications: data.push_notifications as any,
+          sms_notifications: data.sms_notifications as any,
+          in_app_notifications: data.in_app_notifications as any,
+          notification_schedule: data.notification_schedule as any,
+        } as NotificationPreferences, 
+        error 
+      };
     });
   }
 
@@ -90,13 +156,27 @@ class SettingsService extends BaseApiService {
         .upsert({
           user_id: userId,
           tenant_id: tenantId,
-          ...preferences,
+          email_notifications: preferences.email_notifications as any,
+          push_notifications: preferences.push_notifications as any,
+          sms_notifications: preferences.sms_notifications as any,
+          in_app_notifications: preferences.in_app_notifications as any,
+          notification_schedule: preferences.notification_schedule as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
         .single();
 
-      return { data, error };
+      return { 
+        data: {
+          ...data,
+          email_notifications: data.email_notifications as any,
+          push_notifications: data.push_notifications as any,
+          sms_notifications: data.sms_notifications as any,
+          in_app_notifications: data.in_app_notifications as any,
+          notification_schedule: data.notification_schedule as any,
+        } as NotificationPreferences, 
+        error 
+      };
     });
   }
 
@@ -107,9 +187,22 @@ class SettingsService extends BaseApiService {
         .from('data_privacy_settings')
         .select('*')
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle();
 
-      return { data, error };
+      if (!data) return { data: null, error };
+
+      return { 
+        data: {
+          ...data,
+          data_retention_policy: data.data_retention_policy as any,
+          anonymization_settings: data.anonymization_settings as any,
+          gdpr_settings: data.gdpr_settings as any,
+          backup_settings: data.backup_settings as any,
+          encryption_settings: data.encryption_settings as any,
+          third_party_sharing: data.third_party_sharing as any,
+        } as DataPrivacySettings, 
+        error 
+      };
     });
   }
 
@@ -119,13 +212,29 @@ class SettingsService extends BaseApiService {
         .from('data_privacy_settings')
         .upsert({
           tenant_id: tenantId,
-          ...settings,
+          data_retention_policy: settings.data_retention_policy as any,
+          anonymization_settings: settings.anonymization_settings as any,
+          gdpr_settings: settings.gdpr_settings as any,
+          backup_settings: settings.backup_settings as any,
+          encryption_settings: settings.encryption_settings as any,
+          third_party_sharing: settings.third_party_sharing as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
         .single();
 
-      return { data, error };
+      return { 
+        data: {
+          ...data,
+          data_retention_policy: data.data_retention_policy as any,
+          anonymization_settings: data.anonymization_settings as any,
+          gdpr_settings: data.gdpr_settings as any,
+          backup_settings: data.backup_settings as any,
+          encryption_settings: data.encryption_settings as any,
+          third_party_sharing: data.third_party_sharing as any,
+        } as DataPrivacySettings, 
+        error 
+      };
     });
   }
 
@@ -136,9 +245,20 @@ class SettingsService extends BaseApiService {
         .from('localization_settings')
         .select('*')
         .eq('tenant_id', tenantId)
-        .single();
+        .maybeSingle();
 
-      return { data, error };
+      if (!data) return { data: null, error };
+
+      return { 
+        data: {
+          ...data,
+          supported_languages: data.supported_languages as any,
+          number_format: data.number_format as any,
+          regional_settings: data.regional_settings as any,
+          custom_translations: data.custom_translations as any,
+        } as LocalizationSettings, 
+        error 
+      };
     });
   }
 
@@ -148,13 +268,30 @@ class SettingsService extends BaseApiService {
         .from('localization_settings')
         .upsert({
           tenant_id: tenantId,
-          ...settings,
+          default_language: settings.default_language,
+          supported_languages: settings.supported_languages as any,
+          timezone: settings.timezone,
+          date_format: settings.date_format,
+          time_format: settings.time_format,
+          currency: settings.currency,
+          number_format: settings.number_format as any,
+          regional_settings: settings.regional_settings as any,
+          custom_translations: settings.custom_translations as any,
           updated_at: new Date().toISOString(),
         })
         .select('*')
         .single();
 
-      return { data, error };
+      return { 
+        data: {
+          ...data,
+          supported_languages: data.supported_languages as any,
+          number_format: data.number_format as any,
+          regional_settings: data.regional_settings as any,
+          custom_translations: data.custom_translations as any,
+        } as LocalizationSettings, 
+        error 
+      };
     });
   }
 

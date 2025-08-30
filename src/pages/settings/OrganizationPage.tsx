@@ -13,7 +13,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContent } from '@/components/layout/PageContent';
 import { useOrganizationSettings } from '@/hooks/useSettingsData';
-import { Loading } from '@/components/Loading';
+import Loading from '@/components/Loading';
 import { Building2, Clock, Globe, Shield } from 'lucide-react';
 
 const organizationSchema = z.object({

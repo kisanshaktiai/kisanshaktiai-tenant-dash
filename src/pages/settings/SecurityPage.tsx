@@ -12,7 +12,7 @@ import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContent } from '@/components/layout/PageContent';
 import { useSecuritySettings } from '@/hooks/useSettingsData';
-import { Loading } from '@/components/Loading';
+import Loading from '@/components/Loading';
 import { Shield, Lock, UserCheck, Clock } from 'lucide-react';
 
 const securitySchema = z.object({
