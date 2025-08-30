@@ -39,8 +39,7 @@ import {
   Moon,
   Sun,
   Globe,
-  Activity,
-  User
+  Activity
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
@@ -92,7 +91,7 @@ const TenantSidebar = () => {
   const { currentTenant } = useTenantContextOptimized();
   const isCollapsed = state === 'collapsed';
 
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path);
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <Sidebar collapsible="icon">
@@ -180,7 +179,6 @@ const TopBar = () => {
   const { currentTenant, userTenants, switchTenant } = useTenantContextOptimized();
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
-  const navigate = useNavigate();
   const [notifications] = useState(3); // Mock notification count
 
   const handleSignOut = async () => {
@@ -278,11 +276,7 @@ const TopBar = () => {
                 </>
               )}
 
-              <DropdownMenuItem onClick={() => navigate('/profile')}>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
@@ -335,7 +329,7 @@ export const EnhancedTenantLayout: React.FC = () => {
         <TenantSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopBar />
-          <main className="flex-1 overflow-auto bg-background">
+          <main className="flex-1 overflow-auto p-6 bg-background">
             <Outlet />
           </main>
         </div>
