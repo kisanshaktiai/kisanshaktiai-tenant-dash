@@ -735,6 +735,62 @@ export type Database = {
           },
         ]
       }
+      appearance_settings: {
+        Row: {
+          accent_color: string
+          background_color: string
+          created_at: string | null
+          custom_css: string | null
+          font_family: string
+          id: string
+          logo_override_url: string | null
+          primary_color: string
+          secondary_color: string
+          tenant_id: string
+          text_color: string
+          theme_mode: string
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string
+          background_color?: string
+          created_at?: string | null
+          custom_css?: string | null
+          font_family?: string
+          id?: string
+          logo_override_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          tenant_id: string
+          text_color?: string
+          theme_mode?: string
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          created_at?: string | null
+          custom_css?: string | null
+          font_family?: string
+          id?: string
+          logo_override_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          tenant_id?: string
+          text_color?: string
+          theme_mode?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appearance_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_plans: {
         Row: {
           base_price: number
@@ -1731,6 +1787,53 @@ export type Database = {
             foreignKeyName: "data_migration_jobs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_privacy_settings: {
+        Row: {
+          anonymization_settings: Json | null
+          backup_settings: Json | null
+          created_at: string | null
+          data_retention_policy: Json | null
+          encryption_settings: Json | null
+          gdpr_settings: Json | null
+          id: string
+          tenant_id: string
+          third_party_sharing: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          anonymization_settings?: Json | null
+          backup_settings?: Json | null
+          created_at?: string | null
+          data_retention_policy?: Json | null
+          encryption_settings?: Json | null
+          gdpr_settings?: Json | null
+          id?: string
+          tenant_id: string
+          third_party_sharing?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          anonymization_settings?: Json | null
+          backup_settings?: Json | null
+          created_at?: string | null
+          data_retention_policy?: Json | null
+          encryption_settings?: Json | null
+          gdpr_settings?: Json | null
+          id?: string
+          tenant_id?: string
+          third_party_sharing?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_privacy_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -4363,6 +4466,62 @@ export type Database = {
           },
         ]
       }
+      localization_settings: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          custom_translations: Json | null
+          date_format: string | null
+          default_language: string | null
+          id: string
+          number_format: Json | null
+          regional_settings: Json | null
+          supported_languages: Json | null
+          tenant_id: string
+          time_format: string | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          custom_translations?: Json | null
+          date_format?: string | null
+          default_language?: string | null
+          id?: string
+          number_format?: Json | null
+          regional_settings?: Json | null
+          supported_languages?: Json | null
+          tenant_id: string
+          time_format?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          custom_translations?: Json | null
+          date_format?: string | null
+          default_language?: string | null
+          id?: string
+          number_format?: Json | null
+          regional_settings?: Json | null
+          supported_languages?: Json | null
+          tenant_id?: string
+          time_format?: string | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "localization_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_price_subscriptions: {
         Row: {
           commodities: Json
@@ -4724,6 +4883,53 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_notifications: Json | null
+          id: string
+          in_app_notifications: Json | null
+          notification_schedule: Json | null
+          push_notifications: Json | null
+          sms_notifications: Json | null
+          tenant_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_notifications?: Json | null
+          id?: string
+          in_app_notifications?: Json | null
+          notification_schedule?: Json | null
+          push_notifications?: Json | null
+          sms_notifications?: Json | null
+          tenant_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_notifications?: Json | null
+          id?: string
+          in_app_notifications?: Json | null
+          notification_schedule?: Json | null
+          push_notifications?: Json | null
+          sms_notifications?: Json | null
+          tenant_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_step_templates: {
         Row: {
           created_at: string | null
@@ -4898,6 +5104,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      organization_settings: {
+        Row: {
+          business_hours: Json | null
+          compliance_settings: Json | null
+          contact_info: Json | null
+          created_at: string | null
+          custom_fields: Json | null
+          id: string
+          social_links: Json | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_hours?: Json | null
+          compliance_settings?: Json | null
+          contact_info?: Json | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          id?: string
+          social_links?: Json | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_hours?: Json | null
+          compliance_settings?: Json | null
+          contact_info?: Json | null
+          created_at?: string | null
+          custom_fields?: Json | null
+          id?: string
+          social_links?: Json | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_weather_alerts: {
         Row: {
@@ -6246,6 +6496,53 @@ export type Database = {
         }
         Relationships: []
       }
+      security_settings: {
+        Row: {
+          audit_settings: Json | null
+          created_at: string | null
+          id: string
+          ip_whitelist: Json | null
+          login_restrictions: Json | null
+          mfa_settings: Json | null
+          password_policy: Json | null
+          session_settings: Json | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          audit_settings?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_whitelist?: Json | null
+          login_restrictions?: Json | null
+          mfa_settings?: Json | null
+          password_policy?: Json | null
+          session_settings?: Json | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          audit_settings?: Json | null
+          created_at?: string | null
+          id?: string
+          ip_whitelist?: Json | null
+          login_restrictions?: Json | null
+          mfa_settings?: Json | null
+          password_policy?: Json | null
+          session_settings?: Json | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       soil_health: {
         Row: {
           bulk_density: number | null
@@ -6462,6 +6759,59 @@ export type Database = {
             foreignKeyName: "subscription_renewals_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_settings: {
+        Row: {
+          auto_billing: boolean | null
+          billing_alerts: Json | null
+          billing_contact: Json | null
+          billing_history: Json | null
+          cancellation_settings: Json | null
+          created_at: string | null
+          feature_limits: Json | null
+          id: string
+          payment_methods: Json | null
+          tenant_id: string
+          updated_at: string | null
+          usage_quotas: Json | null
+        }
+        Insert: {
+          auto_billing?: boolean | null
+          billing_alerts?: Json | null
+          billing_contact?: Json | null
+          billing_history?: Json | null
+          cancellation_settings?: Json | null
+          created_at?: string | null
+          feature_limits?: Json | null
+          id?: string
+          payment_methods?: Json | null
+          tenant_id: string
+          updated_at?: string | null
+          usage_quotas?: Json | null
+        }
+        Update: {
+          auto_billing?: boolean | null
+          billing_alerts?: Json | null
+          billing_contact?: Json | null
+          billing_history?: Json | null
+          cancellation_settings?: Json | null
+          created_at?: string | null
+          feature_limits?: Json | null
+          id?: string
+          payment_methods?: Json | null
+          tenant_id?: string
+          updated_at?: string | null
+          usage_quotas?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },

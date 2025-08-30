@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { appearanceSettingsService, AppearanceSettings } from '@/services/AppearanceSettingsService';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 export const useAppearanceSettings = () => {
   const { currentTenant } = useTenantIsolation();

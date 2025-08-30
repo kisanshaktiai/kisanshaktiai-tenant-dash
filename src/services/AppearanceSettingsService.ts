@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 
 export interface AppearanceSettings {
   id?: string;
@@ -24,17 +23,19 @@ class AppearanceSettingsService {
       .from('appearance_settings')
       .select('*')
       .eq('tenant_id', tenantId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No settings found, return default
-        return this.getDefaultSettings(tenantId);
-      }
+      console.error('Error fetching appearance settings:', error);
       throw error;
     }
 
-    return data;
+    if (!data) {
+      // Return default settings if no custom settings found
+      return this.getDefaultSettings(tenantId);
+    }
+
+    return data as AppearanceSettings;
   }
 
   async upsertAppearanceSettings(settings: Partial<AppearanceSettings> & { tenant_id: string }): Promise<AppearanceSettings> {
@@ -59,10 +60,11 @@ class AppearanceSettingsService {
       .single();
 
     if (error) {
+      console.error('Error upserting appearance settings:', error);
       throw error;
     }
 
-    return data;
+    return data as AppearanceSettings;
   }
 
   private getDefaultSettings(tenantId: string): AppearanceSettings {
