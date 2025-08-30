@@ -11,8 +11,8 @@ export interface AppearanceSettings {
   background_color: string;
   text_color: string;
   font_family: string;
-  logo_override_url?: string;
-  custom_css?: string;
+  logo_override_url?: string | null;
+  custom_css?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +42,7 @@ class AppearanceSettingsService {
       throw error;
     }
 
-    return data;
+    return data as AppearanceSettings | null;
   }
 
   async upsertAppearanceSettings(tenantId: string, settings: AppearanceSettingsUpdate): Promise<AppearanceSettings> {
@@ -63,7 +63,7 @@ class AppearanceSettingsService {
       throw error;
     }
 
-    return data;
+    return data as AppearanceSettings;
   }
 
   async deleteAppearanceSettings(tenantId: string): Promise<void> {
