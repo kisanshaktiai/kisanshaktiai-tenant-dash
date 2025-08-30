@@ -8,7 +8,7 @@ import { store } from '@/store';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
-import { TenantContextOptimizedProvider } from '@/contexts/TenantContextOptimized';
+import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 
@@ -38,7 +38,7 @@ function App() {
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-            <TenantContextOptimizedProvider>
+            <TenantProviderOptimized>
               <Router>
                 <div className="min-h-screen bg-background">
                   <Routes>
@@ -148,7 +148,7 @@ function App() {
                 </div>
               </Router>
               <Toaster />
-            </TenantContextOptimizedProvider>
+            </TenantProviderOptimized>
           </ThemeProvider>
           <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
