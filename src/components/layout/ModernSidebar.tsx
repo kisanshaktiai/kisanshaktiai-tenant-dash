@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAppSelector } from '@/store/hooks';
 import { usePermissions } from '@/hooks/usePermissions';
 import { navigationConfig, NavigationItem } from '@/config/navigation';
+import { useGlobalThemePersistence } from '@/hooks/useGlobalThemePersistence';
 import {
   Sidebar,
   SidebarContent,
@@ -31,6 +32,8 @@ const SidebarSection: React.FC<{
 }> = ({ title, items }) => {
   const { hasPermission } = usePermissions();
   const location = useLocation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   const filteredItems = items.filter(item => 
     !item.permission || hasPermission(item.permission as any)
@@ -41,7 +44,7 @@ const SidebarSection: React.FC<{
   return (
     <SidebarGroup>
       <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider px-2">
-        {title}
+        {!isCollapsed && title}
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
@@ -54,37 +57,40 @@ const SidebarSection: React.FC<{
                 <SidebarMenuButton
                   asChild
                   isActive={isActive}
-                  tooltip={item.description}
+                  tooltip={isCollapsed ? item.title : item.description}
                   className={cn(
                     "group relative overflow-hidden transition-all duration-200",
                     "hover:bg-accent/80 hover:text-accent-foreground",
-                    isActive && "bg-primary/10 text-primary font-medium shadow-sm border-r-2 border-primary"
+                    isActive && "bg-primary/10 text-primary font-medium shadow-sm border-r-2 border-primary",
+                    isCollapsed && "justify-center px-2"
                   )}
                 >
                   <NavLink to={item.href} className="flex items-center gap-3 w-full">
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <item.icon className={cn(
                         "h-4 w-4 transition-all duration-200",
                         isActive ? "text-primary" : "text-current"
                       )} />
-                      {item.isNew && (
+                      {item.isNew && !isCollapsed && (
                         <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-500 animate-pulse" />
                       )}
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate">{item.title}</span>
-                        {item.badge && (
-                          <Badge 
-                            variant={isActive ? "default" : "secondary"} 
-                            className="text-xs px-1.5 py-0.5 h-auto"
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
+                    {!isCollapsed && (
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{item.title}</span>
+                          {item.badge && (
+                            <Badge 
+                              variant={isActive ? "default" : "secondary"} 
+                              className="text-xs px-1.5 py-0.5 h-auto"
+                            >
+                              {item.badge}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -102,6 +108,9 @@ export const ModernSidebar: React.FC = () => {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
+  // Initialize theme persistence
+  useGlobalThemePersistence();
+
   // Group navigation items by category
   const mainItems = navigationConfig.filter(item => item.category === 'main');
   const managementItems = navigationConfig.filter(item => item.category === 'management');
@@ -112,10 +121,14 @@ export const ModernSidebar: React.FC = () => {
   return (
     <Sidebar 
       variant="inset" 
+      collapsible="icon"
       className="border-r bg-gradient-to-b from-card via-card to-card/95"
     >
       {/* Header */}
-      <SidebarHeader className="p-4 border-b bg-gradient-to-r from-background/50 to-muted/20">
+      <SidebarHeader className={cn(
+        "p-4 border-b bg-gradient-to-r from-background/50 to-muted/20 transition-all duration-200",
+        isCollapsed && "p-2"
+      )}>
         {!isCollapsed ? (
           <div className="space-y-2">
             <div className="flex items-center gap-3">
@@ -147,8 +160,8 @@ export const ModernSidebar: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-sm">
-              <span className="text-primary-foreground font-bold text-lg">
+            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center shadow-sm">
+              <span className="text-primary-foreground font-bold text-sm">
                 {currentTenant?.name?.charAt(0) || 'KS'}
               </span>
             </div>
@@ -158,8 +171,8 @@ export const ModernSidebar: React.FC = () => {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className="px-2">
-        <div className="space-y-4">
+      <SidebarContent className={cn("px-2 transition-all duration-200", isCollapsed && "px-1")}>
+        <div className="space-y-2">
           <SidebarSection title="Dashboard" items={mainItems} />
           <SidebarSection title="Management" items={managementItems} />
           <SidebarSection title="Analytics" items={analyticsItems} />
@@ -169,7 +182,10 @@ export const ModernSidebar: React.FC = () => {
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="p-4 border-t bg-gradient-to-r from-muted/30 to-background/50">
+      <SidebarFooter className={cn(
+        "p-4 border-t bg-gradient-to-r from-muted/30 to-background/50 transition-all duration-200",
+        isCollapsed && "p-2"
+      )}>
         {!isCollapsed ? (
           <div className="space-y-2">
             <div className="text-xs text-muted-foreground">
