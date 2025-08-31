@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2 } from 'lucide-react';
 
@@ -18,12 +18,12 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null);
   
   const { user, signIn } = useAuth();
-  const { currentTenant, refreshTenantData } = useTenantContext();
+  const { currentTenant, refreshTenantData } = useTenantContextOptimized();
   const { toast } = useToast();
   const location = useLocation();
 
   // Get the intended destination from navigation state
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const from = (location.state as any)?.from?.pathname || '/app/dashboard';
 
   // If user is already logged in and has a tenant, redirect
   if (user && currentTenant) {
@@ -123,14 +123,14 @@ const LoginPage = () => {
           </form>
           
           <div className="mt-4 text-center text-sm">
-            <Link to="/auth/forgot-password" className="text-primary hover:underline">
+            <Link to="/forgot-password" className="text-primary hover:underline">
               Forgot your password?
             </Link>
           </div>
           
           <div className="mt-2 text-center text-sm">
             Don't have an organization?{' '}
-            <Link to="/register-tenant" className="text-primary hover:underline">
+            <Link to="/tenant-registration" className="text-primary hover:underline">
               Register here
             </Link>
           </div>

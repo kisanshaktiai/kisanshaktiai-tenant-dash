@@ -2,17 +2,17 @@
 import React from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { TenantLoginForm } from '@/components/auth/TenantLoginForm';
 
 const TenantLoginPage = () => {
   const { user } = useAuth();
-  const { currentTenant, isInitialized } = useTenantContext();
+  const { currentTenant, isInitialized } = useTenantContextOptimized();
   const navigate = useNavigate();
 
   // If user is already logged in and has a tenant, redirect to dashboard
   if (user && currentTenant && isInitialized) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   // If user is logged in but no tenant, redirect to onboarding

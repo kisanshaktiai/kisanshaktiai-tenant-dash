@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, AlertCircle } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
   const [isLoading, setIsLoading] = useState(false);
   
   const { signIn, error: authError, clearError } = useAuth();
-  const { refreshTenantData } = useTenantContext();
+  const { refreshTenantData } = useTenantContextOptimized();
   const { toast } = useToast();
 
   // Clear auth errors when component mounts or form values change
