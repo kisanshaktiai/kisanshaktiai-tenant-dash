@@ -122,11 +122,11 @@ export const ModernSidebar: React.FC = () => {
     <Sidebar 
       variant="inset" 
       collapsible="icon"
-      className="border-r bg-card/95 backdrop-blur-sm"
+      className="border-r"
     >
       {/* Header */}
       <SidebarHeader className={cn(
-        "p-4 border-b bg-card/80 backdrop-blur-sm transition-all duration-200",
+        "p-4 border-b transition-all duration-200",
         isCollapsed && "p-2"
       )}>
         {!isCollapsed ? (
@@ -183,7 +183,7 @@ export const ModernSidebar: React.FC = () => {
 
       {/* Footer */}
       <SidebarFooter className={cn(
-        "p-4 border-t bg-card/80 backdrop-blur-sm transition-all duration-200",
+        "p-4 border-t transition-all duration-200",
         isCollapsed && "p-2"
       )}>
         {!isCollapsed ? (
