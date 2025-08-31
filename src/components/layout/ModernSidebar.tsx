@@ -60,8 +60,8 @@ const SidebarSection: React.FC<{
                   tooltip={isCollapsed ? item.title : item.description}
                   className={cn(
                     "group relative overflow-hidden transition-all duration-200",
-                    "hover:bg-accent/80 hover:text-accent-foreground",
-                    isActive && "bg-primary/10 text-primary font-medium shadow-sm border-r-2 border-primary",
+                    "hover:bg-accent/60 hover:text-accent-foreground",
+                    isActive && "bg-primary/15 text-primary font-medium shadow-sm border-r-2 border-primary/80",
                     isCollapsed && "justify-center px-2"
                   )}
                 >
@@ -122,11 +122,11 @@ export const ModernSidebar: React.FC = () => {
     <Sidebar 
       variant="inset" 
       collapsible="icon"
-      className="border-r bg-gradient-to-b from-card via-card to-card/95"
+      className="border-r bg-card/95 backdrop-blur-sm"
     >
       {/* Header */}
       <SidebarHeader className={cn(
-        "p-4 border-b bg-gradient-to-r from-background/50 to-muted/20 transition-all duration-200",
+        "p-4 border-b bg-card/80 backdrop-blur-sm transition-all duration-200",
         isCollapsed && "p-2"
       )}>
         {!isCollapsed ? (
@@ -171,7 +171,7 @@ export const ModernSidebar: React.FC = () => {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className={cn("px-2 transition-all duration-200", isCollapsed && "px-1")}>
+      <SidebarContent className={cn("px-2 transition-all duration-200 bg-card/50", isCollapsed && "px-1")}>
         <div className="space-y-2">
           <SidebarSection title="Dashboard" items={mainItems} />
           <SidebarSection title="Management" items={managementItems} />
@@ -183,7 +183,7 @@ export const ModernSidebar: React.FC = () => {
 
       {/* Footer */}
       <SidebarFooter className={cn(
-        "p-4 border-t bg-gradient-to-r from-muted/30 to-background/50 transition-all duration-200",
+        "p-4 border-t bg-card/80 backdrop-blur-sm transition-all duration-200",
         isCollapsed && "p-2"
       )}>
         {!isCollapsed ? (
