@@ -171,7 +171,7 @@ export const ModernSidebar: React.FC = () => {
       </SidebarHeader>
 
       {/* Navigation */}
-      <SidebarContent className={cn("px-2 transition-all duration-200 bg-card/50", isCollapsed && "px-1")}>
+      <SidebarContent className={cn("px-2 transition-all duration-200", isCollapsed && "px-1")}>
         <div className="space-y-2">
           <SidebarSection title="Dashboard" items={mainItems} />
           <SidebarSection title="Management" items={managementItems} />
