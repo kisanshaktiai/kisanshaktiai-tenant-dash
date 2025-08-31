@@ -44,12 +44,12 @@ import NotFound from '@/pages/NotFound';
 
 function App() {
   return (
-    <Provider store={store}>
-      <ThemeProvider>
-        <IntlProvider>
-          <TooltipProvider>
-            <TenantProviderOptimized>
-              <ErrorBoundary>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <ThemeProvider>
+          <IntlProvider>
+            <TooltipProvider>
+              <TenantProviderOptimized>
                 <div className="min-h-screen bg-background">
                   <Routes>
                     {/* Public Routes */}
@@ -102,12 +102,12 @@ function App() {
                   </Routes>
                 </div>
                 <Toaster />
-              </ErrorBoundary>
-            </TenantProviderOptimized>
-          </TooltipProvider>
-        </IntlProvider>
-      </ThemeProvider>
-    </Provider>
+              </TenantProviderOptimized>
+            </TooltipProvider>
+          </IntlProvider>
+        </ThemeProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 
