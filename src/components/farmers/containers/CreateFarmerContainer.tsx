@@ -27,6 +27,8 @@ const initialFormData: FarmerFormData = {
   hasStorage: false,
   hasTractor: false,
   primaryCrops: [],
+  pin: '',
+  confirmPin: '',
   notes: '',
 };
 

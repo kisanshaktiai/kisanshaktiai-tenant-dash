@@ -37,8 +37,8 @@ export const FarmersPageContainer: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => 
     farmer.farmer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.mobile_number?.includes(searchTerm)
+    farmer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farmer.phone?.includes(searchTerm)
   );
 
   const verifiedCount = farmers.filter(farmer => farmer.is_verified).length;
@@ -185,7 +185,7 @@ export const FarmersPageContainer: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">
-                          {farmer.full_name || 'Unnamed Farmer'}
+                          {farmer.name || 'Unnamed Farmer'}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
                           {farmer.farmer_code}
@@ -197,16 +197,16 @@ export const FarmersPageContainer: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {farmer.mobile_number && (
+                        {farmer.phone && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {farmer.mobile_number}
+                            {farmer.phone}
                           </div>
                         )}
-                        {(farmer.village || farmer.district) && (
+                        {(farmer.city || farmer.state) && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {[farmer.village, farmer.district].filter(Boolean).join(', ')}
+                            {[farmer.city, farmer.state].filter(Boolean).join(', ')}
                           </div>
                         )}
                         <div className="flex items-center gap-1">

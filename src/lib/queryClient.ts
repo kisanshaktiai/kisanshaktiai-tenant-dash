@@ -37,12 +37,25 @@ export const queryKeys = {
   cropHistory: (landId: string, tenantId: string) => ['crop-history', landId, tenantId] as const,
   cropHealthAssessments: (landId: string, tenantId: string) => ['crop-health', landId, tenantId] as const,
   
+  // Dashboard and Analytics
+  dashboardStats: (tenantId: string) => ['dashboard-stats', tenantId] as const,
+  engagementStats: (tenantId: string) => ['engagement-stats', tenantId] as const,
+  
+  // Dealers
+  dealers: (tenantId: string) => ['dealers', tenantId] as const,
+  dealersList: (tenantId: string, options?: any) => ['dealers', 'list', tenantId, options] as const,
+  dealer: (dealerId: string, tenantId: string) => ['dealers', 'detail', dealerId, tenantId] as const,
+  
+  // Products
+  products: (tenantId: string) => ['products', tenantId] as const,
+  productsList: (tenantId: string, options?: any) => ['products', 'list', tenantId, options] as const,
+  product: (productId: string, tenantId: string) => ['products', 'detail', productId, tenantId] as const,
+  
   // Other existing keys
   tenants: () => ['tenants'] as const,
   userTenants: (userId: string) => ['user-tenants', userId] as const,
   onboarding: (tenantId: string) => ['onboarding', tenantId] as const,
   settings: (tenantId: string) => ['settings', tenantId] as const,
-  products: (tenantId: string) => ['products', tenantId] as const,
   campaigns: (tenantId: string) => ['campaigns', tenantId] as const,
   analytics: (tenantId: string) => ['analytics', tenantId] as const,
 } as const;

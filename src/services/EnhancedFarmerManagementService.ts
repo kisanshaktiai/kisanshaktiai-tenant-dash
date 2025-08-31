@@ -94,14 +94,14 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(farmerData.phone);
       
       // Check if mobile number already exists for this tenant
-      const { data: existingAuth } = await supabase
-        .from('farmer_authentication')
+      const { data: existingFarmer } = await supabase
+        .from('farmers')
         .select('id')
-        .eq('mobile_number', formattedMobile)
+        .eq('phone', formattedMobile)
         .eq('tenant_id', tenantId)
         .single();
 
-      if (existingAuth) {
+      if (existingFarmer) {
         throw new Error('A farmer with this mobile number already exists');
       }
 
@@ -111,24 +111,17 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Hash PIN
       const pinHash = await this.hashPin(farmerData.pin);
 
-      // Start transaction by creating farmer record
+      // Create farmer record with all the new fields
       const { data: farmer, error: farmerError } = await supabase
         .from('farmers')
         .insert({
           tenant_id: tenantId,
           farmer_code: farmerCode,
-          full_name: farmerData.fullName,
+          name: farmerData.fullName,
+          phone: formattedMobile,
           email: farmerData.email || null,
-          date_of_birth: farmerData.dateOfBirth,
-          gender: farmerData.gender,
-          village: farmerData.village,
-          taluka: farmerData.taluka || null,
-          district: farmerData.district,
+          city: farmerData.village,
           state: farmerData.state,
-          pincode: farmerData.pincode,
-          mobile_number: formattedMobile,
-          country_code: '+91',
-          pin_hash: pinHash,
           farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
           total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
           primary_crops: farmerData.primaryCrops,
@@ -136,11 +129,20 @@ class EnhancedFarmerManagementService extends BaseApiService {
           has_irrigation: !!farmerData.irrigationSource,
           has_storage: farmerData.hasStorage,
           has_tractor: farmerData.hasTractor,
-          irrigation_type: farmerData.irrigationSource || null,
-          notes: farmerData.notes || null,
           is_verified: false,
           total_app_opens: 0,
           total_queries: 0,
+          // Store additional data in metadata for now
+          metadata: {
+            dateOfBirth: farmerData.dateOfBirth,
+            gender: farmerData.gender,
+            district: farmerData.district,
+            taluka: farmerData.taluka,
+            pincode: farmerData.pincode,
+            irrigationSource: farmerData.irrigationSource,
+            pinHash: pinHash,
+            notes: farmerData.notes,
+          }
         })
         .select()
         .single();
@@ -149,93 +151,39 @@ class EnhancedFarmerManagementService extends BaseApiService {
         throw farmerError;
       }
 
-      // Create farmer address record
-      const { error: addressError } = await supabase
-        .from('farmer_addresses')
-        .insert({
-          farmer_id: farmer.id,
-          tenant_id: tenantId,
-          address_type: 'primary',
-          village: farmerData.village,
-          taluka: farmerData.taluka || null,
-          district: farmerData.district,
-          state: farmerData.state,
-          pincode: farmerData.pincode,
-          is_primary: true,
-        });
-
-      if (addressError) {
-        console.error('Address creation failed:', addressError);
-        // Continue even if address fails as it's supplementary
+      // Try to create additional records if tables exist
+      try {
+        // Create farmer contacts if table exists
+        await supabase
+          .from('farmer_contacts')
+          .insert({
+            farmer_id: farmer.id,
+            tenant_id: tenantId,
+            contact_type: 'mobile',
+            contact_value: formattedMobile,
+            is_primary: true,
+            is_verified: false,
+          });
+      } catch (error) {
+        console.warn('Could not create farmer contacts:', error);
       }
 
-      // Create farmer contacts
-      const contacts = [
-        {
-          farmer_id: farmer.id,
-          tenant_id: tenantId,
-          contact_type: 'mobile',
-          contact_value: formattedMobile,
-          is_primary: true,
-          is_verified: false,
-        },
-      ];
-
-      if (farmerData.email) {
-        contacts.push({
-          farmer_id: farmer.id,
-          tenant_id: tenantId,
-          contact_type: 'email',
-          contact_value: farmerData.email,
-          is_primary: false,
-          is_verified: false,
-        });
-      }
-
-      const { error: contactsError } = await supabase
-        .from('farmer_contacts')
-        .insert(contacts);
-
-      if (contactsError) {
-        console.error('Contacts creation failed:', contactsError);
-        // Continue even if contacts fail
-      }
-
-      // Create farmer authentication record
-      const { error: authError } = await supabase
-        .from('farmer_authentication')
-        .insert({
-          farmer_id: farmer.id,
-          tenant_id: tenantId,
-          mobile_number: formattedMobile,
-          country_code: '+91',
-          pin_hash: pinHash,
-          is_active: true,
-          failed_attempts: 0,
-        });
-
-      if (authError) {
-        console.error('Authentication creation failed:', authError);
-        // Continue even if auth record fails
-      }
-
-      // Create initial engagement record
-      const { error: engagementError } = await supabase
-        .from('farmer_engagement')
-        .insert({
-          farmer_id: farmer.id,
-          tenant_id: tenantId,
-          app_opens_count: 0,
-          features_used: [],
-          communication_responses: 0,
-          activity_score: 0,
-          churn_risk_score: 0,
-          engagement_level: 'medium',
-        });
-
-      if (engagementError) {
-        console.error('Engagement creation failed:', engagementError);
-        // Continue even if engagement record fails
+      try {
+        // Create farmer engagement record if table exists
+        await supabase
+          .from('farmer_engagement')
+          .insert({
+            farmer_id: farmer.id,
+            tenant_id: tenantId,
+            app_opens_count: 0,
+            features_used: [],
+            communication_responses: 0,
+            activity_score: 0,
+            churn_risk_score: 0,
+            engagement_level: 'medium',
+          });
+      } catch (error) {
+        console.warn('Could not create farmer engagement:', error);
       }
 
       return {
@@ -263,22 +211,42 @@ class EnhancedFarmerManagementService extends BaseApiService {
     try {
       const { data: farmer, error } = await supabase
         .from('farmers')
-        .select(`
-          *,
-          farmer_addresses(*),
-          farmer_contacts(*),
-          farmer_authentication(*),
-          farmer_engagement(*),
-          farmer_tags(*),
-          farmer_notes(*),
-          lands(*)
-        `)
+        .select('*')
         .eq('id', farmerId)
         .eq('tenant_id', tenantId)
         .single();
 
       if (error) throw error;
-      return farmer;
+      
+      // Try to fetch additional details from related tables
+      let additionalData = {};
+      
+      try {
+        const { data: contacts } = await supabase
+          .from('farmer_contacts')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .eq('tenant_id', tenantId);
+        
+        additionalData = { ...additionalData, contacts };
+      } catch (error) {
+        console.warn('Could not fetch farmer contacts:', error);
+      }
+
+      try {
+        const { data: engagement } = await supabase
+          .from('farmer_engagement')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .eq('tenant_id', tenantId)
+          .single();
+        
+        additionalData = { ...additionalData, engagement };
+      } catch (error) {
+        console.warn('Could not fetch farmer engagement:', error);
+      }
+
+      return { ...farmer, ...additionalData };
     } catch (error) {
       throw new Error(`Failed to fetch farmer details: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -289,44 +257,38 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      const { data: authRecord, error } = await supabase
-        .from('farmer_authentication')
-        .select(`
-          *,
-          farmers(*)
-        `)
-        .eq('mobile_number', formattedMobile)
-        .eq('pin_hash', pinHash)
+      // Look for farmer with matching mobile and PIN hash in metadata
+      const { data: farmer, error } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('phone', formattedMobile)
         .eq('tenant_id', tenantId)
-        .eq('is_active', true)
         .single();
 
-      if (error || !authRecord) {
+      if (error || !farmer) {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Check if account is locked
-      if (authRecord.locked_until && new Date(authRecord.locked_until) > new Date()) {
-        return { 
-          success: false, 
-          error: 'Account is temporarily locked. Please try again later.' 
-        };
+      // Check PIN hash from metadata
+      const storedPinHash = farmer.metadata?.pinHash;
+      if (!storedPinHash || storedPinHash !== pinHash) {
+        return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Update last login
+      // Update last login in metadata
       await supabase
-        .from('farmer_authentication')
+        .from('farmers')
         .update({ 
-          last_login: new Date().toISOString(),
-          failed_attempts: 0,
-          locked_until: null,
+          metadata: {
+            ...farmer.metadata,
+            lastLogin: new Date().toISOString(),
+          }
         })
-        .eq('id', authRecord.id);
+        .eq('id', farmer.id);
 
       return {
         success: true,
-        farmer: authRecord.farmers,
-        authRecord,
+        farmer,
       };
 
     } catch (error) {
