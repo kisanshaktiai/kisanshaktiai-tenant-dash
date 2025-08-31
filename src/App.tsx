@@ -9,37 +9,37 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-import { TenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-// Pages
+// Pages - using default imports
 import Index from '@/pages/Index';
-import { LoginPage } from '@/pages/auth/LoginPage';
-import { RegisterPage } from '@/pages/auth/RegisterPage';
-import { TenantLoginPage } from '@/pages/auth/TenantLoginPage';
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
+import LoginPage from '@/pages/auth/LoginPage';
+import RegisterPage from '@/pages/auth/RegisterPage';
+import TenantLoginPage from '@/pages/auth/TenantLoginPage';
+import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
-import { OnboardingPage } from '@/pages/onboarding/OnboardingPage';
+import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 import { DashboardPage } from '@/pages/DashboardPage';
-import { FarmersPage } from '@/pages/farmers/FarmersPage';
+import FarmersPage from '@/pages/farmers/FarmersPage';
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
-import { DealersPage } from '@/pages/dealers/DealersPage';
-import { ProductsPage } from '@/pages/products/ProductsPage';
+import DealersPage from '@/pages/dealers/DealersPage';
+import ProductsPage from '@/pages/products/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
-import { IntegrationsPage } from '@/pages/integrations/IntegrationsPage';
+import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
-import { AppearancePage } from '@/pages/settings/AppearancePage';
+import AppearancePage from '@/pages/settings/AppearancePage';
 import { OrganizationPage } from '@/pages/settings/OrganizationPage';
 import { UsersPage } from '@/pages/settings/UsersPage';
 import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
 import UserManagementPage from '@/pages/UserManagementPage';
-import { PasswordSetupPage } from '@/pages/invitation/PasswordSetupPage';
+import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
-import { SubscriptionPage } from '@/pages/subscription/SubscriptionPage';
+import SubscriptionPage from '@/pages/subscription/SubscriptionPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
 import SetupPasswordPage from '@/pages/SetupPasswordPage';
 import NotFound from '@/pages/NotFound';
@@ -60,7 +60,7 @@ function App() {
         <ThemeProvider>
           <IntlProvider>
             <TooltipProvider>
-              <TenantContextOptimized>
+              <TenantProviderOptimized>
                 <ErrorBoundary>
                   <div className="min-h-screen bg-background">
                     <Routes>
@@ -115,7 +115,7 @@ function App() {
                   </div>
                   <Toaster />
                 </ErrorBoundary>
-              </TenantContextOptimized>
+              </TenantProviderOptimized>
             </TooltipProvider>
           </IntlProvider>
         </ThemeProvider>

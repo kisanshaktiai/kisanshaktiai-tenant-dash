@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -32,7 +31,7 @@ const SidebarSection: React.FC<{
   const [isExpanded, setIsExpanded] = useState(true);
 
   const filteredItems = items.filter(item => 
-    !item.permission || hasPermission(item.permission)
+    !item.permission || hasPermission(item.permission as any)
   );
 
   if (!filteredItems.length) return null;

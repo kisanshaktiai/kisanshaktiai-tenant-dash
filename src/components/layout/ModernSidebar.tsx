@@ -33,7 +33,7 @@ const SidebarSection: React.FC<{
   const location = useLocation();
 
   const filteredItems = items.filter(item => 
-    !item.permission || hasPermission(item.permission)
+    !item.permission || hasPermission(item.permission as any)
   );
 
   if (!filteredItems.length) return null;
