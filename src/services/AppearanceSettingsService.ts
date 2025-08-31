@@ -6,6 +6,9 @@ import {
   generateColorVariants,
   generateDarkModeColors,
   generateSidebarColors,
+  generateButtonStates,
+  generateStatusColors,
+  generateChartColors,
   ensureContrast
 } from '@/utils/colorUtils';
 
@@ -21,11 +24,14 @@ export interface AppearanceSettings {
   font_family: string;
   logo_override_url?: string;
   custom_css?: string;
-  // Extended color properties
+  // Extended semantic colors
   success_color?: string;
   warning_color?: string;
   info_color?: string;
   destructive_color?: string;
+  border_color?: string;
+  muted_color?: string;
+  sidebar_background_color?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -55,9 +61,8 @@ class AppearanceSettingsService {
 
   async upsertAppearanceSettings(settings: Partial<AppearanceSettings> & { tenant_id: string }): Promise<AppearanceSettings> {
     // Generate semantic colors if not provided
-    const semanticColors = settings.primary_color 
-      ? generateSemanticColors(hexToHsl(settings.primary_color))
-      : generateSemanticColors('142 76% 36%');
+    const primaryHsl = settings.primary_color ? hexToHsl(settings.primary_color) : '142 76% 36%';
+    const semanticColors = generateSemanticColors(primaryHsl);
 
     const { data, error } = await supabase
       .from('appearance_settings')
@@ -76,6 +81,9 @@ class AppearanceSettingsService {
         warning_color: settings.warning_color || semanticColors.warning,
         info_color: settings.info_color || semanticColors.info,
         destructive_color: settings.destructive_color || semanticColors.destructive,
+        border_color: settings.border_color || semanticColors.border,
+        muted_color: settings.muted_color || semanticColors.muted,
+        sidebar_background_color: settings.sidebar_background_color || '#ffffff',
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'tenant_id'
@@ -110,6 +118,9 @@ class AppearanceSettingsService {
       warning_color: semanticColors.warning,
       info_color: semanticColors.info,
       destructive_color: semanticColors.destructive,
+      border_color: semanticColors.border,
+      muted_color: semanticColors.muted,
+      sidebar_background_color: '#ffffff',
     };
   }
 
@@ -131,6 +142,8 @@ class AppearanceSettingsService {
     const warningHsl = settings.warning_color ? hexToHsl(settings.warning_color) : semanticColors.warning;
     const infoHsl = settings.info_color ? hexToHsl(settings.info_color) : semanticColors.info;
     const destructiveHsl = settings.destructive_color ? hexToHsl(settings.destructive_color) : semanticColors.destructive;
+    const borderHsl = settings.border_color ? hexToHsl(settings.border_color) : semanticColors.border;
+    const mutedHsl = settings.muted_color ? hexToHsl(settings.muted_color) : semanticColors.muted;
     
     // Apply core colors
     root.style.setProperty('--primary', primaryHsl);
@@ -144,19 +157,26 @@ class AppearanceSettingsService {
     root.style.setProperty('--warning', warningHsl);
     root.style.setProperty('--info', infoHsl);
     root.style.setProperty('--destructive', destructiveHsl);
+    root.style.setProperty('--border', borderHsl);
+    root.style.setProperty('--muted', mutedHsl);
+    root.style.setProperty('--input', borderHsl);
+    root.style.setProperty('--ring', primaryHsl);
     
     // Ensure proper foreground colors for semantic colors
     root.style.setProperty('--success-foreground', ensureContrast(backgroundHsl, successHsl));
     root.style.setProperty('--warning-foreground', ensureContrast(textHsl, warningHsl));
     root.style.setProperty('--info-foreground', ensureContrast(backgroundHsl, infoHsl));
     root.style.setProperty('--destructive-foreground', ensureContrast(backgroundHsl, destructiveHsl));
+    root.style.setProperty('--muted-foreground', ensureContrast(textHsl, mutedHsl));
     
     // Generate and apply sidebar colors (always light)
     const sidebarColors = generateSidebarColors(primaryHsl);
-    root.style.setProperty('--sidebar-background', sidebarColors.background);
+    const sidebarBgHsl = settings.sidebar_background_color ? hexToHsl(settings.sidebar_background_color) : sidebarColors.background;
+    
+    root.style.setProperty('--sidebar-background', sidebarBgHsl);
     root.style.setProperty('--sidebar-foreground', sidebarColors.foreground);
     root.style.setProperty('--sidebar-primary', primaryHsl);
-    root.style.setProperty('--sidebar-primary-foreground', backgroundHsl);
+    root.style.setProperty('--sidebar-primary-foreground', sidebarColors.primaryForeground);
     root.style.setProperty('--sidebar-accent', sidebarColors.accent);
     root.style.setProperty('--sidebar-accent-foreground', sidebarColors.accentForeground);
     root.style.setProperty('--sidebar-border', sidebarColors.border);
@@ -165,23 +185,56 @@ class AppearanceSettingsService {
     // Apply card colors
     root.style.setProperty('--card', backgroundHsl);
     root.style.setProperty('--card-foreground', textHsl);
+    root.style.setProperty('--popover', backgroundHsl);
+    root.style.setProperty('--popover-foreground', textHsl);
     
-    // Generate muted colors
+    // Generate and apply button states
+    const primaryButtonStates = generateButtonStates(primaryHsl);
+    const secondaryButtonStates = generateButtonStates(secondaryHsl);
+    
+    root.style.setProperty('--button-primary', primaryButtonStates.base);
+    root.style.setProperty('--button-primary-hover', primaryButtonStates.hover);
+    root.style.setProperty('--button-primary-active', primaryButtonStates.active);
+    root.style.setProperty('--button-secondary', secondaryButtonStates.base);
+    root.style.setProperty('--button-secondary-hover', secondaryButtonStates.hover);
+    root.style.setProperty('--button-secondary-active', secondaryButtonStates.active);
+    
+    // Generate and apply status colors
+    const isDark = document.documentElement.classList.contains('dark');
+    const statusColors = generateStatusColors(isDark);
+    
+    root.style.setProperty('--status-active', statusColors.active);
+    root.style.setProperty('--status-inactive', statusColors.inactive);
+    root.style.setProperty('--status-pending', statusColors.pending);
+    root.style.setProperty('--status-error', statusColors.error);
+    
+    // Generate and apply chart colors
+    const chartColors = generateChartColors(primaryHsl, isDark);
+    chartColors.forEach((color, index) => {
+      root.style.setProperty(`--chart-${index + 1}`, color);
+    });
+    
+    // Apply state variant colors
     const [h, s, l] = backgroundHsl.split(' ').map((v, i) => {
       if (i === 0) return parseInt(v);
       return parseInt(v.replace('%', ''));
     });
     
-    const mutedHsl = `${h} ${Math.max(s - 5, 5)}% ${Math.max(l - 4, 5)}%`;
-    const mutedForegroundHsl = `215 16% 47%`;
-    
-    root.style.setProperty('--muted', mutedHsl);
-    root.style.setProperty('--muted-foreground', mutedForegroundHsl);
-    
-    // Apply border and input colors
-    root.style.setProperty('--border', `214 32% 91%`);
-    root.style.setProperty('--input', `214 32% 91%`);
-    root.style.setProperty('--ring', primaryHsl);
+    if (isDark) {
+      root.style.setProperty('--background-hover', `215 28% 20%`);
+      root.style.setProperty('--background-active', `215 28% 25%`);
+      root.style.setProperty('--background-disabled', `215 28% 15%`);
+      root.style.setProperty('--text-subtle', `217 11% 65%`);
+      root.style.setProperty('--text-disabled', `217 11% 45%`);
+      root.style.setProperty('--text-muted', `217 11% 55%`);
+    } else {
+      root.style.setProperty('--background-hover', `210 40% 98%`);
+      root.style.setProperty('--background-active', `210 40% 95%`);
+      root.style.setProperty('--background-disabled', `210 40% 93%`);
+      root.style.setProperty('--text-subtle', `215 16% 47%`);
+      root.style.setProperty('--text-disabled', `215 16% 65%`);
+      root.style.setProperty('--text-muted', `215 16% 57%`);
+    }
     
     // Apply font family
     if (settings.font_family) {
@@ -211,13 +264,22 @@ class AppearanceSettingsService {
     // Remove all custom properties
     const propertiesToRemove = [
       '--primary', '--secondary', '--accent', '--background', '--foreground',
-      '--success', '--warning', '--info', '--destructive',
-      '--success-foreground', '--warning-foreground', '--info-foreground', '--destructive-foreground',
+      '--success', '--warning', '--info', '--destructive', '--border', '--muted', '--input', '--ring',
+      '--success-foreground', '--warning-foreground', '--info-foreground', '--destructive-foreground', '--muted-foreground',
       '--sidebar-background', '--sidebar-foreground', '--sidebar-primary', '--sidebar-primary-foreground',
       '--sidebar-accent', '--sidebar-accent-foreground', '--sidebar-border', '--sidebar-ring',
-      '--card', '--card-foreground', '--muted', '--muted-foreground',
-      '--border', '--input', '--ring', '--font-family'
+      '--card', '--card-foreground', '--popover', '--popover-foreground',
+      '--button-primary', '--button-primary-hover', '--button-primary-active',
+      '--button-secondary', '--button-secondary-hover', '--button-secondary-active',
+      '--status-active', '--status-inactive', '--status-pending', '--status-error',
+      '--background-hover', '--background-active', '--background-disabled',
+      '--text-subtle', '--text-disabled', '--text-muted', '--font-family'
     ];
+    
+    // Remove chart colors
+    for (let i = 1; i <= 5; i++) {
+      propertiesToRemove.push(`--chart-${i}`);
+    }
     
     propertiesToRemove.forEach(prop => {
       root.style.removeProperty(prop);

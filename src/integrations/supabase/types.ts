@@ -739,13 +739,16 @@ export type Database = {
         Row: {
           accent_color: string
           background_color: string
+          border_color: string | null
           created_at: string | null
           custom_css: string | null
           font_family: string
           id: string
           logo_override_url: string | null
+          muted_color: string | null
           primary_color: string
           secondary_color: string
+          sidebar_background_color: string | null
           tenant_id: string
           text_color: string
           theme_mode: string
@@ -754,13 +757,16 @@ export type Database = {
         Insert: {
           accent_color?: string
           background_color?: string
+          border_color?: string | null
           created_at?: string | null
           custom_css?: string | null
           font_family?: string
           id?: string
           logo_override_url?: string | null
+          muted_color?: string | null
           primary_color?: string
           secondary_color?: string
+          sidebar_background_color?: string | null
           tenant_id: string
           text_color?: string
           theme_mode?: string
@@ -769,13 +775,16 @@ export type Database = {
         Update: {
           accent_color?: string
           background_color?: string
+          border_color?: string | null
           created_at?: string | null
           custom_css?: string | null
           font_family?: string
           id?: string
           logo_override_url?: string | null
+          muted_color?: string | null
           primary_color?: string
           secondary_color?: string
+          sidebar_background_color?: string | null
           tenant_id?: string
           text_color?: string
           theme_mode?: string

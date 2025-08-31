@@ -1,426 +1,546 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
-import { PageLayout } from '@/components/layout/PageLayout';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContent } from '@/components/layout/PageContent';
-import {
-  Palette,
-  Sun,
-  Moon,
-  Monitor,
-  Upload,
-  RefreshCw,
-  Save,
-  Eye,
-  EyeOff,
-  CheckCircle,
-  AlertTriangle,
-  Info,
-  XCircle
-} from 'lucide-react';
-
-const presetColors = [
-  { 
-    name: 'Emerald (Default)', 
-    primary: '#10b981', 
-    secondary: '#059669', 
-    accent: '#14b8a6',
-    description: 'Fresh green theme perfect for agriculture'
-  },
-  { 
-    name: 'Ocean Blue', 
-    primary: '#3b82f6', 
-    secondary: '#2563eb', 
-    accent: '#1d4ed8',
-    description: 'Professional blue theme'
-  },
-  { 
-    name: 'Royal Purple', 
-    primary: '#8b5cf6', 
-    secondary: '#7c3aed', 
-    accent: '#6d28d9',
-    description: 'Modern purple theme'
-  },
-  { 
-    name: 'Sunset Orange', 
-    primary: '#f97316', 
-    secondary: '#ea580c', 
-    accent: '#c2410c',
-    description: 'Warm orange theme'
-  },
-  { 
-    name: 'Rose Pink', 
-    primary: '#f43f5e', 
-    secondary: '#e11d48', 
-    accent: '#be123c',
-    description: 'Elegant rose theme'
-  },
-  { 
-    name: 'Forest Teal', 
-    primary: '#14b8a6', 
-    secondary: '#0d9488', 
-    accent: '#0f766e',
-    description: 'Calm teal theme'
-  }
-];
-
-const fontOptions = [
-  { name: 'Inter (Default)', value: 'Inter' },
-  { name: 'Roboto', value: 'Roboto' },
-  { name: 'Open Sans', value: 'Open Sans' },
-  { name: 'Poppins', value: 'Poppins' },
-  { name: 'Lato', value: 'Lato' },
-  { name: 'Montserrat', value: 'Montserrat' }
-];
+import { useToast } from '@/hooks/use-toast';
+import { Palette, Eye, Save, RotateCcw, Download, Upload } from 'lucide-react';
 
 const AppearancePage = () => {
-  const { theme, setTheme } = useTheme();
-  const { settings, updateSettings, isLoading, isUpdating } = useAppearanceSettings();
-  const [previewMode, setPreviewMode] = useState(false);
+  const { settings, updateSettings, isUpdating } = useAppearanceSettings();
+  const { toast } = useToast();
+  
+  // Local state for form inputs
+  const [formData, setFormData] = useState({
+    theme_mode: 'system' as 'light' | 'dark' | 'system',
+    primary_color: '#10b981',
+    secondary_color: '#059669',
+    accent_color: '#14b8a6',
+    background_color: '#ffffff',
+    text_color: '#1f2937',
+    success_color: '#10b981',
+    warning_color: '#f59e0b',
+    info_color: '#3b82f6',
+    destructive_color: '#ef4444',
+    border_color: '#e5e7eb',
+    muted_color: '#f3f4f6',
+    sidebar_background_color: '#ffffff',
+    font_family: 'Inter',
+    custom_css: '',
+  });
 
-  const handleColorChange = (colorType: string, value: string) => {
-    updateSettings({
-      [colorType]: value
-    });
+  // Update form data when settings change
+  React.useEffect(() => {
+    if (settings) {
+      setFormData({
+        theme_mode: settings.theme_mode || 'system',
+        primary_color: settings.primary_color || '#10b981',
+        secondary_color: settings.secondary_color || '#059669',
+        accent_color: settings.accent_color || '#14b8a6',
+        background_color: settings.background_color || '#ffffff',
+        text_color: settings.text_color || '#1f2937',
+        success_color: settings.success_color || '#10b981',
+        warning_color: settings.warning_color || '#f59e0b',
+        info_color: settings.info_color || '#3b82f6',
+        destructive_color: settings.destructive_color || '#ef4444',
+        border_color: settings.border_color || '#e5e7eb',
+        muted_color: settings.muted_color || '#f3f4f6',
+        sidebar_background_color: settings.sidebar_background_color || '#ffffff',
+        font_family: settings.font_family || 'Inter',
+        custom_css: settings.custom_css || '',
+      });
+    }
+  }, [settings]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handlePresetSelect = (preset: typeof presetColors[0]) => {
-    console.log('Applying color preset:', preset);
-    updateSettings({
-      primary_color: preset.primary,
-      secondary_color: preset.secondary,
-      accent_color: preset.accent
-    });
-  };
-
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // TODO: Implement actual file upload to storage
-      updateSettings({
-        logo_override_url: URL.createObjectURL(file)
+  const handleSave = async () => {
+    try {
+      await updateSettings(formData);
+      toast({
+        title: "Theme updated",
+        description: "Your appearance settings have been saved successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to save",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
       });
     }
   };
 
-  const handleReset = () => {
-    updateSettings({
+  const resetToDefaults = () => {
+    setFormData({
       theme_mode: 'system',
       primary_color: '#10b981',
       secondary_color: '#059669',
       accent_color: '#14b8a6',
       background_color: '#ffffff',
       text_color: '#1f2937',
-      font_family: 'Inter',
       success_color: '#10b981',
       warning_color: '#f59e0b',
       info_color: '#3b82f6',
       destructive_color: '#ef4444',
-      logo_override_url: null
+      border_color: '#e5e7eb',
+      muted_color: '#f3f4f6',
+      sidebar_background_color: '#ffffff',
+      font_family: 'Inter',
+      custom_css: '',
     });
   };
 
-  if (isLoading) {
-    return (
-      <PageLayout>
-        <PageHeader title="Appearance" description="Customize the look and feel of your dashboard" />
-        <PageContent>
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        </PageContent>
-      </PageLayout>
-    );
-  }
+  const presetThemes = [
+    {
+      name: 'Agricultural Green',
+      colors: {
+        primary_color: '#10b981',
+        secondary_color: '#059669',
+        accent_color: '#14b8a6',
+        success_color: '#10b981',
+        warning_color: '#f59e0b',
+        info_color: '#3b82f6',
+        destructive_color: '#ef4444',
+      }
+    },
+    {
+      name: 'Ocean Blue',
+      colors: {
+        primary_color: '#0ea5e9',
+        secondary_color: '#0284c7',
+        accent_color: '#06b6d4',
+        success_color: '#10b981',
+        warning_color: '#f59e0b',
+        info_color: '#0ea5e9',
+        destructive_color: '#ef4444',
+      }
+    },
+    {
+      name: 'Sunset Orange',
+      colors: {
+        primary_color: '#f97316',
+        secondary_color: '#ea580c',
+        accent_color: '#fb923c',
+        success_color: '#10b981',
+        warning_color: '#f97316',
+        info_color: '#3b82f6',
+        destructive_color: '#ef4444',
+      }
+    }
+  ];
+
+  const applyPreset = (preset: typeof presetThemes[0]) => {
+    setFormData(prev => ({
+      ...prev,
+      ...preset.colors
+    }));
+  };
 
   return (
-    <PageLayout>
-      <PageHeader 
-        title="Appearance" 
-        description="Customize colors, theme, and branding for your tenant dashboard"
-      />
-      
-      <PageContent className="space-y-8">
-        {/* Theme Mode */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Monitor className="w-5 h-5 text-primary" />
-              Theme Mode
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { value: 'light', label: 'Light', icon: Sun, desc: 'Clean white interface' },
-                { value: 'dark', label: 'Dark', icon: Moon, desc: 'Modern dark interface' },
-                { value: 'system', label: 'System', icon: Monitor, desc: 'Follow system preference' }
-              ].map((themeOption) => (
-                <Button
-                  key={themeOption.value}
-                  variant={theme === themeOption.value ? 'default' : 'outline'}
-                  onClick={() => {
-                    setTheme(themeOption.value as any);
-                    updateSettings({ theme_mode: themeOption.value as any });
-                  }}
-                  className="h-24 flex-col gap-2 p-4"
-                  disabled={isUpdating}
+    <div className="container-responsive py-6 space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Appearance Settings</h1>
+          <p className="text-muted-foreground mt-2">
+            Customize the look and feel of your application
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={resetToDefaults}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset
+          </Button>
+          <Button onClick={handleSave} disabled={isUpdating}>
+            <Save className="h-4 w-4 mr-2" />
+            {isUpdating ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Theme Mode */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Theme Mode
+              </CardTitle>
+              <CardDescription>
+                Choose between light, dark, or system preference
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={formData.theme_mode}
+                onValueChange={(value) => handleInputChange('theme_mode', value as 'light' | 'dark' | 'system')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          {/* Brand Colors */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Brand Colors
+              </CardTitle>
+              <CardDescription>
+                Define your organization's primary brand colors
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="primary_color">Primary Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="primary_color"
+                      type="color"
+                      value={formData.primary_color}
+                      onChange={(e) => handleInputChange('primary_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.primary_color}
+                      onChange={(e) => handleInputChange('primary_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="secondary_color">Secondary Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="secondary_color"
+                      type="color"
+                      value={formData.secondary_color}
+                      onChange={(e) => handleInputChange('secondary_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.secondary_color}
+                      onChange={(e) => handleInputChange('secondary_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="accent_color">Accent Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="accent_color"
+                      type="color"
+                      value={formData.accent_color}
+                      onChange={(e) => handleInputChange('accent_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.accent_color}
+                      onChange={(e) => handleInputChange('accent_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Semantic Colors */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Semantic Colors</CardTitle>
+              <CardDescription>
+                Colors used for status indicators and feedback
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="success_color">Success Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="success_color"
+                      type="color"
+                      value={formData.success_color}
+                      onChange={(e) => handleInputChange('success_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.success_color}
+                      onChange={(e) => handleInputChange('success_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="warning_color">Warning Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="warning_color"
+                      type="color"
+                      value={formData.warning_color}
+                      onChange={(e) => handleInputChange('warning_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.warning_color}
+                      onChange={(e) => handleInputChange('warning_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="info_color">Info Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="info_color"
+                      type="color"
+                      value={formData.info_color}
+                      onChange={(e) => handleInputChange('info_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.info_color}
+                      onChange={(e) => handleInputChange('info_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="destructive_color">Error Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="destructive_color"
+                      type="color"
+                      value={formData.destructive_color}
+                      onChange={(e) => handleInputChange('destructive_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.destructive_color}
+                      onChange={(e) => handleInputChange('destructive_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Layout Colors */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Layout Colors</CardTitle>
+              <CardDescription>
+                Background, text, and structural element colors
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="background_color">Background Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="background_color"
+                      type="color"
+                      value={formData.background_color}
+                      onChange={(e) => handleInputChange('background_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.background_color}
+                      onChange={(e) => handleInputChange('background_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="text_color">Text Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="text_color"
+                      type="color"
+                      value={formData.text_color}
+                      onChange={(e) => handleInputChange('text_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.text_color}
+                      onChange={(e) => handleInputChange('text_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="border_color">Border Color</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="border_color"
+                      type="color"
+                      value={formData.border_color}
+                      onChange={(e) => handleInputChange('border_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.border_color}
+                      onChange={(e) => handleInputChange('border_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="sidebar_background_color">Sidebar Background</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Input
+                      id="sidebar_background_color"
+                      type="color"
+                      value={formData.sidebar_background_color}
+                      onChange={(e) => handleInputChange('sidebar_background_color', e.target.value)}
+                      className="w-16 h-10 p-1 border rounded"
+                    />
+                    <Input
+                      value={formData.sidebar_background_color}
+                      onChange={(e) => handleInputChange('sidebar_background_color', e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Typography */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Typography</CardTitle>
+              <CardDescription>
+                Font family and text styling options
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="font_family">Font Family</Label>
+                <Select
+                  value={formData.font_family}
+                  onValueChange={(value) => handleInputChange('font_family', value)}
                 >
-                  <themeOption.icon className="w-6 h-6" />
-                  <div className="text-center">
-                    <div className="font-medium">{themeOption.label}</div>
-                    <div className="text-xs text-muted-foreground">{themeOption.desc}</div>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inter">Inter</SelectItem>
+                    <SelectItem value="Roboto">Roboto</SelectItem>
+                    <SelectItem value="Open Sans">Open Sans</SelectItem>
+                    <SelectItem value="Lato">Lato</SelectItem>
+                    <SelectItem value="Poppins">Poppins</SelectItem>
+                    <SelectItem value="Montserrat">Montserrat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Preview Panel */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Color Presets</CardTitle>
+              <CardDescription>
+                Quick color schemes to get you started
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {presetThemes.map((preset) => (
+                <Button
+                  key={preset.name}
+                  variant="outline"
+                  onClick={() => applyPreset(preset)}
+                  className="w-full justify-start"
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: preset.colors.primary_color }}
+                    />
+                    {preset.name}
                   </div>
                 </Button>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Primary Color Customization */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Primary Colors
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Primary Color Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { key: 'primary_color', label: 'Primary Color', description: 'Main brand color' },
-                { key: 'secondary_color', label: 'Secondary Color', description: 'Supporting brand color' },
-                { key: 'accent_color', label: 'Accent Color', description: 'Highlight color' }
-              ].map(({ key, label, description }) => (
-                <div key={key} className="space-y-3">
-                  <div>
-                    <Label className="font-medium">{label}</Label>
-                    <p className="text-sm text-muted-foreground">{description}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-12 h-12 rounded-xl border-2 shadow-medium ring-2 ring-offset-2 ring-primary/20"
-                      style={{ backgroundColor: settings?.[key as keyof typeof settings] || '#10b981' }}
-                    />
-                    <Input
-                      type="color"
-                      value={settings?.[key as keyof typeof settings] || '#10b981'}
-                      onChange={(e) => handleColorChange(key, e.target.value)}
-                      className="flex-1 h-12"
-                      disabled={isUpdating}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Separator />
-
-            {/* Color Presets */}
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Color Presets</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {presetColors.map((preset) => (
-                  <Button
-                    key={preset.name}
-                    variant="outline"
-                    onClick={() => handlePresetSelect(preset)}
-                    className="h-auto p-4 flex items-center gap-4 hover:scale-[1.02] transition-all justify-start"
-                    disabled={isUpdating}
-                  >
-                    <div className="flex gap-2">
-                      {[preset.primary, preset.secondary, preset.accent].map((color, i) => (
-                        <div
-                          key={i}
-                          className="w-8 h-8 rounded-lg border-2 shadow-sm ring-1 ring-black/5"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-left">
-                      <div className="font-medium">{preset.name}</div>
-                      <div className="text-sm text-muted-foreground">{preset.description}</div>
-                    </div>
-                  </Button>
-                ))}
+          {/* Live Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Preview</CardTitle>
+              <CardDescription>
+                See how your colors look in action
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Button className="w-full btn-primary">
+                  Primary Button
+                </Button>
+                <Button variant="secondary" className="w-full">
+                  Secondary Button
+                </Button>
+                <Button variant="outline" className="w-full">
+                  Outline Button
+                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Semantic Colors */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Badge className="w-5 h-5" />
-              Semantic Colors
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { 
-                  key: 'success_color', 
-                  label: 'Success', 
-                  icon: CheckCircle,
-                  description: 'Success states',
-                  defaultColor: '#10b981'
-                },
-                { 
-                  key: 'warning_color', 
-                  label: 'Warning', 
-                  icon: AlertTriangle,
-                  description: 'Warning states',
-                  defaultColor: '#f59e0b'
-                },
-                { 
-                  key: 'info_color', 
-                  label: 'Info', 
-                  icon: Info,
-                  description: 'Information states',
-                  defaultColor: '#3b82f6'
-                },
-                { 
-                  key: 'destructive_color', 
-                  label: 'Error', 
-                  icon: XCircle,
-                  description: 'Error states',
-                  defaultColor: '#ef4444'
-                }
-              ].map(({ key, label, icon: Icon, description, defaultColor }) => (
-                <div key={key} className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    <div>
-                      <Label className="font-medium">{label}</Label>
-                      <p className="text-xs text-muted-foreground">{description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-10 h-10 rounded-lg border shadow-sm"
-                      style={{ backgroundColor: settings?.[key as keyof typeof settings] || defaultColor }}
-                    />
-                    <Input
-                      type="color"
-                      value={settings?.[key as keyof typeof settings] || defaultColor}
-                      onChange={(e) => handleColorChange(key, e.target.value)}
-                      className="flex-1"
-                      disabled={isUpdating}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              <Separator />
 
-        {/* Logo Override */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-primary" />
-              Custom Logo
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <Label>Upload Custom Logo</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                disabled={isUpdating}
-              />
-              {settings?.logo_override_url && (
-                <div className="mt-3 p-4 border-2 border-dashed border-muted rounded-xl bg-muted/30">
-                  <img 
-                    src={settings.logo_override_url} 
-                    alt="Custom logo preview" 
-                    className="h-16 object-contain"
-                  />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Badge className="bg-success text-success-foreground">Success</Badge>
+                <Badge className="bg-warning text-warning-foreground">Warning</Badge>
+                <Badge className="bg-info text-info-foreground">Info</Badge>
+                <Badge className="bg-destructive text-destructive-foreground">Error</Badge>
+              </div>
 
-        {/* Typography */}
-        <Card className="border-0 shadow-soft">
-          <CardHeader>
-            <CardTitle>Typography</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Label>Font Family</Label>
-              <Select 
-                value={settings?.font_family || 'Inter'} 
-                onValueChange={(value) => updateSettings({ font_family: value })}
-                disabled={isUpdating}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select font family" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontOptions.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      {font.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+              <Separator />
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-6 border-t bg-card/50 rounded-lg p-6">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            disabled={isUpdating}
-            className="gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reset to Default
-          </Button>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="preview-mode"
-                checked={previewMode}
-                onCheckedChange={setPreviewMode}
-                disabled={isUpdating}
-              />
-              <Label htmlFor="preview-mode" className="text-sm flex items-center gap-1">
-                {previewMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                Live Preview
-              </Label>
-            </div>
-            
-            {isUpdating && (
-              <Badge variant="secondary" className="gap-1">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                Saving...
-              </Badge>
-            )}
-          </div>
+              <div className="p-4 rounded-lg border">
+                <h4 className="font-medium mb-2">Sample Card</h4>
+                <p className="text-muted-foreground text-sm">
+                  This is how your content will look with the selected colors.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </PageContent>
-    </PageLayout>
+      </div>
+    </div>
   );
 };
 

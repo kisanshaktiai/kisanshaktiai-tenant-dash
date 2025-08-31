@@ -1,6 +1,6 @@
 
 /**
- * Color utility functions for appearance customization
+ * Comprehensive color utility functions for theme system
  */
 
 /**
@@ -50,13 +50,15 @@ export function hexToHsl(hex: string): string {
 }
 
 /**
- * Generate semantic colors based on primary color
+ * Generate comprehensive semantic colors based on primary color
  */
 export function generateSemanticColors(primaryHsl: string): {
   success: string;
   warning: string;
   info: string;
   destructive: string;
+  border: string;
+  muted: string;
 } {
   // Parse HSL values
   const [h, s, l] = primaryHsl.split(' ').map((v, i) => {
@@ -65,15 +67,17 @@ export function generateSemanticColors(primaryHsl: string): {
   });
 
   return {
-    success: primaryHsl, // Use primary for success (green)
+    success: primaryHsl, // Use primary for success (green agricultural theme)
     warning: `38 92% 50%`, // Standard warning orange
     info: `221 83% 53%`, // Standard info blue
     destructive: `0 84% 60%`, // Standard destructive red
+    border: `214 32% 91%`, // Light gray border
+    muted: `210 40% 96%`, // Very light gray for muted backgrounds
   };
 }
 
 /**
- * Generate color variants (lighter/darker shades)
+ * Generate color variants (lighter/darker shades) for theming
  */
 export function generateColorVariants(hsl: string): {
   50: string;
@@ -107,7 +111,7 @@ export function generateColorVariants(hsl: string): {
 }
 
 /**
- * Generate dark mode colors with modern gray base
+ * Generate modern dark mode colors with gray base (not pure black)
  */
 export function generateDarkModeColors(primaryHsl: string): {
   background: string;
@@ -118,23 +122,25 @@ export function generateDarkModeColors(primaryHsl: string): {
   mutedForeground: string;
   secondary: string;
   secondaryForeground: string;
+  border: string;
+  input: string;
 } {
-  const [h] = primaryHsl.split(' ').map(v => parseInt(v));
-
   return {
-    background: `222 84% 5%`, // Very dark gray-blue
-    foreground: `210 40% 98%`, // Almost white
-    card: `222 84% 5%`, // Same as background
-    cardForeground: `210 40% 98%`, // Almost white
-    muted: `217 33% 18%`, // Dark gray
-    mutedForeground: `215 20% 65%`, // Medium gray
-    secondary: `217 33% 18%`, // Dark gray
-    secondaryForeground: `210 40% 98%`, // Almost white
+    background: `224 71% 4%`, // Modern dark gray (not pure black)
+    foreground: `213 31% 91%`, // Light gray text
+    card: `224 71% 4%`, // Same as background
+    cardForeground: `213 31% 91%`, // Light gray text
+    muted: `215 28% 17%`, // Dark gray for muted elements
+    mutedForeground: `217 11% 65%`, // Medium gray text
+    secondary: `215 28% 17%`, // Dark gray
+    secondaryForeground: `213 31% 91%`, // Light gray text
+    border: `215 28% 17%`, // Dark border
+    input: `215 28% 17%`, // Dark input background
   };
 }
 
 /**
- * Generate sidebar colors (always light)
+ * Generate sidebar colors (always light theme)
  */
 export function generateSidebarColors(primaryHsl: string): {
   background: string;
@@ -142,6 +148,8 @@ export function generateSidebarColors(primaryHsl: string): {
   accent: string;
   accentForeground: string;
   border: string;
+  primary: string;
+  primaryForeground: string;
 } {
   return {
     background: `0 0% 100%`, // Always white
@@ -149,15 +157,63 @@ export function generateSidebarColors(primaryHsl: string): {
     accent: `210 40% 96%`, // Light gray for hover
     accentForeground: `222 84% 5%`, // Dark text
     border: `214 32% 91%`, // Light border
+    primary: primaryHsl, // Use theme primary
+    primaryForeground: `0 0% 98%`, // White text on primary
   };
 }
 
 /**
- * Check if a color provides sufficient contrast
+ * Generate button state colors
+ */
+export function generateButtonStates(baseHsl: string): {
+  base: string;
+  hover: string;
+  active: string;
+  disabled: string;
+} {
+  const [h, s, l] = baseHsl.split(' ').map((v, i) => {
+    if (i === 0) return parseInt(v);
+    return parseInt(v.replace('%', ''));
+  });
+
+  return {
+    base: baseHsl,
+    hover: `${h} ${s}% ${Math.max(l - 4, 5)}%`, // Slightly darker
+    active: `${h} ${s}% ${Math.max(l - 8, 5)}%`, // Even darker
+    disabled: `${h} ${Math.max(s - 20, 5)}% ${Math.min(l + 20, 85)}%`, // Desaturated and lighter
+  };
+}
+
+/**
+ * Generate status colors for different states
+ */
+export function generateStatusColors(isDark: boolean = false): {
+  active: string;
+  inactive: string;
+  pending: string;
+  error: string;
+} {
+  if (isDark) {
+    return {
+      active: `142 70% 45%`, // Green for active
+      inactive: `217 11% 65%`, // Gray for inactive
+      pending: `38 92% 50%`, // Orange for pending
+      error: `0 63% 31%`, // Red for error (darker in dark mode)
+    };
+  }
+
+  return {
+    active: `142 76% 36%`, // Green for active
+    inactive: `215 16% 47%`, // Gray for inactive
+    pending: `38 92% 50%`, // Orange for pending
+    error: `0 84% 60%`, // Red for error
+  };
+}
+
+/**
+ * Check if a color provides sufficient contrast for accessibility
  */
 export function checkContrast(color1: string, color2: string): boolean {
-  // This is a simplified contrast check
-  // In a real application, you'd want a more robust implementation
   const [, , l1] = color1.split(' ').map((v, i) => {
     if (i === 0) return parseInt(v);
     return parseInt(v.replace('%', ''));
@@ -196,4 +252,32 @@ export function ensureContrast(foreground: string, background: string): string {
   }
 
   return `${h} ${s}% ${adjustedL}%`;
+}
+
+/**
+ * Generate chart colors based on theme
+ */
+export function generateChartColors(primaryHsl: string, isDark: boolean = false): string[] {
+  const [h, s] = primaryHsl.split(' ').map((v, i) => {
+    if (i === 0) return parseInt(v);
+    return parseInt(v.replace('%', ''));
+  });
+
+  if (isDark) {
+    return [
+      `${h} ${s}% 50%`, // Primary
+      `${(h + 60) % 360} 60% 55%`, // Complementary
+      `${(h + 120) % 360} 65% 60%`, // Triadic 1
+      `${(h + 180) % 360} 70% 65%`, // Complementary opposite
+      `${(h + 240) % 360} 75% 70%`, // Triadic 2
+    ];
+  }
+
+  return [
+    primaryHsl, // Primary
+    `${(h + 60) % 360} ${s}% 45%`, // Complementary
+    `${(h + 120) % 360} ${s}% 40%`, // Triadic 1
+    `${(h + 180) % 360} ${s}% 35%`, // Complementary opposite
+    `${(h + 240) % 360} ${s}% 30%`, // Triadic 2
+  ];
 }

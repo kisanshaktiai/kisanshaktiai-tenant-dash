@@ -3,11 +3,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Agricultural Tenant Dashboard Design System */
+/* Agricultural Tenant Dashboard Design System - Comprehensive Theme */
 
 @layer base {
   :root {
-    /* Agricultural Color Palette - WCAG 2.2 AA Compliant */
+    /* Light Mode - Agricultural Color Palette - WCAG 2.2 AA Compliant */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -33,22 +33,20 @@
     --accent: 142 76% 36%;
     --accent-foreground: 0 0% 98%;
 
-    /* Destructive/Error */
+    /* Semantic Colors */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Success */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
 
-    /* Warning */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 9%;
 
-    /* Info */
     --info: 221.2 83.2% 53.3%;
     --info-foreground: 0 0% 98%;
 
+    /* Border and Input */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 142 76% 36%;
@@ -72,52 +70,69 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Background variants */
+    /* State Variants */
     --background-hover: 210 40% 98%;
     --background-active: 210 40% 95%;
+    --background-disabled: 210 40% 93%;
     
-    /* Text variants */
+    /* Text Variants */
     --text-subtle: 215.4 16.3% 46.9%;
     --text-disabled: 215.4 16.3% 65%;
+    --text-muted: 215.4 16.3% 56.9%;
+
+    /* Status Colors */
+    --status-active: 142 76% 36%;
+    --status-inactive: 215.4 16.3% 46.9%;
+    --status-pending: 38 92% 50%;
+    --status-error: 0 84.2% 60.2%;
+
+    /* Button Variants */
+    --button-primary: 142 76% 36%;
+    --button-primary-hover: 142 76% 32%;
+    --button-primary-active: 142 76% 28%;
+    --button-secondary: 210 40% 96%;
+    --button-secondary-hover: 210 40% 92%;
+    --button-secondary-active: 210 40% 88%;
   }
 
   .dark {
-    /* Dark Mode - Modern Gray Theme */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Dark Mode - Modern Gray Theme (Not Pure Black) */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
     --primary: 142 70% 45%;
-    --primary-foreground: 222.2 84% 4.9%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 217 11% 65%;
 
     --accent: 142 70% 45%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --accent-foreground: 224 71% 4%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Semantic Colors - Dark Mode */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
 
     --success: 142 70% 45%;
-    --success-foreground: 222.2 84% 4.9%;
+    --success-foreground: 224 71% 4%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222.2 84% 4.9%;
+    --warning-foreground: 224 71% 4%;
 
     --info: 221.2 83.2% 53.3%;
-    --info-foreground: 210 40% 98%;
+    --info-foreground: 213 31% 91%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
     --ring: 142 70% 45%;
 
     /* Sidebar Theme - Still Light in Dark Mode */
@@ -137,13 +152,29 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
 
-    /* Background variants */
-    --background-hover: 217.2 32.6% 20%;
-    --background-active: 217.2 32.6% 25%;
+    /* State Variants - Dark */
+    --background-hover: 215 28% 20%;
+    --background-active: 215 28% 25%;
+    --background-disabled: 215 28% 15%;
     
-    /* Text variants */
-    --text-subtle: 215 20.2% 65.1%;
-    --text-disabled: 215 20.2% 45%;
+    /* Text Variants - Dark */
+    --text-subtle: 217 11% 65%;
+    --text-disabled: 217 11% 45%;
+    --text-muted: 217 11% 55%;
+
+    /* Status Colors - Dark */
+    --status-active: 142 70% 45%;
+    --status-inactive: 217 11% 65%;
+    --status-pending: 38 92% 50%;
+    --status-error: 0 63% 31%;
+
+    /* Button Variants - Dark */
+    --button-primary: 142 70% 45%;
+    --button-primary-hover: 142 70% 50%;
+    --button-primary-active: 142 70% 40%;
+    --button-secondary: 215 28% 17%;
+    --button-secondary-hover: 215 28% 22%;
+    --button-secondary-active: 215 28% 27%;
   }
 }
 
@@ -187,6 +218,10 @@
     background-color: hsl(var(--background-active));
   }
 
+  .bg-disabled {
+    background-color: hsl(var(--background-disabled));
+  }
+
   /* Text Utilities */
   .text-subtle {
     color: hsl(var(--text-subtle));
@@ -194,6 +229,10 @@
   
   .text-disabled {
     color: hsl(var(--text-disabled));
+  }
+
+  .text-muted {
+    color: hsl(var(--text-muted));
   }
 
   /* Semantic Color Classes */
@@ -219,6 +258,66 @@
   
   .text-info {
     color: hsl(var(--info));
+  }
+
+  /* Status Color Classes */
+  .bg-status-active {
+    background-color: hsl(var(--status-active));
+  }
+
+  .text-status-active {
+    color: hsl(var(--status-active));
+  }
+
+  .bg-status-inactive {
+    background-color: hsl(var(--status-inactive));
+  }
+
+  .text-status-inactive {
+    color: hsl(var(--status-inactive));
+  }
+
+  .bg-status-pending {
+    background-color: hsl(var(--status-pending));
+  }
+
+  .text-status-pending {
+    color: hsl(var(--status-pending));
+  }
+
+  .bg-status-error {
+    background-color: hsl(var(--status-error));
+  }
+
+  .text-status-error {
+    color: hsl(var(--status-error));
+  }
+
+  /* Button Variants */
+  .btn-primary {
+    background-color: hsl(var(--button-primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-primary:hover {
+    background-color: hsl(var(--button-primary-hover));
+  }
+
+  .btn-primary:active {
+    background-color: hsl(var(--button-primary-active));
+  }
+
+  .btn-secondary {
+    background-color: hsl(var(--button-secondary));
+    color: hsl(var(--secondary-foreground));
+  }
+
+  .btn-secondary:hover {
+    background-color: hsl(var(--button-secondary-hover));
+  }
+
+  .btn-secondary:active {
+    background-color: hsl(var(--button-secondary-active));
   }
 
   /* Enhanced Shadows */
