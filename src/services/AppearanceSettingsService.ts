@@ -1,6 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { hexToHsl, generateSidebarColors } from '@/utils/colorUtils';
+import { 
+  hexToHsl, 
+  generateSemanticColors, 
+  generateColorVariants,
+  generateDarkModeColors,
+  generateSidebarColors,
+  ensureContrast
+} from '@/utils/colorUtils';
 
 export interface AppearanceSettings {
   id?: string;
@@ -14,6 +21,11 @@ export interface AppearanceSettings {
   font_family: string;
   logo_override_url?: string;
   custom_css?: string;
+  // Extended color properties
+  success_color?: string;
+  warning_color?: string;
+  info_color?: string;
+  destructive_color?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -32,11 +44,9 @@ class AppearanceSettingsService {
     }
 
     if (!data) {
-      // Return default settings if no custom settings found
       return this.getDefaultSettings(tenantId);
     }
 
-    // Cast theme_mode to the correct type
     return {
       ...data,
       theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
@@ -44,6 +54,11 @@ class AppearanceSettingsService {
   }
 
   async upsertAppearanceSettings(settings: Partial<AppearanceSettings> & { tenant_id: string }): Promise<AppearanceSettings> {
+    // Generate semantic colors if not provided
+    const semanticColors = settings.primary_color 
+      ? generateSemanticColors(hexToHsl(settings.primary_color))
+      : generateSemanticColors('142 76% 36%');
+
     const { data, error } = await supabase
       .from('appearance_settings')
       .upsert({
@@ -57,6 +72,10 @@ class AppearanceSettingsService {
         font_family: settings.font_family || 'Inter',
         logo_override_url: settings.logo_override_url,
         custom_css: settings.custom_css,
+        success_color: settings.success_color || semanticColors.success,
+        warning_color: settings.warning_color || semanticColors.warning,
+        info_color: settings.info_color || semanticColors.info,
+        destructive_color: settings.destructive_color || semanticColors.destructive,
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'tenant_id'
@@ -69,7 +88,6 @@ class AppearanceSettingsService {
       throw error;
     }
 
-    // Cast theme_mode to the correct type
     return {
       ...data,
       theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
@@ -77,6 +95,8 @@ class AppearanceSettingsService {
   }
 
   private getDefaultSettings(tenantId: string): AppearanceSettings {
+    const semanticColors = generateSemanticColors('142 76% 36%');
+    
     return {
       tenant_id: tenantId,
       theme_mode: 'system',
@@ -85,14 +105,18 @@ class AppearanceSettingsService {
       accent_color: '#14b8a6',
       background_color: '#ffffff',
       text_color: '#1f2937',
-      font_family: 'Inter'
+      font_family: 'Inter',
+      success_color: semanticColors.success,
+      warning_color: semanticColors.warning,
+      info_color: semanticColors.info,
+      destructive_color: semanticColors.destructive,
     };
   }
 
   applyThemeColors(settings: AppearanceSettings) {
     const root = document.documentElement;
     
-    console.log('Applying theme colors to DOM:', settings);
+    console.log('Applying comprehensive theme colors:', settings);
     
     // Convert HEX colors to HSL format
     const primaryHsl = hexToHsl(settings.primary_color);
@@ -101,14 +125,33 @@ class AppearanceSettingsService {
     const backgroundHsl = hexToHsl(settings.background_color);
     const textHsl = hexToHsl(settings.text_color);
     
-    // Apply general CSS custom properties (HSL format)
+    // Generate semantic colors
+    const semanticColors = generateSemanticColors(primaryHsl);
+    const successHsl = settings.success_color ? hexToHsl(settings.success_color) : semanticColors.success;
+    const warningHsl = settings.warning_color ? hexToHsl(settings.warning_color) : semanticColors.warning;
+    const infoHsl = settings.info_color ? hexToHsl(settings.info_color) : semanticColors.info;
+    const destructiveHsl = settings.destructive_color ? hexToHsl(settings.destructive_color) : semanticColors.destructive;
+    
+    // Apply core colors
     root.style.setProperty('--primary', primaryHsl);
     root.style.setProperty('--secondary', secondaryHsl);
     root.style.setProperty('--accent', accentHsl);
     root.style.setProperty('--background', backgroundHsl);
-    root.style.setProperty('--foreground', textHsl);
+    root.style.setProperty('--foreground', ensureContrast(textHsl, backgroundHsl));
     
-    // Generate and apply sidebar-specific colors
+    // Apply semantic colors
+    root.style.setProperty('--success', successHsl);
+    root.style.setProperty('--warning', warningHsl);
+    root.style.setProperty('--info', infoHsl);
+    root.style.setProperty('--destructive', destructiveHsl);
+    
+    // Ensure proper foreground colors for semantic colors
+    root.style.setProperty('--success-foreground', ensureContrast(backgroundHsl, successHsl));
+    root.style.setProperty('--warning-foreground', ensureContrast(textHsl, warningHsl));
+    root.style.setProperty('--info-foreground', ensureContrast(backgroundHsl, infoHsl));
+    root.style.setProperty('--destructive-foreground', ensureContrast(backgroundHsl, destructiveHsl));
+    
+    // Generate and apply sidebar colors (always light)
     const sidebarColors = generateSidebarColors(primaryHsl);
     root.style.setProperty('--sidebar-background', sidebarColors.background);
     root.style.setProperty('--sidebar-foreground', sidebarColors.foreground);
@@ -119,29 +162,32 @@ class AppearanceSettingsService {
     root.style.setProperty('--sidebar-border', sidebarColors.border);
     root.style.setProperty('--sidebar-ring', primaryHsl);
     
-    // Apply card colors (ensure proper contrast)
+    // Apply card colors
     root.style.setProperty('--card', backgroundHsl);
     root.style.setProperty('--card-foreground', textHsl);
     
-    // Apply muted colors (slightly darker/lighter variants)
+    // Generate muted colors
     const [h, s, l] = backgroundHsl.split(' ').map((v, i) => {
       if (i === 0) return parseInt(v);
       return parseInt(v.replace('%', ''));
     });
     
-    const mutedHsl = `${h} ${s}% ${Math.max(l - 5, 5)}%`;
-    const mutedForegroundHsl = `${h} ${Math.max(s - 20, 10)}% ${Math.max(l - 40, 25)}%`;
+    const mutedHsl = `${h} ${Math.max(s - 5, 5)}% ${Math.max(l - 4, 5)}%`;
+    const mutedForegroundHsl = `215 16% 47%`;
     
     root.style.setProperty('--muted', mutedHsl);
     root.style.setProperty('--muted-foreground', mutedForegroundHsl);
     
     // Apply border and input colors
-    root.style.setProperty('--border', mutedHsl);
-    root.style.setProperty('--input', mutedHsl);
+    root.style.setProperty('--border', `214 32% 91%`);
+    root.style.setProperty('--input', `214 32% 91%`);
     root.style.setProperty('--ring', primaryHsl);
     
     // Apply font family
-    root.style.setProperty('--font-family', settings.font_family);
+    if (settings.font_family) {
+      root.style.setProperty('--font-family', settings.font_family);
+      document.body.style.fontFamily = settings.font_family;
+    }
     
     // Apply custom CSS if provided
     if (settings.custom_css) {
@@ -154,44 +200,31 @@ class AppearanceSettingsService {
       customStyleElement.textContent = settings.custom_css;
     }
     
-    console.log('Theme colors applied successfully:', {
-      primary: primaryHsl,
-      sidebar: sidebarColors,
-      settings
-    });
+    console.log('Comprehensive theme colors applied successfully');
   }
 
   resetThemeColors() {
     const root = document.documentElement;
     
-    console.log('Resetting theme colors');
+    console.log('Resetting all theme colors');
     
-    // Remove general properties
-    root.style.removeProperty('--primary');
-    root.style.removeProperty('--secondary');
-    root.style.removeProperty('--accent');
-    root.style.removeProperty('--background');
-    root.style.removeProperty('--foreground');
-    root.style.removeProperty('--font-family');
+    // Remove all custom properties
+    const propertiesToRemove = [
+      '--primary', '--secondary', '--accent', '--background', '--foreground',
+      '--success', '--warning', '--info', '--destructive',
+      '--success-foreground', '--warning-foreground', '--info-foreground', '--destructive-foreground',
+      '--sidebar-background', '--sidebar-foreground', '--sidebar-primary', '--sidebar-primary-foreground',
+      '--sidebar-accent', '--sidebar-accent-foreground', '--sidebar-border', '--sidebar-ring',
+      '--card', '--card-foreground', '--muted', '--muted-foreground',
+      '--border', '--input', '--ring', '--font-family'
+    ];
     
-    // Remove sidebar properties
-    root.style.removeProperty('--sidebar-background');
-    root.style.removeProperty('--sidebar-foreground');
-    root.style.removeProperty('--sidebar-primary');
-    root.style.removeProperty('--sidebar-primary-foreground');
-    root.style.removeProperty('--sidebar-accent');
-    root.style.removeProperty('--sidebar-accent-foreground');
-    root.style.removeProperty('--sidebar-border');
-    root.style.removeProperty('--sidebar-ring');
+    propertiesToRemove.forEach(prop => {
+      root.style.removeProperty(prop);
+    });
     
-    // Remove other properties
-    root.style.removeProperty('--card');
-    root.style.removeProperty('--card-foreground');
-    root.style.removeProperty('--muted');
-    root.style.removeProperty('--muted-foreground');
-    root.style.removeProperty('--border');
-    root.style.removeProperty('--input');
-    root.style.removeProperty('--ring');
+    // Reset font family
+    document.body.style.removeProperty('font-family');
     
     // Remove custom styles
     const customStyleElement = document.getElementById('tenant-custom-styles');

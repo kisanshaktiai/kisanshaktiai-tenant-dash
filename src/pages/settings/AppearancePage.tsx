@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
 import { PageLayout } from '@/components/layout/PageLayout';
@@ -21,47 +22,51 @@ import {
   RefreshCw,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  XCircle
 } from 'lucide-react';
 
 const presetColors = [
   { 
-    name: 'Emerald', 
+    name: 'Emerald (Default)', 
     primary: '#10b981', 
     secondary: '#059669', 
     accent: '#14b8a6',
     description: 'Fresh green theme perfect for agriculture'
   },
   { 
-    name: 'Blue', 
+    name: 'Ocean Blue', 
     primary: '#3b82f6', 
     secondary: '#2563eb', 
     accent: '#1d4ed8',
     description: 'Professional blue theme'
   },
   { 
-    name: 'Purple', 
+    name: 'Royal Purple', 
     primary: '#8b5cf6', 
     secondary: '#7c3aed', 
     accent: '#6d28d9',
     description: 'Modern purple theme'
   },
   { 
-    name: 'Orange', 
+    name: 'Sunset Orange', 
     primary: '#f97316', 
     secondary: '#ea580c', 
     accent: '#c2410c',
     description: 'Warm orange theme'
   },
   { 
-    name: 'Rose', 
+    name: 'Rose Pink', 
     primary: '#f43f5e', 
     secondary: '#e11d48', 
     accent: '#be123c',
     description: 'Elegant rose theme'
   },
   { 
-    name: 'Teal', 
+    name: 'Forest Teal', 
     primary: '#14b8a6', 
     secondary: '#0d9488', 
     accent: '#0f766e',
@@ -70,7 +75,7 @@ const presetColors = [
 ];
 
 const fontOptions = [
-  { name: 'Inter', value: 'Inter' },
+  { name: 'Inter (Default)', value: 'Inter' },
   { name: 'Roboto', value: 'Roboto' },
   { name: 'Open Sans', value: 'Open Sans' },
   { name: 'Poppins', value: 'Poppins' },
@@ -82,7 +87,6 @@ const AppearancePage = () => {
   const { theme, setTheme } = useTheme();
   const { settings, updateSettings, isLoading, isUpdating } = useAppearanceSettings();
   const [previewMode, setPreviewMode] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   const handleColorChange = (colorType: string, value: string) => {
     updateSettings({
@@ -102,9 +106,7 @@ const AppearancePage = () => {
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setLogoFile(file);
-      // TODO: Implement logo upload to storage
-      // For now, we'll just store the filename
+      // TODO: Implement actual file upload to storage
       updateSettings({
         logo_override_url: URL.createObjectURL(file)
       });
@@ -120,6 +122,10 @@ const AppearancePage = () => {
       background_color: '#ffffff',
       text_color: '#1f2937',
       font_family: 'Inter',
+      success_color: '#10b981',
+      warning_color: '#f59e0b',
+      info_color: '#3b82f6',
+      destructive_color: '#ef4444',
       logo_override_url: null
     });
   };
@@ -141,24 +147,24 @@ const AppearancePage = () => {
     <PageLayout>
       <PageHeader 
         title="Appearance" 
-        description="Customize the look and feel of your dashboard"
+        description="Customize colors, theme, and branding for your tenant dashboard"
       />
       
-      <PageContent className="space-y-6">
+      <PageContent className="space-y-8">
         {/* Theme Mode */}
-        <Card>
+        <Card className="border-0 shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Monitor className="w-5 h-5" />
+              <Monitor className="w-5 h-5 text-primary" />
               Theme Mode
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { value: 'light', label: 'Light', icon: Sun },
-                { value: 'dark', label: 'Dark', icon: Moon },
-                { value: 'system', label: 'System', icon: Monitor }
+                { value: 'light', label: 'Light', icon: Sun, desc: 'Clean white interface' },
+                { value: 'dark', label: 'Dark', icon: Moon, desc: 'Modern dark interface' },
+                { value: 'system', label: 'System', icon: Monitor, desc: 'Follow system preference' }
               ].map((themeOption) => (
                 <Button
                   key={themeOption.value}
@@ -167,44 +173,52 @@ const AppearancePage = () => {
                     setTheme(themeOption.value as any);
                     updateSettings({ theme_mode: themeOption.value as any });
                   }}
-                  className="h-20 flex-col gap-2"
+                  className="h-24 flex-col gap-2 p-4"
+                  disabled={isUpdating}
                 >
-                  <themeOption.icon className="w-5 h-5" />
-                  <span className="text-sm">{themeOption.label}</span>
+                  <themeOption.icon className="w-6 h-6" />
+                  <div className="text-center">
+                    <div className="font-medium">{themeOption.label}</div>
+                    <div className="text-xs text-muted-foreground">{themeOption.desc}</div>
+                  </div>
                 </Button>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Color Customization */}
-        <Card>
+        {/* Primary Color Customization */}
+        <Card className="border-0 shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5" />
-              Color Customization
+              <Palette className="w-5 h-5 text-primary" />
+              Primary Colors
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Color Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Primary Color Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { key: 'primary_color', label: 'Primary Color' },
-                { key: 'secondary_color', label: 'Secondary Color' },
-                { key: 'accent_color', label: 'Accent Color' }
-              ].map(({ key, label }) => (
-                <div key={key} className="space-y-2">
-                  <Label>{label}</Label>
-                  <div className="flex items-center gap-2">
+                { key: 'primary_color', label: 'Primary Color', description: 'Main brand color' },
+                { key: 'secondary_color', label: 'Secondary Color', description: 'Supporting brand color' },
+                { key: 'accent_color', label: 'Accent Color', description: 'Highlight color' }
+              ].map(({ key, label, description }) => (
+                <div key={key} className="space-y-3">
+                  <div>
+                    <Label className="font-medium">{label}</Label>
+                    <p className="text-sm text-muted-foreground">{description}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
                     <div 
-                      className="w-10 h-10 rounded-lg border shadow-sm"
+                      className="w-12 h-12 rounded-xl border-2 shadow-medium ring-2 ring-offset-2 ring-primary/20"
                       style={{ backgroundColor: settings?.[key as keyof typeof settings] || '#10b981' }}
                     />
                     <Input
                       type="color"
                       value={settings?.[key as keyof typeof settings] || '#10b981'}
                       onChange={(e) => handleColorChange(key, e.target.value)}
-                      className="w-full"
+                      className="flex-1 h-12"
+                      disabled={isUpdating}
                     />
                   </div>
                 </div>
@@ -214,8 +228,8 @@ const AppearancePage = () => {
             <Separator />
 
             {/* Color Presets */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Color Presets</Label>
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Color Presets</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {presetColors.map((preset) => (
                   <Button
@@ -225,18 +239,18 @@ const AppearancePage = () => {
                     className="h-auto p-4 flex items-center gap-4 hover:scale-[1.02] transition-all justify-start"
                     disabled={isUpdating}
                   >
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       {[preset.primary, preset.secondary, preset.accent].map((color, i) => (
                         <div
                           key={i}
-                          className="w-6 h-6 rounded-lg border shadow-sm"
+                          className="w-8 h-8 rounded-lg border-2 shadow-sm ring-1 ring-black/5"
                           style={{ backgroundColor: color }}
                         />
                       ))}
                     </div>
                     <div className="text-left">
                       <div className="font-medium">{preset.name}</div>
-                      <div className="text-xs text-muted-foreground">{preset.description}</div>
+                      <div className="text-sm text-muted-foreground">{preset.description}</div>
                     </div>
                   </Button>
                 ))}
@@ -245,29 +259,97 @@ const AppearancePage = () => {
           </CardContent>
         </Card>
 
-        {/* Logo Override */}
-        <Card>
+        {/* Semantic Colors */}
+        <Card className="border-0 shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Logo Override
+              <Badge className="w-5 h-5" />
+              Semantic Colors
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { 
+                  key: 'success_color', 
+                  label: 'Success', 
+                  icon: CheckCircle,
+                  description: 'Success states',
+                  defaultColor: '#10b981'
+                },
+                { 
+                  key: 'warning_color', 
+                  label: 'Warning', 
+                  icon: AlertTriangle,
+                  description: 'Warning states',
+                  defaultColor: '#f59e0b'
+                },
+                { 
+                  key: 'info_color', 
+                  label: 'Info', 
+                  icon: Info,
+                  description: 'Information states',
+                  defaultColor: '#3b82f6'
+                },
+                { 
+                  key: 'destructive_color', 
+                  label: 'Error', 
+                  icon: XCircle,
+                  description: 'Error states',
+                  defaultColor: '#ef4444'
+                }
+              ].map(({ key, label, icon: Icon, description, defaultColor }) => (
+                <div key={key} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4" />
+                    <div>
+                      <Label className="font-medium">{label}</Label>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-10 h-10 rounded-lg border shadow-sm"
+                      style={{ backgroundColor: settings?.[key as keyof typeof settings] || defaultColor }}
+                    />
+                    <Input
+                      type="color"
+                      value={settings?.[key as keyof typeof settings] || defaultColor}
+                      onChange={(e) => handleColorChange(key, e.target.value)}
+                      className="flex-1"
+                      disabled={isUpdating}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Logo Override */}
+        <Card className="border-0 shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              Custom Logo
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Upload Custom Logo</Label>
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleLogoUpload}
-                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/80"
+                className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                disabled={isUpdating}
               />
               {settings?.logo_override_url && (
-                <div className="mt-2 p-4 border rounded-lg bg-muted/50">
+                <div className="mt-3 p-4 border-2 border-dashed border-muted rounded-xl bg-muted/30">
                   <img 
                     src={settings.logo_override_url} 
                     alt="Custom logo preview" 
-                    className="h-12 object-contain"
+                    className="h-16 object-contain"
                   />
                 </div>
               )}
@@ -276,7 +358,7 @@ const AppearancePage = () => {
         </Card>
 
         {/* Typography */}
-        <Card>
+        <Card className="border-0 shadow-soft">
           <CardHeader>
             <CardTitle>Typography</CardTitle>
           </CardHeader>
@@ -286,6 +368,7 @@ const AppearancePage = () => {
               <Select 
                 value={settings?.font_family || 'Inter'} 
                 onValueChange={(value) => updateSettings({ font_family: value })}
+                disabled={isUpdating}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select font family" />
@@ -303,7 +386,7 @@ const AppearancePage = () => {
         </Card>
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center justify-between pt-6 border-t bg-card/50 rounded-lg p-6">
           <Button
             variant="outline"
             onClick={handleReset}
@@ -314,18 +397,26 @@ const AppearancePage = () => {
             Reset to Default
           </Button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <Switch
                 id="preview-mode"
                 checked={previewMode}
                 onCheckedChange={setPreviewMode}
+                disabled={isUpdating}
               />
               <Label htmlFor="preview-mode" className="text-sm flex items-center gap-1">
                 {previewMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                 Live Preview
               </Label>
             </div>
+            
+            {isUpdating && (
+              <Badge variant="secondary" className="gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Saving...
+              </Badge>
+            )}
           </div>
         </div>
       </PageContent>
