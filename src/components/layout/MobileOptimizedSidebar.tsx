@@ -103,7 +103,8 @@ export const MobileOptimizedSidebar: React.FC = () => {
   return (
     <Sidebar 
       className={cn(
-        "transition-all duration-300 ease-in-out border-r bg-sidebar"
+        "transition-all duration-300 ease-in-out border-r bg-sidebar",
+        isCollapsed ? "w-14" : "w-60"
       )}
       collapsible="icon"
     >
