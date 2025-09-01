@@ -3189,12 +3189,16 @@ export type Database = {
           id: string
           irrigation_type: string | null
           is_verified: boolean | null
+          language_preference: string | null
           last_app_open: string | null
           last_login_at: string | null
           loan_amount: number | null
           login_attempts: number | null
+          metadata: Json | null
           mobile_number: string | null
+          notes: string | null
           pin_hash: string | null
+          preferred_contact_method: string | null
           preferred_dealer_id: string | null
           primary_crops: string[] | null
           shc_id: string | null
@@ -3223,12 +3227,16 @@ export type Database = {
           id?: string
           irrigation_type?: string | null
           is_verified?: boolean | null
+          language_preference?: string | null
           last_app_open?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
           login_attempts?: number | null
+          metadata?: Json | null
           mobile_number?: string | null
+          notes?: string | null
           pin_hash?: string | null
+          preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
           shc_id?: string | null
@@ -3257,12 +3265,16 @@ export type Database = {
           id?: string
           irrigation_type?: string | null
           is_verified?: boolean | null
+          language_preference?: string | null
           last_app_open?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
           login_attempts?: number | null
+          metadata?: Json | null
           mobile_number?: string | null
+          notes?: string | null
           pin_hash?: string | null
+          preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
           shc_id?: string | null
