@@ -72,7 +72,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
     const hasErrors = Object.values(validationErrors).some(error => error);
     
     if (hasErrors) {
-      console.log('Validation errors:', validationErrors);
+      console.log('Validation errors found:', validationErrors);
       toast.error('Please fix the form errors before submitting');
       return;
     }
@@ -100,7 +100,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
         notes: data.notes || undefined,
       };
 
-      console.log('Transformed farmer data:', farmerData);
+      console.log('Transformed farmer data for submission:', farmerData);
       
       const result = await createComprehensiveFarmer(farmerData);
       
@@ -125,7 +125,8 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
       }
     } catch (error) {
       console.error('Failed to create farmer:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create farmer');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create farmer';
+      toast.error(errorMessage);
     }
   };
 

@@ -1,29 +1,13 @@
 
 import { useCallback } from 'react';
-import { useCreateFarmerMutation, useUpdateFarmerMutation } from '@/hooks/data/useFarmersQuery';
+import { useEnhancedFarmerManagement } from './useEnhancedFarmerManagement';
 import { useFarmerValidation, type FarmerFormData } from './useFarmerValidation';
 import { useErrorHandler } from '@/hooks/core/useErrorHandler';
-import type { CreateFarmerData, UpdateFarmerData, Farmer } from '@/services/FarmersService';
 
 export const useFarmerManagementNew = () => {
   const { validateForm } = useFarmerValidation();
   const { handleAsyncError } = useErrorHandler();
-  const createFarmerMutation = useCreateFarmerMutation();
-  const updateFarmerMutation = useUpdateFarmerMutation();
-
-  const transformFormDataToCreateData = useCallback((formData: FarmerFormData): Omit<CreateFarmerData, 'tenant_id' | 'farmer_code'> => {
-    return {
-      farming_experience_years: parseInt(formData.farmingExperience) || 0,
-      total_land_acres: parseFloat(formData.totalLandSize) || 0,
-      primary_crops: formData.primaryCrops,
-      farm_type: 'mixed',
-      has_irrigation: formData.irrigationSource !== '',
-      has_storage: formData.hasStorage,
-      has_tractor: formData.hasTractor,
-      irrigation_type: formData.irrigationSource || null,
-      is_verified: false,
-    };
-  }, []);
+  const { createComprehensiveFarmer, loading } = useEnhancedFarmerManagement();
 
   const createFarmer = useCallback(async (formData: FarmerFormData) => {
     // Validate form
@@ -31,61 +15,27 @@ export const useFarmerManagementNew = () => {
     const hasErrors = Object.values(errors).some(error => error);
     
     if (hasErrors) {
+      console.log('Validation errors found:', errors);
       throw new Error('Please fix form errors before submitting');
     }
 
-    // Transform and create
-    const createData = transformFormDataToCreateData(formData);
-    
+    // Use the enhanced farmer management service for comprehensive data handling
     return handleAsyncError(async () => {
-      const result = await createFarmerMutation.mutateAsync(createData);
-      const farmer = result as Farmer;
+      const result = await createComprehensiveFarmer(formData);
       return {
         success: true,
-        farmerId: farmer.id,
-        farmerCode: farmer.farmer_code,
+        farmerId: result.farmerId,
+        farmerCode: result.farmerCode,
       };
     }, 'Failed to create farmer');
-  }, [validateForm, transformFormDataToCreateData, createFarmerMutation, handleAsyncError]);
-
-  const updateFarmer = useCallback(async (farmerId: string, updates: Partial<FarmerFormData>) => {
-    const updateData: UpdateFarmerData = {};
-    
-    if (updates.farmingExperience) {
-      updateData.farming_experience_years = parseInt(updates.farmingExperience);
-    }
-    if (updates.totalLandSize) {
-      updateData.total_land_acres = parseFloat(updates.totalLandSize);
-    }
-    if (updates.primaryCrops) {
-      updateData.primary_crops = updates.primaryCrops;
-    }
-    if (updates.irrigationSource !== undefined) {
-      updateData.irrigation_type = updates.irrigationSource;
-      updateData.has_irrigation = updates.irrigationSource !== '';
-    }
-    if (updates.hasStorage !== undefined) {
-      updateData.has_storage = updates.hasStorage;
-    }
-    if (updates.hasTractor !== undefined) {
-      updateData.has_tractor = updates.hasTractor;
-    }
-
-    return handleAsyncError(async () => {
-      const result = await updateFarmerMutation.mutateAsync({ farmerId, data: updateData });
-      return {
-        success: true,
-        farmer: result,
-      };
-    }, 'Failed to update farmer');
-  }, [updateFarmerMutation, handleAsyncError]);
+  }, [validateForm, createComprehensiveFarmer, handleAsyncError]);
 
   return {
     createFarmer,
-    updateFarmer,
-    isCreating: createFarmerMutation.isPending,
-    isUpdating: updateFarmerMutation.isPending,
-    createError: createFarmerMutation.error,
-    updateError: updateFarmerMutation.error,
+    isCreating: loading,
+    createError: null,
+    isUpdating: false,
+    updateError: null,
+    updateFarmer: async () => ({ success: false }), // Placeholder for compatibility
   };
 };

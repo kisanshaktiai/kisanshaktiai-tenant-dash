@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { CreateFarmerForm } from '../presentation/CreateFarmerForm';
-import { useFarmerManagementNew } from '@/hooks/business/useFarmerManagementNew';
+import { useEnhancedFarmerManagement } from '@/hooks/business/useEnhancedFarmerManagement';
 import { useFarmerValidation, type FarmerFormData } from '@/hooks/business/useFarmerValidation';
 
 interface CreateFarmerContainerProps {
@@ -38,7 +38,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<FarmerFormData>(initialFormData);
-  const { createFarmer, isCreating } = useFarmerManagementNew();
+  const { createComprehensiveFarmer, loading } = useEnhancedFarmerManagement();
   const { errors, validateForm, clearErrors } = useFarmerValidation();
 
   const handleFormChange = (field: keyof FarmerFormData, value: any) => {
@@ -48,15 +48,20 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   const handleSubmit = async (data: FarmerFormData) => {
     const validationErrors = validateForm(data);
     if (Object.values(validationErrors).some(error => error)) {
+      console.log('Validation errors:', validationErrors);
       return;
     }
 
-    const result = await createFarmer(data);
-    if (result?.success) {
-      setFormData(initialFormData);
-      clearErrors();
-      onSuccess?.();
-      onClose();
+    try {
+      const result = await createComprehensiveFarmer(data);
+      if (result?.success) {
+        setFormData(initialFormData);
+        clearErrors();
+        onSuccess?.();
+        onClose();
+      }
+    } catch (error) {
+      console.error('Failed to create farmer:', error);
     }
   };
 
@@ -71,7 +76,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
       isOpen={isOpen}
       formData={formData}
       errors={errors}
-      isSubmitting={isCreating}
+      isSubmitting={loading}
       onFormChange={handleFormChange}
       onSubmit={handleSubmit}
       onClose={handleClose}

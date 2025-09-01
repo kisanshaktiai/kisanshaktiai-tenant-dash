@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CreateFarmerContainer } from '@/components/farmers/containers/CreateFarmerContainer';
+import { EnhancedCreateFarmerContainer } from '@/components/farmers/containers/EnhancedCreateFarmerContainer';
 
 interface CreateFarmerModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ export const CreateFarmerModal: React.FC<CreateFarmerModalProps> = ({
   onSuccess,
 }) => {
   return (
-    <CreateFarmerContainer
+    <EnhancedCreateFarmerContainer
       isOpen={isOpen}
       onClose={onClose}
       onSuccess={onSuccess}
