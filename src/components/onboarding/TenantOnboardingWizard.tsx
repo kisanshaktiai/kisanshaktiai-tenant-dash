@@ -22,7 +22,7 @@ import { OnboardingSummaryStep } from '@/components/onboarding/steps/OnboardingS
 
 const TenantOnboardingWizard = () => {
   const dispatch = useAppDispatch();
-  const { currentStep, totalSteps, stepData, isCompleted } = useAppSelector(
+  const { currentStep, totalSteps, stepData, isOnboardingComplete } = useAppSelector(
     (state) => state.onboarding
   );
   
@@ -65,7 +65,7 @@ const TenantOnboardingWizard = () => {
   const progress = ((currentStep + 1) / totalSteps) * 100;
   const CurrentStepComponent = steps[currentStep]?.component;
 
-  if (isCompleted) {
+  if (isOnboardingComplete) {
     return (
       <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8">
         <Card className="text-center">
@@ -126,9 +126,19 @@ const TenantOnboardingWizard = () => {
           {CurrentStepComponent && currentStep === 0 && (
             <SubscriptionPlanStep
               step={{
-                id: 'subscription',
+                id: `step-${currentStep}`,
+                workflow_id: 'temp-workflow-id',
+                step_number: currentStep + 1,
+                step_name: steps[currentStep]?.title || 'Subscription Plan',
+                step_description: 'Choose your subscription plan',
                 step_status: 'pending',
-                step_data: stepData[currentStep.toString()] || {}
+                is_required: true,
+                estimated_time_minutes: 5,
+                step_data: stepData[currentStep.toString()] || {},
+                started_at: null,
+                completed_at: null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
               }}
               onComplete={handleStepDataChange}
               onNext={handleNext}
