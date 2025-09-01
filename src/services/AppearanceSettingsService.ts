@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   hexToHsl, 
@@ -10,6 +9,7 @@ import {
   generateChartColors,
   ensureContrast
 } from '@/utils/colorUtils';
+import { fontService } from '@/services/FontService';
 
 export interface AppearanceSettings {
   id?: string;
@@ -240,10 +240,9 @@ class AppearanceSettingsService {
         root.style.setProperty('--text-muted', `215 16% 57%`);
       }
       
-      // Apply font family
+      // Apply font family using centralized font service
       if (settings.font_family) {
-        root.style.setProperty('--font-family', settings.font_family);
-        document.body.style.fontFamily = settings.font_family;
+        fontService.applyFont(settings.font_family);
       }
       
       // Apply custom CSS if provided

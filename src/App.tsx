@@ -1,113 +1,92 @@
 
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ThemeInitializer } from '@/components/layout/ThemeInitializer';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { AuthGuard } from '@/components/auth/AuthGuard';
-import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { Toaster } from '@/components/ui/sonner';
+import { fontService } from '@/services/FontService';
+import { queryClient } from '@/lib/queryClient';
 
-// Pages - using default imports
+// Import pages
 import Index from '@/pages/Index';
-import LoginPage from '@/pages/auth/LoginPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
-import TenantLoginPage from '@/pages/auth/TenantLoginPage';
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
-import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
-import OnboardingPage from '@/pages/onboarding/OnboardingPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import FarmersPage from '@/pages/farmers/FarmersPage';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
-import DealersPage from '@/pages/dealers/DealersPage';
-import ProductsPage from '@/pages/products/ProductsPage';
+import Auth from '@/pages/Auth';
+import Dashboard from '@/pages/Dashboard';
+import FarmersPage from '@/pages/FarmersPage';
+import ProductsPage from '@/pages/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
-import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
-import ProfilePage from '@/pages/ProfilePage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import DealersPage from '@/pages/DealersPage';
 import SettingsPage from '@/pages/SettingsPage';
-import AppearancePage from '@/pages/settings/AppearancePage';
-import { OrganizationPage } from '@/pages/settings/OrganizationPage';
-import { UsersPage } from '@/pages/settings/UsersPage';
-import { UserInvitationsPage } from '@/pages/UserInvitationsPage';
-import UserManagementPage from '@/pages/UserManagementPage';
-import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
-import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
-import SubscriptionPage from '@/pages/subscription/SubscriptionPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import SetupPasswordPage from '@/pages/SetupPasswordPage';
+import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
 
+// Settings sub-pages
+import OrganizationSettingsPage from '@/pages/OrganizationSettingsPage';
+import UserManagementPage from '@/pages/UserManagementPage';
+import AppearancePage from '@/pages/settings/AppearancePage';
+
+// Auth pages
+import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
+import OnboardingPage from '@/pages/OnboardingPage';
+import ResetPasswordPage from '@/pages/ResetPasswordPage';
+import SetupPasswordPage from '@/pages/SetupPasswordPage';
+import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
+
 function App() {
+  // Initialize font service on app startup
+  useEffect(() => {
+    fontService.initializeFont();
+  }, []);
+
   return (
-    <ErrorBoundary>
-      <Provider store={store}>
-        <ThemeProvider>
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="system" storageKey="tenant-ui-theme">
+          <ThemeInitializer />
           <IntlProvider>
-            <TooltipProvider>
-              <TenantProviderOptimized>
-                <div className="min-h-screen bg-background">
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/tenant-login/:slug?" element={<TenantLoginPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                    <Route path="/tenant-registration" element={<TenantRegistrationPage />} />
-                    <Route path="/reset-password" element={<ResetPasswordPage />} />
-                    <Route path="/setup-password" element={<SetupPasswordPage />} />
-                    <Route path="/accept-invitation/:token" element={<AcceptInvitationPage />} />
-                    <Route path="/password-setup/:token" element={<PasswordSetupPage />} />
-                    
-                    {/* Protected Routes with Sidebar */}
-                    <Route path="/app" element={
-                      <AuthGuard>
-                        <OnboardingGuardOptimized>
-                          <DashboardLayout />
-                        </OnboardingGuardOptimized>
-                      </AuthGuard>
-                    }>
-                      <Route index element={<Navigate to="/app/dashboard" replace />} />
-                      <Route path="dashboard" element={<DashboardPage />} />
-                      <Route path="farmers" element={<FarmersPage />} />
-                      <Route path="products" element={<ProductsPage />} />
-                      <Route path="dealers" element={<DealersPage />} />
-                      <Route path="campaigns" element={<CampaignsPage />} />
-                      <Route path="analytics" element={<AnalyticsPage />} />
-                      <Route path="integrations" element={<IntegrationsPage />} />
-                      <Route path="profile" element={<ProfilePage />} />
-                      <Route path="settings" element={<SettingsPage />} />
-                      <Route path="settings/appearance" element={<AppearancePage />} />
-                      <Route path="settings/organization" element={<OrganizationPage />} />
-                      <Route path="settings/users" element={<UsersPage />} />
-                      <Route path="user-invitations" element={<UserInvitationsPage />} />
-                      <Route path="user-management" element={<UserManagementPage />} />
-                      <Route path="subscription" element={<SubscriptionPage />} />
-                    </Route>
-
-                    {/* Onboarding Route (without sidebar) */}
-                    <Route path="/onboarding" element={
-                      <AuthGuard>
-                        <OnboardingPage />
-                      </AuthGuard>
-                    } />
-
-                    {/* 404 Route */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-                <Toaster />
-              </TenantProviderOptimized>
-            </TooltipProvider>
+            <Router>
+              <div className="min-h-screen bg-background">
+                <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/register" element={<TenantRegistrationPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/setup-password" element={<SetupPasswordPage />} />
+                  <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+                  
+                  {/* Protected routes */}
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/app" element={<Dashboard />} />
+                  <Route path="/farmers" element={<FarmersPage />} />
+                  <Route path="/products" element={<ProductsPage />} />
+                  <Route path="/campaigns" element={<CampaignsPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/dealers" element={<DealersPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  
+                  {/* Settings routes */}
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
+                  <Route path="/settings/users" element={<UserManagementPage />} />
+                  <Route path="/settings/appearance" element={<AppearancePage />} />
+                  
+                  {/* Catch all route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+              <Toaster />
+            </Router>
           </IntlProvider>
         </ThemeProvider>
-      </Provider>
-    </ErrorBoundary>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </Provider>
   );
 }
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
 import { useToast } from '@/hooks/use-toast';
-import { Palette, Eye, Save, RotateCcw, Download, Upload } from 'lucide-react';
+import { FONT_OPTIONS } from '@/config/fonts';
+import { Palette, Eye, Save, RotateCcw, Type } from 'lucide-react';
 
 const AppearancePage = () => {
   const { settings, updateSettings, isUpdating } = useAppearanceSettings();
@@ -194,6 +194,52 @@ const AppearancePage = () => {
                   <SelectItem value="system">System</SelectItem>
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
+
+          {/* Typography */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Type className="h-5 w-5" />
+                Typography
+              </CardTitle>
+              <CardDescription>
+                Choose from world-class fonts optimized for readability and modern design
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="font_family">Font Family</Label>
+                <Select
+                  value={formData.font_family}
+                  onValueChange={(value) => handleInputChange('font_family', value)}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONT_OPTIONS.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{font.label}</span>
+                          <span className="text-xs text-muted-foreground">{font.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="p-4 rounded-lg border bg-muted/10">
+                <p className="text-sm font-medium mb-2">Font Preview</p>
+                <div style={{ fontFamily: formData.font_family === 'System' ? 'system-ui' : formData.font_family }}>
+                  <h3 className="text-lg font-semibold mb-1">Sample Heading</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This is how your content will look with the selected font. The quick brown fox jumps over the lazy dog.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -436,37 +482,6 @@ const AppearancePage = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Typography */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Typography</CardTitle>
-              <CardDescription>
-                Font family and text styling options
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div>
-                <Label htmlFor="font_family">Font Family</Label>
-                <Select
-                  value={formData.font_family}
-                  onValueChange={(value) => handleInputChange('font_family', value)}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Inter">Inter</SelectItem>
-                    <SelectItem value="Roboto">Roboto</SelectItem>
-                    <SelectItem value="Open Sans">Open Sans</SelectItem>
-                    <SelectItem value="Lato">Lato</SelectItem>
-                    <SelectItem value="Poppins">Poppins</SelectItem>
-                    <SelectItem value="Montserrat">Montserrat</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Preview Panel */}
@@ -533,7 +548,7 @@ const AppearancePage = () => {
               <div className="p-4 rounded-lg border">
                 <h4 className="font-medium mb-2">Sample Card</h4>
                 <p className="text-muted-foreground text-sm">
-                  This is how your content will look with the selected colors.
+                  This is how your content will look with the selected colors and font.
                 </p>
               </div>
             </CardContent>
