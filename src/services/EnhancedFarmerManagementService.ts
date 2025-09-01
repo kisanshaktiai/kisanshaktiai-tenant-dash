@@ -97,7 +97,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const { data: existingFarmer } = await supabase
         .from('farmers')
         .select('id')
-        .eq('mobile_number', formattedMobile)
+        .eq('phone_number', formattedMobile)
         .eq('tenant_id', tenantId)
         .single();
 
@@ -121,16 +121,41 @@ class EnhancedFarmerManagementService extends BaseApiService {
       ].filter(Boolean);
       const fullAddress = addressParts.join(', ');
 
+      // Create comprehensive metadata object
+      const comprehensiveMetadata = {
+        pinHash: pinHash,
+        personalInfo: {
+          dateOfBirth: farmerData.dateOfBirth,
+          gender: farmerData.gender,
+          email: farmerData.email
+        },
+        addressDetails: {
+          village: farmerData.village,
+          taluka: farmerData.taluka,
+          district: farmerData.district,
+          state: farmerData.state,
+          pincode: farmerData.pincode
+        },
+        farmingDetails: {
+          irrigationSource: farmerData.irrigationSource,
+          hasStorage: farmerData.hasStorage,
+          hasTractor: farmerData.hasTractor
+        },
+        additionalNotes: farmerData.notes || '',
+        createdVia: 'comprehensive_form',
+        createdAt: new Date().toISOString()
+      };
+
       // Create farmer record with available fields
       const { data: farmer, error: farmerError } = await supabase
         .from('farmers')
         .insert({
           tenant_id: tenantId,
           farmer_code: farmerCode,
-          full_name: farmerData.fullName,
-          mobile_number: formattedMobile,
-          email_id: farmerData.email || null,
-          address: fullAddress,
+          farmer_name: farmerData.fullName,
+          phone_number: formattedMobile,
+          email: farmerData.email || null,
+          address_line_1: fullAddress,
           farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
           total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
           primary_crops: farmerData.primaryCrops,
@@ -141,22 +166,10 @@ class EnhancedFarmerManagementService extends BaseApiService {
           is_verified: false,
           total_app_opens: 0,
           total_queries: 0,
-          // Store additional data in fields that exist
           language_preference: 'english',
           preferred_contact_method: 'mobile',
-          // Store PIN hash and other metadata in notes for now
-          notes: JSON.stringify({
-            pinHash: pinHash,
-            dateOfBirth: farmerData.dateOfBirth,
-            gender: farmerData.gender,
-            village: farmerData.village,
-            taluka: farmerData.taluka,
-            district: farmerData.district,
-            state: farmerData.state,
-            pincode: farmerData.pincode,
-            irrigationSource: farmerData.irrigationSource,
-            additionalNotes: farmerData.notes,
-          })
+          // Store comprehensive metadata in the user_metadata field
+          user_metadata: comprehensiveMetadata
         })
         .select()
         .single();
@@ -197,14 +210,15 @@ class EnhancedFarmerManagementService extends BaseApiService {
 
       if (error) throw error;
       
-      // Parse notes to get additional metadata
+      // Parse user_metadata to get additional comprehensive data
       let additionalData = {};
-      if (farmer.notes) {
+      if (farmer.user_metadata) {
         try {
-          const parsedNotes = JSON.parse(farmer.notes);
-          additionalData = parsedNotes;
+          additionalData = typeof farmer.user_metadata === 'string' 
+            ? JSON.parse(farmer.user_metadata) 
+            : farmer.user_metadata;
         } catch (e) {
-          console.warn('Could not parse farmer notes:', e);
+          console.warn('Could not parse farmer user_metadata:', e);
         }
       }
 
@@ -223,7 +237,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const { data: farmer, error } = await supabase
         .from('farmers')
         .select('*')
-        .eq('mobile_number', formattedMobile)
+        .eq('phone_number', formattedMobile)
         .eq('tenant_id', tenantId)
         .single();
 
@@ -231,14 +245,16 @@ class EnhancedFarmerManagementService extends BaseApiService {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Check PIN hash from notes
+      // Check PIN hash from user_metadata
       let storedPinHash = null;
-      if (farmer.notes) {
+      if (farmer.user_metadata) {
         try {
-          const parsedNotes = JSON.parse(farmer.notes);
-          storedPinHash = parsedNotes.pinHash;
+          const metadata = typeof farmer.user_metadata === 'string' 
+            ? JSON.parse(farmer.user_metadata) 
+            : farmer.user_metadata;
+          storedPinHash = metadata.pinHash;
         } catch (e) {
-          console.warn('Could not parse farmer notes for PIN validation:', e);
+          console.warn('Could not parse farmer user_metadata for PIN validation:', e);
         }
       }
 
@@ -246,17 +262,22 @@ class EnhancedFarmerManagementService extends BaseApiService {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Update last login in notes
-      const currentNotes = farmer.notes ? JSON.parse(farmer.notes) : {};
-      const updatedNotes = {
-        ...currentNotes,
+      // Update last login in user_metadata
+      const currentMetadata = farmer.user_metadata 
+        ? (typeof farmer.user_metadata === 'string' 
+           ? JSON.parse(farmer.user_metadata) 
+           : farmer.user_metadata)
+        : {};
+      
+      const updatedMetadata = {
+        ...currentMetadata,
         lastLogin: new Date().toISOString(),
       };
 
       await supabase
         .from('farmers')
         .update({ 
-          notes: JSON.stringify(updatedNotes)
+          user_metadata: updatedMetadata
         })
         .eq('id', farmer.id);
 

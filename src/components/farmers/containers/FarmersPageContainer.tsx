@@ -37,8 +37,8 @@ export const FarmersPageContainer: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => 
     farmer.farmer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.mobile_number?.includes(searchTerm)
+    farmer.farmer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farmer.phone_number?.includes(searchTerm)
   );
 
   const verifiedCount = farmers.filter(farmer => farmer.is_verified).length;
@@ -185,7 +185,7 @@ export const FarmersPageContainer: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">
-                          {farmer.full_name || farmer.farmer_code || 'Unnamed Farmer'}
+                          {farmer.farmer_name || farmer.farmer_code || 'Unnamed Farmer'}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
                           {farmer.farmer_code}
@@ -197,16 +197,16 @@ export const FarmersPageContainer: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {farmer.mobile_number && (
+                        {farmer.phone_number && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {farmer.mobile_number}
+                            {farmer.phone_number}
                           </div>
                         )}
-                        {farmer.address && (
+                        {farmer.address_line_1 && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {farmer.address}
+                            {farmer.address_line_1}
                           </div>
                         )}
                         <div className="flex items-center gap-1">
