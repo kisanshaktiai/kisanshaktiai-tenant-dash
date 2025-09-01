@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +20,7 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
 }) => {
   if (error) {
     return (
-      <div className="container mx-auto p-8">
+      <div className="w-full p-4 sm:p-6 lg:p-8">
         <Card className="text-center py-12 shadow-strong border-0 bg-gradient-to-br from-destructive/5 to-destructive/10">
           <CardContent className="space-y-4">
             <AlertCircle className="h-16 w-16 mx-auto text-destructive mb-6" />
@@ -48,18 +47,18 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
   const dealersData = safeStats.dealers || { total: 0, active: 0 };
 
   return (
-    <div className="container mx-auto p-8 space-y-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="w-full min-h-full p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8">
+      <div className="flex items-center justify-between mb-6 lg:mb-8">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
             Dashboard Overview
           </h1>
-          <p className="text-muted-foreground text-lg mt-2">Real-time insights for your agricultural network</p>
+          <p className="text-muted-foreground text-base lg:text-lg mt-2">Real-time insights for your agricultural network</p>
         </div>
       </div>
 
       {/* Enhanced Key Metrics */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Total Farmers</CardTitle>
@@ -140,11 +139,11 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
         </Card>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 lg:gap-8 grid-cols-1 xl:grid-cols-2">
         {/* Enhanced Recent Activity */}
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm">
           <CardHeader className="pb-6">
-            <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <CardTitle className="flex items-center gap-3 text-lg lg:text-xl font-bold">
               <div className="p-2 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
@@ -188,7 +187,7 @@ export const DashboardPresentation: React.FC<DashboardPresentationProps> = ({
         {/* Enhanced System Status */}
         <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm">
           <CardHeader className="pb-6">
-            <CardTitle className="flex items-center gap-3 text-xl font-bold">
+            <CardTitle className="flex items-center gap-3 text-lg lg:text-xl font-bold">
               <div className="p-2 rounded-xl bg-gradient-to-br from-info/10 to-info/5">
                 <Calendar className="h-5 w-5 text-info" />
               </div>
