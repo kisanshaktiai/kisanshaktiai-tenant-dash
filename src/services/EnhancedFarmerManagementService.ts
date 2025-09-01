@@ -120,8 +120,8 @@ class EnhancedFarmerManagementService extends BaseApiService {
         total_queries: 0,
         language_preference: 'english',
         preferred_contact_method: 'mobile',
-        // Store comprehensive data in metadata field
-        metadata: {
+        // Store comprehensive data in metadata field if it exists, otherwise in notes
+        notes: JSON.stringify({
           pin_hash: pinHash,
           personal_info: {
             full_name: farmerData.fullName,
@@ -145,7 +145,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
             notes: farmerData.notes,
             phone_number: formattedMobile,
           }
-        }
+        })
       };
 
       const { data: farmer, error: farmerError } = await supabase
@@ -203,7 +203,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      // Look for farmer by searching in metadata
+      // Look for farmer by searching in notes field (where we stored the metadata)
       const { data: farmers, error } = await supabase
         .from('farmers')
         .select('*')
@@ -213,12 +213,13 @@ class EnhancedFarmerManagementService extends BaseApiService {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Find farmer by mobile number stored in metadata
+      // Find farmer by mobile number and PIN stored in notes
       const farmer = farmers.find(f => {
         try {
-          const metadata = f.metadata as any;
-          return metadata?.additional_info?.phone_number === formattedMobile &&
-                 metadata?.pin_hash === pinHash;
+          if (!f.notes) return false;
+          const farmerData = JSON.parse(f.notes);
+          return farmerData?.additional_info?.phone_number === formattedMobile &&
+                 farmerData?.pin_hash === pinHash;
         } catch {
           return false;
         }
