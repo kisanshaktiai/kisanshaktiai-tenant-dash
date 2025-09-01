@@ -118,7 +118,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
         // Reset form with default language preference
         setFormData({
           ...initialFormData,
-          languagePreference: currentTenant?.defaultLanguage || DEFAULT_LOCALE
+          languagePreference: DEFAULT_LOCALE
         });
         clearErrors();
         
@@ -144,7 +144,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
   const handleClose = () => {
     setFormData({
       ...initialFormData,
-      languagePreference: currentTenant?.defaultLanguage || DEFAULT_LOCALE
+      languagePreference: DEFAULT_LOCALE
     });
     clearErrors();
     onClose();
