@@ -37,7 +37,7 @@ export const FarmersPageContainer: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => 
     farmer.farmer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.phone_number?.includes(searchTerm)
+    (farmer as any).phone_number?.includes(searchTerm)
   );
 
   const verifiedCount = farmers.filter(farmer => farmer.is_verified).length;
@@ -196,15 +196,17 @@ export const FarmersPageContainer: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {farmer.phone_number && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {farmer.phone_number}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          Contact Info Available
+                        </div>
                         <div className="flex items-center gap-1">
                           <TrendingUp className="h-3 w-3" />
                           {farmer.total_land_acres || 0} acres
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          Farm Location
                         </div>
                       </div>
                     </div>

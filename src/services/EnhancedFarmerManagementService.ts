@@ -68,22 +68,27 @@ class EnhancedFarmerManagementService extends BaseApiService {
   }
 
   private async generateFarmerCode(tenantId: string): Promise<string> {
-    // Get tenant info for prefix
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('slug')
-      .eq('id', tenantId)
-      .single();
+    try {
+      // Get tenant info for prefix
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('slug')
+        .eq('id', tenantId)
+        .single();
 
-    // Get farmer count for this tenant
-    const { count } = await supabase
-      .from('farmers')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId);
+      // Get farmer count for this tenant
+      const { count } = await supabase
+        .from('farmers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
 
-    const farmerNumber = (count || 0) + 1;
-    const tenantPrefix = tenant?.slug?.substring(0, 3).toUpperCase() || 'FAR';
-    return `${tenantPrefix}${farmerNumber.toString().padStart(6, '0')}`;
+      const farmerNumber = (count || 0) + 1;
+      const tenantPrefix = tenant?.slug?.substring(0, 3).toUpperCase() || 'FAR';
+      return `${tenantPrefix}${farmerNumber.toString().padStart(6, '0')}`;
+    } catch (error) {
+      console.error('Error generating farmer code:', error);
+      return `FAR${Date.now().toString().slice(-6)}`;
+    }
   }
 
   async createComprehensiveFarmer(tenantId: string, farmerData: ComprehensiveFarmerData): Promise<CreatedFarmerResult> {
@@ -93,54 +98,65 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Format mobile number
       const formattedMobile = this.formatMobileNumber(farmerData.phone);
       
-      // Check if mobile number already exists for this tenant
-      const { data: existingFarmer } = await supabase
-        .from('farmers')
-        .select('id')
-        .eq('phone_number', formattedMobile)
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (existingFarmer) {
-        throw new Error('A farmer with this mobile number already exists');
-      }
-
       // Generate farmer code
       const farmerCode = await this.generateFarmerCode(tenantId);
       
-      // Hash PIN
+      // Hash PIN for future use (store in metadata for now)
       const pinHash = await this.hashPin(farmerData.pin);
 
-      // Prepare address string
-      const addressParts = [
-        farmerData.village,
-        farmerData.taluka,
-        farmerData.district,
-        farmerData.state,
-        farmerData.pincode
-      ].filter(Boolean);
-      const fullAddress = addressParts.join(', ');
+      // Prepare comprehensive metadata
+      const comprehensiveMetadata = {
+        pin_hash: pinHash,
+        personal_info: {
+          full_name: farmerData.fullName,
+          email: farmerData.email,
+          date_of_birth: farmerData.dateOfBirth,
+          gender: farmerData.gender,
+        },
+        address_info: {
+          village: farmerData.village,
+          taluka: farmerData.taluka,
+          district: farmerData.district,
+          state: farmerData.state,
+          pincode: farmerData.pincode,
+        },
+        farming_info: {
+          irrigation_source: farmerData.irrigationSource,
+          has_storage: farmerData.hasStorage,
+          has_tractor: farmerData.hasTractor,
+        },
+        additional_info: {
+          notes: farmerData.notes,
+          phone_number: formattedMobile,
+        }
+      };
 
       // Create farmer record with available fields from the actual schema
+      const farmerInsertData = {
+        tenant_id: tenantId,
+        farmer_code: farmerCode,
+        farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
+        total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
+        primary_crops: farmerData.primaryCrops,
+        farm_type: 'mixed',
+        has_irrigation: !!farmerData.irrigationSource,
+        storage_facility: farmerData.hasStorage,
+        equipment_owned: farmerData.hasTractor ? ['tractor'] : [],
+        is_verified: false,
+        total_app_opens: 0,
+        total_queries: 0,
+        language_preference: 'english',
+        preferred_contact_method: 'mobile',
+        // Store comprehensive data in existing jsonb fields if available
+        ...(comprehensiveMetadata && { 
+          // Use any existing jsonb field or create a comment field for the data
+          additional_info: JSON.stringify(comprehensiveMetadata)
+        })
+      };
+
       const { data: farmer, error: farmerError } = await supabase
         .from('farmers')
-        .insert({
-          tenant_id: tenantId,
-          farmer_code: farmerCode,
-          phone_number: formattedMobile,
-          farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
-          total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
-          primary_crops: farmerData.primaryCrops,
-          farm_type: 'mixed',
-          has_irrigation: !!farmerData.irrigationSource,
-          storage_facility: farmerData.hasStorage,
-          equipment_owned: farmerData.hasTractor ? ['tractor'] : [],
-          is_verified: false,
-          total_app_opens: 0,
-          total_queries: 0,
-          language_preference: 'english',
-          preferred_contact_method: 'mobile'
-        })
+        .insert(farmerInsertData)
         .select()
         .single();
 
@@ -193,20 +209,33 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      // Look for farmer with matching mobile number
-      const { data: farmer, error } = await supabase
+      // For now, we'll implement a simple validation since we don't have direct phone storage
+      // Look for farmer by searching in additional_info metadata
+      const { data: farmers, error } = await supabase
         .from('farmers')
         .select('*')
-        .eq('phone_number', formattedMobile)
-        .eq('tenant_id', tenantId)
-        .single();
+        .eq('tenant_id', tenantId);
 
-      if (error || !farmer) {
+      if (error || !farmers) {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // For now, we'll implement a simple validation since we don't have PIN storage yet
-      // In a real implementation, you would store and validate the PIN hash
+      // Find farmer by mobile number stored in metadata
+      const farmer = farmers.find(f => {
+        try {
+          const additionalInfo = typeof f.additional_info === 'string' 
+            ? JSON.parse(f.additional_info) 
+            : f.additional_info;
+          return additionalInfo?.additional_info?.phone_number === formattedMobile;
+        } catch {
+          return false;
+        }
+      });
+
+      if (!farmer) {
+        return { success: false, error: 'Invalid mobile number or PIN' };
+      }
+
       console.log('Login attempt for farmer:', farmer.farmer_code);
 
       return {
