@@ -7,23 +7,23 @@ export interface ComprehensiveFarmerData {
   fullName: string;
   phone: string;
   email?: string;
-  dateOfBirth: string;
-  gender: string;
+  dateOfBirth?: string;
+  gender?: string;
   
   // Address Information
-  village: string;
+  village?: string;
   taluka?: string;
-  district: string;
-  state: string;
-  pincode: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
   
   // Farming Information
-  farmingExperience: string;
-  totalLandSize: string;
+  farmingExperience?: string;
+  totalLandSize?: string;
   irrigationSource?: string;
-  hasStorage: boolean;
-  hasTractor: boolean;
-  primaryCrops: string[];
+  hasStorage?: boolean;
+  hasTractor?: boolean;
+  primaryCrops?: string[];
   
   // Authentication
   pin: string;
@@ -94,6 +94,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
   async createComprehensiveFarmer(tenantId: string, farmerData: ComprehensiveFarmerData): Promise<CreatedFarmerResult> {
     try {
       console.log('Creating comprehensive farmer for tenant:', tenantId);
+      console.log('Farmer data received:', farmerData);
       
       // Format mobile number
       const formattedMobile = this.formatMobileNumber(farmerData.phone);
@@ -101,52 +102,60 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Generate farmer code
       const farmerCode = await this.generateFarmerCode(tenantId);
       
-      // Hash PIN for future use
+      // Hash PIN for storage
       const pinHash = await this.hashPin(farmerData.pin);
 
-      // Create farmer record with available fields from the actual schema
+      // Prepare metadata with comprehensive farmer information
+      const metadata = {
+        personal_info: {
+          full_name: farmerData.fullName,
+          email: farmerData.email || null,
+          date_of_birth: farmerData.dateOfBirth || null,
+          gender: farmerData.gender || null,
+        },
+        address_info: {
+          village: farmerData.village || null,
+          taluka: farmerData.taluka || null,
+          district: farmerData.district || null,
+          state: farmerData.state || null,
+          pincode: farmerData.pincode || null,
+        },
+        farming_info: {
+          farming_experience: farmerData.farmingExperience || null,
+          total_land_size: farmerData.totalLandSize || null,
+          irrigation_source: farmerData.irrigationSource || null,
+          has_storage: farmerData.hasStorage || false,
+          has_tractor: farmerData.hasTractor || false,
+        },
+        additional_info: {
+          notes: farmerData.notes || null,
+        }
+      };
+
+      // Create farmer record with correct schema fields
       const farmerInsertData = {
         tenant_id: tenantId,
         farmer_code: farmerCode,
-        farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
-        total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
-        primary_crops: farmerData.primaryCrops,
+        mobile_number: formattedMobile,
+        pin_hash: pinHash,
+        farming_experience_years: parseInt(farmerData.farmingExperience || '0') || 0,
+        total_land_acres: parseFloat(farmerData.totalLandSize || '0') || 0,
+        primary_crops: farmerData.primaryCrops || [],
         farm_type: 'mixed',
         has_irrigation: !!farmerData.irrigationSource,
-        storage_facility: farmerData.hasStorage,
-        equipment_owned: farmerData.hasTractor ? ['tractor'] : [],
+        has_storage: farmerData.hasStorage || false,
+        has_tractor: farmerData.hasTractor || false,
+        irrigation_type: farmerData.irrigationSource || null,
         is_verified: false,
         total_app_opens: 0,
         total_queries: 0,
         language_preference: 'english',
         preferred_contact_method: 'mobile',
-        // Store comprehensive data in metadata field if it exists, otherwise in notes
-        notes: JSON.stringify({
-          pin_hash: pinHash,
-          personal_info: {
-            full_name: farmerData.fullName,
-            email: farmerData.email,
-            date_of_birth: farmerData.dateOfBirth,
-            gender: farmerData.gender,
-          },
-          address_info: {
-            village: farmerData.village,
-            taluka: farmerData.taluka,
-            district: farmerData.district,
-            state: farmerData.state,
-            pincode: farmerData.pincode,
-          },
-          farming_info: {
-            irrigation_source: farmerData.irrigationSource,
-            has_storage: farmerData.hasStorage,
-            has_tractor: farmerData.hasTractor,
-          },
-          additional_info: {
-            notes: farmerData.notes,
-            phone_number: formattedMobile,
-          }
-        })
+        notes: farmerData.notes || null,
+        metadata: metadata
       };
+
+      console.log('Farmer insert data:', farmerInsertData);
 
       const { data: farmer, error: farmerError } = await supabase
         .from('farmers')
@@ -155,6 +164,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
         .single();
 
       if (farmerError) {
+        console.error('Database insert error:', farmerError);
         throw farmerError;
       }
 
@@ -203,35 +213,20 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      // Look for farmer by searching in notes field (where we stored the metadata)
-      const { data: farmers, error } = await supabase
+      // Look for farmer by mobile number and PIN hash
+      const { data: farmer, error } = await supabase
         .from('farmers')
         .select('*')
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', tenantId)
+        .eq('mobile_number', formattedMobile)
+        .eq('pin_hash', pinHash)
+        .single();
 
-      if (error || !farmers) {
+      if (error || !farmer) {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Find farmer by mobile number and PIN stored in notes
-      const farmer = farmers.find(f => {
-        try {
-          // Use type assertion to access notes field
-          const farmerWithNotes = f as any;
-          if (!farmerWithNotes.notes) return false;
-          const farmerData = JSON.parse(farmerWithNotes.notes);
-          return farmerData?.additional_info?.phone_number === formattedMobile &&
-                 farmerData?.pin_hash === pinHash;
-        } catch {
-          return false;
-        }
-      });
-
-      if (!farmer) {
-        return { success: false, error: 'Invalid mobile number or PIN' };
-      }
-
-      console.log('Login attempt for farmer:', farmer.farmer_code);
+      console.log('Login successful for farmer:', farmer.farmer_code);
 
       return {
         success: true,

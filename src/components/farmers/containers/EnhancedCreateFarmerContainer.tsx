@@ -12,21 +12,25 @@ interface EnhancedCreateFarmerContainerProps {
 }
 
 const initialFormData: FarmerFormData = {
-  // Personal Information
+  // Personal Information - Required
   fullName: '',
   phone: '',
+  pin: '',
+  confirmPin: '',
+  
+  // Personal Information - Optional
   email: '',
   dateOfBirth: '',
   gender: '',
   
-  // Address Information
+  // Address Information - Optional
   village: '',
   taluka: '',
   district: '',
   state: '',
   pincode: '',
   
-  // Farming Information
+  // Farming Information - Optional
   farmingExperience: '',
   totalLandSize: '',
   irrigationSource: '',
@@ -34,11 +38,7 @@ const initialFormData: FarmerFormData = {
   hasTractor: false,
   primaryCrops: [],
   
-  // Authentication
-  pin: '',
-  confirmPin: '',
-  
-  // Additional Information
+  // Additional Information - Optional
   notes: '',
 };
 
@@ -78,26 +78,29 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
     }
 
     try {
-      // Transform form data to service format
+      // Transform form data to service format - only include defined values
       const farmerData = {
+        // Required fields
         fullName: data.fullName,
         phone: data.phone,
-        email: data.email || undefined,
-        dateOfBirth: data.dateOfBirth,
-        gender: data.gender,
-        village: data.village,
-        taluka: data.taluka || undefined,
-        district: data.district,
-        state: data.state,
-        pincode: data.pincode,
-        farmingExperience: data.farmingExperience,
-        totalLandSize: data.totalLandSize,
-        irrigationSource: data.irrigationSource || undefined,
-        hasStorage: data.hasStorage,
-        hasTractor: data.hasTractor,
-        primaryCrops: data.primaryCrops,
         pin: data.pin,
-        notes: data.notes || undefined,
+        
+        // Optional fields - only include if they have values
+        ...(data.email && { email: data.email }),
+        ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
+        ...(data.gender && { gender: data.gender }),
+        ...(data.village && { village: data.village }),
+        ...(data.taluka && { taluka: data.taluka }),
+        ...(data.district && { district: data.district }),
+        ...(data.state && { state: data.state }),
+        ...(data.pincode && { pincode: data.pincode }),
+        ...(data.farmingExperience && { farmingExperience: data.farmingExperience }),
+        ...(data.totalLandSize && { totalLandSize: data.totalLandSize }),
+        ...(data.irrigationSource && { irrigationSource: data.irrigationSource }),
+        hasStorage: data.hasStorage || false,
+        hasTractor: data.hasTractor || false,
+        primaryCrops: data.primaryCrops || [],
+        ...(data.notes && { notes: data.notes }),
       };
 
       console.log('Transformed farmer data for submission:', farmerData);

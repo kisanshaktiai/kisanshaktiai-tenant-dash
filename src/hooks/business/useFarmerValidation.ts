@@ -2,21 +2,25 @@
 import { useState, useCallback } from 'react';
 
 export interface FarmerFormData {
-  // Personal Information
+  // Personal Information - Required
   fullName: string;
   phone: string;
+  pin: string;
+  confirmPin: string;
+  
+  // Personal Information - Optional
   email: string;
   dateOfBirth: string;
   gender: string;
   
-  // Address Information
+  // Address Information - Optional
   village: string;
   taluka: string;
   district: string;
   state: string;
   pincode: string;
   
-  // Farming Information
+  // Farming Information - Optional
   farmingExperience: string;
   totalLandSize: string;
   irrigationSource: string;
@@ -24,11 +28,7 @@ export interface FarmerFormData {
   hasTractor: boolean;
   primaryCrops: string[];
   
-  // Authentication
-  pin: string;
-  confirmPin: string;
-  
-  // Additional Information
+  // Additional Information - Optional
   notes: string;
 }
 
@@ -73,7 +73,7 @@ export const useFarmerValidation = () => {
   };
 
   const validatePincode = (pincode: string): boolean => {
-    if (!pincode) return true; // Pincode is optional now
+    if (!pincode) return true; // Pincode is optional
     const pincodeRegex = /^[1-9][0-9]{5}$/;
     return pincodeRegex.test(pincode);
   };
@@ -85,33 +85,36 @@ export const useFarmerValidation = () => {
   const validateForm = useCallback((data: FarmerFormData): ValidationErrors => {
     const newErrors: ValidationErrors = {};
 
-    // REQUIRED: Full name
-    if (!data.fullName.trim()) {
+    // REQUIRED FIELDS VALIDATION
+    
+    // Full name is required
+    if (!data.fullName?.trim()) {
       newErrors.fullName = 'Full name is required';
     }
 
-    // REQUIRED: Mobile number
-    if (!data.phone.trim()) {
+    // Mobile number is required
+    if (!data.phone?.trim()) {
       newErrors.phone = 'Mobile number is required';
     } else if (!validateIndianMobile(data.phone)) {
       newErrors.phone = 'Please enter a valid Indian mobile number (10 digits starting with 6-9)';
     }
 
-    // REQUIRED: PIN
-    if (!data.pin.trim()) {
+    // PIN is required
+    if (!data.pin?.trim()) {
       newErrors.pin = 'PIN is required for farmer login';
     } else if (!validatePin(data.pin)) {
       newErrors.pin = 'PIN must be 4-6 digits';
     }
 
-    // REQUIRED: Confirm PIN
-    if (!data.confirmPin.trim()) {
+    // Confirm PIN is required
+    if (!data.confirmPin?.trim()) {
       newErrors.confirmPin = 'Please confirm your PIN';
     } else if (data.pin !== data.confirmPin) {
       newErrors.confirmPin = 'PINs do not match';
     }
 
-    // OPTIONAL VALIDATIONS: Only validate if fields have values
+    // OPTIONAL FIELDS VALIDATION - Only validate if fields have values
+
     if (data.email && !validateEmail(data.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
