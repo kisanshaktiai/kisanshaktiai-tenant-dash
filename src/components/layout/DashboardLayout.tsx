@@ -224,9 +224,9 @@ const DashboardLayout = () => {
             </div>
           </header>
 
-          {/* Main Content */}
+          {/* Main Content - Optimized spacing */}
           <main className="flex-1 overflow-auto">
-            <div className="container mx-auto p-4 lg:p-6 space-y-4 lg:space-y-6">
+            <div className="w-full h-full">
               <Outlet />
             </div>
           </main>
