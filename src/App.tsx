@@ -12,6 +12,9 @@ import { Toaster } from '@/components/ui/sonner';
 import { fontService } from '@/services/FontService';
 import { queryClient } from '@/lib/queryClient';
 
+// Import layout
+import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
+
 // Import pages
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
@@ -55,7 +58,7 @@ function App() {
                   {/* Root redirect */}
                   <Route path="/" element={<Index />} />
                   
-                  {/* Auth routes */}
+                  {/* Auth routes - outside layout */}
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Navigate to="/auth" replace />} />
                   <Route path="/register" element={<TenantRegistrationPage />} />
@@ -63,26 +66,37 @@ function App() {
                   <Route path="/setup-password" element={<SetupPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   
-                  {/* Onboarding */}
+                  {/* Onboarding - outside layout */}
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   
-                  {/* Main app routes */}
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/app" element={<Navigate to="/dashboard" replace />} />
+                  {/* Main app routes with layout */}
+                  <Route path="/app" element={<EnhancedTenantLayout />}>
+                    <Route index element={<Navigate to="/app/dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="farmers" element={<FarmersPage />} />
+                    <Route path="products" element={<ProductsPage />} />
+                    <Route path="campaigns" element={<CampaignsPage />} />
+                    <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route path="dealers" element={<DealersPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="settings/organization" element={<OrganizationSettingsPage />} />
+                    <Route path="settings/users" element={<UserManagementPage />} />
+                    <Route path="settings/appearance" element={<AppearancePage />} />
+                  </Route>
                   
-                  {/* Feature routes */}
-                  <Route path="/farmers" element={<FarmersPage />} />
-                  <Route path="/products" element={<ProductsPage />} />
-                  <Route path="/campaigns" element={<CampaignsPage />} />
-                  <Route path="/analytics" element={<AnalyticsPage />} />
-                  <Route path="/dealers" element={<DealersPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  
-                  {/* Settings routes */}
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
-                  <Route path="/settings/users" element={<UserManagementPage />} />
-                  <Route path="/settings/appearance" element={<AppearancePage />} />
+                  {/* Legacy redirects */}
+                  <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="/farmers" element={<Navigate to="/app/farmers" replace />} />
+                  <Route path="/products" element={<Navigate to="/app/products" replace />} />
+                  <Route path="/campaigns" element={<Navigate to="/app/campaigns" replace />} />
+                  <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
+                  <Route path="/dealers" element={<Navigate to="/app/dealers" replace />} />
+                  <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
+                  <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+                  <Route path="/settings/organization" element={<Navigate to="/app/settings/organization" replace />} />
+                  <Route path="/settings/users" element={<Navigate to="/app/settings/users" replace />} />
+                  <Route path="/settings/appearance" element={<Navigate to="/app/settings/appearance" replace />} />
                   
                   {/* Catch all route */}
                   <Route path="*" element={<NotFound />} />

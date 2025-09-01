@@ -48,43 +48,43 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 const navigationItems = [
   {
     title: 'Dashboard',
-    url: '/dashboard',
+    url: '/app/dashboard',
     icon: LayoutDashboard,
     badge: null
   },
   {
     title: 'Farmer Management',
-    url: '/farmers',
+    url: '/app/farmers',
     icon: Users,
     badge: 'New'
   },
   {
     title: 'Product Catalog',
-    url: '/products',
+    url: '/app/products',
     icon: Package,
     badge: null
   },
   {
     title: 'Dealer Network',
-    url: '/dealers',
+    url: '/app/dealers',
     icon: Store,
     badge: null
   },
   {
     title: 'Campaigns',
-    url: '/campaigns',
+    url: '/app/campaigns',
     icon: Megaphone,
     badge: 'Beta'
   },
   {
     title: 'Analytics & Reports',
-    url: '/analytics',
+    url: '/app/analytics',
     icon: BarChart3,
     badge: null
   },
   {
     title: 'Settings',
-    url: '/settings',
+    url: '/app/settings',
     icon: Settings,
     badge: null
   }
