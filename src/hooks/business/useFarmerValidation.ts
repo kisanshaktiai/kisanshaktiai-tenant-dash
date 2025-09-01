@@ -12,6 +12,7 @@ export interface FarmerFormData {
   email: string;
   dateOfBirth: string;
   gender: string;
+  languagePreference: string;
   
   // Address Information - Optional
   village: string;

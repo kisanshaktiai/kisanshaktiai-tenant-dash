@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { ComprehensiveCreateFarmerForm } from '../forms/ComprehensiveCreateFarmerForm';
 import { useEnhancedFarmerManagement } from '@/hooks/business/useEnhancedFarmerManagement';
 import { useFarmerValidation, type FarmerFormData } from '@/hooks/business/useFarmerValidation';
+import { useAppSelector } from '@/store/hooks';
+import { DEFAULT_LOCALE } from '@/lib/i18n';
 import { toast } from 'sonner';
 
 interface EnhancedCreateFarmerContainerProps {
@@ -22,6 +24,7 @@ const initialFormData: FarmerFormData = {
   email: '',
   dateOfBirth: '',
   gender: '',
+  languagePreference: DEFAULT_LOCALE, // Default to English
   
   // Address Information - Optional
   village: '',
@@ -50,6 +53,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
   const [formData, setFormData] = useState<FarmerFormData>(initialFormData);
   const { loading, createComprehensiveFarmer } = useEnhancedFarmerManagement();
   const { errors, validateForm, clearErrors, formatIndianMobile } = useFarmerValidation();
+  const { currentTenant } = useAppSelector((state) => state.tenant);
 
   const handleFormChange = (field: keyof FarmerFormData, value: any) => {
     setFormData(prev => {
@@ -89,6 +93,7 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
         ...(data.email && { email: data.email }),
         ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
         ...(data.gender && { gender: data.gender }),
+        ...(data.languagePreference && { languagePreference: data.languagePreference }),
         ...(data.village && { village: data.village }),
         ...(data.taluka && { taluka: data.taluka }),
         ...(data.district && { district: data.district }),
@@ -110,8 +115,11 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
       console.log('Farmer creation result:', result);
       
       if (result.success) {
-        // Reset form
-        setFormData(initialFormData);
+        // Reset form with default language preference
+        setFormData({
+          ...initialFormData,
+          languagePreference: currentTenant?.defaultLanguage || DEFAULT_LOCALE
+        });
         clearErrors();
         
         // Call success callback
@@ -134,7 +142,10 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
   };
 
   const handleClose = () => {
-    setFormData(initialFormData);
+    setFormData({
+      ...initialFormData,
+      languagePreference: currentTenant?.defaultLanguage || DEFAULT_LOCALE
+    });
     clearErrors();
     onClose();
   };

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 
@@ -9,6 +8,7 @@ export interface ComprehensiveFarmerData {
   email?: string;
   dateOfBirth?: string;
   gender?: string;
+  languagePreference?: string;
   
   // Address Information
   village?: string;
@@ -112,6 +112,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
           email: farmerData.email || null,
           date_of_birth: farmerData.dateOfBirth || null,
           gender: farmerData.gender || null,
+          language_preference: farmerData.languagePreference || 'en',
         },
         address_info: {
           village: farmerData.village || null,
@@ -149,7 +150,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
         is_verified: false,
         total_app_opens: 0,
         total_queries: 0,
-        language_preference: 'english',
+        language_preference: farmerData.languagePreference || 'en',
         preferred_contact_method: 'mobile',
         notes: farmerData.notes || null,
         metadata: metadata

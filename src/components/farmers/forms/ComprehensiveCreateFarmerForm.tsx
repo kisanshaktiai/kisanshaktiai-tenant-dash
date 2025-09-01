@@ -9,8 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, User, MapPin, Tractor, Smartphone } from 'lucide-react';
+import { LanguageSelect } from '@/components/ui/language-select';
+import { X, Plus, User, MapPin, Tractor, Smartphone, Globe } from 'lucide-react';
 import { type FarmerFormData } from '@/hooks/business/useFarmerValidation';
+import { useTranslation } from '@/hooks/useTranslation';
+import { DEFAULT_LOCALE } from '@/lib/i18n';
 
 interface ComprehensiveCreateFarmerFormProps {
   isOpen: boolean;
@@ -54,6 +57,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
 }) => {
   const [cropInput, setCropInput] = useState('');
   const [activeTab, setActiveTab] = useState('personal');
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,21 +185,44 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="gender">Gender (Optional)</Label>
-                    <Select value={formData.gender} onValueChange={(value) => onFormChange('gender', value)}>
-                      <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.gender && (
-                      <p className="text-sm text-red-500 mt-1">{errors.gender}</p>
-                    )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="gender">Gender (Optional)</Label>
+                      <Select value={formData.gender} onValueChange={(value) => onFormChange('gender', value)}>
+                        <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.gender && (
+                        <p className="text-sm text-red-500 mt-1">{errors.gender}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="languagePreference" className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        {t('farmer.languagePreference')}
+                      </Label>
+                      <LanguageSelect
+                        value={formData.languagePreference}
+                        onValueChange={(value) => onFormChange('languagePreference', value)}
+                        placeholder={t('farmer.selectLanguage')}
+                        showRegionGroups={true}
+                        showNativeNames={true}
+                        className={errors.languagePreference ? 'border-red-500' : ''}
+                      />
+                      {errors.languagePreference && (
+                        <p className="text-sm text-red-500 mt-1">{errors.languagePreference}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        {t('farmer.languagePreferenceDesc')}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
