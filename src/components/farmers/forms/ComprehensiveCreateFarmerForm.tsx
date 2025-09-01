@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -113,6 +112,9 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
               <Card>
                 <CardHeader>
                   <CardTitle>Personal Information</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Only name and mobile number are required. Other details can be added later.
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -165,7 +167,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     </div>
 
                     <div>
-                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Label htmlFor="dateOfBirth">Date of Birth (Optional)</Label>
                       <Input
                         id="dateOfBirth"
                         type="date"
@@ -180,7 +182,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                   </div>
 
                   <div>
-                    <Label htmlFor="gender">Gender *</Label>
+                    <Label htmlFor="gender">Gender (Optional)</Label>
                     <Select value={formData.gender} onValueChange={(value) => onFormChange('gender', value)}>
                       <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
                         <SelectValue placeholder="Select gender" />
@@ -203,6 +205,9 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
               <Card>
                 <CardHeader>
                   <CardTitle>Address Information</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Address details are optional and can be updated later.
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -288,11 +293,14 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
               <Card>
                 <CardHeader>
                   <CardTitle>Farming Information</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Farming details are optional and can be updated later.
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="farmingExperience">Farming Experience (Years) *</Label>
+                      <Label htmlFor="farmingExperience">Farming Experience (Years)</Label>
                       <Input
                         id="farmingExperience"
                         type="number"
@@ -308,7 +316,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     </div>
 
                     <div>
-                      <Label htmlFor="totalLandSize">Total Land Size (Acres) *</Label>
+                      <Label htmlFor="totalLandSize">Total Land Size (Acres)</Label>
                       <Input
                         id="totalLandSize"
                         type="number"
@@ -342,7 +350,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Primary Crops *</Label>
+                    <Label>Primary Crops (Optional)</Label>
                     
                     {/* Selected crops */}
                     <div className="flex flex-wrap gap-2">
@@ -385,10 +393,6 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                         </Button>
                       ))}
                     </div>
-
-                    {errors.primaryCrops && (
-                      <p className="text-sm text-red-500">{errors.primaryCrops}</p>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

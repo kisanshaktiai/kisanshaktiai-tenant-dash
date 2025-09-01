@@ -73,6 +73,7 @@ export const useFarmerValidation = () => {
   };
 
   const validatePincode = (pincode: string): boolean => {
+    if (!pincode) return true; // Pincode is optional now
     const pincodeRegex = /^[1-9][0-9]{5}$/;
     return pincodeRegex.test(pincode);
   };
@@ -84,81 +85,54 @@ export const useFarmerValidation = () => {
   const validateForm = useCallback((data: FarmerFormData): ValidationErrors => {
     const newErrors: ValidationErrors = {};
 
-    // Personal Information Validation
+    // REQUIRED: Full name
     if (!data.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
 
+    // REQUIRED: Mobile number
     if (!data.phone.trim()) {
       newErrors.phone = 'Mobile number is required';
     } else if (!validateIndianMobile(data.phone)) {
       newErrors.phone = 'Please enter a valid Indian mobile number (10 digits starting with 6-9)';
     }
 
-    if (data.email && !validateEmail(data.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!data.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
-    } else {
-      const age = new Date().getFullYear() - new Date(data.dateOfBirth).getFullYear();
-      if (age < 18 || age > 100) {
-        newErrors.dateOfBirth = 'Age must be between 18 and 100 years';
-      }
-    }
-
-    if (!data.gender) {
-      newErrors.gender = 'Gender is required';
-    }
-
-    // Address Information Validation
-    if (!data.village.trim()) {
-      newErrors.village = 'Village is required';
-    }
-
-    if (!data.district.trim()) {
-      newErrors.district = 'District is required';
-    }
-
-    if (!data.state.trim()) {
-      newErrors.state = 'State is required';
-    }
-
-    if (!data.pincode.trim()) {
-      newErrors.pincode = 'Pincode is required';
-    } else if (!validatePincode(data.pincode)) {
-      newErrors.pincode = 'Please enter a valid 6-digit pincode';
-    }
-
-    // Farming Information Validation
-    if (!data.farmingExperience.trim()) {
-      newErrors.farmingExperience = 'Farming experience is required';
-    } else if (isNaN(Number(data.farmingExperience)) || Number(data.farmingExperience) < 0) {
-      newErrors.farmingExperience = 'Please enter valid years of experience';
-    }
-
-    if (!data.totalLandSize.trim()) {
-      newErrors.totalLandSize = 'Total land size is required';
-    } else if (isNaN(Number(data.totalLandSize)) || Number(data.totalLandSize) <= 0) {
-      newErrors.totalLandSize = 'Please enter valid land size in acres';
-    }
-
-    if (data.primaryCrops.length === 0) {
-      newErrors.primaryCrops = 'At least one primary crop is required';
-    }
-
-    // Authentication Validation
+    // REQUIRED: PIN
     if (!data.pin.trim()) {
       newErrors.pin = 'PIN is required for farmer login';
     } else if (!validatePin(data.pin)) {
       newErrors.pin = 'PIN must be 4-6 digits';
     }
 
+    // REQUIRED: Confirm PIN
     if (!data.confirmPin.trim()) {
       newErrors.confirmPin = 'Please confirm your PIN';
     } else if (data.pin !== data.confirmPin) {
       newErrors.confirmPin = 'PINs do not match';
+    }
+
+    // OPTIONAL VALIDATIONS: Only validate if fields have values
+    if (data.email && !validateEmail(data.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    if (data.dateOfBirth) {
+      const age = new Date().getFullYear() - new Date(data.dateOfBirth).getFullYear();
+      if (age < 18 || age > 100) {
+        newErrors.dateOfBirth = 'Age must be between 18 and 100 years';
+      }
+    }
+
+    if (data.pincode && !validatePincode(data.pincode)) {
+      newErrors.pincode = 'Please enter a valid 6-digit pincode';
+    }
+
+    if (data.farmingExperience && (isNaN(Number(data.farmingExperience)) || Number(data.farmingExperience) < 0)) {
+      newErrors.farmingExperience = 'Please enter valid years of experience';
+    }
+
+    if (data.totalLandSize && (isNaN(Number(data.totalLandSize)) || Number(data.totalLandSize) <= 0)) {
+      newErrors.totalLandSize = 'Please enter valid land size in acres';
     }
 
     setErrors(newErrors);
