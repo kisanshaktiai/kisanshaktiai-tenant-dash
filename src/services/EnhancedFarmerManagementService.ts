@@ -101,35 +101,8 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Generate farmer code
       const farmerCode = await this.generateFarmerCode(tenantId);
       
-      // Hash PIN for future use (store in metadata for now)
+      // Hash PIN for future use
       const pinHash = await this.hashPin(farmerData.pin);
-
-      // Prepare comprehensive metadata
-      const comprehensiveMetadata = {
-        pin_hash: pinHash,
-        personal_info: {
-          full_name: farmerData.fullName,
-          email: farmerData.email,
-          date_of_birth: farmerData.dateOfBirth,
-          gender: farmerData.gender,
-        },
-        address_info: {
-          village: farmerData.village,
-          taluka: farmerData.taluka,
-          district: farmerData.district,
-          state: farmerData.state,
-          pincode: farmerData.pincode,
-        },
-        farming_info: {
-          irrigation_source: farmerData.irrigationSource,
-          has_storage: farmerData.hasStorage,
-          has_tractor: farmerData.hasTractor,
-        },
-        additional_info: {
-          notes: farmerData.notes,
-          phone_number: formattedMobile,
-        }
-      };
 
       // Create farmer record with available fields from the actual schema
       const farmerInsertData = {
@@ -147,11 +120,32 @@ class EnhancedFarmerManagementService extends BaseApiService {
         total_queries: 0,
         language_preference: 'english',
         preferred_contact_method: 'mobile',
-        // Store comprehensive data in existing jsonb fields if available
-        ...(comprehensiveMetadata && { 
-          // Use any existing jsonb field or create a comment field for the data
-          additional_info: JSON.stringify(comprehensiveMetadata)
-        })
+        // Store comprehensive data in metadata field
+        metadata: {
+          pin_hash: pinHash,
+          personal_info: {
+            full_name: farmerData.fullName,
+            email: farmerData.email,
+            date_of_birth: farmerData.dateOfBirth,
+            gender: farmerData.gender,
+          },
+          address_info: {
+            village: farmerData.village,
+            taluka: farmerData.taluka,
+            district: farmerData.district,
+            state: farmerData.state,
+            pincode: farmerData.pincode,
+          },
+          farming_info: {
+            irrigation_source: farmerData.irrigationSource,
+            has_storage: farmerData.hasStorage,
+            has_tractor: farmerData.hasTractor,
+          },
+          additional_info: {
+            notes: farmerData.notes,
+            phone_number: formattedMobile,
+          }
+        }
       };
 
       const { data: farmer, error: farmerError } = await supabase
@@ -209,8 +203,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      // For now, we'll implement a simple validation since we don't have direct phone storage
-      // Look for farmer by searching in additional_info metadata
+      // Look for farmer by searching in metadata
       const { data: farmers, error } = await supabase
         .from('farmers')
         .select('*')
@@ -223,10 +216,9 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Find farmer by mobile number stored in metadata
       const farmer = farmers.find(f => {
         try {
-          const additionalInfo = typeof f.additional_info === 'string' 
-            ? JSON.parse(f.additional_info) 
-            : f.additional_info;
-          return additionalInfo?.additional_info?.phone_number === formattedMobile;
+          const metadata = f.metadata as any;
+          return metadata?.additional_info?.phone_number === formattedMobile &&
+                 metadata?.pin_hash === pinHash;
         } catch {
           return false;
         }
