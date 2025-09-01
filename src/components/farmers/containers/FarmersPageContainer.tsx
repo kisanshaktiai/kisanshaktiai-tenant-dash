@@ -37,8 +37,8 @@ export const FarmersPageContainer: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => 
     farmer.farmer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.phone?.includes(searchTerm)
+    farmer.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farmer.mobile_number?.includes(searchTerm)
   );
 
   const verifiedCount = farmers.filter(farmer => farmer.is_verified).length;
@@ -185,7 +185,7 @@ export const FarmersPageContainer: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">
-                          {farmer.name || 'Unnamed Farmer'}
+                          {farmer.full_name || farmer.farmer_code || 'Unnamed Farmer'}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
                           {farmer.farmer_code}
@@ -197,21 +197,21 @@ export const FarmersPageContainer: React.FC = () => {
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        {farmer.phone && (
+                        {farmer.mobile_number && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {farmer.phone}
+                            {farmer.mobile_number}
                           </div>
                         )}
-                        {(farmer.city || farmer.state) && (
+                        {farmer.address && (
                           <div className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {[farmer.city, farmer.state].filter(Boolean).join(', ')}
+                            {farmer.address}
                           </div>
                         )}
                         <div className="flex items-center gap-1">
                           <TrendingUp className="h-3 w-3" />
-                          {farmer.total_land_acres} acres
+                          {farmer.total_land_acres || 0} acres
                         </div>
                       </div>
                     </div>
@@ -219,11 +219,11 @@ export const FarmersPageContainer: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <div className="text-right text-sm">
                       <div className="font-medium">
-                        {farmer.primary_crops?.slice(0, 2).join(', ')}
+                        {farmer.primary_crops?.slice(0, 2).join(', ') || 'No crops'}
                         {farmer.primary_crops?.length > 2 && ' +' + (farmer.primary_crops.length - 2)}
                       </div>
                       <div className="text-gray-500">
-                        {farmer.farming_experience_years} years experience
+                        {farmer.farming_experience_years || 0} years experience
                       </div>
                     </div>
                     <Button variant="ghost" size="sm">

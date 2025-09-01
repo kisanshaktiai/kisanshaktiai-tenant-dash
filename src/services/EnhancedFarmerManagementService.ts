@@ -97,7 +97,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const { data: existingFarmer } = await supabase
         .from('farmers')
         .select('id')
-        .eq('phone', formattedMobile)
+        .eq('mobile_number', formattedMobile)
         .eq('tenant_id', tenantId)
         .single();
 
@@ -111,79 +111,58 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Hash PIN
       const pinHash = await this.hashPin(farmerData.pin);
 
-      // Create farmer record with all the new fields
+      // Prepare address string
+      const addressParts = [
+        farmerData.village,
+        farmerData.taluka,
+        farmerData.district,
+        farmerData.state,
+        farmerData.pincode
+      ].filter(Boolean);
+      const fullAddress = addressParts.join(', ');
+
+      // Create farmer record with available fields
       const { data: farmer, error: farmerError } = await supabase
         .from('farmers')
         .insert({
           tenant_id: tenantId,
           farmer_code: farmerCode,
-          name: farmerData.fullName,
-          phone: formattedMobile,
-          email: farmerData.email || null,
-          city: farmerData.village,
-          state: farmerData.state,
+          full_name: farmerData.fullName,
+          mobile_number: formattedMobile,
+          email_id: farmerData.email || null,
+          address: fullAddress,
           farming_experience_years: parseInt(farmerData.farmingExperience) || 0,
           total_land_acres: parseFloat(farmerData.totalLandSize) || 0,
           primary_crops: farmerData.primaryCrops,
           farm_type: 'mixed',
           has_irrigation: !!farmerData.irrigationSource,
-          has_storage: farmerData.hasStorage,
-          has_tractor: farmerData.hasTractor,
+          storage_facility: farmerData.hasStorage,
+          equipment_owned: farmerData.hasTractor ? ['tractor'] : [],
           is_verified: false,
           total_app_opens: 0,
           total_queries: 0,
-          // Store additional data in metadata for now
-          metadata: {
+          // Store additional data in fields that exist
+          language_preference: 'english',
+          preferred_contact_method: 'mobile',
+          // Store PIN hash and other metadata in notes for now
+          notes: JSON.stringify({
+            pinHash: pinHash,
             dateOfBirth: farmerData.dateOfBirth,
             gender: farmerData.gender,
-            district: farmerData.district,
+            village: farmerData.village,
             taluka: farmerData.taluka,
+            district: farmerData.district,
+            state: farmerData.state,
             pincode: farmerData.pincode,
             irrigationSource: farmerData.irrigationSource,
-            pinHash: pinHash,
-            notes: farmerData.notes,
-          }
+            additionalNotes: farmerData.notes,
+          })
         })
         .select()
         .single();
 
       if (farmerError) {
         throw farmerError;
-      }
-
-      // Try to create additional records if tables exist
-      try {
-        // Create farmer contacts if table exists
-        await supabase
-          .from('farmer_contacts')
-          .insert({
-            farmer_id: farmer.id,
-            tenant_id: tenantId,
-            contact_type: 'mobile',
-            contact_value: formattedMobile,
-            is_primary: true,
-            is_verified: false,
-          });
-      } catch (error) {
-        console.warn('Could not create farmer contacts:', error);
-      }
-
-      try {
-        // Create farmer engagement record if table exists
-        await supabase
-          .from('farmer_engagement')
-          .insert({
-            farmer_id: farmer.id,
-            tenant_id: tenantId,
-            app_opens_count: 0,
-            features_used: [],
-            communication_responses: 0,
-            activity_score: 0,
-            churn_risk_score: 0,
-            engagement_level: 'medium',
-          });
-      } catch (error) {
-        console.warn('Could not create farmer engagement:', error);
       }
 
       return {
@@ -218,32 +197,15 @@ class EnhancedFarmerManagementService extends BaseApiService {
 
       if (error) throw error;
       
-      // Try to fetch additional details from related tables
+      // Parse notes to get additional metadata
       let additionalData = {};
-      
-      try {
-        const { data: contacts } = await supabase
-          .from('farmer_contacts')
-          .select('*')
-          .eq('farmer_id', farmerId)
-          .eq('tenant_id', tenantId);
-        
-        additionalData = { ...additionalData, contacts };
-      } catch (error) {
-        console.warn('Could not fetch farmer contacts:', error);
-      }
-
-      try {
-        const { data: engagement } = await supabase
-          .from('farmer_engagement')
-          .select('*')
-          .eq('farmer_id', farmerId)
-          .eq('tenant_id', tenantId)
-          .single();
-        
-        additionalData = { ...additionalData, engagement };
-      } catch (error) {
-        console.warn('Could not fetch farmer engagement:', error);
+      if (farmer.notes) {
+        try {
+          const parsedNotes = JSON.parse(farmer.notes);
+          additionalData = parsedNotes;
+        } catch (e) {
+          console.warn('Could not parse farmer notes:', e);
+        }
       }
 
       return { ...farmer, ...additionalData };
@@ -257,11 +219,11 @@ class EnhancedFarmerManagementService extends BaseApiService {
       const formattedMobile = this.formatMobileNumber(mobileNumber);
       const pinHash = await this.hashPin(pin);
 
-      // Look for farmer with matching mobile and PIN hash in metadata
+      // Look for farmer with matching mobile number
       const { data: farmer, error } = await supabase
         .from('farmers')
         .select('*')
-        .eq('phone', formattedMobile)
+        .eq('mobile_number', formattedMobile)
         .eq('tenant_id', tenantId)
         .single();
 
@@ -269,20 +231,32 @@ class EnhancedFarmerManagementService extends BaseApiService {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Check PIN hash from metadata
-      const storedPinHash = farmer.metadata?.pinHash;
+      // Check PIN hash from notes
+      let storedPinHash = null;
+      if (farmer.notes) {
+        try {
+          const parsedNotes = JSON.parse(farmer.notes);
+          storedPinHash = parsedNotes.pinHash;
+        } catch (e) {
+          console.warn('Could not parse farmer notes for PIN validation:', e);
+        }
+      }
+
       if (!storedPinHash || storedPinHash !== pinHash) {
         return { success: false, error: 'Invalid mobile number or PIN' };
       }
 
-      // Update last login in metadata
+      // Update last login in notes
+      const currentNotes = farmer.notes ? JSON.parse(farmer.notes) : {};
+      const updatedNotes = {
+        ...currentNotes,
+        lastLogin: new Date().toISOString(),
+      };
+
       await supabase
         .from('farmers')
         .update({ 
-          metadata: {
-            ...farmer.metadata,
-            lastLogin: new Date().toISOString(),
-          }
+          notes: JSON.stringify(updatedNotes)
         })
         .eq('id', farmer.id);
 
