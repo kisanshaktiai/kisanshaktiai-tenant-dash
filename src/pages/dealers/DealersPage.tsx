@@ -20,7 +20,7 @@ export default function DealersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/10">
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 lg:space-y-8">
         {/* Enhanced Header */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 rounded-2xl -z-10" />
@@ -32,10 +32,10 @@ export default function DealersPage() {
                     <Store className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div className="space-y-2">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                       Dealer Network Hub
                     </h1>
-                    <p className="text-muted-foreground text-lg">
+                    <p className="text-muted-foreground text-base lg:text-lg">
                       Manage your distribution network and optimize dealer performance
                     </p>
                     <div className="flex items-center gap-2 mt-3">

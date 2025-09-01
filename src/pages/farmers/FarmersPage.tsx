@@ -51,19 +51,19 @@ export default function FarmersPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="w-full p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight flex items-center gap-2">
             <Users className="h-8 w-8" />
             Farmer Management
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-base lg:text-lg mt-2">
             Comprehensive farmer network management and engagement platform
           </p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={handleBulkExport} disabled={selectedFarmers.length === 0}>
             <Download className="mr-2 h-4 w-4" />
             Export ({selectedFarmers.length})
@@ -85,7 +85,7 @@ export default function FarmersPage() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>Search & Filter</CardTitle>
             <div className="flex gap-2">
               <Badge variant="outline" className="text-xs">
@@ -123,23 +123,23 @@ export default function FarmersPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
           <TabsTrigger value="directory" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 hidden sm:block" />
             Directory
           </TabsTrigger>
           <TabsTrigger value="bulk" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
+            <Target className="h-4 w-4 hidden sm:block" />
             Bulk Ops
           </TabsTrigger>
           <TabsTrigger value="engagement" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4 hidden sm:block" />
             Engagement
           </TabsTrigger>
-          <TabsTrigger value="leads" className="flex items-center gap-2">Lead Mgmt</TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">Analytics</TabsTrigger>
-          <TabsTrigger value="campaigns" className="flex items-center gap-2">Campaigns</TabsTrigger>
-          <TabsTrigger value="integrations" className="flex items-center gap-2">Integrations</TabsTrigger>
+          <TabsTrigger value="leads">Lead Mgmt</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="directory">

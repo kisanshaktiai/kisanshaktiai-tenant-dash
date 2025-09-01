@@ -1,172 +1,109 @@
 
 import React from 'react';
-import { CustomizableDashboard } from '@/components/dashboard/CustomizableDashboard';
-import { useRealTimeDashboard } from '@/hooks/data/useRealTimeDashboard';
-import { usePostLoginOnboardingCheck } from '@/hooks/usePostLoginOnboardingCheck';
-import { LiveIndicator } from '@/components/ui/LiveIndicator';
-import { useAppSelector } from '@/store/hooks';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Activity, Zap, Sparkles, AlertTriangle, Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrendingUp, Users, Package, Store } from 'lucide-react';
 
 const Dashboard = () => {
-  const { isLive, activeChannels } = useRealTimeDashboard();
-  const { currentTenant, loading: tenantLoading } = useAppSelector((state) => state.tenant);
-
-  // Initialize post-login onboarding check
-  usePostLoginOnboardingCheck({
-    delayMs: 30000, // 30 seconds after login
-    skipOnOnboardingPage: true,
-    showNotification: true
-  });
-
-  // Show loading state while tenant is being loaded
-  if (tenantLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh] px-6">
-        <Card className="p-12 shadow-strong border-0 bg-gradient-to-br from-card/95 via-card to-background/90 backdrop-blur-sm max-w-md mx-auto">
-          <CardContent className="flex flex-col items-center space-y-6 p-0">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow">
-                <Loader2 className="h-8 w-8 text-primary-foreground animate-spin" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-harvest rounded-full flex items-center justify-center">
-                <Sparkles className="h-3 w-3 text-primary-foreground" />
-              </div>
-            </div>
-            <div className="text-center space-y-3">
-              <h3 className="font-bold text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                Loading Dashboard
-              </h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Initializing tenant context...
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show error state if no tenant is found
-  if (!currentTenant) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh] px-6">
-        <Card className="p-12 shadow-strong border-0 bg-gradient-to-br from-card/95 via-card to-background/90 backdrop-blur-sm max-w-md mx-auto">
-          <CardContent className="flex flex-col items-center space-y-6 p-0">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center shadow-glow">
-                <AlertTriangle className="h-8 w-8 text-destructive animate-pulse" />
-              </div>
-            </div>
-            <div className="text-center space-y-3">
-              <h3 className="font-bold text-2xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                No Tenant Found
-              </h3>
-              <p className="text-muted-foreground text-lg leading-relaxed">
-                Unable to load tenant information. Please contact support.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/98 to-muted/5">
-      <div className="container mx-auto px-8 py-10 space-y-10">
-        {/* Enhanced Header Section with Modern Cards */}
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8">
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-glow border border-primary/20">
-                  <Zap className="h-7 w-7 text-primary-foreground" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-growth rounded-full border-2 border-background flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent leading-tight">
-                  Welcome back to {currentTenant.name}
-                </h1>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Badge variant="outline" className="capitalize font-semibold px-4 py-2 text-sm bg-gradient-to-r from-secondary/50 to-muted/30 border-border/60">
-                    {currentTenant.type?.replace('_', ' ') || 'Organization'}
-                  </Badge>
-                  {currentTenant.subscription_plan && (
-                    <Badge variant="secondary" className="capitalize font-semibold px-4 py-2 text-sm bg-gradient-to-r from-primary/10 to-accent/10 text-primary border border-primary/20">
-                      {currentTenant.subscription_plan.replace('_', ' ')} Plan
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="text-sm px-4 py-2 bg-gradient-to-r from-success/10 to-success/5 text-success border-success/30">
-                    <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></div>
-                    Active
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <p className="text-muted-foreground text-lg leading-relaxed ml-18">
-              Monitor your agricultural network and drive growth with intelligent insights
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 space-y-6 lg:space-y-8 xl:space-y-10">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+            Dashboard Overview
+          </h1>
+          <p className="text-muted-foreground text-base lg:text-lg mt-2">
+            Real-time insights for your agricultural network
+          </p>
+        </div>
+      </div>
+
+      {/* Key Metrics */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">
+              Total Farmers
+            </CardTitle>
+            <Users className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">0</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-emerald-600 font-medium">+0%</span> from last month
             </p>
-          </div>
-          
-          {/* Enhanced Live Status Card */}
-          <Card className="xl:w-auto w-full border-0 shadow-medium bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-3 h-3 rounded-full bg-success animate-pulse"></div>
-                    <div className="absolute inset-0 w-3 h-3 rounded-full bg-success animate-ping opacity-75"></div>
-                  </div>
-                  <div>
-                    <span className="text-sm font-bold text-foreground">Live Updates</span>
-                    <p className="text-xs text-muted-foreground">Real-time sync active</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <LiveIndicator isConnected={isLive} activeChannels={activeChannels} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {activeChannels} channels
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Enhanced Dashboard Grid with Modern Styling */}
-        <div className="relative">
-          {/* Subtle Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-accent/3 rounded-3xl -z-10"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(120,119,198,0.1),transparent)] rounded-3xl -z-10"></div>
-          
-          {/* Dashboard Content with Enhanced Padding */}
-          <div className="relative bg-gradient-to-br from-card/40 via-card/20 to-transparent rounded-3xl border border-border/40 backdrop-blur-sm p-8">
-            <CustomizableDashboard tenantId={currentTenant.id} />
-          </div>
-        </div>
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">
+              Active Products
+            </CardTitle>
+            <Package className="h-5 w-5 text-info group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">0</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-emerald-600 font-medium">+0%</span> from last month
+            </p>
+          </CardContent>
+        </Card>
 
-        {/* Enhanced Footer Section */}
-        <div className="flex items-center justify-center pt-8">
-          <Card className="border-0 shadow-soft bg-gradient-to-r from-muted/30 via-background/50 to-muted/20 backdrop-blur-sm">
-            <CardContent className="px-8 py-4">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                  <span className="font-medium">KisanShakti AI Platform</span>
-                </div>
-                <div className="h-4 w-px bg-border"></div>
-                <span>Empowering Agricultural Innovation</span>
-                <div className="h-4 w-px bg-border"></div>
-                <span className="font-semibold">© 2025</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">
+              Dealers
+            </CardTitle>
+            <Store className="h-5 w-5 text-warning group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">0</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-emerald-600 font-medium">+0%</span> from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+            <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">
+              Growth Rate
+            </CardTitle>
+            <TrendingUp className="h-5 w-5 text-success group-hover:scale-110 transition-transform" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">0%</div>
+            <p className="text-xs text-muted-foreground">
+              <span className="text-emerald-600 font-medium">+0%</span> from last month
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid gap-6 lg:gap-8 grid-cols-1 xl:grid-cols-2">
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-3 text-lg lg:text-xl font-bold">
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">No recent activity to display.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="flex items-center gap-3 text-lg lg:text-xl font-bold">
+              System Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">All systems operational.</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

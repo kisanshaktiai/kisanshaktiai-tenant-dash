@@ -1,184 +1,193 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useTenantContext } from '@/contexts/TenantContext';
-import { CheckCircle2, Circle, Building2, Settings, Users, Rocket } from 'lucide-react';
+import { CheckCircle, Circle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { nextStep, previousStep, updateStepData, setOnboardingComplete } from '@/store/slices/onboardingSlice';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
-interface OnboardingStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  completed: boolean;
-  current: boolean;
-}
+// Import step components
+import SubscriptionPlanStep from './steps/SubscriptionPlanStep';
+import BusinessVerificationStep from './steps/BusinessVerificationStep';
+import BrandingConfigurationStep from './steps/BrandingConfigurationStep';
+import FeatureSelectionStep from './steps/FeatureSelectionStep';
+import TeamInvitesStep from './steps/TeamInvitesStep';
+import DataImportStep from './steps/DataImportStep';
+import OnboardingSummaryStep from './steps/OnboardingSummaryStep';
+
+const steps = [
+  { id: 'subscription', title: 'Subscription Plan', component: SubscriptionPlanStep },
+  { id: 'verification', title: 'Business Verification', component: BusinessVerificationStep },
+  { id: 'branding', title: 'Branding Setup', component: BrandingConfigurationStep },
+  { id: 'features', title: 'Feature Selection', component: FeatureSelectionStep },
+  { id: 'team', title: 'Team Invites', component: TeamInvitesStep },
+  { id: 'data', title: 'Data Import', component: DataImportStep },
+  { id: 'summary', title: 'Summary', component: OnboardingSummaryStep },
+];
 
 export const TenantOnboardingWizard: React.FC = () => {
-  const { currentTenant } = useTenantContext();
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { currentStep, stepData, isCompleted } = useAppSelector((state) => state.onboarding);
+  const { completeOnboarding, isLoading } = useOnboarding();
+  
+  const [isStepValid, setIsStepValid] = useState(false);
 
-  const steps: OnboardingStep[] = [
-    {
-      id: 'business-setup',
-      title: 'Business Setup',
-      description: 'Configure your business information and branding',
-      icon: <Building2 className="w-5 h-5" />,
-      completed: false,
-      current: currentStepIndex === 0,
-    },
-    {
-      id: 'features-config',
-      title: 'Features Configuration', 
-      description: 'Select and configure platform features',
-      icon: <Settings className="w-5 h-5" />,
-      completed: false,
-      current: currentStepIndex === 1,
-    },
-    {
-      id: 'team-setup',
-      title: 'Team Setup',
-      description: 'Invite team members and set permissions',
-      icon: <Users className="w-5 h-5" />,
-      completed: false,
-      current: currentStepIndex === 2,
-    },
-    {
-      id: 'launch',
-      title: 'Launch',
-      description: 'Review settings and launch your tenant',
-      icon: <Rocket className="w-5 h-5" />,
-      completed: false,
-      current: currentStepIndex === 3,
-    },
-  ];
-
+  const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+  const CurrentStepComponent = steps[currentStepIndex]?.component;
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
-  const handleNext = () => {
+  useEffect(() => {
+    if (isCompleted) {
+      navigate('/app/dashboard');
+    }
+  }, [isCompleted, navigate]);
+
+  const handleNext = async () => {
     if (currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex(currentStepIndex + 1);
+      dispatch(nextStep());
+    } else {
+      // Complete onboarding
+      try {
+        await completeOnboarding(stepData);
+        dispatch(setOnboardingComplete());
+        navigate('/app/dashboard');
+      } catch (error) {
+        console.error('Failed to complete onboarding:', error);
+      }
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
+      dispatch(previousStep());
     }
   };
 
-  const currentStep = steps[currentStepIndex];
+  const handleStepDataChange = (data: any) => {
+    dispatch(updateStepData({ step: currentStep, data }));
+  };
+
+  const handleStepValidation = (isValid: boolean) => {
+    setIsStepValid(isValid);
+  };
+
+  const isLastStep = currentStepIndex === steps.length - 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5">
-      <div className="container mx-auto px-4 py-8">
+    <div className="w-full px-4 py-6 sm:py-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Welcome to {currentTenant?.name}</h1>
-          <p className="text-muted-foreground text-lg">
-            Let's get your tenant set up and ready to go
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">Complete Your Setup</h1>
+          <p className="text-muted-foreground text-base lg:text-lg">
+            Let's get your organization ready to manage farmers effectively
           </p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="max-w-2xl mx-auto mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-medium">Setup Progress</span>
-            <span className="text-sm text-muted-foreground">
-              Step {currentStepIndex + 1} of {steps.length}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+        {/* Progress */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">
+                Step {currentStepIndex + 1} of {steps.length}
+              </CardTitle>
+              <Badge variant="outline">
+                {Math.round(progress)}% Complete
+              </Badge>
+            </div>
+            <Progress value={progress} className="w-full" />
+          </CardHeader>
+        </Card>
 
         {/* Steps Navigation */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex flex-col items-center">
-                <div className="flex items-center">
-                  <div className={`
-                    flex items-center justify-center w-10 h-10 rounded-full border-2 
-                    ${step.completed 
-                      ? 'bg-primary border-primary text-primary-foreground' 
-                      : step.current 
+        <div className="hidden md:flex justify-center">
+          <div className="flex items-center space-x-4">
+            {steps.map((step, index) => {
+              const isActive = index === currentStepIndex;
+              const isCompleted = index < currentStepIndex;
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors ${
+                      isCompleted 
+                        ? 'bg-primary border-primary text-primary-foreground' 
+                        : isActive 
                         ? 'border-primary text-primary' 
-                        : 'border-muted text-muted-foreground'
-                    }
-                  `}>
-                    {step.completed ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <Circle className="w-5 h-5" />
-                    )}
+                        : 'border-muted-foreground/30 text-muted-foreground'
+                    }`}>
+                      {isCompleted ? (
+                        <CheckCircle className="h-5 w-5" />
+                      ) : (
+                        <Circle className="h-5 w-5" />
+                      )}
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      isActive ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                      {step.title}
+                    </span>
                   </div>
                   {index < steps.length - 1 && (
-                    <div className={`
-                      h-px w-24 ml-4
-                      ${step.completed ? 'bg-primary' : 'bg-muted'}
-                    `} />
+                    <div className={`w-12 h-px mx-2 ${
+                      isCompleted ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`} />
                   )}
                 </div>
-                <div className="text-center mt-2">
-                  <p className={`text-sm font-medium ${
-                    step.current ? 'text-primary' : 'text-muted-foreground'
-                  }`}>
-                    {step.title}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Current Step Content */}
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
-                  {currentStep.icon}
-                </div>
-                <div>
-                  <CardTitle className="text-xl">{currentStep.title}</CardTitle>
-                  <CardDescription>{currentStep.description}</CardDescription>
-                </div>
-                <Badge variant="outline" className="ml-auto">
-                  {currentStepIndex + 1} / {steps.length}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Step Content - This would be dynamically rendered based on current step */}
-              <div className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Step content for "{currentStep.title}" would go here
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  This is a placeholder for the actual step configuration
-                </p>
-              </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{steps[currentStepIndex]?.title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {CurrentStepComponent && (
+              <CurrentStepComponent
+                data={stepData[currentStep] || {}}
+                onDataChange={handleStepDataChange}
+                onValidationChange={handleStepValidation}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between pt-6 border-t">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrevious}
-                  disabled={currentStepIndex === 0}
-                >
-                  Previous
-                </Button>
-                <Button 
-                  onClick={handleNext}
-                  disabled={currentStepIndex === steps.length - 1}
-                >
-                  {currentStepIndex === steps.length - 1 ? 'Complete Setup' : 'Next'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Navigation */}
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStepIndex === 0}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            disabled={!isStepValid || isLoading}
+            className="gap-2"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : isLastStep ? (
+              'Complete Setup'
+            ) : (
+              <>
+                Next
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
         </div>
       </div>
     </div>
