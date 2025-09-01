@@ -6,7 +6,7 @@ import { EnhancedTopbar } from './EnhancedTopbar';
 import NotificationPanel from '../notifications/NotificationPanel';
 import { CommandPalette } from '../ui/command-palette';
 import { useTenantRealtime } from '@/hooks/data/useTenantRealtime';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 export const EnhancedDashboardLayout: React.FC = () => {
@@ -26,7 +26,7 @@ export const EnhancedDashboardLayout: React.FC = () => {
         <div className="flex min-h-screen w-full">
           <MobileOptimizedSidebar />
           
-          <div className="flex flex-col flex-1 min-w-0">
+          <SidebarInset className="flex flex-col min-w-0">
             {/* Enhanced Topbar */}
             <EnhancedTopbar
               onOpenCommandPalette={() => setShowCommandPalette(true)}
@@ -82,7 +82,7 @@ export const EnhancedDashboardLayout: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </SidebarInset>
         </div>
       </div>
     </SidebarProvider>
