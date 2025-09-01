@@ -28,7 +28,7 @@ import DealersPage from '@/pages/dealers/DealersPage';
 import ProductsPage from '@/pages/products/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
-import { ProfilePage } from '@/pages/ProfilePage';
+import ProfilePage from '@/pages/ProfilePage';
 import SettingsPage from '@/pages/SettingsPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
 import { OrganizationPage } from '@/pages/settings/OrganizationPage';

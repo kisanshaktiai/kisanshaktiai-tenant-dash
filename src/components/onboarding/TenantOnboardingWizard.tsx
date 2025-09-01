@@ -7,17 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Circle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { nextStep, previousStep, updateStepData, setOnboardingComplete } from '@/store/slices/onboardingSlice';
-import { useOnboarding } from '@/hooks/useOnboarding';
+import { nextStep, prevStep, updateStepData, setOnboardingComplete } from '@/store/slices/onboardingSlice';
 
 // Import step components
-import SubscriptionPlanStep from './steps/SubscriptionPlanStep';
-import BusinessVerificationStep from './steps/BusinessVerificationStep';
-import BrandingConfigurationStep from './steps/BrandingConfigurationStep';
-import FeatureSelectionStep from './steps/FeatureSelectionStep';
-import TeamInvitesStep from './steps/TeamInvitesStep';
-import DataImportStep from './steps/DataImportStep';
-import OnboardingSummaryStep from './steps/OnboardingSummaryStep';
+import { SubscriptionPlanStep } from './steps/SubscriptionPlanStep';
+import { BusinessVerificationStep } from './steps/BusinessVerificationStep';
+import { BrandingConfigurationStep } from './steps/BrandingConfigurationStep';
+import { FeatureSelectionStep } from './steps/FeatureSelectionStep';
+import { TeamInvitesStep } from './steps/TeamInvitesStep';
+import { DataImportStep } from './steps/DataImportStep';
+import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 
 const steps = [
   { id: 'subscription', title: 'Subscription Plan', component: SubscriptionPlanStep },
@@ -33,11 +32,11 @@ export const TenantOnboardingWizard: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { currentStep, stepData, isCompleted } = useAppSelector((state) => state.onboarding);
-  const { completeOnboarding, isLoading } = useOnboarding();
+  const [isLoading, setIsLoading] = useState(false);
   
   const [isStepValid, setIsStepValid] = useState(false);
 
-  const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+  const currentStepIndex = steps.findIndex((step, index) => index === currentStep);
   const CurrentStepComponent = steps[currentStepIndex]?.component;
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
@@ -53,23 +52,27 @@ export const TenantOnboardingWizard: React.FC = () => {
     } else {
       // Complete onboarding
       try {
-        await completeOnboarding(stepData);
-        dispatch(setOnboardingComplete());
+        setIsLoading(true);
+        // Mock completion - replace with actual completion logic
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        dispatch(setOnboardingComplete(true));
         navigate('/app/dashboard');
       } catch (error) {
         console.error('Failed to complete onboarding:', error);
+      } finally {
+        setIsLoading(false);
       }
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
-      dispatch(previousStep());
+      dispatch(prevStep());
     }
   };
 
   const handleStepDataChange = (data: any) => {
-    dispatch(updateStepData({ step: currentStep, data }));
+    dispatch(updateStepData({ step: steps[currentStepIndex]?.id || 'unknown', data }));
   };
 
   const handleStepValidation = (isValid: boolean) => {
@@ -152,7 +155,7 @@ export const TenantOnboardingWizard: React.FC = () => {
           <CardContent>
             {CurrentStepComponent && (
               <CurrentStepComponent
-                data={stepData[currentStep] || {}}
+                data={stepData[steps[currentStepIndex]?.id] || {}}
                 onDataChange={handleStepDataChange}
                 onValidationChange={handleStepValidation}
               />
