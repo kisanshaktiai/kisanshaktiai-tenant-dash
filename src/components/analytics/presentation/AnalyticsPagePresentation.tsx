@@ -5,12 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Download, TrendingUp, Users, Package, Store } from 'lucide-react';
-import ExecutiveDashboard from '@/pages/analytics/components/ExecutiveDashboard';
-import FarmerAnalytics from '@/pages/analytics/components/FarmerAnalytics';
-import ProductPerformance from '@/pages/analytics/components/ProductPerformance';
-import ReportBuilder from '@/pages/analytics/components/ReportBuilder';
-import PredictiveAnalytics from '@/pages/analytics/components/PredictiveAnalytics';
-import DataExport from '@/pages/analytics/components/DataExport';
+import { ExecutiveDashboard } from '@/pages/analytics/components/ExecutiveDashboard';
+import { FarmerAnalytics } from '@/pages/analytics/components/FarmerAnalytics';
+import { ProductPerformance } from '@/pages/analytics/components/ProductPerformance';
+import { ReportBuilder } from '@/pages/analytics/components/ReportBuilder';
+import { PredictiveAnalytics } from '@/pages/analytics/components/PredictiveAnalytics';
+import { DataExport } from '@/pages/analytics/components/DataExport';
 
 interface AnalyticsPagePresentationProps {
   data?: any;
