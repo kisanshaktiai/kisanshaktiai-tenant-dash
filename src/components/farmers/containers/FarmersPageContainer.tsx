@@ -37,7 +37,6 @@ export const FarmersPageContainer: React.FC = () => {
 
   const filteredFarmers = farmers.filter(farmer => 
     farmer.farmer_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farmer.farmer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     farmer.phone_number?.includes(searchTerm)
   );
 
@@ -185,7 +184,7 @@ export const FarmersPageContainer: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">
-                          {farmer.farmer_name || farmer.farmer_code || 'Unnamed Farmer'}
+                          {farmer.farmer_code || 'Unnamed Farmer'}
                         </h3>
                         <Badge variant="secondary" className="text-xs">
                           {farmer.farmer_code}
@@ -201,12 +200,6 @@ export const FarmersPageContainer: React.FC = () => {
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
                             {farmer.phone_number}
-                          </div>
-                        )}
-                        {farmer.address_line_1 && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {farmer.address_line_1}
                           </div>
                         )}
                         <div className="flex items-center gap-1">
