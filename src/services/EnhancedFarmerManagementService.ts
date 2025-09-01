@@ -216,8 +216,10 @@ class EnhancedFarmerManagementService extends BaseApiService {
       // Find farmer by mobile number and PIN stored in notes
       const farmer = farmers.find(f => {
         try {
-          if (!f.notes) return false;
-          const farmerData = JSON.parse(f.notes);
+          // Use type assertion to access notes field
+          const farmerWithNotes = f as any;
+          if (!farmerWithNotes.notes) return false;
+          const farmerData = JSON.parse(farmerWithNotes.notes);
           return farmerData?.additional_info?.phone_number === formattedMobile &&
                  farmerData?.pin_hash === pinHash;
         } catch {
