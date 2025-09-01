@@ -32,7 +32,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'dashboard',
     title: 'Dashboard',
-    href: '/app/dashboard',
+    href: '/dashboard',
     icon: LayoutDashboard,
     description: 'Overview and key metrics',
     category: 'main'
@@ -42,7 +42,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'farmers',
     title: 'Farmers',
-    href: '/app/farmers',
+    href: '/farmers',
     icon: Users,
     description: 'Manage farmer network',
     category: 'management'
@@ -50,7 +50,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'products',
     title: 'Products',
-    href: '/app/products',
+    href: '/products',
     icon: Package,
     description: 'Product catalog management',
     category: 'management'
@@ -58,7 +58,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'dealers',
     title: 'Dealers',
-    href: '/app/dealers',
+    href: '/dealers',
     icon: UserCheck,
     description: 'Dealer network management',
     category: 'management'
@@ -66,7 +66,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'campaigns',
     title: 'Campaigns',
-    href: '/app/campaigns',
+    href: '/campaigns',
     icon: Megaphone,
     description: 'Marketing campaigns',
     category: 'management',
@@ -77,7 +77,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'analytics',
     title: 'Analytics',
-    href: '/app/analytics',
+    href: '/analytics',
     icon: BarChart3,
     description: 'Reports and insights',
     category: 'analytics'
@@ -87,7 +87,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'integrations',
     title: 'Integrations',
-    href: '/app/integrations',
+    href: '/integrations',
     icon: Plug,
     description: 'Third-party integrations',
     category: 'integrations'
@@ -97,7 +97,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'profile',
     title: 'Profile',
-    href: '/app/profile',
+    href: '/profile',
     icon: User,
     description: 'Personal profile settings',
     category: 'settings'
@@ -105,7 +105,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'settings',
     title: 'Settings',
-    href: '/app/settings',
+    href: '/settings',
     icon: Settings,
     description: 'Application settings',
     category: 'settings'
@@ -113,7 +113,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'organization',
     title: 'Organization',
-    href: '/app/settings/organization',
+    href: '/settings/organization',
     icon: Building2,
     description: 'Organization settings',
     category: 'settings'
@@ -121,7 +121,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'appearance',
     title: 'Appearance',
-    href: '/app/settings/appearance',
+    href: '/settings/appearance',
     icon: Palette,
     description: 'Theme and appearance',
     category: 'settings'
@@ -129,7 +129,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'users',
     title: 'User Management',
-    href: '/app/settings/users',
+    href: '/settings/users',
     icon: UserCog,
     description: 'Manage team members',
     category: 'settings',
@@ -138,7 +138,7 @@ export const navigationConfig: NavigationItem[] = [
   {
     id: 'subscription',
     title: 'Subscription',
-    href: '/app/subscription',
+    href: '/subscription',
     icon: CreditCard,
     description: 'Billing and subscription',
     category: 'settings'

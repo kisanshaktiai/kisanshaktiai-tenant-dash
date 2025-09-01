@@ -52,17 +52,25 @@ function App() {
             <Router>
               <div className="min-h-screen bg-background">
                 <Routes>
-                  {/* Public routes */}
+                  {/* Root redirect */}
                   <Route path="/" element={<Index />} />
+                  
+                  {/* Auth routes */}
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Navigate to="/auth" replace />} />
                   <Route path="/register" element={<TenantRegistrationPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/setup-password" element={<SetupPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   
-                  {/* Protected routes */}
+                  {/* Onboarding */}
                   <Route path="/onboarding" element={<OnboardingPage />} />
-                  <Route path="/app" element={<Dashboard />} />
+                  
+                  {/* Main app routes */}
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/app" element={<Navigate to="/dashboard" replace />} />
+                  
+                  {/* Feature routes */}
                   <Route path="/farmers" element={<FarmersPage />} />
                   <Route path="/products" element={<ProductsPage />} />
                   <Route path="/campaigns" element={<CampaignsPage />} />

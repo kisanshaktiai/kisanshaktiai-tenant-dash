@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
@@ -39,7 +38,8 @@ import {
   Moon,
   Sun,
   Globe,
-  Activity
+  Activity,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from 'next-themes';
@@ -69,6 +69,12 @@ const navigationItems = [
     url: '/dealers',
     icon: Store,
     badge: null
+  },
+  {
+    title: 'Campaigns',
+    url: '/campaigns',
+    icon: Megaphone,
+    badge: 'Beta'
   },
   {
     title: 'Analytics & Reports',
