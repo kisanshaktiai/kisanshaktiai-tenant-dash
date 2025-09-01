@@ -3,7 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Agricultural Tenant Dashboard Design System - Comprehensive Theme */
+/* Agricultural Tenant Dashboard Design System - Mobile Optimized */
 
 @layer base {
   :root {
@@ -51,7 +51,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Sidebar Theme - Always Light */
     --sidebar-background: 0 0% 100%;
@@ -135,7 +135,7 @@
     --input: 215 28% 17%;
     --ring: 142 70% 45%;
 
-    /* Sidebar Theme - Still Light in Dark Mode */
+    /* Sidebar Theme - Still Light in Dark Mode for better UX */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 142 76% 36%;
@@ -187,29 +187,48 @@
     @apply h-full w-full;
     margin: 0;
     padding: 0;
+    font-size: 14px;
   }
 
   body {
     @apply bg-background text-foreground;
     overflow-x: hidden;
   }
+
+  /* Mobile-first responsive typography */
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  /* Improve mobile touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+  }
+
+  @media (max-width: 640px) {
+    button, [role="button"] {
+      min-height: 40px;
+    }
+  }
 }
 
 @layer utilities {
-  /* Enhanced Animations */
+  /* Mobile-optimized animations */
   .animate-fade-in {
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn 0.3s ease-out;
   }
   
   .animate-scale-in {
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn 0.2s ease-out;
   }
   
   .hover-scale {
-    @apply transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98];
+    @apply transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99];
   }
 
-  /* Background Utilities */
+  /* Mobile-optimized background utilities */
   .bg-hover {
     background-color: hsl(var(--background-hover));
   }
@@ -222,7 +241,7 @@
     background-color: hsl(var(--background-disabled));
   }
 
-  /* Text Utilities */
+  /* Mobile-optimized text utilities */
   .text-subtle {
     color: hsl(var(--text-subtle));
   }
@@ -235,7 +254,7 @@
     color: hsl(var(--text-muted));
   }
 
-  /* Semantic Color Classes */
+  /* Mobile-optimized semantic colors */
   .bg-success {
     background-color: hsl(var(--success));
   }
@@ -260,7 +279,7 @@
     color: hsl(var(--info));
   }
 
-  /* Status Color Classes */
+  /* Mobile-optimized status colors */
   .bg-status-active {
     background-color: hsl(var(--status-active));
   }
@@ -277,23 +296,7 @@
     color: hsl(var(--status-inactive));
   }
 
-  .bg-status-pending {
-    background-color: hsl(var(--status-pending));
-  }
-
-  .text-status-pending {
-    color: hsl(var(--status-pending));
-  }
-
-  .bg-status-error {
-    background-color: hsl(var(--status-error));
-  }
-
-  .text-status-error {
-    color: hsl(var(--status-error));
-  }
-
-  /* Button Variants */
+  /* Mobile-optimized button variants */
   .btn-primary {
     background-color: hsl(var(--button-primary));
     color: hsl(var(--primary-foreground));
@@ -301,10 +304,6 @@
 
   .btn-primary:hover {
     background-color: hsl(var(--button-primary-hover));
-  }
-
-  .btn-primary:active {
-    background-color: hsl(var(--button-primary-active));
   }
 
   .btn-secondary {
@@ -316,39 +315,26 @@
     background-color: hsl(var(--button-secondary-hover));
   }
 
-  .btn-secondary:active {
-    background-color: hsl(var(--button-secondary-active));
-  }
-
-  /* Enhanced Shadows */
+  /* Mobile-optimized shadows */
   .shadow-soft {
-    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.1);
+    box-shadow: 0 1px 4px hsl(var(--foreground) / 0.08);
   }
   
   .shadow-medium {
-    box-shadow: 0 4px 16px hsl(var(--foreground) / 0.15);
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.12);
   }
   
   .shadow-strong {
-    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.2);
+    box-shadow: 0 4px 16px hsl(var(--foreground) / 0.16);
   }
 
-  /* Scrollbar Styles */
+  /* Mobile-optimized scrollbar */
   .scrollbar-thin {
     scrollbar-width: thin;
   }
   
-  .scrollbar-thumb-muted {
-    scrollbar-color: hsl(var(--muted)) transparent;
-  }
-  
-  .scrollbar-track-transparent {
-    scrollbar-track-color: transparent;
-  }
-  
-  /* Webkit scrollbar for better cross-browser support */
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
   
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -357,23 +343,72 @@
   
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--muted));
-    border-radius: 3px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 2px;
   }
 
-  /* Responsive utilities */
+  /* Mobile-responsive containers */
   .container-responsive {
-    @apply w-full max-w-none px-4 sm:px-6 lg:px-8;
+    @apply w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8;
+  }
+
+  .content-padding {
+    @apply p-2 sm:p-4 lg:p-6;
+  }
+
+  .mobile-padding {
+    @apply p-2 sm:p-3 lg:p-4;
+  }
+
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Mobile-optimized card spacing */
+  .card-mobile {
+    @apply p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl;
+  }
+
+  /* Mobile navigation improvements */
+  .nav-mobile {
+    @apply text-sm sm:text-base;
+  }
+
+  /* Responsive grid utilities */
+  .grid-mobile {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .grid-mobile-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2;
+  }
+
+  /* Mobile-first breakpoint utilities */
+  .xs-hidden {
+    @apply hidden;
+  }
+
+  @media (min-width: 475px) {
+    .xs-block {
+      @apply block;
+    }
+    
+    .xs-hidden {
+      @apply block;
+    }
+  }
+
+  /* Mobile form optimizations */
+  .form-mobile input, .form-mobile textarea, .form-mobile select {
+    @apply text-base; /* Prevents zoom on iOS */
   }
 }
 
+/* Enhanced keyframes for mobile */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -384,7 +419,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
@@ -392,13 +427,40 @@
   }
 }
 
-/* Responsive Breakpoints */
-@media (max-width: 768px) {
+/* Mobile-specific media queries */
+@media (max-width: 640px) {
   .mobile-hidden {
     @apply hidden;
   }
   
   .mobile-full {
     @apply w-full;
+  }
+
+  .mobile-compact {
+    @apply text-sm leading-tight;
+  }
+
+  /* Optimize sidebar for mobile */
+  [data-sidebar="sidebar"] {
+    @apply w-60;
+  }
+
+  [data-sidebar="sidebar"][data-state="collapsed"] {
+    @apply w-14;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-optimized {
+    @apply px-4 py-3;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  .desktop-enhanced {
+    @apply px-6 py-4;
   }
 }

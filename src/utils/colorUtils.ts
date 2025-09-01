@@ -1,16 +1,22 @@
 
 /**
- * Comprehensive color utility functions for theme system
+ * Comprehensive color utility functions for theme system - Mobile Optimized
  */
 
 /**
- * Convert HEX color to HSL format
+ * Convert HEX color to HSL format without hsl() wrapper
  * @param hex - HEX color string (e.g., "#10b981")
  * @returns HSL string in format "h s% l%" (e.g., "160 84% 39%")
  */
 export function hexToHsl(hex: string): string {
   // Remove the hash if present
   hex = hex.replace('#', '');
+  
+  // Validate hex input
+  if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+    console.warn('Invalid hex color:', hex);
+    return '142 76% 36%'; // Fallback to agricultural green
+  }
   
   // Parse RGB values
   const r = parseInt(hex.substr(0, 2), 16) / 255;
@@ -50,7 +56,31 @@ export function hexToHsl(hex: string): string {
 }
 
 /**
- * Generate comprehensive semantic colors based on primary color
+ * Validate and sanitize HSL values
+ */
+export function sanitizeHsl(hsl: string): string {
+  try {
+    const parts = hsl.trim().split(' ');
+    if (parts.length !== 3) throw new Error('Invalid HSL format');
+    
+    const h = parseInt(parts[0]);
+    const s = parseInt(parts[1].replace('%', ''));
+    const l = parseInt(parts[2].replace('%', ''));
+    
+    // Validate ranges
+    if (h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) {
+      throw new Error('HSL values out of range');
+    }
+    
+    return `${h} ${s}% ${l}%`;
+  } catch (error) {
+    console.warn('Invalid HSL value, using fallback:', hsl);
+    return '142 76% 36%'; // Fallback to agricultural green
+  }
+}
+
+/**
+ * Generate semantic colors based on primary color
  */
 export function generateSemanticColors(primaryHsl: string): {
   success: string;
@@ -60,14 +90,10 @@ export function generateSemanticColors(primaryHsl: string): {
   border: string;
   muted: string;
 } {
-  // Parse HSL values
-  const [h, s, l] = primaryHsl.split(' ').map((v, i) => {
-    if (i === 0) return parseInt(v);
-    return parseInt(v.replace('%', ''));
-  });
+  const sanitizedPrimary = sanitizeHsl(primaryHsl);
 
   return {
-    success: primaryHsl, // Use primary for success (green agricultural theme)
+    success: sanitizedPrimary, // Use primary for success (green agricultural theme)
     warning: `38 92% 50%`, // Standard warning orange
     info: `221 83% 53%`, // Standard info blue
     destructive: `0 84% 60%`, // Standard destructive red
@@ -77,43 +103,9 @@ export function generateSemanticColors(primaryHsl: string): {
 }
 
 /**
- * Generate color variants (lighter/darker shades) for theming
+ * Generate mobile-optimized dark mode colors
  */
-export function generateColorVariants(hsl: string): {
-  50: string;
-  100: string;
-  200: string;
-  300: string;
-  400: string;
-  500: string; // base
-  600: string;
-  700: string;
-  800: string;
-  900: string;
-} {
-  const [h, s, l] = hsl.split(' ').map((v, i) => {
-    if (i === 0) return parseInt(v);
-    return parseInt(v.replace('%', ''));
-  });
-
-  return {
-    50: `${h} ${Math.max(s - 20, 10)}% ${Math.min(l + 45, 95)}%`,
-    100: `${h} ${Math.max(s - 15, 15)}% ${Math.min(l + 35, 90)}%`,
-    200: `${h} ${Math.max(s - 10, 20)}% ${Math.min(l + 25, 85)}%`,
-    300: `${h} ${Math.max(s - 5, 25)}% ${Math.min(l + 15, 80)}%`,
-    400: `${h} ${s}% ${Math.min(l + 5, 75)}%`,
-    500: hsl, // base color
-    600: `${h} ${Math.min(s + 5, 100)}% ${Math.max(l - 5, 25)}%`,
-    700: `${h} ${Math.min(s + 10, 100)}% ${Math.max(l - 15, 20)}%`,
-    800: `${h} ${Math.min(s + 15, 100)}% ${Math.max(l - 25, 15)}%`,
-    900: `${h} ${Math.min(s + 20, 100)}% ${Math.max(l - 35, 10)}%`,
-  };
-}
-
-/**
- * Generate modern dark mode colors with gray base (not pure black)
- */
-export function generateDarkModeColors(primaryHsl: string): {
+export function generateDarkModeColors(): {
   background: string;
   foreground: string;
   card: string;
@@ -140,30 +132,7 @@ export function generateDarkModeColors(primaryHsl: string): {
 }
 
 /**
- * Generate sidebar colors (always light theme)
- */
-export function generateSidebarColors(primaryHsl: string): {
-  background: string;
-  foreground: string;
-  accent: string;
-  accentForeground: string;
-  border: string;
-  primary: string;
-  primaryForeground: string;
-} {
-  return {
-    background: `0 0% 100%`, // Always white
-    foreground: `222 84% 5%`, // Always dark text
-    accent: `210 40% 96%`, // Light gray for hover
-    accentForeground: `222 84% 5%`, // Dark text
-    border: `214 32% 91%`, // Light border
-    primary: primaryHsl, // Use theme primary
-    primaryForeground: `0 0% 98%`, // White text on primary
-  };
-}
-
-/**
- * Generate button state colors
+ * Generate mobile-optimized button states
  */
 export function generateButtonStates(baseHsl: string): {
   base: string;
@@ -171,13 +140,14 @@ export function generateButtonStates(baseHsl: string): {
   active: string;
   disabled: string;
 } {
-  const [h, s, l] = baseHsl.split(' ').map((v, i) => {
+  const sanitizedBase = sanitizeHsl(baseHsl);
+  const [h, s, l] = sanitizedBase.split(' ').map((v, i) => {
     if (i === 0) return parseInt(v);
     return parseInt(v.replace('%', ''));
   });
 
   return {
-    base: baseHsl,
+    base: sanitizedBase,
     hover: `${h} ${s}% ${Math.max(l - 4, 5)}%`, // Slightly darker
     active: `${h} ${s}% ${Math.max(l - 8, 5)}%`, // Even darker
     disabled: `${h} ${Math.max(s - 20, 5)}% ${Math.min(l + 20, 85)}%`, // Desaturated and lighter
@@ -211,32 +181,18 @@ export function generateStatusColors(isDark: boolean = false): {
 }
 
 /**
- * Check if a color provides sufficient contrast for accessibility
- */
-export function checkContrast(color1: string, color2: string): boolean {
-  const [, , l1] = color1.split(' ').map((v, i) => {
-    if (i === 0) return parseInt(v);
-    return parseInt(v.replace('%', ''));
-  });
-  
-  const [, , l2] = color2.split(' ').map((v, i) => {
-    if (i === 0) return parseInt(v);
-    return parseInt(v.replace('%', ''));
-  });
-
-  return Math.abs(l1 - l2) >= 50; // Simplified contrast ratio
-}
-
-/**
  * Ensure WCAG AA compliance by adjusting lightness if needed
  */
 export function ensureContrast(foreground: string, background: string): string {
-  const [h, s, l] = foreground.split(' ').map((v, i) => {
+  const sanitizedFg = sanitizeHsl(foreground);
+  const sanitizedBg = sanitizeHsl(background);
+  
+  const [h, s, l] = sanitizedFg.split(' ').map((v, i) => {
     if (i === 0) return parseInt(v);
     return parseInt(v.replace('%', ''));
   });
   
-  const [, , bgL] = background.split(' ').map((v, i) => {
+  const [, , bgL] = sanitizedBg.split(' ').map((v, i) => {
     if (i === 0) return parseInt(v);
     return parseInt(v.replace('%', ''));
   });
@@ -258,7 +214,8 @@ export function ensureContrast(foreground: string, background: string): string {
  * Generate chart colors based on theme
  */
 export function generateChartColors(primaryHsl: string, isDark: boolean = false): string[] {
-  const [h, s] = primaryHsl.split(' ').map((v, i) => {
+  const sanitizedPrimary = sanitizeHsl(primaryHsl);
+  const [h, s] = sanitizedPrimary.split(' ').map((v, i) => {
     if (i === 0) return parseInt(v);
     return parseInt(v.replace('%', ''));
   });
@@ -274,7 +231,7 @@ export function generateChartColors(primaryHsl: string, isDark: boolean = false)
   }
 
   return [
-    primaryHsl, // Primary
+    sanitizedPrimary, // Primary
     `${(h + 60) % 360} ${s}% 45%`, // Complementary
     `${(h + 120) % 360} ${s}% 40%`, // Triadic 1
     `${(h + 180) % 360} ${s}% 35%`, // Complementary opposite
