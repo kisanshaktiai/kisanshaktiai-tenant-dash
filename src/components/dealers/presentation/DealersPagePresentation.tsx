@@ -5,25 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Store, MapPin, Users, TrendingUp, Phone, Mail } from 'lucide-react';
-
-interface Dealer {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  location?: string;
-  territory?: string;
-  status?: string;
-  registration_date?: string;
-  business_type?: string;
-  gst_number?: string;
-  license_number?: string;
-  commission_rate?: number;
-  assigned_farmers?: number;
-  monthly_sales?: number;
-  performance_score?: number;
-  metadata?: Record<string, any>;
-}
+import type { Dealer } from '@/services/DealersService';
 
 interface DealersPagePresentationProps {
   dealers: Dealer[];

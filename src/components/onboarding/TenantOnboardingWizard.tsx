@@ -123,12 +123,23 @@ const TenantOnboardingWizard = () => {
           <CardTitle>{steps[currentStep]?.title}</CardTitle>
         </CardHeader>
         <CardContent>
-          {CurrentStepComponent && (
-            <CurrentStepComponent
-              data={stepData[currentStep.toString()] || {}}
-              onDataChange={handleStepDataChange}
-              onValidationChange={handleValidationChange}
+          {CurrentStepComponent && currentStep === 0 && (
+            <SubscriptionPlanStep
+              step={{
+                id: 'subscription',
+                step_status: 'pending',
+                step_data: stepData[currentStep.toString()] || {}
+              }}
+              onComplete={handleStepDataChange}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
+              isLoading={false}
             />
+          )}
+          {CurrentStepComponent && currentStep !== 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {steps[currentStep]?.title} component will be implemented here
+            </div>
           )}
         </CardContent>
       </Card>
@@ -146,7 +157,7 @@ const TenantOnboardingWizard = () => {
         
         <Button
           onClick={handleNext}
-          disabled={!isCurrentStepValid}
+          disabled={!isCurrentStepValid && currentStep === 0}
         >
           {currentStep === totalSteps - 1 ? 'Complete Setup' : 'Next'}
           {currentStep < totalSteps - 1 && (
