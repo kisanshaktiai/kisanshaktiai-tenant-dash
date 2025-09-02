@@ -1,6 +1,6 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { enhancedFarmerDataService, type ComprehensiveFarmerData, type FarmerMetrics } from '@/services/EnhancedFarmerDataService';
+import { enhancedFarmerDataService, type ComprehensiveFarmerData, type FarmerMetrics, type PaginatedFarmersResult } from '@/services/EnhancedFarmerDataService';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantRealtime } from './useTenantRealtime';
 
@@ -32,7 +32,7 @@ export const useEnhancedFarmersQuery = (options: {
 } = {}) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
-  return useQuery({
+  return useQuery<PaginatedFarmersResult>({
     queryKey: ['enhanced-farmers', currentTenant?.id, options],
     queryFn: () => {
       if (!currentTenant) {
@@ -42,14 +42,14 @@ export const useEnhancedFarmersQuery = (options: {
     },
     enabled: !!currentTenant,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    keepPreviousData: true, // For smooth pagination
+    placeholderData: (previousData) => previousData, // Replaced keepPreviousData
   });
 };
 
 export const useFarmerMetrics = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
 
-  return useQuery({
+  return useQuery<FarmerMetrics>({
     queryKey: ['farmer-metrics', currentTenant?.id],
     queryFn: () => {
       if (!currentTenant) {
