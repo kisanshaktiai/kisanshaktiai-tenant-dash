@@ -122,7 +122,7 @@ export interface PaginatedFarmersResult {
 class EnhancedFarmerDataService extends BaseApiService {
   async getComprehensiveFarmerData(tenantId: string, farmerId: string): Promise<ComprehensiveFarmerData> {
     try {
-      // Get basic farmer data with explicit type casting
+      // Get basic farmer data
       const { data: farmerData, error: farmerError } = await supabase
         .from('farmers')
         .select('*')
@@ -225,13 +225,15 @@ class EnhancedFarmerDataService extends BaseApiService {
         .eq('farmer_id', farmerId);
 
       if (error) throw error;
-      return (data || []).map(land => ({
+      
+      // Map the actual database columns to our interface
+      return (data || []).map((land: any) => ({
         id: land.id,
         area_acres: land.area_acres || 0,
-        soil_type: land.soil_type,
-        location: land.location,
-        irrigation_type: land.irrigation_type,
-        crops: land.crops || []
+        soil_type: land.soil_type || land.land_type || 'unknown',
+        location: land.center_point_old || land.boundary || null,
+        irrigation_type: land.water_source || 'unknown',
+        crops: land.current_crop ? [land.current_crop] : []
       }));
     } catch (error) {
       console.error('Error fetching farmer lands:', error);
@@ -260,7 +262,7 @@ class EnhancedFarmerDataService extends BaseApiService {
         .limit(20);
 
       if (error) throw error;
-      return (data || []).map(crop => ({
+      return (data || []).map((crop: any) => ({
         id: crop.id,
         crop_name: crop.crop_name,
         variety: crop.variety,
@@ -297,7 +299,7 @@ class EnhancedFarmerDataService extends BaseApiService {
         .limit(10);
 
       if (error) throw error;
-      return (data || []).map(assessment => ({
+      return (data || []).map((assessment: any) => ({
         id: assessment.id,
         assessment_date: assessment.assessment_date,
         overall_health_score: assessment.overall_health_score,
@@ -402,7 +404,7 @@ class EnhancedFarmerDataService extends BaseApiService {
       if (error) throw error;
 
       // Transform each farmer to match ComprehensiveFarmerData interface
-      const transformedData: ComprehensiveFarmerData[] = (farmersData || []).map(farmer => ({
+      const transformedData: ComprehensiveFarmerData[] = (farmersData || []).map((farmer: any) => ({
         id: farmer.id,
         farmer_code: farmer.farmer_code,
         mobile_number: farmer.mobile_number,
