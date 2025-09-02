@@ -71,13 +71,18 @@ export const EnhancedCreateFarmerContainer: React.FC<EnhancedCreateFarmerContain
   const handleSubmit = async (data: FarmerFormData) => {
     console.log('Submitting farmer form with data:', data);
     
-    // Validate form
+    // Validate form - this is the actual submission, so show toast on errors
     const validationErrors = validateForm(data);
     const hasErrors = Object.values(validationErrors).some(error => error);
     
     if (hasErrors) {
       console.log('Validation errors found:', validationErrors);
-      toast.error('Please fix the form errors before submitting');
+      
+      // Show toast only on actual form submission
+      const errorFields = Object.keys(validationErrors).filter(key => validationErrors[key]);
+      if (errorFields.length > 0) {
+        toast.error(`Please fix the following errors: ${errorFields.join(', ')}`);
+      }
       return;
     }
 
