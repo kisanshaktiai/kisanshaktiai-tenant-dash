@@ -239,7 +239,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="village">Village *</Label>
+                      <Label htmlFor="village">Village</Label>
                       <Input
                         id="village"
                         value={formData.village}
@@ -265,7 +265,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="district">District *</Label>
+                      <Label htmlFor="district">District</Label>
                       <Input
                         id="district"
                         value={formData.district}
@@ -279,7 +279,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     </div>
 
                     <div>
-                      <Label htmlFor="state">State *</Label>
+                      <Label htmlFor="state">State</Label>
                       <Select value={formData.state} onValueChange={(value) => onFormChange('state', value)}>
                         <SelectTrigger className={errors.state ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Select state" />
@@ -299,7 +299,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                   </div>
 
                   <div>
-                    <Label htmlFor="pincode">Pincode *</Label>
+                    <Label htmlFor="pincode">Pincode</Label>
                     <Input
                       id="pincode"
                       value={formData.pincode}
