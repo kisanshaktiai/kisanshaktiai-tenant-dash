@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { FarmersPageContainer } from '@/components/farmers/containers/FarmersPageContainer';
+import { EnhancedFarmersPageContainer } from '@/components/farmers/containers/EnhancedFarmersPageContainer';
 
 const FarmersPage = () => {
-  return <FarmersPageContainer />;
+  return <EnhancedFarmersPageContainer />;
 };
 
 export default FarmersPage;
