@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Check, ChevronDown, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LANGUAGE_CONFIG, getLanguageDisplayName, getLanguagesByRegion, type SupportedLocale } from '@/lib/i18n';
+import { LANGUAGE_CONFIG, getLanguageDisplayName, getLanguagesByEducationalGroups, type SupportedLocale } from '@/lib/i18n';
 
 interface LanguageSelectProps {
   value?: string;
@@ -30,7 +29,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   
-  const languageGroups = getLanguagesByRegion();
+  const languageGroups = getLanguagesByEducationalGroups();
   
   // Filter allowed languages if specified
   const filteredGroups = allowedLanguages 
@@ -69,7 +68,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
             <CommandEmpty>No language found.</CommandEmpty>
             {showRegionGroups ? (
               filteredGroups.map((group) => (
-                <CommandGroup key={group.region} heading={group.region}>
+                <CommandGroup key={group.group} heading={group.group}>
                   {group.languages.map((language) => (
                     <CommandItem
                       key={language.code}
