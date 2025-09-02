@@ -71,7 +71,8 @@ export const getRecommendedLanguages = (state?: string): SupportedLocale[] => {
     return ['en', 'hi']; // Default fallback
   }
   
-  return STATE_LANGUAGE_MAPPING[state as keyof typeof STATE_LANGUAGE_MAPPING] as SupportedLocale[];
+  const stateLanguages = STATE_LANGUAGE_MAPPING[state as keyof typeof STATE_LANGUAGE_MAPPING];
+  return [...stateLanguages] as SupportedLocale[];
 };
 
 // Check if language is recommended for region
