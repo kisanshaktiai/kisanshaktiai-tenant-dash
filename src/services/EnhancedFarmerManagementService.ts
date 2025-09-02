@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 
@@ -67,27 +68,25 @@ class EnhancedFarmerManagementService extends BaseApiService {
     return cleanMobile;
   }
 
-  private async generateFarmerCode(tenantId: string): Promise<string> {
+  private async generateFarmerCodeWithFunction(tenantId: string): Promise<string> {
     try {
-      // Get tenant info for prefix
-      const { data: tenant } = await supabase
-        .from('tenants')
-        .select('slug')
-        .eq('id', tenantId)
-        .single();
+      console.log('Generating farmer code using database function for tenant:', tenantId);
+      
+      const { data, error } = await supabase.rpc('generate_farmer_code', {
+        p_tenant_id: tenantId
+      });
 
-      // Get farmer count for this tenant
-      const { count } = await supabase
-        .from('farmers')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId);
+      if (error) {
+        console.error('Error calling generate_farmer_code function:', error);
+        throw error;
+      }
 
-      const farmerNumber = (count || 0) + 1;
-      const tenantPrefix = tenant?.slug?.substring(0, 3).toUpperCase() || 'FAR';
-      return `${tenantPrefix}${farmerNumber.toString().padStart(6, '0')}`;
+      console.log('Generated farmer code:', data);
+      return data;
     } catch (error) {
       console.error('Error generating farmer code:', error);
-      return `FAR${Date.now().toString().slice(-6)}`;
+      // Fallback to simple generation if function fails
+      return `KIS${Date.now().toString().slice(-6)}`;
     }
   }
 
@@ -96,11 +95,32 @@ class EnhancedFarmerManagementService extends BaseApiService {
       console.log('Creating comprehensive farmer for tenant:', tenantId);
       console.log('Farmer data received:', farmerData);
       
+      // Verify user has access to this tenant
+      const { data: userTenant, error: accessError } = await supabase
+        .from('user_tenants')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .single();
+
+      if (accessError || !userTenant) {
+        console.error('User does not have access to tenant:', tenantId, accessError);
+        return {
+          success: false,
+          farmer: null,
+          farmerId: '',
+          farmerCode: '',
+          mobileNumber: '',
+          error: 'You do not have permission to create farmers for this tenant',
+        };
+      }
+
       // Format mobile number
       const formattedMobile = this.formatMobileNumber(farmerData.phone);
       
-      // Generate farmer code
-      const farmerCode = await this.generateFarmerCode(tenantId);
+      // Generate farmer code using database function
+      const farmerCode = await this.generateFarmerCodeWithFunction(tenantId);
       
       // Hash PIN for storage
       const pinHash = await this.hashPin(farmerData.pin);
@@ -166,7 +186,25 @@ class EnhancedFarmerManagementService extends BaseApiService {
 
       if (farmerError) {
         console.error('Database insert error:', farmerError);
-        throw farmerError;
+        
+        // Provide more specific error messages based on the error
+        let errorMessage = 'Failed to create farmer';
+        if (farmerError.code === '42501') {
+          errorMessage = 'Permission denied. Please ensure you have access to this tenant.';
+        } else if (farmerError.code === '23505') {
+          errorMessage = 'A farmer with this mobile number already exists.';
+        } else if (farmerError.message) {
+          errorMessage = farmerError.message;
+        }
+        
+        return {
+          success: false,
+          farmer: null,
+          farmerId: '',
+          farmerCode: '',
+          mobileNumber: '',
+          error: errorMessage,
+        };
       }
 
       console.log('Farmer created successfully:', farmer);
@@ -181,13 +219,19 @@ class EnhancedFarmerManagementService extends BaseApiService {
 
     } catch (error) {
       console.error('Comprehensive farmer creation failed:', error);
+      
+      let errorMessage = 'Failed to create farmer';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       return {
         success: false,
         farmer: null,
         farmerId: '',
         farmerCode: '',
         mobileNumber: '',
-        error: error instanceof Error ? error.message : 'Failed to create farmer',
+        error: errorMessage,
       };
     }
   }

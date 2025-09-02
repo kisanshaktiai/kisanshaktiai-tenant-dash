@@ -9753,6 +9753,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      generate_farmer_code: {
+        Args: { p_tenant_id: string }
+        Returns: string
+      }
       generate_invite_token: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -11,7 +11,10 @@ export const useEnhancedFarmerManagement = () => {
 
   const createComprehensiveFarmer = useCallback(async (farmerData: ComprehensiveFarmerData) => {
     if (!currentTenant) {
-      throw new Error('No tenant selected');
+      const errorMsg = 'No tenant selected';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     setLoading(true);
@@ -26,10 +29,24 @@ export const useEnhancedFarmerManagement = () => {
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to create farmer');
+        const errorMsg = result.error || 'Failed to create farmer';
+        setError(errorMsg);
+        
+        // Provide user-friendly error messages
+        if (errorMsg.includes('Permission denied')) {
+          toast.error('You do not have permission to create farmers. Please contact your administrator.');
+        } else if (errorMsg.includes('already exists')) {
+          toast.error('A farmer with this mobile number already exists in your system.');
+        } else {
+          toast.error(errorMsg);
+        }
+        
+        throw new Error(errorMsg);
       }
 
-      toast.success(`Farmer created successfully! Code: ${result.farmerCode}`);
+      toast.success(`Farmer created successfully!\nCode: ${result.farmerCode}\nMobile: ${result.mobileNumber}`, {
+        duration: 5000
+      });
       
       return {
         success: true,
@@ -42,7 +59,8 @@ export const useEnhancedFarmerManagement = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create farmer';
       setError(errorMessage);
-      toast.error(errorMessage);
+      
+      // Don't show toast here as it's already shown above
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -67,6 +85,7 @@ export const useEnhancedFarmerManagement = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch farmer details';
       setError(errorMessage);
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -89,7 +108,10 @@ export const useEnhancedFarmerManagement = () => {
       );
 
       if (!result.success) {
-        throw new Error(result.error || 'Login failed');
+        const errorMsg = result.error || 'Login failed';
+        setError(errorMsg);
+        toast.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
       return result;
