@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CreateFarmerForm } from '../presentation/CreateFarmerForm';
 import { useFarmerManagement } from '@/hooks/useFarmerManagement';
@@ -39,7 +40,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<FarmerFormData>(initialFormData);
-  const { createFarmer, isCreating, createError } = useFarmerManagement();
+  const { createFarmer, loading, error } = useFarmerManagement();
 
   const handleFormChange = (field: keyof FarmerFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -62,10 +63,10 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       formData={formData}
-      onChange={handleFormChange}
+      onFormChange={handleFormChange}
       onSubmit={handleSubmit}
-      isSubmitting={isCreating}
-      error={createError}
+      isSubmitting={loading}
+      error={error}
     />
   );
 };
