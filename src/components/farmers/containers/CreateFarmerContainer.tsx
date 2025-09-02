@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { CreateFarmerForm } from '../presentation/CreateFarmerForm';
 import { useFarmerManagement } from '@/hooks/useFarmerManagement';
@@ -58,15 +59,19 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
     }
   };
 
+  // Convert single error string to ValidationErrors format expected by CreateFarmerForm
+  const errors = error ? { general: error } : {};
+
   return (
     <CreateFarmerForm
       isOpen={isOpen}
       onClose={onClose}
       formData={formData}
+      errors={errors}
+      isSubmitting={loading}
       onFormChange={handleFormChange}
       onSubmit={handleSubmit}
-      isSubmitting={loading}
-      error={error}
     />
   );
 };
+
