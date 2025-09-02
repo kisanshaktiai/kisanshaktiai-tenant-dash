@@ -55,16 +55,16 @@ class EnhancedFarmerManagementService extends BaseApiService {
   }
 
   private formatMobileNumber(mobile: string): string {
-    const cleanMobile = mobile.replace(/[^0-9+]/g, '');
+    const cleanMobile = mobile.replace(/[^0-9]/g, ''); // Remove all non-digits including +
     
-    if (cleanMobile.startsWith('+91') && cleanMobile.length === 13) {
-      return cleanMobile;
-    } else if (cleanMobile.startsWith('91') && cleanMobile.length === 12) {
-      return '+' + cleanMobile;
+    // Remove country code if present and return only 10 digits
+    if (cleanMobile.startsWith('91') && cleanMobile.length === 12) {
+      return cleanMobile.substring(2); // Remove '91' prefix
     } else if (cleanMobile.length === 10 && /^[6-9]/.test(cleanMobile)) {
-      return '+91' + cleanMobile;
+      return cleanMobile; // Already in correct format
     }
     
+    // Return cleaned mobile as-is if it doesn't match expected patterns
     return cleanMobile;
   }
 
@@ -116,8 +116,9 @@ class EnhancedFarmerManagementService extends BaseApiService {
         };
       }
 
-      // Format mobile number
+      // Format mobile number to 10 digits only
       const formattedMobile = this.formatMobileNumber(farmerData.phone);
+      console.log('Original mobile:', farmerData.phone, 'Formatted mobile:', formattedMobile);
       
       // Generate farmer code using database function
       const farmerCode = await this.generateFarmerCodeWithFunction(tenantId);
@@ -193,6 +194,8 @@ class EnhancedFarmerManagementService extends BaseApiService {
           errorMessage = 'Permission denied. Please ensure you have access to this tenant.';
         } else if (farmerError.code === '23505') {
           errorMessage = 'A farmer with this mobile number already exists.';
+        } else if (farmerError.message?.includes('mobile_number_check')) {
+          errorMessage = 'Invalid mobile number format. Please enter a valid 10-digit Indian mobile number.';
         } else if (farmerError.message) {
           errorMessage = farmerError.message;
         }

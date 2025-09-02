@@ -42,26 +42,26 @@ export const useFarmerValidation = () => {
 
   const validateIndianMobile = (mobile: string): boolean => {
     // Remove any spaces, dashes, or special characters
-    const cleanMobile = mobile.replace(/[^0-9+]/g, '');
+    const cleanMobile = mobile.replace(/[^0-9]/g, '');
     
-    // Check various Indian mobile number formats
+    // Check for 10-digit number starting with 6-9 (Indian mobile format)
+    // Also accept numbers with 91 country code (12 digits total)
     const patterns = [
-      /^(\+91)?[6-9][0-9]{9}$/, // +91XXXXXXXXXX or XXXXXXXXXX
-      /^91[6-9][0-9]{9}$/, // 91XXXXXXXXXX
+      /^[6-9][0-9]{9}$/, // 10 digits starting with 6-9
+      /^91[6-9][0-9]{9}$/, // 12 digits with 91 prefix
     ];
     
     return patterns.some(pattern => pattern.test(cleanMobile));
   };
 
   const formatIndianMobile = (mobile: string): string => {
-    const cleanMobile = mobile.replace(/[^0-9+]/g, '');
+    const cleanMobile = mobile.replace(/[^0-9]/g, '');
     
-    if (cleanMobile.startsWith('+91') && cleanMobile.length === 13) {
-      return cleanMobile;
-    } else if (cleanMobile.startsWith('91') && cleanMobile.length === 12) {
-      return '+' + cleanMobile;
+    // Remove country code and return only 10 digits
+    if (cleanMobile.startsWith('91') && cleanMobile.length === 12) {
+      return cleanMobile.substring(2);
     } else if (cleanMobile.length === 10 && /^[6-9]/.test(cleanMobile)) {
-      return '+91' + cleanMobile;
+      return cleanMobile;
     }
     
     return cleanMobile;
