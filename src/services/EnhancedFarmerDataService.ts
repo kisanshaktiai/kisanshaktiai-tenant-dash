@@ -122,8 +122,8 @@ export interface PaginatedFarmersResult {
 class EnhancedFarmerDataService extends BaseApiService {
   async getComprehensiveFarmerData(tenantId: string, farmerId: string): Promise<ComprehensiveFarmerData> {
     try {
-      // Get basic farmer data
-      const { data: farmer, error: farmerError } = await supabase
+      // Get basic farmer data with explicit type casting
+      const { data: farmerData, error: farmerError } = await supabase
         .from('farmers')
         .select('*')
         .eq('tenant_id', tenantId)
@@ -153,7 +153,7 @@ class EnhancedFarmerDataService extends BaseApiService {
       const communicationResult: CommunicationItem[] = [];
 
       // Calculate metrics
-      const metrics = this.calculateFarmerMetrics(farmer, {
+      const metrics = this.calculateFarmerMetrics(farmerData, {
         lands: landsResult,
         cropHistory: cropHistoryResult,
         healthAssessments: healthAssessmentsResult,
@@ -162,13 +162,28 @@ class EnhancedFarmerDataService extends BaseApiService {
 
       // Get live status (placeholder for now)
       const liveStatus = {
-        isOnline: Math.random() > 0.5, // Simulate online status
+        isOnline: Math.random() > 0.5,
         lastSeen: new Date(Date.now() - Math.random() * 86400000).toISOString(),
         currentActivity: 'Viewing crop recommendations'
       };
 
-      return {
-        ...farmer,
+      // Transform the farmer data to match our interface
+      const comprehensiveData: ComprehensiveFarmerData = {
+        id: farmerData.id,
+        farmer_code: farmerData.farmer_code,
+        mobile_number: farmerData.mobile_number,
+        farming_experience_years: farmerData.farming_experience_years || 0,
+        total_land_acres: farmerData.total_land_acres || 0,
+        primary_crops: farmerData.primary_crops || [],
+        farm_type: farmerData.farm_type || 'small',
+        has_irrigation: farmerData.has_irrigation || false,
+        has_storage: farmerData.has_storage || false,
+        has_tractor: farmerData.has_tractor || false,
+        is_verified: farmerData.is_verified || false,
+        total_app_opens: farmerData.total_app_opens || 0,
+        language_preference: farmerData.language_preference || 'en',
+        metadata: farmerData.metadata || {},
+        created_at: farmerData.created_at,
         tags: tagsResult,
         notes: notesResult,
         segments: segmentsResult,
@@ -179,79 +194,121 @@ class EnhancedFarmerDataService extends BaseApiService {
         metrics,
         liveStatus
       };
+
+      return comprehensiveData;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
   async getFarmerTags(tenantId: string, farmerId?: string): Promise<FarmerTag[]> {
-    // Since farmer_tags table may not exist, return mock data
+    // Return mock data since farmer_tags table may not exist
     return [];
   }
 
   async getFarmerNotes(tenantId: string, farmerId: string): Promise<FarmerNote[]> {
-    // Since farmer_notes table may not exist, return mock data
+    // Return mock data since farmer_notes table may not exist
     return [];
   }
 
   async getFarmerSegments(tenantId: string, farmerId: string): Promise<string[]> {
-    // Since farmer_segments table may not exist, return mock data
+    // Return mock data since farmer_segments table may not exist
     return [];
   }
 
   async getFarmerLands(tenantId: string, farmerId: string): Promise<FarmerLand[]> {
-    const { data, error } = await supabase
-      .from('lands')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .eq('farmer_id', farmerId);
+    try {
+      const { data, error } = await supabase
+        .from('lands')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId);
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      return (data || []).map(land => ({
+        id: land.id,
+        area_acres: land.area_acres || 0,
+        soil_type: land.soil_type,
+        location: land.location,
+        irrigation_type: land.irrigation_type,
+        crops: land.crops || []
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer lands:', error);
+      return [];
+    }
   }
 
   async getFarmerCropHistory(tenantId: string, farmerId: string): Promise<CropHistoryItem[]> {
-    const { data: lands } = await supabase
-      .from('lands')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('farmer_id', farmerId);
+    try {
+      // First get lands for this farmer
+      const { data: lands } = await supabase
+        .from('lands')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId);
 
-    if (!lands || lands.length === 0) return [];
+      if (!lands || lands.length === 0) return [];
 
-    const landIds = lands.map(l => l.id);
-    const { data, error } = await supabase
-      .from('crop_history')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .in('land_id', landIds)
-      .order('planting_date', { ascending: false })
-      .limit(20);
+      const landIds = lands.map(l => l.id);
+      const { data, error } = await supabase
+        .from('crop_history')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('land_id', landIds)
+        .order('planting_date', { ascending: false })
+        .limit(20);
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      return (data || []).map(crop => ({
+        id: crop.id,
+        crop_name: crop.crop_name,
+        variety: crop.variety,
+        season: crop.season,
+        yield_kg_per_acre: crop.yield_kg_per_acre,
+        planting_date: crop.planting_date,
+        harvest_date: crop.harvest_date,
+        status: crop.status || 'active'
+      }));
+    } catch (error) {
+      console.error('Error fetching crop history:', error);
+      return [];
+    }
   }
 
   async getFarmerHealthAssessments(tenantId: string, farmerId: string): Promise<HealthAssessment[]> {
-    const { data: lands } = await supabase
-      .from('lands')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .eq('farmer_id', farmerId);
+    try {
+      // First get lands for this farmer
+      const { data: lands } = await supabase
+        .from('lands')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId);
 
-    if (!lands || lands.length === 0) return [];
+      if (!lands || lands.length === 0) return [];
 
-    const landIds = lands.map(l => l.id);
-    const { data, error } = await supabase
-      .from('crop_health_assessments')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .in('land_id', landIds)
-      .order('assessment_date', { ascending: false })
-      .limit(10);
+      const landIds = lands.map(l => l.id);
+      const { data, error } = await supabase
+        .from('crop_health_assessments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('land_id', landIds)
+        .order('assessment_date', { ascending: false })
+        .limit(10);
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      return (data || []).map(assessment => ({
+        id: assessment.id,
+        assessment_date: assessment.assessment_date,
+        overall_health_score: assessment.overall_health_score,
+        ndvi_avg: assessment.ndvi_avg,
+        alert_level: assessment.alert_level || 'normal',
+        growth_stage: assessment.growth_stage
+      }));
+    } catch (error) {
+      console.error('Error fetching health assessments:', error);
+      return [];
+    }
   }
 
   private calculateFarmerMetrics(farmer: any, relatedData: any) {
@@ -311,90 +368,138 @@ class EnhancedFarmerDataService extends BaseApiService {
   } = {}): Promise<PaginatedFarmersResult> {
     const { page = 1, limit = 20, search, sortBy = 'created_at', sortOrder = 'desc', filters = {} } = options;
     
-    let query = supabase
-      .from('farmers')
-      .select('*', { count: 'exact' })
-      .eq('tenant_id', tenantId);
+    try {
+      let query = supabase
+        .from('farmers')
+        .select('*', { count: 'exact' })
+        .eq('tenant_id', tenantId);
 
-    // Apply search
-    if (search) {
-      query = query.or(`farmer_code.ilike.%${search}%,metadata->>full_name.ilike.%${search}%`);
-    }
-
-    // Apply filters
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        if (Array.isArray(value)) {
-          query = query.in(key, value);
-        } else {
-          query = query.eq(key, value);
-        }
+      // Apply search
+      if (search) {
+        query = query.or(`farmer_code.ilike.%${search}%,metadata->>full_name.ilike.%${search}%`);
       }
-    });
 
-    // Apply sorting
-    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      // Apply filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            query = query.in(key, value);
+          } else {
+            query = query.eq(key, value);
+          }
+        }
+      });
 
-    // Apply pagination
-    const start = (page - 1) * limit;
-    const end = start + limit - 1;
-    query = query.range(start, end);
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
-    const { data, error, count } = await query;
-    if (error) throw error;
+      // Apply pagination
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
+      query = query.range(start, end);
 
-    return {
-      data: data || [],
-      count: count || 0,
-      page,
-      limit,
-      totalPages: Math.ceil((count || 0) / limit)
-    };
+      const { data: farmersData, error, count } = await query;
+      if (error) throw error;
+
+      // Transform each farmer to match ComprehensiveFarmerData interface
+      const transformedData: ComprehensiveFarmerData[] = (farmersData || []).map(farmer => ({
+        id: farmer.id,
+        farmer_code: farmer.farmer_code,
+        mobile_number: farmer.mobile_number,
+        farming_experience_years: farmer.farming_experience_years || 0,
+        total_land_acres: farmer.total_land_acres || 0,
+        primary_crops: farmer.primary_crops || [],
+        farm_type: farmer.farm_type || 'small',
+        has_irrigation: farmer.has_irrigation || false,
+        has_storage: farmer.has_storage || false,
+        has_tractor: farmer.has_tractor || false,
+        is_verified: farmer.is_verified || false,
+        total_app_opens: farmer.total_app_opens || 0,
+        language_preference: farmer.language_preference || 'en',
+        metadata: farmer.metadata || {},
+        created_at: farmer.created_at,
+        tags: [],
+        notes: [],
+        segments: [],
+        lands: [],
+        cropHistory: [],
+        healthAssessments: [],
+        communicationHistory: [],
+        metrics: {
+          totalLandArea: farmer.total_land_acres || 0,
+          cropDiversityIndex: (farmer.primary_crops || []).length,
+          engagementScore: Math.min(100, (farmer.total_app_opens || 0) * 2),
+          healthScore: 75,
+          lastActivityDate: farmer.updated_at || farmer.created_at,
+          revenueScore: Math.min(100, (farmer.total_land_acres || 0) * 10),
+          riskLevel: (farmer.total_app_opens || 0) < 10 ? 'high' : 'low'
+        },
+        liveStatus: {
+          isOnline: Math.random() > 0.5,
+          lastSeen: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+          currentActivity: 'Viewing recommendations'
+        }
+      }));
+
+      return {
+        data: transformedData,
+        count: count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((count || 0) / limit)
+      };
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async getFarmerMetrics(tenantId: string): Promise<FarmerMetrics> {
-    const [farmersResult, cropStatsResult] = await Promise.all([
-      supabase
-        .from('farmers')
-        .select('id, total_app_opens, created_at')
-        .eq('tenant_id', tenantId),
-      supabase
-        .from('crop_history')
-        .select('crop_name, tenant_id')
-        .eq('tenant_id', tenantId)
-    ]);
+    try {
+      const [farmersResult, cropStatsResult] = await Promise.all([
+        supabase
+          .from('farmers')
+          .select('id, total_app_opens, created_at')
+          .eq('tenant_id', tenantId),
+        supabase
+          .from('crop_history')
+          .select('crop_name, tenant_id')
+          .eq('tenant_id', tenantId)
+      ]);
 
-    const totalFarmers = farmersResult.data?.length || 0;
-    const activeFarmers = farmersResult.data?.filter(f => f.total_app_opens > 0).length || 0;
-    const averageEngagement = totalFarmers > 0 
-      ? (farmersResult.data?.reduce((sum, f) => sum + f.total_app_opens, 0) || 0) / totalFarmers 
-      : 0;
+      const totalFarmers = farmersResult.data?.length || 0;
+      const activeFarmers = farmersResult.data?.filter(f => f.total_app_opens > 0).length || 0;
+      const averageEngagement = totalFarmers > 0 
+        ? (farmersResult.data?.reduce((sum, f) => sum + f.total_app_opens, 0) || 0) / totalFarmers 
+        : 0;
 
-    // Calculate top crops
-    const cropCounts: Record<string, number> = {};
-    cropStatsResult.data?.forEach(crop => {
-      cropCounts[crop.crop_name] = (cropCounts[crop.crop_name] || 0) + 1;
-    });
+      // Calculate top crops
+      const cropCounts: Record<string, number> = {};
+      cropStatsResult.data?.forEach(crop => {
+        cropCounts[crop.crop_name] = (cropCounts[crop.crop_name] || 0) + 1;
+      });
 
-    const topCrops = Object.entries(cropCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([crop, count]) => ({ crop, count }));
+      const topCrops = Object.entries(cropCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5)
+        .map(([crop, count]) => ({ crop, count }));
 
-    // Simulate risk distribution (in real implementation, calculate from actual data)
-    const riskDistribution = {
-      low: Math.floor(totalFarmers * 0.6),
-      medium: Math.floor(totalFarmers * 0.3),
-      high: Math.floor(totalFarmers * 0.1)
-    };
+      // Simulate risk distribution (in real implementation, calculate from actual data)
+      const riskDistribution = {
+        low: Math.floor(totalFarmers * 0.6),
+        medium: Math.floor(totalFarmers * 0.3),
+        high: Math.floor(totalFarmers * 0.1)
+      };
 
-    return {
-      totalFarmers,
-      activeFarmers,
-      averageEngagement,
-      topCrops,
-      riskDistribution
-    };
+      return {
+        totalFarmers,
+        activeFarmers,
+        averageEngagement,
+        topCrops,
+        riskDistribution
+      };
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 }
 
