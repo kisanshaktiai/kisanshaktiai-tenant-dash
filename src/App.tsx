@@ -19,7 +19,7 @@ import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 // Import pages
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
+import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
 import FarmersPage from '@/pages/FarmersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
@@ -79,7 +79,7 @@ function App() {
                     {/* Main app routes with layout */}
                     <Route path="/app" element={<EnhancedTenantLayout />}>
                       <Route index element={<Navigate to="/app/dashboard" replace />} />
-                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="dashboard" element={<EnhancedDashboard />} />
                       <Route path="farmers" element={<FarmersPage />} />
                       <Route path="products" element={<ProductsPage />} />
                       <Route path="campaigns" element={<CampaignsPage />} />
