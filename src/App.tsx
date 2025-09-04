@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import * as React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
@@ -45,7 +45,7 @@ import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
 
 function App() {
   // Initialize font service on app startup
-  useEffect(() => {
+  React.useEffect(() => {
     fontService.initializeFont();
   }, []);
 
