@@ -9,13 +9,17 @@ import { Badge } from '@/components/ui/badge';
 import ProductList from './components/ProductList';
 import CategoryManagement from './components/CategoryManagement';
 import PricingManagement from './components/PricingManagement';
-import BulkImport from './components/BulkImport';
-import ProductAnalytics from './components/ProductAnalytics';
+import EnhancedBulkImport from './components/EnhancedBulkImport';
+import EnhancedProductAnalytics from './components/EnhancedProductAnalytics';
+import AddProductModal from './components/AddProductModal';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProductsPage() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('products');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   return (
     <div className="w-full p-4 sm:p-6 lg:p-8 space-y-6">
@@ -35,11 +39,14 @@ export default function ProductsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export ({selectedProducts.length})
           </Button>
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={() => setActiveTab('import')}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Import Products
           </Button>
-          <Button>
+          <Button onClick={() => setIsAddProductModalOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Product
           </Button>
@@ -102,13 +109,26 @@ export default function ProductsPage() {
         </TabsContent>
 
         <TabsContent value="import">
-          <BulkImport />
+          <EnhancedBulkImport />
         </TabsContent>
 
         <TabsContent value="analytics">
-          <ProductAnalytics />
+          <EnhancedProductAnalytics />
         </TabsContent>
       </Tabs>
+
+      {/* Add Product Modal */}
+      <AddProductModal
+        isOpen={isAddProductModalOpen}
+        onClose={() => setIsAddProductModalOpen(false)}
+        onSuccess={() => {
+          setIsAddProductModalOpen(false);
+          toast({
+            title: 'Product added successfully',
+            description: 'The product has been added to your catalog',
+          });
+        }}
+      />
     </div>
   );
 }
