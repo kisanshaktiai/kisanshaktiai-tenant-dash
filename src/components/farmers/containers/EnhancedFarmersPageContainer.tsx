@@ -525,35 +525,12 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
         onSuccess={handleCreateSuccess}
       />
 
-      {/* Simple Farmer Profile Modal - replacing the complex one */}
+      {/* Enhanced Farmer Profile Modal with Health Metrics */}
       {selectedFarmer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl mx-4">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Farmer Profile - {selectedFarmer.farmer_code}
-                <Button variant="ghost" onClick={() => setSelectedFarmer(null)}>×</Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold">Basic Information</h4>
-                  <p>Code: {selectedFarmer.farmer_code}</p>
-                  <p>Mobile: {selectedFarmer.mobile_number}</p>
-                  <p>Experience: {selectedFarmer.farming_experience_years} years</p>
-                </div>
-                <div>
-                  <h4 className="font-semibold">Land & Assets</h4>
-                  <p>Total Land: {selectedFarmer.total_land_acres} acres</p>
-                  <p>Irrigation: {selectedFarmer.has_irrigation ? 'Yes' : 'No'}</p>
-                  <p>Storage: {selectedFarmer.has_storage ? 'Yes' : 'No'}</p>
-                  <p>Tractor: {selectedFarmer.has_tractor ? 'Yes' : 'No'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <EnhancedFarmerProfile
+          farmer={selectedFarmer}
+          onClose={() => setSelectedFarmer(null)}
+        />
       )}
     </div>
   );
