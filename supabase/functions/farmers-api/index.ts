@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, validateApiKey, checkRateLimit, logApiRequest, createResponse, ApiRequest, ApiResponse } from "../shared/middleware.ts";
+import { corsHeaders, handleCorsOptions, validateApiKey, checkRateLimit, logApiRequest, createResponse, ApiRequest, ApiResponse } from "../shared/middleware.ts";
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -91,7 +91,7 @@ async function handleFarmersEndpoint(request: ApiRequest, tenantId: string): Pro
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsOptions();
   }
 
   try {

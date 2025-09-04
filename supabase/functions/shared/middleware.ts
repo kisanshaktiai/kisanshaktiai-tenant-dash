@@ -1,10 +1,36 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Centralized CORS configuration
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+  'Access-Control-Max-Age': '86400', // 24 hours
+  'Access-Control-Allow-Credentials': 'true',
 };
+
+// Helper function to handle CORS preflight
+export function handleCorsOptions(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
+
+// Apply CORS headers to any response
+export function withCors(response: Response): Response {
+  const newHeaders = new Headers(response.headers);
+  Object.entries(corsHeaders).forEach(([key, value]) => {
+    newHeaders.set(key, value);
+  });
+  
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
 
 export interface ApiRequest {
   method: string;
