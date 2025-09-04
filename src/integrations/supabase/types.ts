@@ -5943,82 +5943,154 @@ export type Database = {
       }
       products: {
         Row: {
+          active_ingredients: Json | null
+          application_method: string | null
           availability_status: string | null
+          batch_number: string | null
           brand: string | null
           bulk_pricing: Json | null
           category_id: string | null
+          certification_details: Json | null
           created_at: string
           credit_options: Json | null
           dealer_locations: Json | null
           description: string | null
           discount_percentage: number | null
+          dosage_instructions: string | null
+          expiry_date: string | null
           id: string
           images: string[] | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_organic: boolean | null
+          last_restocked_at: string | null
+          manufacturer: string | null
+          manufacturing_date: string | null
           max_order_quantity: number | null
           min_order_quantity: number | null
+          minimum_stock_level: number | null
           name: string
+          nutrient_composition: Json | null
+          ph_range: string | null
           price_per_unit: number | null
+          product_type: string | null
+          reorder_point: number | null
+          safety_precautions: string | null
+          shelf_life_months: number | null
           sku: string | null
+          solubility: string | null
           specifications: Json | null
+          stock_movement_history: Json | null
           stock_quantity: number | null
+          storage_conditions: string | null
+          suitable_crops: Json | null
           tags: string[] | null
+          target_diseases: Json | null
+          target_pests: Json | null
           tenant_id: string
           unit_type: string | null
           updated_at: string
+          waiting_period_days: number | null
         }
         Insert: {
+          active_ingredients?: Json | null
+          application_method?: string | null
           availability_status?: string | null
+          batch_number?: string | null
           brand?: string | null
           bulk_pricing?: Json | null
           category_id?: string | null
+          certification_details?: Json | null
           created_at?: string
           credit_options?: Json | null
           dealer_locations?: Json | null
           description?: string | null
           discount_percentage?: number | null
+          dosage_instructions?: string | null
+          expiry_date?: string | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_organic?: boolean | null
+          last_restocked_at?: string | null
+          manufacturer?: string | null
+          manufacturing_date?: string | null
           max_order_quantity?: number | null
           min_order_quantity?: number | null
+          minimum_stock_level?: number | null
           name: string
+          nutrient_composition?: Json | null
+          ph_range?: string | null
           price_per_unit?: number | null
+          product_type?: string | null
+          reorder_point?: number | null
+          safety_precautions?: string | null
+          shelf_life_months?: number | null
           sku?: string | null
+          solubility?: string | null
           specifications?: Json | null
+          stock_movement_history?: Json | null
           stock_quantity?: number | null
+          storage_conditions?: string | null
+          suitable_crops?: Json | null
           tags?: string[] | null
+          target_diseases?: Json | null
+          target_pests?: Json | null
           tenant_id: string
           unit_type?: string | null
           updated_at?: string
+          waiting_period_days?: number | null
         }
         Update: {
+          active_ingredients?: Json | null
+          application_method?: string | null
           availability_status?: string | null
+          batch_number?: string | null
           brand?: string | null
           bulk_pricing?: Json | null
           category_id?: string | null
+          certification_details?: Json | null
           created_at?: string
           credit_options?: Json | null
           dealer_locations?: Json | null
           description?: string | null
           discount_percentage?: number | null
+          dosage_instructions?: string | null
+          expiry_date?: string | null
           id?: string
           images?: string[] | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_organic?: boolean | null
+          last_restocked_at?: string | null
+          manufacturer?: string | null
+          manufacturing_date?: string | null
           max_order_quantity?: number | null
           min_order_quantity?: number | null
+          minimum_stock_level?: number | null
           name?: string
+          nutrient_composition?: Json | null
+          ph_range?: string | null
           price_per_unit?: number | null
+          product_type?: string | null
+          reorder_point?: number | null
+          safety_precautions?: string | null
+          shelf_life_months?: number | null
           sku?: string | null
+          solubility?: string | null
           specifications?: Json | null
+          stock_movement_history?: Json | null
           stock_quantity?: number | null
+          storage_conditions?: string | null
+          suitable_crops?: Json | null
           tags?: string[] | null
+          target_diseases?: Json | null
+          target_pests?: Json | null
           tenant_id?: string
           unit_type?: string | null
           updated_at?: string
+          waiting_period_days?: number | null
         }
         Relationships: [
           {
@@ -6659,6 +6731,56 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      stock_movements: {
+        Row: {
+          created_at: string | null
+          id: string
+          movement_type: string
+          new_stock: number
+          performed_by: string | null
+          previous_stock: number
+          product_id: string
+          quantity: number
+          reason: string | null
+          reference_number: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          movement_type: string
+          new_stock: number
+          performed_by?: string | null
+          previous_stock: number
+          product_id: string
+          quantity: number
+          reason?: string | null
+          reference_number?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          movement_type?: string
+          new_stock?: number
+          performed_by?: string | null
+          previous_stock?: number
+          product_id?: string
+          quantity?: number
+          reason?: string | null
+          reference_number?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subscription_plans: {
         Row: {

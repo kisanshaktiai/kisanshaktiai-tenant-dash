@@ -1,6 +1,5 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import EnhancedProductList from './EnhancedProductList';
 
 export interface ProductListProps {
   searchTerm: string;
@@ -14,16 +13,11 @@ const ProductList: React.FC<ProductListProps> = ({
   onSelectedProductsChange 
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Product List</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Search term: {searchTerm}</p>
-        <p>Selected products: {selectedProducts.length}</p>
-        <p>Product list functionality coming soon...</p>
-      </CardContent>
-    </Card>
+    <EnhancedProductList
+      searchTerm={searchTerm}
+      selectedProducts={selectedProducts}
+      onSelectedProductsChange={onSelectedProductsChange || (() => {})}
+    />
   );
 };
 
