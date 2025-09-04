@@ -10,6 +10,9 @@ import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { Toaster } from '@/components/ui/sonner';
 import { fontService } from '@/services/FontService';
 
+// Initialize font service on app startup
+fontService.initializeFont();
+
 // Import layout
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 
@@ -44,10 +47,6 @@ import SetupPasswordPage from '@/pages/SetupPasswordPage';
 import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
 
 function App() {
-  // Initialize font service on app startup
-  React.useEffect(() => {
-    fontService.initializeFont();
-  }, []);
 
   return (
     <Provider store={store}>
