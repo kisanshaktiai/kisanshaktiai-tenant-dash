@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { EnhancedFarmerCard } from '../cards/EnhancedFarmerCard';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
+import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
 import { useEnhancedFarmersQuery, useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData, PaginatedFarmersResult } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
