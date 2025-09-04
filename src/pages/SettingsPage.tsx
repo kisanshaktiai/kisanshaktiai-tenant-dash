@@ -26,56 +26,56 @@ const SettingsPage = () => {
       title: 'Organization',
       description: 'Manage your organization profile and basic settings',
       icon: Building2,
-      href: '/settings/organization',
+      href: '/app/settings/organization',
       color: 'text-blue-500'
     },
     {
       title: 'User Management',
       description: 'Manage team members, roles, and permissions',
       icon: Users,
-      href: '/settings/users',
+      href: '/app/settings/users',
       color: 'text-green-500'
     },
     {
       title: 'Security',
       description: 'Security settings, authentication, and access control',
       icon: Shield,
-      href: '/settings/security',
+      href: '/app/settings/security',
       color: 'text-red-500'
     },
     {
       title: 'Notifications',
       description: 'Configure notification preferences and channels',
       icon: Bell,
-      href: '/settings/notifications',
+      href: '/app/settings/notifications',
       color: 'text-yellow-500'
     },
     {
       title: 'Appearance',
       description: 'Customize the look and feel of your dashboard',
       icon: Palette,
-      href: '/settings/appearance',
+      href: '/app/settings/appearance',
       color: 'text-purple-500'
     },
     {
       title: 'Data & Privacy',
       description: 'Data retention, privacy settings, and GDPR compliance',
       icon: Database,
-      href: '/settings/data-privacy',
+      href: '/app/settings/data-privacy',
       color: 'text-indigo-500'
     },
     {
       title: 'API Keys',
       description: 'Manage API keys and integrations',
       icon: Key,
-      href: '/settings/api-keys',
+      href: '/app/settings/api-keys',
       color: 'text-orange-500'
     },
     {
       title: 'Localization',
       description: 'Language, region, and timezone preferences',
       icon: Globe,
-      href: '/settings/localization',
+      href: '/app/settings/localization',
       color: 'text-teal-500'
     }
   ];
@@ -126,15 +126,15 @@ const SettingsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/organization')}>
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/app/settings/organization')}>
                 <Building2 className="mr-2 h-4 w-4" />
                 Update Organization Info
               </Button>
-              <Button variant="outline" className="justify-start" onClick={() => navigate('/settings/users')}>
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/app/settings/users')}>
                 <Users className="mr-2 h-4 w-4" />
                 Invite Team Members
               </Button>
-              <Button variant="outline" className="justify-start" onClick={() => navigate('/subscription')}>
+              <Button variant="outline" className="justify-start" onClick={() => navigate('/app/subscription')}>
                 <Shield className="mr-2 h-4 w-4" />
                 Manage Subscription
               </Button>

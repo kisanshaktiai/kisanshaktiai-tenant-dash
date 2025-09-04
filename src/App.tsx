@@ -30,9 +30,14 @@ import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
 
 // Settings sub-pages
-import OrganizationSettingsPage from '@/pages/OrganizationSettingsPage';
-import UserManagementPage from '@/pages/UserManagementPage';
+import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
+import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
+import NotificationPage from '@/pages/NotificationPage';
+import SecurityPage from '@/pages/SecurityPage';
+import DataPrivacyPage from '@/pages/DataPrivacyPage';
+import ApiKeysPage from '@/pages/ApiKeysPage';
+import LocalizationPage from '@/pages/LocalizationPage';
 
 // Auth pages
 import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
@@ -82,9 +87,14 @@ function App() {
                       <Route path="dealers" element={<DealersPage />} />
                       <Route path="profile" element={<ProfilePage />} />
                       <Route path="settings" element={<SettingsPage />} />
-                      <Route path="settings/organization" element={<OrganizationSettingsPage />} />
-                      <Route path="settings/users" element={<UserManagementPage />} />
+                      <Route path="settings/organization" element={<EnhancedOrganizationPage />} />
+                      <Route path="settings/users" element={<EnhancedUsersPage />} />
                       <Route path="settings/appearance" element={<AppearancePage />} />
+                      <Route path="settings/notifications" element={<NotificationPage />} />
+                      <Route path="settings/security" element={<SecurityPage />} />
+                      <Route path="settings/data-privacy" element={<DataPrivacyPage />} />
+                      <Route path="settings/api-keys" element={<ApiKeysPage />} />
+                      <Route path="settings/localization" element={<LocalizationPage />} />
                     </Route>
                     
                     {/* Legacy redirects */}
