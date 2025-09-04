@@ -16,13 +16,76 @@ export interface Dealer {
   tenant_id: string;
   dealer_code: string;
   business_name: string;
+  legal_name?: string;
   contact_person: string;
+  designation?: string;
   phone: string;
+  alternate_phone?: string;
   email: string;
-  is_active: boolean;
+  alternate_email?: string;
+  website?: string;
+  
+  // Address information
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  gps_location?: any;
+  
+  // Business information
+  gst_number?: string;
+  pan_number?: string;
+  business_type?: string;
+  establishment_year?: number;
+  employee_count?: number;
+  
+  // Territory and coverage
+  territory_id?: string;
+  assigned_zones?: string[];
+  coverage_area_km?: number;
+  service_villages?: string[];
+  
+  // Performance metrics
+  performance_score?: number;
+  sales_target?: number;
+  sales_achieved?: number;
+  customer_rating?: number;
+  total_farmers_served?: number;
+  
+  // Commission and financials
+  commission_rate?: number;
+  outstanding_amount?: number;
+  credit_limit?: number;
+  payment_terms?: string;
+  
+  // Verification and compliance
   verification_status: string;
+  kyc_documents?: any;
+  verified_at?: string;
+  verified_by?: string;
+  agreement_signed?: boolean;
+  agreement_date?: string;
+  
+  // Activity tracking
+  last_order_date?: string;
+  total_orders?: number;
+  last_activity_at?: string;
+  engagement_score?: number;
+  
+  // Status and metadata
+  status?: string;
+  onboarding_status?: string;
+  onboarding_completed_at?: string;
+  tags?: string[];
+  notes?: string;
+  metadata?: any;
+  
+  is_active: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: string;
 }
 
 export interface CreateDealerData {
