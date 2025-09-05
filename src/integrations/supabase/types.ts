@@ -3179,6 +3179,7 @@ export type Database = {
           app_install_date: string | null
           associated_tenants: string[] | null
           created_at: string | null
+          failed_login_attempts: number | null
           farm_type: string | null
           farmer_code: string | null
           farming_experience_years: number | null
@@ -3188,9 +3189,11 @@ export type Database = {
           has_tractor: boolean | null
           id: string
           irrigation_type: string | null
+          is_active: boolean | null
           is_verified: boolean | null
           language_preference: string | null
           last_app_open: string | null
+          last_failed_login: string | null
           last_login_at: string | null
           loan_amount: number | null
           login_attempts: number | null
@@ -3198,6 +3201,7 @@ export type Database = {
           mobile_number: string | null
           notes: string | null
           pin_hash: string | null
+          pin_updated_at: string | null
           preferred_contact_method: string | null
           preferred_dealer_id: string | null
           primary_crops: string[] | null
@@ -3217,6 +3221,7 @@ export type Database = {
           app_install_date?: string | null
           associated_tenants?: string[] | null
           created_at?: string | null
+          failed_login_attempts?: number | null
           farm_type?: string | null
           farmer_code?: string | null
           farming_experience_years?: number | null
@@ -3226,9 +3231,11 @@ export type Database = {
           has_tractor?: boolean | null
           id?: string
           irrigation_type?: string | null
+          is_active?: boolean | null
           is_verified?: boolean | null
           language_preference?: string | null
           last_app_open?: string | null
+          last_failed_login?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
           login_attempts?: number | null
@@ -3236,6 +3243,7 @@ export type Database = {
           mobile_number?: string | null
           notes?: string | null
           pin_hash?: string | null
+          pin_updated_at?: string | null
           preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
@@ -3255,6 +3263,7 @@ export type Database = {
           app_install_date?: string | null
           associated_tenants?: string[] | null
           created_at?: string | null
+          failed_login_attempts?: number | null
           farm_type?: string | null
           farmer_code?: string | null
           farming_experience_years?: number | null
@@ -3264,9 +3273,11 @@ export type Database = {
           has_tractor?: boolean | null
           id?: string
           irrigation_type?: string | null
+          is_active?: boolean | null
           is_verified?: boolean | null
           language_preference?: string | null
           last_app_open?: string | null
+          last_failed_login?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
           login_attempts?: number | null
@@ -3274,6 +3285,7 @@ export type Database = {
           mobile_number?: string | null
           notes?: string | null
           pin_hash?: string | null
+          pin_updated_at?: string | null
           preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
@@ -7888,6 +7900,7 @@ export type Database = {
       }
       tenants: {
         Row: {
+          activated_at: string | null
           archived_at: string | null
           branding_updated_at: string | null
           branding_version: number | null
@@ -7907,6 +7920,8 @@ export type Database = {
           max_storage_gb: number | null
           metadata: Json | null
           name: string
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
           owner_email: string | null
           owner_name: string | null
           owner_phone: string | null
@@ -7927,6 +7942,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          activated_at?: string | null
           archived_at?: string | null
           branding_updated_at?: string | null
           branding_version?: number | null
@@ -7946,6 +7962,8 @@ export type Database = {
           max_storage_gb?: number | null
           metadata?: Json | null
           name: string
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
@@ -7966,6 +7984,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          activated_at?: string | null
           archived_at?: string | null
           branding_updated_at?: string | null
           branding_version?: number | null
@@ -7985,6 +8004,8 @@ export type Database = {
           max_storage_gb?: number | null
           metadata?: Json | null
           name?: string
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
@@ -9097,10 +9118,15 @@ export type Database = {
       }
       white_label_configs: {
         Row: {
+          app_customization: Json | null
           app_store_config: Json | null
           brand_identity: Json | null
+          content_management: Json | null
           created_at: string | null
+          css_injection: Json | null
+          distribution: Json | null
           domain_config: Json | null
+          domain_health: Json | null
           email_templates: Json | null
           id: string
           pwa_config: Json | null
@@ -9109,10 +9135,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          app_customization?: Json | null
           app_store_config?: Json | null
           brand_identity?: Json | null
+          content_management?: Json | null
           created_at?: string | null
+          css_injection?: Json | null
+          distribution?: Json | null
           domain_config?: Json | null
+          domain_health?: Json | null
           email_templates?: Json | null
           id?: string
           pwa_config?: Json | null
@@ -9121,10 +9152,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          app_customization?: Json | null
           app_store_config?: Json | null
           brand_identity?: Json | null
+          content_management?: Json | null
           created_at?: string | null
+          css_injection?: Json | null
+          distribution?: Json | null
           domain_config?: Json | null
+          domain_health?: Json | null
           email_templates?: Json | null
           id?: string
           pwa_config?: Json | null
@@ -9506,6 +9542,13 @@ export type Database = {
       check_bootstrap_status: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      check_mobile_number_exists: {
+        Args: { mobile_num: string }
+        Returns: {
+          profile: Json
+          user_exists: boolean
+        }[]
       }
       check_registration_status: {
         Args: { p_email?: string; p_token?: string }
@@ -11731,6 +11774,10 @@ export type Database = {
           role: string
           valid: boolean
         }[]
+      }
+      validate_farmer_pin: {
+        Args: { p_mobile_number: string; p_pin_hash: string }
+        Returns: boolean
       }
       validate_invitation_token: {
         Args: { token: string }
