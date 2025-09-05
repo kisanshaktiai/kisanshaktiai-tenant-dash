@@ -11,8 +11,8 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
 }
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ label, color, onChange }) => {
-  const [localColor, setLocalColor] = useState(color);
+export const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange }) => {
+  const [localColor, setLocalColor] = useState(value);
 
   const handleColorChange = (value: string) => {
     setLocalColor(value);

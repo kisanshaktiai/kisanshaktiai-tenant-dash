@@ -217,32 +217,32 @@ const WhiteLabelPage = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <ColorPicker
                         label="Primary Color"
-                        color={localSettings.primary_color}
+                        value={localSettings.primary_color}
                         onChange={(color) => handleColorChange('primary_color', color)}
                       />
                       <ColorPicker
                         label="Secondary Color"
-                        color={localSettings.secondary_color}
+                        value={localSettings.secondary_color}
                         onChange={(color) => handleColorChange('secondary_color', color)}
                       />
                       <ColorPicker
                         label="Accent Color"
-                        color={localSettings.accent_color}
+                        value={localSettings.accent_color}
                         onChange={(color) => handleColorChange('accent_color', color)}
                       />
                       <ColorPicker
                         label="Background Color"
-                        color={localSettings.background_color}
+                        value={localSettings.background_color}
                         onChange={(color) => handleColorChange('background_color', color)}
                       />
                       <ColorPicker
                         label="Text Color"
-                        color={localSettings.text_color}
+                        value={localSettings.text_color}
                         onChange={(color) => handleColorChange('text_color', color)}
                       />
                       <ColorPicker
                         label="Border Color"
-                        color={localSettings.border_color}
+                        value={localSettings.border_color}
                         onChange={(color) => handleColorChange('border_color', color)}
                       />
                     </div>

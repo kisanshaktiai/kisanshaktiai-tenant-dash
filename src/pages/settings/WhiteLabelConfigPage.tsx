@@ -242,27 +242,23 @@ export default function WhiteLabelConfigPage() {
                     </div>
                     
                     <BrandingUploader
-                      label="App Logo"
-                      value={localSettings.logo_override_url}
-                      onChange={(url) => setLocalSettings({...localSettings, logo_override_url: url})}
+                      logoUrl={localSettings.logo_override_url}
+                      onLogoChange={(url) => setLocalSettings({...localSettings, logo_override_url: url})}
                     />
                     
                     <BrandingUploader
-                      label="App Icon"
-                      value={localSettings.app_icon}
-                      onChange={(url) => setLocalSettings({...localSettings, app_icon: url})}
+                      logoUrl={localSettings.app_icon}
+                      onLogoChange={(url) => setLocalSettings({...localSettings, app_icon: url})}
                     />
                     
                     <BrandingUploader
-                      label="Splash Screen"
-                      value={localSettings.app_splash_screen}
-                      onChange={(url) => setLocalSettings({...localSettings, app_splash_screen: url})}
+                      logoUrl={localSettings.app_splash_screen}
+                      onLogoChange={(url) => setLocalSettings({...localSettings, app_splash_screen: url})}
                     />
                     
                     <BrandingUploader
-                      label="Favicon"
-                      value={localSettings.favicon_url}
-                      onChange={(url) => setLocalSettings({...localSettings, favicon_url: url})}
+                      logoUrl={localSettings.favicon_url}
+                      onLogoChange={(url) => setLocalSettings({...localSettings, favicon_url: url})}
                     />
                     
                     <div>
