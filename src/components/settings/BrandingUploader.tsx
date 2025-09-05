@@ -89,8 +89,9 @@ export const BrandingUploader: React.FC<BrandingUploaderProps> = ({
               <p className="text-xs text-muted-foreground mt-1">
                 or click to browse (PNG, JPG, SVG up to 5MB)
               </p>
-            </div>
-          </div>
+        </div>
+      </div>
+    </div>
         )}
       </Card>
 

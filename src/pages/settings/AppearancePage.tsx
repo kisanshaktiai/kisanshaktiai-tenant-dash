@@ -26,7 +26,7 @@ const AppearancePage = () => {
     success_color: '#10b981',
     warning_color: '#f59e0b',
     info_color: '#3b82f6',
-    destructive_color: '#ef4444',
+    error_color: '#ef4444',
     border_color: '#e5e7eb',
     muted_color: '#f3f4f6',
     sidebar_background_color: '#ffffff',
@@ -47,7 +47,7 @@ const AppearancePage = () => {
         success_color: settings.success_color || '#10b981',
         warning_color: settings.warning_color || '#f59e0b',
         info_color: settings.info_color || '#3b82f6',
-        destructive_color: settings.destructive_color || '#ef4444',
+        error_color: settings.error_color || '#ef4444',
         border_color: settings.border_color || '#e5e7eb',
         muted_color: settings.muted_color || '#f3f4f6',
         sidebar_background_color: settings.sidebar_background_color || '#ffffff',
@@ -91,7 +91,7 @@ const AppearancePage = () => {
       success_color: '#10b981',
       warning_color: '#f59e0b',
       info_color: '#3b82f6',
-      destructive_color: '#ef4444',
+      error_color: '#ef4444',
       border_color: '#e5e7eb',
       muted_color: '#f3f4f6',
       sidebar_background_color: '#ffffff',
@@ -378,18 +378,18 @@ const AppearancePage = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="destructive_color">Error Color</Label>
+                  <Label htmlFor="error_color">Error Color</Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input
-                      id="destructive_color"
+                      id="error_color"
                       type="color"
-                      value={formData.destructive_color}
-                      onChange={(e) => handleInputChange('destructive_color', e.target.value)}
+                      value={formData.error_color}
+                      onChange={(e) => handleInputChange('error_color', e.target.value)}
                       className="w-16 h-10 p-1 border rounded"
                     />
                     <Input
-                      value={formData.destructive_color}
-                      onChange={(e) => handleInputChange('destructive_color', e.target.value)}
+                      value={formData.error_color}
+                      onChange={(e) => handleInputChange('error_color', e.target.value)}
                       className="flex-1"
                     />
                   </div>

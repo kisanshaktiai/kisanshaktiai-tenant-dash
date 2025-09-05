@@ -738,57 +738,177 @@ export type Database = {
       appearance_settings: {
         Row: {
           accent_color: string
+          advanced_settings: Json | null
+          analytics_config: Json | null
+          animations_enabled: boolean | null
+          api_settings: Json | null
+          app_icon: string | null
+          app_name: string | null
+          app_splash_screen: string | null
+          applied_at: string | null
+          applied_by: string | null
           background_color: string
           border_color: string | null
+          button_style: string | null
+          card_style: string | null
           created_at: string | null
           custom_css: string | null
+          custom_fonts: Json | null
+          custom_scripts: Json | null
+          email_templates: Json | null
+          environment: string | null
+          error_color: string | null
+          favicon_url: string | null
+          feature_toggles: Json | null
           font_family: string
+          footer_links: Json | null
+          footer_text: string | null
+          header_config: Json | null
           id: string
+          info_color: string | null
+          input_style: string | null
+          is_active: boolean | null
+          language_settings: Json | null
+          layout_config: Json | null
           logo_override_url: string | null
+          maintenance_message: string | null
+          maintenance_mode: boolean | null
+          mobile_config: Json | null
           muted_color: string | null
+          navigation_style: string | null
+          notification_settings: Json | null
+          preview_url: string | null
           primary_color: string
+          primary_gradient: string | null
           secondary_color: string
+          secondary_gradient: string | null
+          seo_config: Json | null
+          show_powered_by: boolean | null
           sidebar_background_color: string | null
+          social_links: Json | null
+          success_color: string | null
           tenant_id: string
           text_color: string
           theme_mode: string
           updated_at: string | null
+          version: number | null
+          warning_color: string | null
         }
         Insert: {
           accent_color?: string
+          advanced_settings?: Json | null
+          analytics_config?: Json | null
+          animations_enabled?: boolean | null
+          api_settings?: Json | null
+          app_icon?: string | null
+          app_name?: string | null
+          app_splash_screen?: string | null
+          applied_at?: string | null
+          applied_by?: string | null
           background_color?: string
           border_color?: string | null
+          button_style?: string | null
+          card_style?: string | null
           created_at?: string | null
           custom_css?: string | null
+          custom_fonts?: Json | null
+          custom_scripts?: Json | null
+          email_templates?: Json | null
+          environment?: string | null
+          error_color?: string | null
+          favicon_url?: string | null
+          feature_toggles?: Json | null
           font_family?: string
+          footer_links?: Json | null
+          footer_text?: string | null
+          header_config?: Json | null
           id?: string
+          info_color?: string | null
+          input_style?: string | null
+          is_active?: boolean | null
+          language_settings?: Json | null
+          layout_config?: Json | null
           logo_override_url?: string | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          mobile_config?: Json | null
           muted_color?: string | null
+          navigation_style?: string | null
+          notification_settings?: Json | null
+          preview_url?: string | null
           primary_color?: string
+          primary_gradient?: string | null
           secondary_color?: string
+          secondary_gradient?: string | null
+          seo_config?: Json | null
+          show_powered_by?: boolean | null
           sidebar_background_color?: string | null
+          social_links?: Json | null
+          success_color?: string | null
           tenant_id: string
           text_color?: string
           theme_mode?: string
           updated_at?: string | null
+          version?: number | null
+          warning_color?: string | null
         }
         Update: {
           accent_color?: string
+          advanced_settings?: Json | null
+          analytics_config?: Json | null
+          animations_enabled?: boolean | null
+          api_settings?: Json | null
+          app_icon?: string | null
+          app_name?: string | null
+          app_splash_screen?: string | null
+          applied_at?: string | null
+          applied_by?: string | null
           background_color?: string
           border_color?: string | null
+          button_style?: string | null
+          card_style?: string | null
           created_at?: string | null
           custom_css?: string | null
+          custom_fonts?: Json | null
+          custom_scripts?: Json | null
+          email_templates?: Json | null
+          environment?: string | null
+          error_color?: string | null
+          favicon_url?: string | null
+          feature_toggles?: Json | null
           font_family?: string
+          footer_links?: Json | null
+          footer_text?: string | null
+          header_config?: Json | null
           id?: string
+          info_color?: string | null
+          input_style?: string | null
+          is_active?: boolean | null
+          language_settings?: Json | null
+          layout_config?: Json | null
           logo_override_url?: string | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          mobile_config?: Json | null
           muted_color?: string | null
+          navigation_style?: string | null
+          notification_settings?: Json | null
+          preview_url?: string | null
           primary_color?: string
+          primary_gradient?: string | null
           secondary_color?: string
+          secondary_gradient?: string | null
+          seo_config?: Json | null
+          show_powered_by?: boolean | null
           sidebar_background_color?: string | null
+          social_links?: Json | null
+          success_color?: string | null
           tenant_id?: string
           text_color?: string
           theme_mode?: string
           updated_at?: string | null
+          version?: number | null
+          warning_color?: string | null
         }
         Relationships: [
           {
@@ -10398,6 +10518,10 @@ export type Database = {
       mark_invite_used: {
         Args: { invite_token: string }
         Returns: boolean
+      }
+      migrate_theme_data_to_appearance_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       path: {
         Args: { "": unknown }

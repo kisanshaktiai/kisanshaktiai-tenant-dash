@@ -23,14 +23,54 @@ export interface AppearanceSettings {
   font_family: string;
   logo_override_url?: string;
   custom_css?: string;
-  // Extended semantic colors
+  sidebar_background_color?: string;
+  muted_color?: string;
+  border_color?: string;
+  
+  // Extended fields from tenant_branding
+  app_name?: string;
+  app_icon?: string;
+  app_splash_screen?: string;
+  favicon_url?: string;
+  footer_text?: string;
+  footer_links?: any[];
+  social_links?: Record<string, string>;
+  header_config?: Record<string, any>;
+  navigation_style?: string;
+  show_powered_by?: boolean;
+  custom_fonts?: any[];
+  button_style?: string;
+  input_style?: string;
+  card_style?: string;
+  animations_enabled?: boolean;
+  primary_gradient?: string;
+  secondary_gradient?: string;
   success_color?: string;
   warning_color?: string;
+  error_color?: string;
   info_color?: string;
-  destructive_color?: string;
-  border_color?: string;
-  muted_color?: string;
-  sidebar_background_color?: string;
+  
+  // Extended fields from white_label_configs
+  feature_toggles?: Record<string, boolean>;
+  layout_config?: Record<string, any>;
+  advanced_settings?: Record<string, any>;
+  mobile_config?: Record<string, any>;
+  email_templates?: Record<string, any>;
+  notification_settings?: Record<string, any>;
+  language_settings?: Record<string, any>;
+  seo_config?: Record<string, any>;
+  analytics_config?: Record<string, any>;
+  api_settings?: Record<string, any>;
+  custom_scripts?: { head?: string; body?: string };
+  maintenance_mode?: boolean;
+  maintenance_message?: string;
+  version?: number;
+  is_active?: boolean;
+  applied_at?: string;
+  applied_by?: string;
+  preview_url?: string;
+  environment?: string;
+  
   created_at?: string;
   updated_at?: string;
 }
@@ -53,10 +93,28 @@ class AppearanceSettingsService {
         return this.getDefaultSettings(tenantId);
       }
 
-      return {
+      // Cast JSON types to appropriate TypeScript types
+      const processedData: AppearanceSettings = {
         ...data,
-        theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
+        theme_mode: data.theme_mode as 'light' | 'dark' | 'system',
+        footer_links: data.footer_links as any[] || [],
+        social_links: data.social_links as Record<string, string> || {},
+        header_config: data.header_config as Record<string, any> || {},
+        custom_fonts: data.custom_fonts as any[] || [],
+        feature_toggles: data.feature_toggles as Record<string, boolean> || {},
+        layout_config: data.layout_config as Record<string, any> || {},
+        advanced_settings: data.advanced_settings as Record<string, any> || {},
+        mobile_config: data.mobile_config as Record<string, any> || {},
+        email_templates: data.email_templates as Record<string, any> || {},
+        notification_settings: data.notification_settings as Record<string, any> || {},
+        language_settings: data.language_settings as Record<string, any> || {},
+        seo_config: data.seo_config as Record<string, any> || {},
+        analytics_config: data.analytics_config as Record<string, any> || {},
+        api_settings: data.api_settings as Record<string, any> || {},
+        custom_scripts: data.custom_scripts as { head?: string; body?: string } || {}
       };
+      
+      return processedData;
     } catch (error) {
       console.error('Failed to fetch appearance settings:', error);
       return this.getDefaultSettings(tenantId);
@@ -72,23 +130,7 @@ class AppearanceSettingsService {
       const { data, error } = await supabase
         .from('appearance_settings')
         .upsert({
-          tenant_id: settings.tenant_id,
-          theme_mode: settings.theme_mode || 'system',
-          primary_color: settings.primary_color || '#10b981',
-          secondary_color: settings.secondary_color || '#059669',
-          accent_color: settings.accent_color || '#14b8a6',
-          background_color: settings.background_color || '#ffffff',
-          text_color: settings.text_color || '#1f2937',
-          font_family: settings.font_family || 'Inter',
-          logo_override_url: settings.logo_override_url,
-          custom_css: settings.custom_css,
-          success_color: settings.success_color || semanticColors.success,
-          warning_color: settings.warning_color || semanticColors.warning,
-          info_color: settings.info_color || semanticColors.info,
-          destructive_color: settings.destructive_color || semanticColors.destructive,
-          border_color: settings.border_color || semanticColors.border,
-          muted_color: settings.muted_color || semanticColors.muted,
-          sidebar_background_color: settings.sidebar_background_color || '#ffffff',
+          ...settings,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'tenant_id'
@@ -101,10 +143,28 @@ class AppearanceSettingsService {
         throw error;
       }
 
-      return {
+      // Cast JSON types to appropriate TypeScript types
+      const processedData: AppearanceSettings = {
         ...data,
-        theme_mode: data.theme_mode as 'light' | 'dark' | 'system'
+        theme_mode: data.theme_mode as 'light' | 'dark' | 'system',
+        footer_links: data.footer_links as any[] || [],
+        social_links: data.social_links as Record<string, string> || {},
+        header_config: data.header_config as Record<string, any> || {},
+        custom_fonts: data.custom_fonts as any[] || [],
+        feature_toggles: data.feature_toggles as Record<string, boolean> || {},
+        layout_config: data.layout_config as Record<string, any> || {},
+        advanced_settings: data.advanced_settings as Record<string, any> || {},
+        mobile_config: data.mobile_config as Record<string, any> || {},
+        email_templates: data.email_templates as Record<string, any> || {},
+        notification_settings: data.notification_settings as Record<string, any> || {},
+        language_settings: data.language_settings as Record<string, any> || {},
+        seo_config: data.seo_config as Record<string, any> || {},
+        analytics_config: data.analytics_config as Record<string, any> || {},
+        api_settings: data.api_settings as Record<string, any> || {},
+        custom_scripts: data.custom_scripts as { head?: string; body?: string } || {}
       };
+      
+      return processedData;
     } catch (error) {
       console.error('Failed to upsert appearance settings:', error);
       throw error;
@@ -126,7 +186,7 @@ class AppearanceSettingsService {
       success_color: semanticColors.success,
       warning_color: semanticColors.warning,
       info_color: semanticColors.info,
-      destructive_color: semanticColors.destructive,
+      error_color: semanticColors.destructive,
       border_color: semanticColors.border,
       muted_color: semanticColors.muted,
       sidebar_background_color: '#ffffff',
@@ -151,7 +211,7 @@ class AppearanceSettingsService {
       const successHsl = settings.success_color ? sanitizeHsl(hexToHsl(settings.success_color)) : semanticColors.success;
       const warningHsl = settings.warning_color ? sanitizeHsl(hexToHsl(settings.warning_color)) : semanticColors.warning;
       const infoHsl = settings.info_color ? sanitizeHsl(hexToHsl(settings.info_color)) : semanticColors.info;
-      const destructiveHsl = settings.destructive_color ? sanitizeHsl(hexToHsl(settings.destructive_color)) : semanticColors.destructive;
+      const destructiveHsl = settings.error_color ? sanitizeHsl(hexToHsl(settings.error_color)) : semanticColors.destructive;
       const borderHsl = settings.border_color ? sanitizeHsl(hexToHsl(settings.border_color)) : semanticColors.border;
       const mutedHsl = settings.muted_color ? sanitizeHsl(hexToHsl(settings.muted_color)) : semanticColors.muted;
       

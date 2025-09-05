@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface ColorPickerProps {
   label: string;
-  color: string;
+  value: string;
   onChange: (color: string) => void;
 }
 
