@@ -12,7 +12,8 @@ import {
   Database, 
   Key, 
   Globe,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -20,7 +21,7 @@ import { PageContent } from '@/components/layout/PageContent';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-
+  
   const settingsCategories = [
     {
       title: 'Organization',
@@ -56,6 +57,13 @@ const SettingsPage = () => {
       icon: Palette,
       href: '/app/settings/appearance',
       color: 'text-purple-500'
+    },
+    {
+      title: 'White Label',
+      description: 'Configure Farmer App branding and customization',
+      icon: Sparkles,
+      href: '/app/settings/white-label',
+      color: 'text-pink-500'
     },
     {
       title: 'Data & Privacy',
