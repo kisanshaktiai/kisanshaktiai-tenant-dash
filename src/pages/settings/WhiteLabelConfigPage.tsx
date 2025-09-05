@@ -13,6 +13,7 @@ import { BrandingUploader } from '@/components/settings/BrandingUploader';
 import { ColorPicker } from '@/components/settings/ColorPicker';
 import { LivePreview } from '@/components/settings/LivePreview';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ThemePresets, ThemePreset } from '@/components/settings/ThemePresets';
 import { 
   Palette, 
   Smartphone, 
@@ -33,7 +34,8 @@ import {
   Shield,
   Bell,
   Mail,
-  Languages
+  Languages,
+  Brush
 } from 'lucide-react';
 import { AppearanceSettings } from '@/services/AppearanceSettingsService';
 
@@ -42,6 +44,7 @@ export default function WhiteLabelConfigPage() {
   const [localSettings, setLocalSettings] = useState<Partial<AppearanceSettings>>({});
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
+  const [selectedThemeId, setSelectedThemeId] = useState<string>('');
 
   useEffect(() => {
     if (settings) {
@@ -49,19 +52,38 @@ export default function WhiteLabelConfigPage() {
     }
   }, [settings]);
 
+  const handleSelectTheme = (preset: ThemePreset) => {
+    setSelectedThemeId(preset.id);
+    setLocalSettings(prev => ({
+      ...prev,
+      ...preset.colors,
+      font_family: preset.styles.font_family,
+      button_style: preset.styles.button_style,
+      input_style: preset.styles.input_style,
+      card_style: preset.styles.card_style,
+      navigation_style: preset.styles.navigation_style,
+      animations_enabled: preset.styles.animations_enabled
+    }));
+    
+    toast({
+      title: "Theme applied",
+      description: `${preset.name} theme has been applied to preview.`,
+    });
+  };
+
   const handleSave = async () => {
     if (!localSettings) return;
     
     try {
       await updateSettings(localSettings);
       toast({
-        title: "Settings saved",
-        description: "Your white label configuration has been updated successfully.",
+        title: "Settings saved successfully",
+        description: "Your white label configuration has been updated and saved to the database.",
       });
     } catch (error) {
       toast({
         title: "Failed to save settings",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "An error occurred while saving",
         variant: "destructive",
       });
     }
@@ -192,9 +214,9 @@ export default function WhiteLabelConfigPage() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reset
               </Button>
-              <Button onClick={handleSave} disabled={isUpdating}>
+              <Button onClick={handleSave} disabled={isUpdating} size="sm">
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                {isUpdating ? 'Saving...' : 'Save to Database'}
               </Button>
             </div>
           </CardContent>
@@ -203,8 +225,11 @@ export default function WhiteLabelConfigPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Configuration Panel */}
           <div className="space-y-6">
-            <Tabs defaultValue="branding" className="w-full">
-              <TabsList className="grid grid-cols-6 w-full">
+            <Tabs defaultValue="themes" className="w-full">
+              <TabsList className="grid grid-cols-7 w-full">
+                <TabsTrigger value="themes">
+                  <Brush className="h-4 w-4" />
+                </TabsTrigger>
                 <TabsTrigger value="branding">
                   <Wand2 className="h-4 w-4" />
                 </TabsTrigger>
@@ -224,6 +249,23 @@ export default function WhiteLabelConfigPage() {
                   <Code className="h-4 w-4" />
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="themes" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Theme Presets</CardTitle>
+                    <CardDescription>
+                      Select a ready-made theme to quickly customize your application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ThemePresets
+                      selectedTheme={selectedThemeId}
+                      onSelectTheme={handleSelectTheme}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               <TabsContent value="branding" className="space-y-4">
                 <Card>
