@@ -92,10 +92,52 @@ export interface CreateDealerData {
   tenant_id: string;
   dealer_code: string;
   business_name: string;
+  legal_name?: string;
   contact_person: string;
+  designation?: string;
   phone: string;
+  alternate_phone?: string;
   email: string;
+  alternate_email?: string;
+  website?: string;
+  
+  // Address information (separate fields that will be combined)
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  gps_location?: any;
+  
+  // Business information
+  gst_number?: string;
+  pan_number?: string;
+  business_type?: string;
+  establishment_year?: number;
+  employee_count?: number;
+  
+  // Territory and coverage
+  territory_id?: string;
+  assigned_zones?: string[];
+  coverage_area_km?: number;
+  service_villages?: string[];
+  
+  // Commission and financials
+  commission_rate?: number;
+  credit_limit?: number;
+  payment_terms?: string;
+  
+  // Verification and compliance
   verification_status?: string;
+  kyc_documents?: any;
+  agreement_signed?: boolean;
+  agreement_date?: string;
+  
+  // Status
+  status?: string;
+  tags?: string[];
+  notes?: string;
   is_active?: boolean;
 }
 

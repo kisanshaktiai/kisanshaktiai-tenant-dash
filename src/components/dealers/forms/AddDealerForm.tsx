@@ -58,6 +58,8 @@ import {
 } from 'lucide-react';
 import { useCreateDealerMutation } from '@/hooks/data/useDealersQuery';
 import { cn } from '@/lib/utils';
+import { dealersService, type CreateDealerData } from '@/services/DealersService';
+import { useAppSelector } from '@/store/hooks';
 
 // Form validation schema
 const dealerFormSchema = z.object({
@@ -122,17 +124,54 @@ const formSteps = [
 export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
   const createDealerMutation = useCreateDealerMutation();
+  const { currentTenant: selectedTenant } = useAppSelector((state) => state.tenant);
 
-  const form = useForm<DealerFormData>({
-    resolver: zodResolver(dealerFormSchema),
-    defaultValues: {
+  // Load draft from localStorage on mount
+  const loadDraft = () => {
+    try {
+      const draft = localStorage.getItem('dealer_form_draft');
+      if (draft) {
+        return JSON.parse(draft);
+      }
+    } catch (error) {
+      console.error('Failed to load draft:', error);
+    }
+    return {
       country: 'India',
       credit_limit: 100000,
       payment_terms: '30',
       commission_rate: 5,
-    },
+    };
+  };
+
+  const form = useForm<DealerFormData>({
+    resolver: zodResolver(dealerFormSchema),
+    defaultValues: loadDraft(),
   });
+
+  // Save draft to localStorage on form change
+  React.useEffect(() => {
+    const subscription = form.watch((value) => {
+      try {
+        localStorage.setItem('dealer_form_draft', JSON.stringify(value));
+        setIsDirty(true);
+      } catch (error) {
+        console.error('Failed to save draft:', error);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Handle closing with unsaved changes
+  const handleClose = () => {
+    if (isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to close?');
+      if (!confirmed) return;
+    }
+    onOpenChange(false);
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setUploadedFiles(prev => [...prev, ...acceptedFiles]);
@@ -150,44 +189,84 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
 
   const onSubmit = async (data: DealerFormData) => {
     try {
-      // Prepare data with required fields
-      const dealerData = {
+      // Transform form data to match database schema
+      const dealerData: any = {
         business_name: data.business_name,
         contact_person: data.contact_person,
         phone: data.phone,
         email: data.email,
-        address_line1: data.address_line1,
-        city: data.city,
-        state: data.state,
-        country: data.country,
-        postal_code: data.postal_code,
         legal_name: data.legal_name,
         designation: data.designation,
         alternate_phone: data.alternate_phone,
         alternate_email: data.alternate_email,
         website: data.website,
+        
+        // Address fields
+        address_line1: data.address_line1,
         address_line2: data.address_line2,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        city: data.city,
+        state: data.state,
+        country: data.country || 'India',
+        postal_code: data.postal_code,
+        gps_location: data.latitude && data.longitude ? {
+          lat: data.latitude,
+          lng: data.longitude
+        } : undefined,
+        
+        // Business information
         gst_number: data.gst_number,
         pan_number: data.pan_number,
-        license_number: data.license_number,
-        bank_name: data.bank_name,
-        bank_account: data.bank_account,
-        ifsc_code: data.ifsc_code,
-        credit_limit: data.credit_limit,
-        payment_terms: data.payment_terms,
-        commission_rate: data.commission_rate,
-        remarks: data.remarks,
+        business_type: 'dealer',
+        
+        // Financial settings
+        commission_rate: data.commission_rate ? Number(data.commission_rate) : undefined,
+        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
+        payment_terms: data.payment_terms || '30 days',
+        
+        // Documents
+        kyc_documents: uploadedFiles.length > 0 ? {
+          files: uploadedFiles.map(file => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploadedAt: new Date().toISOString()
+          }))
+        } : undefined,
+        
+        // Status
+        verification_status: 'pending',
+        status: 'active',
+        is_active: true,
+        notes: data.remarks,
       };
       
-      await createDealerMutation.mutateAsync(dealerData);
-      toast.success('Dealer created successfully!');
-      onOpenChange(false);
+      // Remove undefined values and ensure required fields
+      const cleanedData = Object.fromEntries(
+        Object.entries(dealerData).filter(([_, v]) => v !== undefined && v !== '')
+      ) as Omit<CreateDealerData, 'tenant_id' | 'dealer_code'>;
+      
+      // Ensure required fields are present
+      if (!cleanedData.business_name || !cleanedData.contact_person || !cleanedData.phone || !cleanedData.email) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      await createDealerMutation.mutateAsync(cleanedData);
+      
+      // Clear form and reset state
       form.reset();
       setUploadedFiles([]);
+      setCurrentStep(0);
+      
+      // Clear draft from localStorage
+      localStorage.removeItem('dealer_form_draft');
+      
+      // Close modal
+      onOpenChange(false);
     } catch (error) {
-      toast.error('Failed to create dealer');
+      console.error('Error creating dealer:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create dealer';
+      toast.error(errorMessage);
     }
   };
 
@@ -218,7 +297,7 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
   const progress = ((currentStep + 1) / formSteps.length) * 100;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
           <div className="flex items-start gap-4">
