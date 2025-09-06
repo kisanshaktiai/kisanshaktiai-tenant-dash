@@ -1,12 +1,31 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Download, Store, Sparkles, TrendingUp } from 'lucide-react';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Download, 
+  Store, 
+  Sparkles, 
+  TrendingUp,
+  Users,
+  Target,
+  TrendingDown,
+  Award,
+  ArrowUp,
+  ArrowDown,
+  Activity
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { PermissionGuard } from '@/components/guards/PermissionGuard';
+import { AddDealerForm } from '@/components/dealers/forms/AddDealerForm';
+import { useRealTimeDealersQuery } from '@/hooks/data/useRealTimeDealersQuery';
+import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 import DealerDirectory from './components/DealerDirectory';
 import TerritoryManagement from './components/TerritoryManagement';
 import PerformanceTracking from './components/PerformanceTracking';
@@ -17,10 +36,42 @@ import DealerOnboarding from './components/DealerOnboarding';
 export default function DealersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
+  
+  // Fetch dealers data with real-time updates
+  const { 
+    data: dealersData, 
+    isLoading,
+    isLive,
+    activeChannels 
+  } = useRealTimeDealersQuery({
+    search: searchTerm,
+    limit: 100
+  });
+  
+  const dealers = dealersData?.data || [];
+  const totalCount = dealersData?.count || 0;
+  
+  // Calculate statistics
+  const stats = {
+    total: totalCount,
+    active: dealers.filter(d => d.status === 'active').length,
+    pending: dealers.filter(d => d.onboarding_status === 'pending').length,
+    verified: dealers.filter(d => d.verification_status === 'verified').length,
+    totalSales: dealers.reduce((sum, d) => sum + (d.sales_achieved || 0), 0),
+    avgPerformance: dealers.length > 0 
+      ? dealers.reduce((sum, d) => sum + (d.performance_score || 0), 0) / dealers.length
+      : 0
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/10">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 lg:space-y-8">
+        {/* Add Dealer Form Modal */}
+        <AddDealerForm 
+          open={isCreateModalOpen} 
+          onOpenChange={setIsCreateModalOpen} 
+        />
         {/* Enhanced Header */}
         <div className="relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 rounded-2xl -z-10" />
@@ -72,6 +123,120 @@ export default function DealersPage() {
               </div>
             </CardHeader>
           </Card>
+        </div>
+
+        {/* Statistics Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="border-0 shadow-soft bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Dealers</p>
+                    <div className="flex items-baseline gap-2">
+                      {isLoading ? (
+                        <Skeleton className="h-8 w-16" />
+                      ) : (
+                        <h2 className="text-3xl font-bold">{stats.total}</h2>
+                      )}
+                      <Badge variant="secondary" className="gap-1">
+                        <ArrowUp className="h-3 w-3" />
+                        12%
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="border-0 shadow-soft bg-gradient-to-br from-green-500/10 to-green-500/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Active Dealers</p>
+                    <div className="flex items-baseline gap-2">
+                      {isLoading ? (
+                        <Skeleton className="h-8 w-16" />
+                      ) : (
+                        <h2 className="text-3xl font-bold">{stats.active}</h2>
+                      )}
+                      <span className="text-sm text-green-600">
+                        {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <Activity className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="border-0 shadow-soft bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Sales</p>
+                    <div className="flex items-baseline gap-2">
+                      {isLoading ? (
+                        <Skeleton className="h-8 w-20" />
+                      ) : (
+                        <h2 className="text-3xl font-bold">₹{(stats.totalSales / 100000).toFixed(1)}L</h2>
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                    <Target className="h-6 w-6 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="border-0 shadow-soft bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Avg Performance</p>
+                    <div className="flex items-baseline gap-2">
+                      {isLoading ? (
+                        <Skeleton className="h-8 w-16" />
+                      ) : (
+                        <h2 className="text-3xl font-bold">{stats.avgPerformance.toFixed(1)}%</h2>
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <Award className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         {/* Enhanced Search Section */}
