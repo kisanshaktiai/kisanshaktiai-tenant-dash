@@ -1,150 +1,143 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Home, Leaf, ShoppingBag, User, Menu, Bell, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-interface LivePreviewProps {
-  settings: any;
-  mode: 'mobile' | 'tablet' | 'desktop';
+export interface LivePreviewProps {
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+  appName?: string;
+  logo?: string;
 }
 
-export const LivePreview: React.FC<LivePreviewProps> = ({ settings, mode }) => {
-  const getPreviewWidth = () => {
-    switch (mode) {
-      case 'mobile': return 'max-w-[375px]';
-      case 'tablet': return 'max-w-[768px]';
-      default: return 'w-full';
-    }
-  };
-
-  const styles = {
-    '--preview-primary': settings.primary_color,
-    '--preview-secondary': settings.secondary_color,
-    '--preview-accent': settings.accent_color,
-    '--preview-background': settings.background_color,
-    '--preview-text': settings.text_color,
-    '--preview-border': settings.border_color || '#e5e7eb',
-    '--preview-muted': settings.muted_color || '#f3f4f6',
-    fontFamily: settings.font_family || 'Inter',
-  } as React.CSSProperties;
-
+export const LivePreview: React.FC<LivePreviewProps> = ({ colors, appName = 'AgriTech Platform', logo }) => {
   return (
-    <div className={cn("mx-auto", getPreviewWidth())}>
-      <div 
-        className="rounded-lg overflow-hidden border shadow-lg"
-        style={styles}
-      >
-        {/* App Header */}
-        <div 
-          className="p-4 flex items-center justify-between"
-          style={{ 
-            backgroundColor: settings.primary_color,
-            color: '#ffffff'
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Menu className="h-5 w-5" />
-            {settings.logo_override_url ? (
-              <img src={settings.logo_override_url} alt="App Logo" className="h-8 w-auto" />
-            ) : (
-              <span className="font-bold text-lg">{settings.app_name || 'Farmer App'}</span>
-            )}
+    <div className="w-full max-w-[320px] mx-auto">
+      {/* Desktop/Browser Frame */}
+      <div className="bg-gray-900 rounded-t-lg p-1">
+        <div className="flex items-center gap-1.5 px-2 py-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <div className="flex-1 mx-4">
+            <div className="bg-gray-800 rounded-sm h-4 flex items-center px-2">
+              <span className="text-[8px] text-gray-400">app.agritech.com</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Search className="h-5 w-5" />
-            <Bell className="h-5 w-5" />
+        </div>
+      </div>
+
+      {/* App Preview */}
+      <div 
+        className="border-x border-b border-gray-900 rounded-b-lg overflow-hidden"
+        style={{ backgroundColor: colors.background }}
+      >
+        {/* Header */}
+        <div 
+          className="h-14 px-4 flex items-center justify-between shadow-sm"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <div className="flex items-center gap-2">
+            {logo ? (
+              <img src={logo} alt="Logo" className="w-8 h-8 rounded object-cover" />
+            ) : (
+              <div className="w-8 h-8 bg-white/20 rounded flex items-center justify-center">
+                <span className="text-white text-xs font-bold">
+                  {appName?.charAt(0) || 'A'}
+                </span>
+              </div>
+            )}
+            <span className="text-white font-semibold text-sm">{appName}</span>
+          </div>
+          <div className="flex gap-2">
+            <div className="w-5 h-5 bg-white/20 rounded-full" />
+            <div className="w-5 h-5 bg-white/20 rounded-full" />
           </div>
         </div>
 
-        {/* App Content */}
-        <div 
-          className="p-4 space-y-4"
-          style={{ 
-            backgroundColor: settings.background_color,
-            color: settings.text_color 
-          }}
-        >
-          {/* Welcome Section */}
-          <Card className="p-4" style={{ borderColor: settings.border_color }}>
-            <h2 className="text-lg font-semibold mb-2">Welcome, Farmer!</h2>
-            <p className="text-sm opacity-80">{settings.tagline || 'Your agricultural companion'}</p>
-          </Card>
+        {/* Navigation */}
+        <div className="border-b border-gray-200 bg-white/80">
+          <div className="flex">
+            <div 
+              className="flex-1 py-2 text-center text-xs font-medium border-b-2"
+              style={{ 
+                color: colors.primary,
+                borderColor: colors.primary 
+              }}
+            >
+              Dashboard
+            </div>
+            <div className="flex-1 py-2 text-center text-xs text-gray-500">
+              Farmers
+            </div>
+            <div className="flex-1 py-2 text-center text-xs text-gray-500">
+              Products
+            </div>
+            <div className="flex-1 py-2 text-center text-xs text-gray-500">
+              Analytics
+            </div>
+          </div>
+        </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <Card 
-              className="p-4 text-center cursor-pointer hover:shadow-md transition-shadow"
-              style={{ 
-                borderColor: settings.border_color,
-                backgroundColor: settings.muted_color 
-              }}
+        {/* Content */}
+        <div className="p-4 space-y-3 min-h-[300px]">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-2">
+            <div 
+              className="p-3 rounded-lg text-white"
+              style={{ backgroundColor: colors.secondary }}
             >
-              <Leaf className="h-8 w-8 mx-auto mb-2" style={{ color: settings.primary_color }} />
-              <span className="text-sm font-medium">My Crops</span>
-            </Card>
-            <Card 
-              className="p-4 text-center cursor-pointer hover:shadow-md transition-shadow"
-              style={{ 
-                borderColor: settings.border_color,
-                backgroundColor: settings.muted_color 
-              }}
+              <div className="text-[10px] opacity-80">Total Farmers</div>
+              <div className="text-lg font-bold">1,234</div>
+              <div className="text-[9px] opacity-60">+12% this month</div>
+            </div>
+            <div 
+              className="p-3 rounded-lg text-white"
+              style={{ backgroundColor: colors.accent }}
             >
-              <ShoppingBag className="h-8 w-8 mx-auto mb-2" style={{ color: settings.accent_color }} />
-              <span className="text-sm font-medium">Products</span>
-            </Card>
+              <div className="text-[10px] opacity-80">Active Campaigns</div>
+              <div className="text-lg font-bold">42</div>
+              <div className="text-[9px] opacity-60">8 ending soon</div>
+            </div>
           </div>
 
-          {/* Info Cards */}
-          <Card className="p-4" style={{ borderColor: settings.border_color }}>
-            <h3 className="font-medium mb-2">Today's Weather</h3>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">28°C</p>
-                <p className="text-sm opacity-80">Partly Cloudy</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">Humidity: 65%</p>
-                <p className="text-sm">Wind: 12 km/h</p>
-              </div>
+          {/* Activity List */}
+          <div className="space-y-2">
+            <div className="text-xs font-medium" style={{ color: colors.text }}>
+              Recent Activity
             </div>
-          </Card>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                <div 
+                  className="w-6 h-6 rounded-full"
+                  style={{ backgroundColor: colors.primary + '20' }}
+                />
+                <div className="flex-1">
+                  <div className="h-2 bg-gray-200 rounded w-3/4" />
+                  <div className="h-1.5 bg-gray-100 rounded w-1/2 mt-1" />
+                </div>
+                <div 
+                  className="text-[10px] px-1.5 py-0.5 rounded"
+                  style={{ 
+                    backgroundColor: colors.accent + '20',
+                    color: colors.accent 
+                  }}
+                >
+                  New
+                </div>
+              </div>
+            ))}
+          </div>
 
           {/* Action Button */}
-          <Button 
-            className="w-full"
-            style={{ 
-              backgroundColor: settings.primary_color,
-              color: '#ffffff'
-            }}
+          <button 
+            className="w-full py-2 rounded-lg text-white text-sm font-medium transition-all hover:opacity-90"
+            style={{ backgroundColor: colors.primary }}
           >
-            View Dashboard
-          </Button>
-        </div>
-
-        {/* Bottom Navigation */}
-        <div 
-          className="p-3 flex items-center justify-around border-t"
-          style={{ 
-            backgroundColor: settings.background_color,
-            borderColor: settings.border_color 
-          }}
-        >
-          <button className="flex flex-col items-center gap-1 p-2">
-            <Home className="h-5 w-5" style={{ color: settings.primary_color }} />
-            <span className="text-xs">Home</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 p-2">
-            <Leaf className="h-5 w-5" style={{ color: settings.text_color }} />
-            <span className="text-xs">Crops</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 p-2">
-            <ShoppingBag className="h-5 w-5" style={{ color: settings.text_color }} />
-            <span className="text-xs">Shop</span>
-          </button>
-          <button className="flex flex-col items-center gap-1 p-2">
-            <User className="h-5 w-5" style={{ color: settings.text_color }} />
-            <span className="text-xs">Profile</span>
+            Add New Farmer
           </button>
         </div>
       </div>

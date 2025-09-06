@@ -411,8 +411,15 @@ const WhiteLabelPage = () => {
               </CardHeader>
               <CardContent className="p-6">
                 <LivePreview 
-                  settings={localSettings} 
-                  mode={previewMode}
+                  colors={{
+                    primary: localSettings?.primary_color || '#10b981',
+                    secondary: localSettings?.secondary_color || '#059669',
+                    accent: localSettings?.accent_color || '#14b8a6',
+                    background: localSettings?.background_color || '#ffffff',
+                    text: localSettings?.text_color || '#1f2937'
+                  }}
+                  appName={localSettings?.app_name}
+                  logo={localSettings?.logo_override_url}
                 />
               </CardContent>
             </Card>

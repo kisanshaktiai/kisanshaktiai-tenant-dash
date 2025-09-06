@@ -13,7 +13,8 @@ import { BrandingUploader } from '@/components/settings/BrandingUploader';
 import { ColorPicker } from '@/components/settings/ColorPicker';
 import { LivePreview } from '@/components/settings/LivePreview';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ThemePresets, ThemePreset } from '@/components/settings/ThemePresets';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Palette, 
   Smartphone, 
@@ -35,9 +36,11 @@ import {
   Bell,
   Mail,
   Languages,
-  Brush
+  Brush,
+  CheckCircle
 } from 'lucide-react';
 import { AppearanceSettings } from '@/services/AppearanceSettingsService';
+import { ThemePresets, ThemePreset } from '@/components/settings/ThemePresets';
 
 export default function WhiteLabelConfigPage() {
   const { settings, updateSettings, isUpdating } = useAppearanceSettings();
@@ -45,6 +48,7 @@ export default function WhiteLabelConfigPage() {
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   const [selectedThemeId, setSelectedThemeId] = useState<string>('');
+  const [appliedThemeId, setAppliedThemeId] = useState<string>('');
 
   useEffect(() => {
     if (settings) {
@@ -65,9 +69,11 @@ export default function WhiteLabelConfigPage() {
       animations_enabled: preset.styles.animations_enabled
     }));
     
+    setAppliedThemeId(preset.id);
+    
     toast({
       title: "Theme applied",
-      description: `${preset.name} theme has been applied to preview.`,
+      description: `${preset.name} theme has been applied. Click "Save to Database" to persist changes.`,
     });
   };
 
@@ -222,9 +228,9 @@ export default function WhiteLabelConfigPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Configuration Panel */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="themes" className="w-full">
               <TabsList className="grid grid-cols-7 w-full">
                 <TabsTrigger value="themes">
@@ -253,16 +259,26 @@ export default function WhiteLabelConfigPage() {
               <TabsContent value="themes" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Theme Presets</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Theme Presets</span>
+                      {appliedThemeId && (
+                        <Badge variant="secondary" className="ml-2">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Theme Applied
+                        </Badge>
+                      )}
+                    </CardTitle>
                     <CardDescription>
                       Select a ready-made theme to quickly customize your application
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ThemePresets
-                      selectedTheme={selectedThemeId}
-                      onSelectTheme={handleSelectTheme}
-                    />
+                    <ScrollArea className="h-[500px] pr-4">
+                      <ThemePresets
+                        selectedTheme={selectedThemeId}
+                        onSelectTheme={handleSelectTheme}
+                      />
+                    </ScrollArea>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -627,15 +643,58 @@ export default function WhiteLabelConfigPage() {
 
           {/* Live Preview */}
           {isPreviewVisible && (
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle>Live Preview</CardTitle>
-                <CardDescription>See how your app will look</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LivePreview settings={localSettings} mode={previewMode} />
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              <Card className="sticky top-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Live Preview</span>
+                    <div className="flex items-center gap-2">
+                      <Select value={previewMode} onValueChange={(value: any) => setPreviewMode(value)}>
+                        <SelectTrigger className="w-32 h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mobile">
+                            <div className="flex items-center gap-2">
+                              <Smartphone className="h-3 w-3" />
+                              Mobile
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="tablet">
+                            <div className="flex items-center gap-2">
+                              <Tablet className="h-3 w-3" />
+                              Tablet
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="desktop">
+                            <div className="flex items-center gap-2">
+                              <Monitor className="h-3 w-3" />
+                              Desktop
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardTitle>
+                  <CardDescription>
+                    Preview your theme changes in real-time
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <LivePreview 
+                    colors={{
+                      primary: localSettings.primary_color || '#10b981',
+                      secondary: localSettings.secondary_color || '#059669',
+                      accent: localSettings.accent_color || '#14b8a6',
+                      background: localSettings.background_color || '#ffffff',
+                      text: localSettings.text_color || '#1f2937'
+                    }}
+                    appName={localSettings.app_name}
+                    logo={localSettings.logo_override_url}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </div>
