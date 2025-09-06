@@ -238,7 +238,7 @@ interface ThemePresetsProps {
   onSelectTheme: (preset: ThemePreset) => void;
 }
 
-export const ThemePresets: React.FC<ThemePresetsProps> = ({ selectedTheme, onSelectTheme }) => {
+export function ThemePresets({ selectedTheme, onSelectTheme }: ThemePresetsProps) {
   const categories = ['all', 'modern', 'professional', 'playful', 'elegant'] as const;
   const [selectedCategory, setSelectedCategory] = useState<typeof categories[number]>('all');
 
@@ -343,4 +343,6 @@ export const ThemePresets: React.FC<ThemePresetsProps> = ({ selectedTheme, onSel
       </div>
     </div>
   );
-};
+}
+
+export default ThemePresets;

@@ -40,7 +40,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { AppearanceSettings } from '@/services/AppearanceSettingsService';
-import { ThemePresets, ThemePreset } from '@/components/settings/ThemePresets';
+import { ThemePresets, ThemePreset, themePresets } from '@/components/settings/ThemePresets';
 
 export default function WhiteLabelConfigPage() {
   const { settings, updateSettings, isUpdating } = useAppearanceSettings();
