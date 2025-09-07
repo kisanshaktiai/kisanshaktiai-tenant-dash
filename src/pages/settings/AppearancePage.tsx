@@ -12,12 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import { FONT_OPTIONS } from '@/config/fonts';
 import { Palette, Eye, EyeOff, Save, RotateCcw, Type } from 'lucide-react';
 import { appearanceSettingsService } from '@/services/AppearanceSettingsService';
+import { ThemePresets, ThemePreset } from '@/components/settings/ThemePresets';
 
 const AppearancePage = () => {
   const { settings, updateSettings, isUpdating } = useAppearanceSettings();
   const { toast } = useToast();
   const [isPreviewEnabled, setIsPreviewEnabled] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   
   // Local state for form inputs
   const [formData, setFormData] = useState({
@@ -38,9 +40,9 @@ const AppearancePage = () => {
     custom_css: '',
   });
 
-  // Update form data when settings change
+  // Update form data when settings change - only once on initial load
   useEffect(() => {
-    if (settings) {
+    if (settings && !hasUnsavedChanges) {
       setFormData({
         theme_mode: settings.theme_mode || 'system',
         primary_color: settings.primary_color || '#10b981',
@@ -131,50 +133,24 @@ const AppearancePage = () => {
     setIsPreviewEnabled(!isPreviewEnabled);
   };
 
-  const presetThemes = [
-    {
-      name: 'Agricultural Green',
-      colors: {
-        primary_color: '#10b981',
-        secondary_color: '#059669',
-        accent_color: '#14b8a6',
-        success_color: '#10b981',
-        warning_color: '#f59e0b',
-        info_color: '#3b82f6',
-        destructive_color: '#ef4444',
-      }
-    },
-    {
-      name: 'Ocean Blue',
-      colors: {
-        primary_color: '#0ea5e9',
-        secondary_color: '#0284c7',
-        accent_color: '#06b6d4',
-        success_color: '#10b981',
-        warning_color: '#f59e0b',
-        info_color: '#0ea5e9',
-        destructive_color: '#ef4444',
-      }
-    },
-    {
-      name: 'Sunset Orange',
-      colors: {
-        primary_color: '#f97316',
-        secondary_color: '#ea580c',
-        accent_color: '#fb923c',
-        success_color: '#10b981',
-        warning_color: '#f97316',
-        info_color: '#3b82f6',
-        destructive_color: '#ef4444',
-      }
-    }
-  ];
-
-  const applyPreset = (preset: typeof presetThemes[0]) => {
+  const handlePresetSelect = (preset: ThemePreset) => {
     setFormData(prev => ({
       ...prev,
-      ...preset.colors
+      primary_color: preset.colors.primary_color,
+      secondary_color: preset.colors.secondary_color,
+      accent_color: preset.colors.accent_color,
+      background_color: preset.colors.background_color,
+      text_color: preset.colors.text_color,
+      border_color: preset.colors.border_color,
+      muted_color: preset.colors.muted_color,
+      success_color: preset.colors.success_color,
+      warning_color: preset.colors.warning_color,
+      error_color: preset.colors.error_color,
+      info_color: preset.colors.info_color,
+      font_family: preset.styles.font_family,
     }));
+    setSelectedPresetId(preset.id);
+    setHasUnsavedChanges(true);
   };
 
   return (
@@ -553,26 +529,14 @@ const AppearancePage = () => {
             <CardHeader>
               <CardTitle>Color Presets</CardTitle>
               <CardDescription>
-                Quick color schemes to get you started
+                Choose from a variety of pre-designed themes
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {presetThemes.map((preset) => (
-                <Button
-                  key={preset.name}
-                  variant="outline"
-                  onClick={() => applyPreset(preset)}
-                  className="w-full justify-start"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: preset.colors.primary_color }}
-                    />
-                    {preset.name}
-                  </div>
-                </Button>
-              ))}
+            <CardContent>
+              <ThemePresets
+                selectedTheme={selectedPresetId}
+                onSelectTheme={handlePresetSelect}
+              />
             </CardContent>
           </Card>
 
