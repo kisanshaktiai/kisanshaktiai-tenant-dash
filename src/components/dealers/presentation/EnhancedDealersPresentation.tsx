@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import { TerritoryManagement } from './tabs/TerritoryManagement';
 import { PerformanceTracking } from './tabs/PerformanceTracking';
 import { CommunicationHub } from './tabs/CommunicationHub';
 import { IncentiveManagement } from './tabs/IncentiveManagement';
+import { AddDealerForm } from '@/components/dealers/forms/AddDealerForm';
 import type { Dealer } from '@/services/DealersService';
 
 interface EnhancedDealersPresentationProps {
@@ -58,6 +59,8 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
   isLive,
   activeChannels
 }) => {
+  const [isAddDealerOpen, setIsAddDealerOpen] = useState(false);
+  
   const stats = {
     active: dealers.filter(d => d.status === 'active').length,
     pending: dealers.filter(d => d.onboarding_status === 'pending').length,
@@ -68,6 +71,11 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
 
   return (
     <div className="w-full min-h-full bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Add Dealer Modal */}
+      <AddDealerForm 
+        open={isAddDealerOpen} 
+        onOpenChange={setIsAddDealerOpen} 
+      />
       {/* Enhanced Header with Animation */}
       <motion.div 
         initial="initial" 
@@ -116,6 +124,13 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
           
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
+            <Button 
+              onClick={() => setIsAddDealerOpen(true)}
+              className="gap-2 bg-gradient-primary hover:opacity-90 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Add New Dealer
+            </Button>
             <Button variant="outline" className="gap-2">
               <Upload className="h-4 w-4" />
               Import Dealers
