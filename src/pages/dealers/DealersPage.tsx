@@ -70,7 +70,12 @@ export default function DealersPage() {
         {/* Add Dealer Form Modal */}
         <AddDealerForm 
           open={isCreateModalOpen} 
-          onOpenChange={setIsCreateModalOpen} 
+          onOpenChange={(open) => {
+            setIsCreateModalOpen(open);
+            if (open) {
+              console.log('Opening Add Dealer modal');
+            }
+          }} 
         />
         {/* Enhanced Header */}
         <div className="relative">
@@ -102,24 +107,22 @@ export default function DealersPage() {
                   </div>
                 </div>
                 
-                <PermissionGuard permission="dealers.create">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      variant="outline"
-                      className="gap-2 shadow-soft border-0 bg-muted/50 hover:bg-muted/80"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export Data
-                    </Button>
-                    <Button 
-                      onClick={() => setIsCreateModalOpen(true)}
-                      className="gap-2 shadow-soft bg-gradient-primary hover:opacity-90 transition-all duration-200 hover:scale-105"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add New Dealer
-                    </Button>
-                  </div>
-                </PermissionGuard>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button 
+                    variant="outline"
+                    className="gap-2 shadow-soft border-0 bg-muted/50 hover:bg-muted/80"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Data
+                  </Button>
+                  <Button 
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="gap-2 shadow-soft bg-gradient-primary hover:opacity-90 transition-all duration-200 hover:scale-105"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add New Dealer
+                  </Button>
+                </div>
               </div>
             </CardHeader>
           </Card>

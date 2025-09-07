@@ -206,51 +206,50 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
       // Transform form data to match database schema for CreateDealerData
       const dealerData: CreateDealerData = {
         tenant_id: selectedTenant?.id || '',
+        dealer_code: `DLR-${Date.now()}`, // Generate unique dealer code
         business_name: data.business_name,
-        gst_number: data.gst_number || '',
-        pan_number: data.pan_number || '',
+        legal_name: data.legal_name || data.business_name,
         contact_person: data.contact_person,
-        email: data.email,
+        designation: data.designation || 'Owner',
         phone: data.phone,
-        address: data.address_line1 + (data.address_line2 ? ', ' + data.address_line2 : ''),
+        alternate_phone: data.alternate_phone,
+        email: data.email,
+        alternate_email: data.alternate_email,
+        website: data.website,
+        // Address fields as separate properties
+        address_line1: data.address_line1,
+        address_line2: data.address_line2,
         city: data.city,
         state: data.state,
         country: data.country || 'India',
         postal_code: data.postal_code,
-        status: 'active',
+        gps_location: data.latitude && data.longitude ? {
+          lat: data.latitude,
+          lng: data.longitude
+        } : undefined,
+        // Business information
+        gst_number: data.gst_number || '',
+        pan_number: data.pan_number || '',
+        business_type: 'Retailer', // Default value
+        // Commission and financials
+        commission_rate: data.commission_rate || 5,
+        credit_limit: data.credit_limit || 100000,
+        payment_terms: data.payment_terms || 'Net 30',
+        // Verification and compliance
         verification_status: 'pending',
-        territory_ids: [],
-        product_categories: [],
-        credit_limit: data.credit_limit ? Number(data.credit_limit) : 0,
-        outstanding_amount: 0,
-        total_purchases: 0,
-        last_purchase_date: null,
-        performance_score: 0,
-        commission_rate: data.commission_rate ? Number(data.commission_rate) : 0,
+        kyc_documents: uploadedFiles.length > 0 ? {
+          files: uploadedFiles.map(file => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploadedAt: new Date().toISOString()
+          }))
+        } : undefined,
+        // Status
+        status: 'active',
+        tags: data.product_categories || [],
+        notes: data.remarks,
         is_active: true,
-        metadata: {
-          legal_name: data.legal_name,
-          designation: data.designation,
-          alternate_phone: data.alternate_phone,
-          alternate_email: data.alternate_email,
-          website: data.website,
-          payment_terms: data.payment_terms || '30 days',
-          license_number: data.license_number,
-          bank_name: data.bank_name,
-          remarks: data.remarks,
-          gps_location: data.latitude && data.longitude ? {
-            lat: data.latitude,
-            lng: data.longitude
-          } : undefined,
-          kyc_documents: uploadedFiles.length > 0 ? {
-            files: uploadedFiles.map(file => ({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              uploadedAt: new Date().toISOString()
-            }))
-          } : undefined,
-        },
       };
       
       // Ensure required fields are present
@@ -265,6 +264,12 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
       }
       
       await createDealerMutation.mutateAsync(dealerData);
+      
+      // Show success message
+      toast.success(`Dealer "${data.business_name}" has been successfully added!`, {
+        description: `Dealer code: ${dealerData.dealer_code}`,
+        duration: 5000,
+      });
       
       // Clear form and reset state
       form.reset();
