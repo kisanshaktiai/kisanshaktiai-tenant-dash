@@ -165,12 +165,13 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
   }, [form]);
 
   // Handle closing with unsaved changes
-  const handleClose = () => {
-    if (isDirty) {
+  const handleClose = (newOpen: boolean) => {
+    // Only check for unsaved changes when closing
+    if (!newOpen && isDirty) {
       const confirmed = window.confirm('You have unsaved changes. Are you sure you want to close?');
       if (!confirmed) return;
     }
-    onOpenChange(false);
+    onOpenChange(newOpen);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -260,9 +261,10 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
       
       // Clear draft from localStorage
       localStorage.removeItem('dealer_form_draft');
+      setIsDirty(false);
       
       // Close modal
-      onOpenChange(false);
+      handleClose(false);
     } catch (error) {
       console.error('Error creating dealer:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create dealer';
