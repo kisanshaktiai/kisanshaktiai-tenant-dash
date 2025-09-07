@@ -17,7 +17,7 @@ import { TerritoryManagement } from './tabs/TerritoryManagement';
 import { PerformanceTracking } from './tabs/PerformanceTracking';
 import { CommunicationHub } from './tabs/CommunicationHub';
 import { IncentiveManagement } from './tabs/IncentiveManagement';
-import { AddDealerForm } from '@/components/dealers/forms/AddDealerForm';
+import { EnhancedAddDealerForm } from '@/components/dealers/forms/EnhancedAddDealerForm';
 import type { Dealer } from '@/services/DealersService';
 
 interface EnhancedDealersPresentationProps {
@@ -72,7 +72,7 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
   return (
     <div className="w-full min-h-full bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Add Dealer Modal */}
-      <AddDealerForm 
+      <EnhancedAddDealerForm 
         open={isAddDealerOpen} 
         onOpenChange={setIsAddDealerOpen} 
       />
@@ -126,7 +126,7 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
           <div className="flex flex-wrap gap-2">
             <Button 
               onClick={() => setIsAddDealerOpen(true)}
-              className="gap-2 bg-gradient-primary hover:opacity-90 transition-all"
+              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-medium hover:shadow-strong"
             >
               <Plus className="h-4 w-4" />
               Add New Dealer
