@@ -58,16 +58,10 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { format } from 'date-fns';
+import { getChartColors } from '@/utils/chartColors';
 
-// Color palette for charts
-const CHART_COLORS = {
-  primary: 'hsl(var(--primary))',
-  secondary: 'hsl(var(--secondary))',
-  success: 'hsl(var(--success))',
-  warning: 'hsl(var(--warning))',
-  info: 'hsl(var(--info))',
-  muted: 'hsl(var(--muted))',
-};
+// Get properly formatted chart colors
+const CHART_COLORS = getChartColors();
 
 const EnhancedDashboard = () => {
   const { data, isLoading, error, refetch, isLive, lastUpdate } = useRealTimeDashboard();

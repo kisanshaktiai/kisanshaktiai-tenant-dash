@@ -12,6 +12,7 @@ import {
   Droplets, Sprout, ThermometerSun, Wind, 
   Beaker, TrendingUp, AlertTriangle, Leaf 
 } from 'lucide-react';
+import { getChartColors } from '@/utils/chartColors';
 
 interface SoilHealthData {
   ph: number;
@@ -61,14 +62,15 @@ export const FarmerHealthMetrics: React.FC<FarmerHealthMetricsProps> = ({
   healthAssessments = [],
   isCompact = false
 }) => {
-  // Color scheme using semantic tokens
+  // Get properly formatted colors for charts
+  const chartColors = getChartColors();
   const COLORS = {
-    primary: 'hsl(var(--primary))',
-    success: 'hsl(var(--success))',
-    warning: 'hsl(var(--warning))',
-    danger: 'hsl(var(--destructive))',
-    info: 'hsl(var(--info))',
-    muted: 'hsl(var(--muted))'
+    primary: chartColors.primary,
+    success: chartColors.success,
+    warning: chartColors.warning,
+    danger: chartColors.destructive,
+    info: chartColors.primary,
+    muted: chartColors.muted
   };
 
   const getSoilHealthColor = (value: number, metric: string) => {

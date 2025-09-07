@@ -46,10 +46,14 @@ import {
   Radar
 } from 'recharts';
 import { useState } from 'react';
+import { getChartColors } from '@/utils/chartColors';
 
 export default function EnhancedProductAnalytics() {
   const [timeRange, setTimeRange] = useState('30d');
   const [productCategory, setProductCategory] = useState('all');
+  
+  // Get properly formatted colors for charts
+  const chartColors = getChartColors();
 
   // Product performance data
   const productPerformanceData = [
@@ -63,11 +67,11 @@ export default function EnhancedProductAnalytics() {
 
   // Category distribution data
   const categoryData = [
-    { name: 'Fertilizers', value: 35, color: '#10b981' },
-    { name: 'Pesticides', value: 25, color: '#ef4444' },
-    { name: 'Seeds', value: 20, color: '#f59e0b' },
-    { name: 'Equipment', value: 15, color: '#8b5cf6' },
-    { name: 'Medicine', value: 5, color: '#06b6d4' },
+    { name: 'Fertilizers', value: 35, color: chartColors.success },
+    { name: 'Pesticides', value: 25, color: chartColors.destructive },
+    { name: 'Seeds', value: 20, color: chartColors.warning },
+    { name: 'Equipment', value: 15, color: chartColors.primary },
+    { name: 'Medicine', value: 5, color: chartColors.accent },
   ];
 
   // Monthly trend data
@@ -82,10 +86,10 @@ export default function EnhancedProductAnalytics() {
 
   // Stock status data
   const stockStatusData = [
-    { status: 'Optimal Stock', count: 145, percentage: 48, color: '#10b981' },
-    { status: 'Low Stock', count: 68, percentage: 23, color: '#f59e0b' },
-    { status: 'Out of Stock', count: 12, percentage: 4, color: '#ef4444' },
-    { status: 'Overstocked', count: 75, percentage: 25, color: '#8b5cf6' },
+    { status: 'Optimal Stock', count: 145, percentage: 48, color: chartColors.success },
+    { status: 'Low Stock', count: 68, percentage: 23, color: chartColors.warning },
+    { status: 'Out of Stock', count: 12, percentage: 4, color: chartColors.destructive },
+    { status: 'Overstocked', count: 75, percentage: 25, color: chartColors.primary },
   ];
 
   // Seasonal demand data
@@ -214,9 +218,9 @@ export default function EnhancedProductAnalytics() {
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="sales" fill="#10b981" name="Sales" />
-                    <Bar yAxisId="left" dataKey="views" fill="#3b82f6" name="Views" />
-                    <Line yAxisId="right" type="monotone" dataKey="conversion" stroke="#f59e0b" name="Conversion %" />
+                    <Bar yAxisId="left" dataKey="sales" fill={chartColors.success} name="Sales" />
+                    <Bar yAxisId="left" dataKey="views" fill={chartColors.primary} name="Views" />
+                    <Line yAxisId="right" type="monotone" dataKey="conversion" stroke={chartColors.warning} name="Conversion %" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -236,10 +240,10 @@ export default function EnhancedProductAnalytics() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Area type="monotone" dataKey="fertilizers" stackId="1" stroke="#10b981" fill="#10b981" />
-                    <Area type="monotone" dataKey="pesticides" stackId="1" stroke="#ef4444" fill="#ef4444" />
-                    <Area type="monotone" dataKey="seeds" stackId="1" stroke="#f59e0b" fill="#f59e0b" />
-                    <Area type="monotone" dataKey="equipment" stackId="1" stroke="#8b5cf6" fill="#8b5cf6" />
+                    <Area type="monotone" dataKey="fertilizers" stackId="1" stroke={chartColors.success} fill={chartColors.success} />
+                    <Area type="monotone" dataKey="pesticides" stackId="1" stroke={chartColors.destructive} fill={chartColors.destructive} />
+                    <Area type="monotone" dataKey="seeds" stackId="1" stroke={chartColors.warning} fill={chartColors.warning} />
+                    <Area type="monotone" dataKey="equipment" stackId="1" stroke={chartColors.primary} fill={chartColors.primary} />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -390,10 +394,10 @@ export default function EnhancedProductAnalytics() {
                   <PolarGrid />
                   <PolarAngleAxis dataKey="season" />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                  <Radar name="Fertilizers" dataKey="fertilizers" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
-                  <Radar name="Pesticides" dataKey="pesticides" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
-                  <Radar name="Seeds" dataKey="seeds" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
-                  <Radar name="Equipment" dataKey="equipment" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                  <Radar name="Fertilizers" dataKey="fertilizers" stroke={chartColors.success} fill={chartColors.success} fillOpacity={0.6} />
+                  <Radar name="Pesticides" dataKey="pesticides" stroke={chartColors.destructive} fill={chartColors.destructive} fillOpacity={0.6} />
+                  <Radar name="Seeds" dataKey="seeds" stroke={chartColors.warning} fill={chartColors.warning} fillOpacity={0.6} />
+                  <Radar name="Equipment" dataKey="equipment" stroke={chartColors.primary} fill={chartColors.primary} fillOpacity={0.6} />
                   <Legend />
                   <Tooltip />
                 </RadarChart>

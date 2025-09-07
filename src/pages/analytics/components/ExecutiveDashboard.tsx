@@ -29,6 +29,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
+import { getChartColor, getChartColors } from "@/utils/chartColors";
 
 ChartJS.register(
   CategoryScale,
@@ -103,15 +104,17 @@ export const ExecutiveDashboard = () => {
     }
   ];
 
-  // Chart data
+  // Chart data with proper color formatting
+  const colors = getChartColors();
+  
   const revenueData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
     datasets: [
       {
         label: 'Revenue',
         data: [65, 59, 80, 81, 56, 84],
-        borderColor: 'hsl(var(--primary))',
-        backgroundColor: 'hsl(var(--primary) / 0.1)',
+        borderColor: colors.primary,
+        backgroundColor: getChartColor('--primary', 0.1),
         tension: 0.4,
       },
     ],
@@ -123,7 +126,9 @@ export const ExecutiveDashboard = () => {
       {
         label: 'New Farmers',
         data: [1200, 1900, 3000, 2500],
-        backgroundColor: 'hsl(var(--primary))',
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+        borderWidth: 0,
       },
     ],
   };
@@ -134,11 +139,12 @@ export const ExecutiveDashboard = () => {
       {
         data: [45, 25, 20, 10],
         backgroundColor: [
-          'hsl(var(--primary))',
-          'hsl(var(--secondary))',
-          'hsl(var(--accent))',
-          'hsl(var(--muted))',
+          colors.primary,
+          colors.secondary,
+          colors.accent,
+          colors.muted,
         ],
+        borderWidth: 0,
       },
     ],
   };
