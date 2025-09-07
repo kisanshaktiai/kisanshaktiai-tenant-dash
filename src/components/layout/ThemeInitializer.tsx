@@ -2,10 +2,8 @@
 import { useEffect } from 'react';
 import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
 import { appearanceSettingsService } from '@/services/AppearanceSettingsService';
-import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 
 export const ThemeInitializer = () => {
-  const { currentTenant } = useTenantContextOptimized();
   const { settings } = useAppearanceSettings();
 
   // Apply theme from settings when they load
