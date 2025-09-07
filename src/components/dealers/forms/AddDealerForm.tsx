@@ -203,69 +203,68 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
 
   const onSubmit = async (data: DealerFormData) => {
     try {
-      // Transform form data to match database schema
-      const dealerData: any = {
+      // Transform form data to match database schema for CreateDealerData
+      const dealerData: CreateDealerData = {
+        tenant_id: selectedTenant?.id || '',
         business_name: data.business_name,
+        gst_number: data.gst_number || '',
+        pan_number: data.pan_number || '',
         contact_person: data.contact_person,
-        phone: data.phone,
         email: data.email,
-        legal_name: data.legal_name,
-        designation: data.designation,
-        alternate_phone: data.alternate_phone,
-        alternate_email: data.alternate_email,
-        website: data.website,
-        
-        // Address fields
-        address_line1: data.address_line1,
-        address_line2: data.address_line2,
+        phone: data.phone,
+        address: data.address_line1 + (data.address_line2 ? ', ' + data.address_line2 : ''),
         city: data.city,
         state: data.state,
         country: data.country || 'India',
         postal_code: data.postal_code,
-        gps_location: data.latitude && data.longitude ? {
-          lat: data.latitude,
-          lng: data.longitude
-        } : undefined,
-        
-        // Business information
-        gst_number: data.gst_number,
-        pan_number: data.pan_number,
-        business_type: 'dealer',
-        
-        // Financial settings
-        commission_rate: data.commission_rate ? Number(data.commission_rate) : undefined,
-        credit_limit: data.credit_limit ? Number(data.credit_limit) : undefined,
-        payment_terms: data.payment_terms || '30 days',
-        
-        // Documents
-        kyc_documents: uploadedFiles.length > 0 ? {
-          files: uploadedFiles.map(file => ({
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            uploadedAt: new Date().toISOString()
-          }))
-        } : undefined,
-        
-        // Status
-        verification_status: 'pending',
         status: 'active',
+        verification_status: 'pending',
+        territory_ids: [],
+        product_categories: [],
+        credit_limit: data.credit_limit ? Number(data.credit_limit) : 0,
+        outstanding_amount: 0,
+        total_purchases: 0,
+        last_purchase_date: null,
+        performance_score: 0,
+        commission_rate: data.commission_rate ? Number(data.commission_rate) : 0,
         is_active: true,
-        notes: data.remarks,
+        metadata: {
+          legal_name: data.legal_name,
+          designation: data.designation,
+          alternate_phone: data.alternate_phone,
+          alternate_email: data.alternate_email,
+          website: data.website,
+          payment_terms: data.payment_terms || '30 days',
+          license_number: data.license_number,
+          bank_name: data.bank_name,
+          remarks: data.remarks,
+          gps_location: data.latitude && data.longitude ? {
+            lat: data.latitude,
+            lng: data.longitude
+          } : undefined,
+          kyc_documents: uploadedFiles.length > 0 ? {
+            files: uploadedFiles.map(file => ({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              uploadedAt: new Date().toISOString()
+            }))
+          } : undefined,
+        },
       };
       
-      // Remove undefined values and ensure required fields
-      const cleanedData = Object.fromEntries(
-        Object.entries(dealerData).filter(([_, v]) => v !== undefined && v !== '')
-      ) as Omit<CreateDealerData, 'tenant_id' | 'dealer_code'>;
-      
       // Ensure required fields are present
-      if (!cleanedData.business_name || !cleanedData.contact_person || !cleanedData.phone || !cleanedData.email) {
+      if (!dealerData.business_name || !dealerData.contact_person || !dealerData.phone || !dealerData.email) {
         toast.error('Please fill in all required fields');
         return;
       }
+
+      if (!selectedTenant?.id) {
+        toast.error('Please select a tenant first');
+        return;
+      }
       
-      await createDealerMutation.mutateAsync(cleanedData);
+      await createDealerMutation.mutateAsync(dealerData);
       
       // Clear form and reset state
       form.reset();

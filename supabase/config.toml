@@ -1,1 +1,4 @@
 project_id = "qfklkkzxemsbeniyugiz"
+
+[functions.dealers-api]
+verify_jwt = true

@@ -265,15 +265,6 @@ export default function DealersPage() {
                 <Filter className="h-4 w-4" />
                 Advanced Filters
               </Button>
-              {/* Additional Add Dealer Button for Testing */}
-              <Button 
-                onClick={() => setIsCreateModalOpen(true)}
-                variant="default"
-                className="gap-2 h-11 shadow-soft"
-              >
-                <Plus className="h-4 w-4" />
-                Quick Add Dealer
-              </Button>
             </div>
           </CardContent>
         </Card>

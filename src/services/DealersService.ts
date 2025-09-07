@@ -1,6 +1,7 @@
 
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from './api/CorsApiClient';
 
 export interface DealersListOptions {
   search?: string;
@@ -214,24 +215,40 @@ class DealersService extends BaseApiService {
 
   async createDealer(dealerData: CreateDealerData): Promise<Dealer> {
     try {
-      const { data, error } = await supabase
-        .from('dealers')
-        .insert({
-          ...dealerData,
-          id: crypto.randomUUID(),
-          verification_status: dealerData.verification_status || 'pending',
-          is_active: dealerData.is_active ?? true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Use the new dealers-api edge function if available
+      const useEdgeFunction = true; // Feature flag - can be configured
+      
+      if (useEdgeFunction) {
+        const response = await apiClient.post<Dealer>('/dealers-api', dealerData, {
+          tenantId: dealerData.tenant_id,
+        });
+        
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        
+        return response.data!;
+      } else {
+        // Fallback to direct database access
+        const { data, error } = await supabase
+          .from('dealers')
+          .insert({
+            ...dealerData,
+            id: crypto.randomUUID(),
+            verification_status: dealerData.verification_status || 'pending',
+            is_active: dealerData.is_active ?? true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return data;
       }
-
-      return data;
     } catch (error) {
       throw new Error(`Failed to create dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
