@@ -38,6 +38,8 @@ export default function DealersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
   
+  console.log('DealersPage: isCreateModalOpen =', isCreateModalOpen);
+  
   // Fetch dealers data with real-time updates
   const { 
     data: dealersData, 
@@ -70,7 +72,10 @@ export default function DealersPage() {
         {/* Add Dealer Form Modal */}
         <AddDealerForm 
           open={isCreateModalOpen} 
-          onOpenChange={setIsCreateModalOpen} 
+          onOpenChange={(value) => {
+            console.log('DealersPage: Setting modal open to:', value);
+            setIsCreateModalOpen(value);
+          }} 
         />
         {/* Enhanced Header */}
         <div className="relative">
@@ -112,7 +117,10 @@ export default function DealersPage() {
                       Export Data
                     </Button>
                     <Button 
-                      onClick={() => setIsCreateModalOpen(true)}
+                      onClick={() => {
+                        console.log('Add Dealer button clicked');
+                        setIsCreateModalOpen(true);
+                      }}
                       className="gap-2 shadow-soft bg-gradient-primary hover:opacity-90"
                     >
                       <Plus className="h-4 w-4" />
