@@ -124,10 +124,6 @@ export const EnhancedDealersPresentation: React.FC<EnhancedDealersPresentationPr
               <Download className="h-4 w-4" />
               Export Data
             </Button>
-            <Button className="gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary">
-              <Plus className="h-4 w-4" />
-              Add Dealer
-            </Button>
           </div>
         </div>
       </motion.div>

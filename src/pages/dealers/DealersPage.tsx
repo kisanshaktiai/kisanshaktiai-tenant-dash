@@ -38,8 +38,6 @@ export default function DealersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
   
-  console.log('DealersPage: isCreateModalOpen =', isCreateModalOpen);
-  
   // Fetch dealers data with real-time updates
   const { 
     data: dealersData, 
@@ -72,10 +70,7 @@ export default function DealersPage() {
         {/* Add Dealer Form Modal */}
         <AddDealerForm 
           open={isCreateModalOpen} 
-          onOpenChange={(value) => {
-            console.log('DealersPage: Setting modal open to:', value);
-            setIsCreateModalOpen(value);
-          }} 
+          onOpenChange={setIsCreateModalOpen} 
         />
         {/* Enhanced Header */}
         <div className="relative">
@@ -117,14 +112,11 @@ export default function DealersPage() {
                       Export Data
                     </Button>
                     <Button 
-                      onClick={() => {
-                        console.log('Add Dealer button clicked');
-                        setIsCreateModalOpen(true);
-                      }}
-                      className="gap-2 shadow-soft bg-gradient-primary hover:opacity-90"
+                      onClick={() => setIsCreateModalOpen(true)}
+                      className="gap-2 shadow-soft bg-gradient-primary hover:opacity-90 transition-all duration-200 hover:scale-105"
                     >
                       <Plus className="h-4 w-4" />
-                      Add Dealer
+                      Add New Dealer
                     </Button>
                   </div>
                 </PermissionGuard>
@@ -272,6 +264,15 @@ export default function DealersPage() {
               >
                 <Filter className="h-4 w-4" />
                 Advanced Filters
+              </Button>
+              {/* Additional Add Dealer Button for Testing */}
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                variant="default"
+                className="gap-2 h-11 shadow-soft"
+              >
+                <Plus className="h-4 w-4" />
+                Quick Add Dealer
               </Button>
             </div>
           </CardContent>

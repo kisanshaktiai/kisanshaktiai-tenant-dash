@@ -127,14 +127,6 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
   const [isDirty, setIsDirty] = useState(false);
   const createDealerMutation = useCreateDealerMutation();
   const { currentTenant: selectedTenant } = useAppSelector((state) => state.tenant);
-  
-  // Debug effect
-  React.useEffect(() => {
-    console.log('AddDealerForm: open prop changed to:', open);
-    if (open) {
-      console.log('Dialog should be opening now');
-    }
-  }, [open]);
 
   // Load draft from localStorage on mount
   const loadDraft = () => {
@@ -174,9 +166,15 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
 
   // Handle dialog state changes
   const handleOpenChange = useCallback((newOpen: boolean) => {
-    console.log('handleOpenChange called with:', newOpen);
+    // If closing and there are unsaved changes, show confirmation
+    if (!newOpen && isDirty) {
+      const confirmed = window.confirm('You have unsaved changes. Are you sure you want to close?');
+      if (!confirmed) {
+        return; // Don't close if user cancels
+      }
+    }
     
-    // Always pass the state change through
+    // Update dialog state
     onOpenChange(newOpen);
     
     // Reset form when closing
@@ -187,7 +185,7 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
       setIsDirty(false);
       localStorage.removeItem('dealerFormDraft');
     }
-  }, [onOpenChange, form]);
+  }, [onOpenChange, form, isDirty]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setUploadedFiles(prev => [...prev, ...acceptedFiles]);
