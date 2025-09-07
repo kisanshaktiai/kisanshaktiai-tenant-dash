@@ -151,6 +151,10 @@ class AppearanceSettingsService {
         accent_color: settings.accent_color || '#14b8a6',
         background_color: settings.background_color || '#ffffff',
         text_color: settings.text_color || '#1f2937',
+        success_color: settings.success_color,
+        warning_color: settings.warning_color,
+        error_color: settings.error_color,
+        info_color: settings.info_color,
       });
 
       // Cast JSON types to appropriate TypeScript types

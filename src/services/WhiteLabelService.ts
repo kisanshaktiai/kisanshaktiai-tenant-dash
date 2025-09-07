@@ -118,30 +118,6 @@ class WhiteLabelService {
     }
   }
 
-  /**
-   * Sync colors from appearance settings to white label config
-   */
-  async syncColorsFromAppearance(tenantId: string, colors: {
-    primary_color: string;
-    secondary_color: string;
-    accent_color: string;
-    background_color: string;
-    text_color: string;
-  }): Promise<void> {
-    try {
-      // Get existing white label config
-      const existingConfig = await this.getWhiteLabelConfig(tenantId);
-      
-      // Update with new colors from appearance settings
-      await this.upsertWhiteLabelConfig({
-        ...existingConfig,
-        tenant_id: tenantId,
-        ...colors,
-      });
-    } catch (error) {
-      console.error('Error syncing colors to white label:', error);
-    }
-  }
 
   /**
    * Get default white label config
@@ -170,6 +146,47 @@ class WhiteLabelService {
       is_active: true,
       version: 1
     };
+  }
+
+  /**
+   * Sync colors from appearance settings to white label config
+   * This ensures mobile app uses the same theme as web app
+   */
+  async syncColorsFromAppearance(tenantId: string, colors: {
+    primary_color: string;
+    secondary_color: string;
+    accent_color: string;
+    background_color: string;
+    text_color: string;
+    success_color?: string;
+    warning_color?: string;
+    error_color?: string;
+    info_color?: string;
+  }): Promise<void> {
+    try {
+      const colorData = {
+        primary_color: colors.primary_color,
+        secondary_color: colors.secondary_color,
+        accent_color: colors.accent_color,
+        background_color: colors.background_color,
+        text_color: colors.text_color,
+        success_color: colors.success_color || colors.primary_color,
+        warning_color: colors.warning_color || '#f59e0b',
+        error_color: colors.error_color || '#ef4444',
+        info_color: colors.info_color || '#3b82f6',
+      };
+      
+      // Simply upsert the color data - the upsert will handle create or update
+      await this.upsertWhiteLabelConfig({
+        tenant_id: tenantId,
+        ...colorData,
+      });
+      
+      console.log('Synced colors to white label config for mobile app:', colorData);
+    } catch (error) {
+      console.error('Failed to sync colors to white label:', error);
+      // Don't throw - this is a best-effort sync
+    }
   }
 
   /**

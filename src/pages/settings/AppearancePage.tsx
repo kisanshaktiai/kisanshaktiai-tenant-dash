@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,14 +6,18 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
 import { useToast } from '@/hooks/use-toast';
 import { FONT_OPTIONS } from '@/config/fonts';
-import { Palette, Eye, Save, RotateCcw, Type } from 'lucide-react';
+import { Palette, Eye, EyeOff, Save, RotateCcw, Type } from 'lucide-react';
+import { appearanceSettingsService } from '@/services/AppearanceSettingsService';
 
 const AppearancePage = () => {
   const { settings, updateSettings, isUpdating } = useAppearanceSettings();
   const { toast } = useToast();
+  const [isPreviewEnabled, setIsPreviewEnabled] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Local state for form inputs
   const [formData, setFormData] = useState({
@@ -35,7 +39,7 @@ const AppearancePage = () => {
   });
 
   // Update form data when settings change
-  React.useEffect(() => {
+  useEffect(() => {
     if (settings) {
       setFormData({
         theme_mode: settings.theme_mode || 'system',
@@ -57,19 +61,40 @@ const AppearancePage = () => {
     }
   }, [settings]);
 
+  // Apply preview when form data changes and preview is enabled
+  useEffect(() => {
+    if (isPreviewEnabled) {
+      console.log('Applying live preview with colors:', formData);
+      appearanceSettingsService.applyThemeColors({
+        ...formData,
+        tenant_id: settings?.tenant_id || '',
+      } as any);
+    }
+  }, [formData, isPreviewEnabled]);
+
+  // Reset preview when disabled
+  useEffect(() => {
+    if (!isPreviewEnabled && settings) {
+      console.log('Reverting to saved settings');
+      appearanceSettingsService.applyThemeColors(settings);
+    }
+  }, [isPreviewEnabled, settings]);
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    setHasUnsavedChanges(true);
   };
 
   const handleSave = async () => {
     try {
       await updateSettings(formData);
+      setHasUnsavedChanges(false);
       toast({
         title: "Theme updated",
-        description: "Your appearance settings have been saved successfully.",
+        description: "Your appearance settings have been saved and applied successfully.",
       });
     } catch (error) {
       toast({
@@ -81,8 +106,8 @@ const AppearancePage = () => {
   };
 
   const resetToDefaults = () => {
-    setFormData({
-      theme_mode: 'system',
+    const defaults = {
+      theme_mode: 'system' as const,
       primary_color: '#10b981',
       secondary_color: '#059669',
       accent_color: '#14b8a6',
@@ -97,7 +122,13 @@ const AppearancePage = () => {
       sidebar_background_color: '#ffffff',
       font_family: 'Inter',
       custom_css: '',
-    });
+    };
+    setFormData(defaults);
+    setHasUnsavedChanges(true);
+  };
+
+  const handlePreviewToggle = () => {
+    setIsPreviewEnabled(!isPreviewEnabled);
   };
 
   const presetThemes = [
@@ -152,10 +183,25 @@ const AppearancePage = () => {
         <div>
           <h1 className="text-3xl font-bold">Appearance Settings</h1>
           <p className="text-muted-foreground mt-2">
-            Customize the look and feel of your application
+            Customize the look and feel of your web application
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* Live Preview Toggle */}
+          <div className="flex items-center gap-2">
+            <Switch
+              id="preview-mode"
+              checked={isPreviewEnabled}
+              onCheckedChange={handlePreviewToggle}
+            />
+            <Label htmlFor="preview-mode" className="flex items-center gap-1 cursor-pointer">
+              {isPreviewEnabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              Live Preview
+            </Label>
+          </div>
+          
+          <Separator orientation="vertical" className="h-8" />
+          
           <Button variant="outline" onClick={resetToDefaults}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset
@@ -163,9 +209,26 @@ const AppearancePage = () => {
           <Button onClick={handleSave} disabled={isUpdating}>
             <Save className="h-4 w-4 mr-2" />
             {isUpdating ? 'Saving...' : 'Save Changes'}
+            {hasUnsavedChanges && (
+              <Badge variant="destructive" className="ml-2">
+                Unsaved
+              </Badge>
+            )}
           </Button>
         </div>
       </div>
+
+      {/* Preview Notice */}
+      {isPreviewEnabled && (
+        <Card className="bg-muted/50 border-primary/20">
+          <CardContent className="py-3 px-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Live preview is enabled. Changes will be applied immediately to the entire application.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
