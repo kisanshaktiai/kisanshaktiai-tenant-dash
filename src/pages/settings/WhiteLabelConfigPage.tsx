@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAppearanceSettings } from '@/hooks/useAppearanceSettings';
+import { useWhiteLabelSettings } from '@/hooks/useWhiteLabelSettings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,7 +43,7 @@ import { AppearanceSettings } from '@/services/AppearanceSettingsService';
 import { ThemePresets, ThemePreset, themePresets } from '@/components/settings/ThemePresets';
 
 export default function WhiteLabelConfigPage() {
-  const { settings, updateSettings, isUpdating } = useAppearanceSettings();
+  const { settings, updateSettings, isUpdating } = useWhiteLabelSettings();
   const [localSettings, setLocalSettings] = useState<Partial<AppearanceSettings>>({});
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);

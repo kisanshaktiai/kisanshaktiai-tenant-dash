@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { whiteLabelService } from './WhiteLabelService';
 import { 
   hexToHsl, 
   sanitizeHsl,
@@ -142,6 +143,15 @@ class AppearanceSettingsService {
         console.error('Error upserting appearance settings:', error);
         throw error;
       }
+      
+      // Sync colors to white label config for mobile app
+      await whiteLabelService.syncColorsFromAppearance(settings.tenant_id, {
+        primary_color: settings.primary_color || '#10b981',
+        secondary_color: settings.secondary_color || '#059669',
+        accent_color: settings.accent_color || '#14b8a6',
+        background_color: settings.background_color || '#ffffff',
+        text_color: settings.text_color || '#1f2937',
+      });
 
       // Cast JSON types to appropriate TypeScript types
       const processedData: AppearanceSettings = {

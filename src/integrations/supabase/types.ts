@@ -747,6 +747,7 @@ export type Database = {
           app_splash_screen: string | null
           applied_at: string | null
           applied_by: string | null
+          applies_to: string | null
           background_color: string
           border_color: string | null
           button_style: string | null
@@ -805,6 +806,7 @@ export type Database = {
           app_splash_screen?: string | null
           applied_at?: string | null
           applied_by?: string | null
+          applies_to?: string | null
           background_color?: string
           border_color?: string | null
           button_style?: string | null
@@ -863,6 +865,7 @@ export type Database = {
           app_splash_screen?: string | null
           applied_at?: string | null
           applied_by?: string | null
+          applies_to?: string | null
           background_color?: string
           border_color?: string | null
           button_style?: string | null

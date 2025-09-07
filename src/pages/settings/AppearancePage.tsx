@@ -248,7 +248,7 @@ const AppearancePage = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Brand Colors
+                Web Application Theme Colors
               </CardTitle>
               <CardDescription>
                 Define your organization's primary brand colors

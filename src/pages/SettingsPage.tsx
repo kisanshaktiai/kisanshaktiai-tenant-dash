@@ -52,15 +52,15 @@ const SettingsPage = () => {
       color: 'text-yellow-500'
     },
     {
-      title: 'Appearance',
-      description: 'Customize the look and feel of your dashboard',
+      title: 'Web App Appearance',
+      description: 'Customize theme, colors, and fonts for this dashboard',
       icon: Palette,
       href: '/app/settings/appearance',
       color: 'text-purple-500'
     },
     {
-      title: 'White Label',
-      description: 'Configure Farmer App branding and customization',
+      title: 'Mobile App Branding',
+      description: 'Configure farmer mobile app white-label settings',
       icon: Sparkles,
       href: '/app/settings/white-label',
       color: 'text-pink-500'
