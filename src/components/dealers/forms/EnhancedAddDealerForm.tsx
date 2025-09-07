@@ -213,8 +213,16 @@ const dealerFormSchema = z.object({
   longitude: z.number().optional(),
   
   // Business Information
-  gst_number: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST number').optional(),
-  pan_number: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN number').optional(),
+  // Indian GST: 2 digits (state code) + 10 characters (PAN) + 1 digit (entity) + 1 letter (Z) + 1 alphanumeric (checksum)
+  gst_number: z.string()
+    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST format (e.g., 29ABCDE1234F1Z5)')
+    .optional()
+    .or(z.literal('')),
+  // Indian PAN: 5 letters + 4 digits + 1 letter
+  pan_number: z.string()
+    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN format (e.g., ABCDE1234F)')
+    .optional()
+    .or(z.literal('')),
   business_category: z.array(z.string()).min(1, 'Select at least one category'),
   annual_turnover: z.string().optional(),
   employee_count: z.string().optional(),
@@ -424,16 +432,38 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
   // Smart GST validation
   const validateGST = async (gstNumber: string) => {
     setIsValidatingGST(true);
+    
+    // Indian GST format: 2 digits (state code) + PAN (10 chars) + 1 digit (entity) + Z + 1 alphanumeric (checksum)
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+    
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setIsValidatingGST(false);
     
-    // Mock validation result
-    if (gstNumber.length === 15) {
-      toast.success('GST number verified');
-      return true;
+    // Validate format
+    if (gstRegex.test(gstNumber)) {
+      // Extract state code
+      const stateCode = gstNumber.substring(0, 2);
+      const validStateCodes = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', 
+                               '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+                               '21', '22', '23', '24', '25', '26', '27', '28', '29', '30',
+                               '31', '32', '33', '34', '35', '36', '37', '38', '97', '99'];
+      
+      if (validStateCodes.includes(stateCode)) {
+        toast.success('GST number verified successfully');
+        // Extract PAN from GST and auto-fill if PAN field is empty
+        const panFromGST = gstNumber.substring(2, 12);
+        if (!form.getValues('pan_number')) {
+          form.setValue('pan_number', panFromGST);
+          toast.info(`PAN ${panFromGST} extracted from GST`);
+        }
+        return true;
+      } else {
+        toast.error('Invalid state code in GST number');
+        return false;
+      }
     } else {
-      toast.error('Invalid GST number');
+      toast.error('Invalid GST format. Expected format: 29ABCDE1234F1Z5');
       return false;
     }
   };
@@ -441,16 +471,38 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
   // Smart PAN validation
   const validatePAN = async (panNumber: string) => {
     setIsValidatingPAN(true);
+    
+    // Indian PAN format: 5 letters (first 3: AAA-ZZZ, 4th: Type, 5th: First letter of name) + 4 digits + 1 letter
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
     setIsValidatingPAN(false);
     
-    // Mock validation result
-    if (panNumber.length === 10) {
-      toast.success('PAN number verified');
-      return true;
+    // Validate format
+    if (panRegex.test(panNumber)) {
+      // Validate 4th character (entity type)
+      const fourthChar = panNumber[3];
+      const validTypes = ['A', 'B', 'C', 'F', 'G', 'H', 'L', 'J', 'P', 'T'];
+      
+      if (validTypes.includes(fourthChar)) {
+        toast.success('PAN number verified successfully');
+        
+        // If GST exists, check if PAN matches the one in GST
+        const gstValue = form.getValues('gst_number');
+        if (gstValue && gstValue.length === 15) {
+          const panFromGST = gstValue.substring(2, 12);
+          if (panFromGST !== panNumber) {
+            toast.warning('PAN does not match the one in GST number');
+          }
+        }
+        return true;
+      } else {
+        toast.error(`Invalid PAN type character '${fourthChar}'. Valid types: P(Person), C(Company), H(HUF), F(Firm), A(AOP), T(Trust), etc.`);
+        return false;
+      }
     } else {
-      toast.error('Invalid PAN number');
+      toast.error('Invalid PAN format. Expected format: ABCDE1234F');
       return false;
     }
   };
@@ -539,38 +591,58 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
       // Check for duplicates before submission
       await checkDuplicates();
       
-      // Transform data for API
+      // Transform data for API - matching database schema
       const createData = {
+        // Core fields
         business_name: data.business_name,
+        legal_name: data.business_name, // Using business_name as legal_name if not separate
         contact_person: data.contact_person,
-        email: data.email,
+        designation: data.designation,
         phone: data.phone,
+        alternate_phone: data.alternate_phone || null,
+        email: data.email,
+        website: data.website || null,
+        
+        // Address fields
         address_line1: data.address_line1,
-        address_line2: data.address_line2 || '',
+        address_line2: data.address_line2 || null,
         city: data.city,
         state: data.state,
         country: data.country,
         postal_code: data.postal_code,
-        gst_number: data.gst_number || '',
-        pan_number: data.pan_number || '',
-        bank_name: data.bank_name || '',
-        account_number: data.account_number || '',
-        ifsc_code: data.ifsc_code || '',
-        credit_limit: data.credit_limit || 0,
-        payment_terms: data.payment_terms || '30 days',
-        status: 'active' as const,
-        onboarding_status: 'pending' as const,
+        gps_location: data.latitude && data.longitude ? {
+          lat: data.latitude,
+          lng: data.longitude
+        } : null,
+        
+        // Business information
+        gst_number: data.gst_number || null,
+        pan_number: data.pan_number || null,
+        business_type: data.dealer_type,
+        establishment_year: parseInt(data.establishment_year),
+        employee_count: data.employee_count ? parseInt(data.employee_count.split('-')[0]) : null,
+        
+        // Financial information (store in metadata as not all fields exist in DB)
+        credit_limit: data.credit_limit || null,
+        payment_terms: data.payment_terms || null,
+        
+        // Status fields
+        status: 'active',
+        onboarding_status: 'pending',
+        verification_status: 'pending',
+        is_active: true,
+        
+        // Store additional data in metadata
         metadata: {
-          dealer_type: data.dealer_type,
           registration_number: data.registration_number,
-          establishment_year: data.establishment_year,
-          designation: data.designation,
-          alternate_phone: data.alternate_phone,
-          website: data.website,
+          bank_details: {
+            bank_name: data.bank_name,
+            account_number: data.account_number,
+            ifsc_code: data.ifsc_code,
+          },
           social_media: data.social_media,
           business_category: data.business_category,
           annual_turnover: data.annual_turnover,
-          employee_count: data.employee_count,
           territory_ids: data.territory_ids,
           coverage_area: data.coverage_area,
           service_radius: data.service_radius,
@@ -579,7 +651,12 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
           communication_preference: data.communication_preference,
           notification_settings: data.notification_settings,
           credit_score: creditScore,
-          uploaded_documents: uploadedFiles.map(f => f.name),
+          uploaded_documents: uploadedFiles.map(f => ({
+            name: f.name,
+            size: f.size,
+            type: f.type,
+            uploadedAt: new Date().toISOString()
+          })),
         },
       };
 
@@ -1190,9 +1267,10 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                                 <div className="flex gap-2">
                                   <Input 
                                     {...field} 
-                                    placeholder="15 characters"
+                                    placeholder="29ABCDE1234F1Z5"
                                     maxLength={15}
                                     className="uppercase"
+                                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                                   />
                                   <Button
                                     type="button"
@@ -1209,6 +1287,9 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                                   </Button>
                                 </div>
                               </FormControl>
+                              <FormDescription className="text-xs">
+                                Format: 29ABCDE1234F1Z5 (15 characters)
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -1224,9 +1305,10 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                                 <div className="flex gap-2">
                                   <Input 
                                     {...field} 
-                                    placeholder="10 characters"
+                                    placeholder="ABCDE1234F"
                                     maxLength={10}
                                     className="uppercase"
+                                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                                   />
                                   <Button
                                     type="button"
@@ -1243,6 +1325,9 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                                   </Button>
                                 </div>
                               </FormControl>
+                              <FormDescription className="text-xs">
+                                Format: ABCDE1234F (10 characters)
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
