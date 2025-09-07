@@ -616,8 +616,8 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh] p-0 gap-0">
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-primary/10 to-primary/5">
+      <DialogContent className="max-w-6xl h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-primary/10 to-primary/5 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -656,9 +656,9 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1 flex flex-col">
-              <TabsList className="grid grid-cols-8 w-full rounded-none border-b h-auto p-0">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="grid grid-cols-8 w-full rounded-none border-b h-auto p-0 flex-shrink-0">
                 {tabs.map((tab, index) => {
                   const Icon = tab.icon;
                   const isCompleted = index === 0 ? completionPercentage === 100 : false;
@@ -684,7 +684,7 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                 })}
               </TabsList>
 
-              <ScrollArea className="flex-1 px-6 py-4">
+              <div className="flex-1 overflow-y-auto px-6 py-4">
                 {/* Basic Information Tab */}
                 <TabsContent value="basic" className="space-y-4 mt-0">
                   <Card>
@@ -1623,10 +1623,10 @@ export const EnhancedAddDealerForm: React.FC<EnhancedAddDealerFormProps> = ({ op
                     </CardContent>
                   </Card>
                 </TabsContent>
-              </ScrollArea>
+              </div>
             </Tabs>
 
-            <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur">
+            <DialogFooter className="px-6 py-4 border-t bg-background/95 backdrop-blur flex-shrink-0">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
                   <Switch
