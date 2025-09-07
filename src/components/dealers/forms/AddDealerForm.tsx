@@ -164,13 +164,26 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
     return () => subscription.unsubscribe();
   }, [form]);
 
-  // Handle closing with unsaved changes
-  const handleClose = (newOpen: boolean) => {
-    // Only check for unsaved changes when closing
+  // Handle dialog state changes
+  const handleOpenChange = (newOpen: boolean) => {
+    // When closing, check for unsaved changes
     if (!newOpen && isDirty) {
       const confirmed = window.confirm('You have unsaved changes. Are you sure you want to close?');
-      if (!confirmed) return;
+      if (!confirmed) {
+        // Don't close if user cancels
+        return;
+      }
     }
+    
+    // If opening or closing is confirmed, update the state
+    if (!newOpen) {
+      // Reset form and step when closing
+      form.reset();
+      setCurrentStep(0);
+      setUploadedFiles([]);
+      setIsDirty(false);
+    }
+    
     onOpenChange(newOpen);
   };
 
@@ -264,7 +277,7 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
       setIsDirty(false);
       
       // Close modal
-      handleClose(false);
+      handleOpenChange(false);
     } catch (error) {
       console.error('Error creating dealer:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create dealer';
@@ -299,7 +312,7 @@ export const AddDealerForm: React.FC<AddDealerFormProps> = ({ open, onOpenChange
   const progress = ((currentStep + 1) / formSteps.length) * 100;
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-accent/5">
           <div className="flex items-start gap-4">
