@@ -15,6 +15,7 @@ import { LivePreview } from '@/components/settings/LivePreview';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { 
   Palette, 
   Smartphone, 
@@ -44,17 +45,17 @@ import { ThemePresets, ThemePreset, themePresets } from '@/components/settings/T
 
 export default function WhiteLabelConfigPage() {
   const { settings, updateSettings, isUpdating } = useWhiteLabelSettings();
-  const [localSettings, setLocalSettings] = useState<Partial<AppearanceSettings>>({});
+  const [localSettings, setLocalSettings] = useState<Partial<AppearanceSettings>>(settings || {});
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   const [selectedThemeId, setSelectedThemeId] = useState<string>('');
   const [appliedThemeId, setAppliedThemeId] = useState<string>('');
 
   useEffect(() => {
-    if (settings) {
+    if (settings && Object.keys(localSettings).length === 0) {
       setLocalSettings(settings);
     }
-  }, [settings]);
+  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectTheme = (preset: ThemePreset) => {
     setSelectedThemeId(preset.id);
@@ -145,7 +146,7 @@ export default function WhiteLabelConfigPage() {
     reader.readAsText(file);
   };
 
-  if (!localSettings) {
+  if (!settings && !localSettings) {
     return (
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-center h-64">
@@ -228,9 +229,15 @@ export default function WhiteLabelConfigPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={cn(
+          "grid gap-6",
+          isPreviewVisible ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
+        )}>
           {/* Configuration Panel */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={cn(
+            "space-y-6",
+            isPreviewVisible ? "lg:col-span-2" : "col-span-1"
+          )}>
             <Tabs defaultValue="themes" className="w-full">
               <TabsList className="grid grid-cols-7 w-full">
                 <TabsTrigger value="themes">
@@ -643,8 +650,8 @@ export default function WhiteLabelConfigPage() {
 
           {/* Live Preview */}
           {isPreviewVisible && (
-            <div className="space-y-4">
-              <Card className="sticky top-6">
+            <div className="space-y-4 lg:col-span-1">
+              <Card className="sticky top-6 h-fit overflow-hidden">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>Live Preview</span>
@@ -680,18 +687,25 @@ export default function WhiteLabelConfigPage() {
                     Preview your theme changes in real-time
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center">
-                  <LivePreview 
-                    colors={{
-                      primary: localSettings.primary_color || '#10b981',
-                      secondary: localSettings.secondary_color || '#059669',
-                      accent: localSettings.accent_color || '#14b8a6',
-                      background: localSettings.background_color || '#ffffff',
-                      text: localSettings.text_color || '#1f2937'
-                    }}
-                    appName={localSettings.app_name}
-                    logo={localSettings.logo_override_url}
-                  />
+                <CardContent className="flex justify-center p-4">
+                  <div className={cn(
+                    "transition-all duration-300",
+                    previewMode === 'mobile' && "max-w-[375px]",
+                    previewMode === 'tablet' && "max-w-[768px]",
+                    previewMode === 'desktop' && "max-w-full"
+                  )}>
+                    <LivePreview 
+                      colors={{
+                        primary: localSettings.primary_color || '#10b981',
+                        secondary: localSettings.secondary_color || '#059669',
+                        accent: localSettings.accent_color || '#14b8a6',
+                        background: localSettings.background_color || '#ffffff',
+                        text: localSettings.text_color || '#1f2937'
+                      }}
+                      appName={localSettings.app_name}
+                      logo={localSettings.logo_override_url}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </div>
