@@ -344,5 +344,3 @@ export function ThemePresets({ selectedTheme, onSelectTheme }: ThemePresetsProps
     </div>
   );
 }
-
-export default ThemePresets;
