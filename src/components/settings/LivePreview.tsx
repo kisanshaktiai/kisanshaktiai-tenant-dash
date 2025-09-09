@@ -13,7 +13,7 @@ export interface LivePreviewProps {
   logo?: string;
 }
 
-export const LivePreview = React.memo<LivePreviewProps>(({ colors, appName = 'AgriTech Platform', logo }) => {
+const LivePreviewComponent: React.FC<LivePreviewProps> = ({ colors, appName = 'AgriTech Platform', logo }) => {
   return (
     <div className="w-full max-w-[320px] mx-auto">
       {/* Desktop/Browser Frame */}
@@ -143,4 +143,6 @@ export const LivePreview = React.memo<LivePreviewProps>(({ colors, appName = 'Ag
       </div>
     </div>
   );
-});
+};
+
+export const LivePreview = React.memo(LivePreviewComponent);
