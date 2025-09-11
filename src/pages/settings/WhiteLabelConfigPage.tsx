@@ -154,11 +154,7 @@ export default function WhiteLabelConfigPage() {
   };
 
   return (
-    <PageLayout
-      title="White Label Configuration"
-      description="Customize your application's branding and appearance for web and mobile"
-      icon={Wand2}
-    >
+    <PageLayout>
       <div className="space-y-6">
         {/* Action Bar */}
         <div className="flex items-center justify-between">
@@ -274,8 +270,7 @@ export default function WhiteLabelConfigPage() {
                   <CardContent>
                     <ThemePresets 
                       onSelectTheme={handleSelectTheme}
-                      selectedThemeId={selectedThemeId}
-                      appliedThemeId={appliedThemeId}
+                      selectedTheme={selectedThemeId}
                     />
                   </CardContent>
                 </Card>
@@ -303,18 +298,16 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>App Logo</Label>
                         <BrandingUploader
-                          currentImageUrl={localSettings?.app_logo_url}
-                          onImageUploaded={(url) => setLocalSettings({...localSettings, app_logo_url: url})}
-                          uploadType="logo"
+                          logoUrl={localSettings?.app_logo_url}
+                          onLogoChange={(url) => setLocalSettings({...localSettings, app_logo_url: url})}
                         />
                       </div>
                       
                       <div>
                         <Label>App Icon</Label>
                         <BrandingUploader
-                          currentImageUrl={localSettings?.app_icon_url}
-                          onImageUploaded={(url) => setLocalSettings({...localSettings, app_icon_url: url})}
-                          uploadType="icon"
+                          logoUrl={localSettings?.app_icon_url}
+                          onLogoChange={(url) => setLocalSettings({...localSettings, app_icon_url: url})}
                         />
                       </div>
                     </div>
@@ -322,9 +315,8 @@ export default function WhiteLabelConfigPage() {
                     <div>
                       <Label>Splash Screen</Label>
                       <BrandingUploader
-                        currentImageUrl={localSettings?.app_splash_screen_url}
-                        onImageUploaded={(url) => setLocalSettings({...localSettings, app_splash_screen_url: url})}
-                        uploadType="splash"
+                        logoUrl={localSettings?.app_splash_screen_url}
+                        onLogoChange={(url) => setLocalSettings({...localSettings, app_splash_screen_url: url})}
                       />
                     </div>
                   </CardContent>
@@ -343,7 +335,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Primary Color</Label>
                         <ColorPicker
-                          color={localSettings?.primary_color || '#10b981'}
+                          label="Primary Color"
+                          value={localSettings?.primary_color || '#10b981'}
                           onChange={(color) => setLocalSettings({...localSettings, primary_color: color})}
                         />
                       </div>
@@ -351,7 +344,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Secondary Color</Label>
                         <ColorPicker
-                          color={localSettings?.secondary_color || '#059669'}
+                          label="Secondary Color"
+                          value={localSettings?.secondary_color || '#059669'}
                           onChange={(color) => setLocalSettings({...localSettings, secondary_color: color})}
                         />
                       </div>
@@ -359,7 +353,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Accent Color</Label>
                         <ColorPicker
-                          color={localSettings?.accent_color || '#14b8a6'}
+                          label="Accent Color"
+                          value={localSettings?.accent_color || '#14b8a6'}
                           onChange={(color) => setLocalSettings({...localSettings, accent_color: color})}
                         />
                       </div>
@@ -367,7 +362,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Background Color</Label>
                         <ColorPicker
-                          color={localSettings?.background_color || '#ffffff'}
+                          label="Background Color"
+                          value={localSettings?.background_color || '#ffffff'}
                           onChange={(color) => setLocalSettings({...localSettings, background_color: color})}
                         />
                       </div>
@@ -375,7 +371,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Text Color</Label>
                         <ColorPicker
-                          color={localSettings?.text_color || '#1f2937'}
+                          label="Text Color"
+                          value={localSettings?.text_color || '#1f2937'}
                           onChange={(color) => setLocalSettings({...localSettings, text_color: color})}
                         />
                       </div>
@@ -383,7 +380,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Success Color</Label>
                         <ColorPicker
-                          color={localSettings?.success_color || '#10b981'}
+                          label="Success Color"
+                          value={localSettings?.success_color || '#10b981'}
                           onChange={(color) => setLocalSettings({...localSettings, success_color: color})}
                         />
                       </div>
@@ -391,7 +389,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Warning Color</Label>
                         <ColorPicker
-                          color={localSettings?.warning_color || '#f59e0b'}
+                          label="Warning Color"
+                          value={localSettings?.warning_color || '#f59e0b'}
                           onChange={(color) => setLocalSettings({...localSettings, warning_color: color})}
                         />
                       </div>
@@ -399,7 +398,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Error Color</Label>
                         <ColorPicker
-                          color={localSettings?.error_color || '#ef4444'}
+                          label="Error Color"
+                          value={localSettings?.error_color || '#ef4444'}
                           onChange={(color) => setLocalSettings({...localSettings, error_color: color})}
                         />
                       </div>
@@ -473,7 +473,8 @@ export default function WhiteLabelConfigPage() {
                       <div>
                         <Label>Theme Color</Label>
                         <ColorPicker
-                          color={localSettings.pwa_config?.theme_color || localSettings.primary_color || '#10b981'}
+                          label="Theme Color"
+                          value={localSettings.pwa_config?.theme_color || localSettings.primary_color || '#10b981'}
                           onChange={(color) => setLocalSettings({
                             ...localSettings,
                             pwa_config: { ...localSettings.pwa_config, theme_color: color }
