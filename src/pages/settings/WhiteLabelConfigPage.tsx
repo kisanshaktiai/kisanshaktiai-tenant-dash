@@ -240,7 +240,7 @@ export default function WhiteLabelConfigPage() {
             isPreviewVisible ? "lg:col-span-2" : "col-span-1"
           )}>
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid grid-cols-8 w-full">
+              <TabsList className="grid grid-cols-4 w-full">
                 <TabsTrigger value="themes">
                   <Brush className="h-4 w-4" />
                 </TabsTrigger>
@@ -252,18 +252,6 @@ export default function WhiteLabelConfigPage() {
                 </TabsTrigger>
                 <TabsTrigger value="mobile">
                   <Smartphone className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="layout">
-                  <Layout className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="features">
-                  <Sparkles className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="communication">
-                  <Bell className="h-4 w-4" />
-                </TabsTrigger>
-                <TabsTrigger value="advanced">
-                  <Code className="h-4 w-4" />
                 </TabsTrigger>
               </TabsList>
 
@@ -385,15 +373,6 @@ export default function WhiteLabelConfigPage() {
                         label="Info Color"
                         value={localSettings.info_color || '#3b82f6'}
                         onChange={(color) => setLocalSettings({...localSettings, info_color: color})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Primary Gradient</Label>
-                      <Input
-                        value={localSettings.primary_gradient || ''}
-                        onChange={(e) => setLocalSettings({...localSettings, primary_gradient: e.target.value})}
-                        placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                       />
                     </div>
                   </CardContent>
@@ -618,95 +597,7 @@ export default function WhiteLabelConfigPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              <TabsContent value="layout" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Layout & Typography</CardTitle>
-                    <CardDescription>Configure layout and typography settings</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label>Navigation Style</Label>
-                      <Select 
-                        value={localSettings.navigation_style || 'sidebar'}
-                        onValueChange={(value) => setLocalSettings({...localSettings, navigation_style: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sidebar">Sidebar</SelectItem>
-                          <SelectItem value="topbar">Top Bar</SelectItem>
-                          <SelectItem value="bottom">Bottom Navigation</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label>Font Family</Label>
-                      <Select 
-                        value={localSettings.font_family || 'Inter'}
-                        onValueChange={(value) => setLocalSettings({...localSettings, font_family: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Inter">Inter</SelectItem>
-                          <SelectItem value="Roboto">Roboto</SelectItem>
-                          <SelectItem value="Open Sans">Open Sans</SelectItem>
-                          <SelectItem value="Lato">Lato</SelectItem>
-                          <SelectItem value="Poppins">Poppins</SelectItem>
-                          <SelectItem value="Montserrat">Montserrat</SelectItem>
-                          <SelectItem value="Nunito">Nunito</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label>Button Style</Label>
-                      <Select 
-                        value={localSettings.button_style || 'rounded'}
-                        onValueChange={(value) => setLocalSettings({...localSettings, button_style: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="rounded">Rounded</SelectItem>
-                          <SelectItem value="square">Square</SelectItem>
-                          <SelectItem value="pill">Pill</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label>Card Style</Label>
-                      <Select 
-                        value={localSettings.card_style || 'elevated'}
-                        onValueChange={(value) => setLocalSettings({...localSettings, card_style: value})}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="elevated">Elevated</SelectItem>
-                          <SelectItem value="bordered">Bordered</SelectItem>
-                          <SelectItem value="flat">Flat</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label>Enable Animations</Label>
-                      <Switch
-                        checked={localSettings.animations_enabled ?? true}
-                        onCheckedChange={(checked) => setLocalSettings({...localSettings, animations_enabled: checked})}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+            </Tabs>
               </TabsContent>
 
               <TabsContent value="features" className="space-y-4">
@@ -914,7 +805,7 @@ export default function WhiteLabelConfigPage() {
                         text: localSettings.text_color || '#1f2937'
                       }}
                       appName={localSettings.app_name}
-                      logo={localSettings.logo_override_url}
+                      logo={localSettings.app_logo_url}
                     />
                   </div>
                 </CardContent>
