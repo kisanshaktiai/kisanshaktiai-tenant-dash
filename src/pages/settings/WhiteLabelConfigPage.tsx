@@ -63,12 +63,14 @@ export default function WhiteLabelConfigPage() {
     setLocalSettings(prev => ({
       ...prev,
       ...preset.colors,
-      font_family: preset.styles.font_family,
-      button_style: preset.styles.button_style,
-      input_style: preset.styles.input_style,
-      card_style: preset.styles.card_style,
-      navigation_style: preset.styles.navigation_style,
-      animations_enabled: preset.styles.animations_enabled
+      mobile_ui_config: {
+        ...prev?.mobile_ui_config,
+        navigation_style: preset.styles.navigation_style,
+        animations_enabled: preset.styles.animations_enabled,
+        button_style: preset.styles.button_style,
+        input_style: preset.styles.input_style,
+        card_style: preset.styles.card_style
+      }
     }));
     
     setAppliedThemeId(preset.id);
@@ -102,44 +104,48 @@ export default function WhiteLabelConfigPage() {
       setLocalSettings(settings);
       toast({
         title: "Settings reset",
-        description: "Changes have been discarded.",
+        description: "All changes have been reverted to the last saved state.",
       });
     }
   };
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(localSettings, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = 'white-label-config.json';
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    const exportData = JSON.stringify(localSettings, null, 2);
+    const blob = new Blob([exportData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'white-label-config.json';
+    link.click();
+    URL.revokeObjectURL(url);
     
     toast({
       title: "Configuration exported",
-      description: "Your settings have been exported to a JSON file.",
+      description: "Your white label configuration has been downloaded.",
     });
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const imported = JSON.parse(e.target?.result as string);
-        setLocalSettings({ ...localSettings, ...imported });
+        const importedConfig = JSON.parse(e.target?.result as string);
+        setLocalSettings(prev => ({
+          ...prev,
+          ...importedConfig
+        }));
+        
         toast({
           title: "Configuration imported",
-          description: "Settings have been imported successfully.",
+          description: "Settings have been loaded. Review and save to apply.",
         });
       } catch (error) {
         toast({
           title: "Import failed",
-          description: "Invalid configuration file.",
+          description: "Invalid configuration file format.",
           variant: "destructive",
         });
       }
@@ -147,185 +153,185 @@ export default function WhiteLabelConfigPage() {
     reader.readAsText(file);
   };
 
-  if (!settings && !localSettings) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <PageLayout
+      title="White Label Configuration"
+      description="Customize your application's branding and appearance for web and mobile"
+      icon={Wand2}
+    >
       <div className="space-y-6">
         {/* Action Bar */}
-        <Card>
-          <CardContent className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsPreviewVisible(!isPreviewVisible)}
-              >
-                {isPreviewVisible ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-                {isPreviewVisible ? 'Hide Preview' : 'Show Preview'}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Auto-saved
+            </Badge>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPreviewVisible(!isPreviewVisible)}
+            >
+              {isPreviewVisible ? (
+                <>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Hide Preview
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Show Preview
+                </>
+              )}
+            </Button>
+            
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            
+            <label>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+              <Button variant="outline" size="sm" asChild>
+                <span className="cursor-pointer">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import
+                </span>
               </Button>
-              <Select value={previewMode} onValueChange={(value: any) => setPreviewMode(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mobile">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      Mobile
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="tablet">
-                    <div className="flex items-center gap-2">
-                      <Tablet className="h-4 w-4" />
-                      Tablet
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="desktop">
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-4 w-4" />
-                      Desktop
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            </label>
+            
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+            
+            <Button size="sm" onClick={handleSave} disabled={isUpdating}>
+              <Save className="h-4 w-4 mr-2" />
+              Save to Database
+            </Button>
+          </div>
+        </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              <label>
-                <input
-                  type="file"
-                  accept=".json"
-                  className="hidden"
-                  onChange={handleImport}
-                />
-                <Button variant="outline" size="sm" asChild>
-                  <span>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </span>
-                </Button>
-              </label>
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-              <Button onClick={handleSave} disabled={isUpdating} size="sm">
-                <Save className="h-4 w-4 mr-2" />
-                {isUpdating ? 'Saving...' : 'Save to Database'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* Main Content Grid */}
         <div className={cn(
           "grid gap-6",
-          isPreviewVisible ? "grid-cols-1 lg:grid-cols-3" : "grid-cols-1"
+          isPreviewVisible ? "lg:grid-cols-3" : "lg:grid-cols-1"
         )}>
-          {/* Configuration Panel */}
+          {/* Settings Tabs */}
           <div className={cn(
             "space-y-6",
-            isPreviewVisible ? "lg:col-span-2" : "col-span-1"
+            isPreviewVisible ? "lg:col-span-2" : "lg:col-span-1"
           )}>
-            <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid grid-cols-4 w-full">
+            <Tabs defaultValue="themes" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="themes">
-                  <Brush className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Themes
                 </TabsTrigger>
                 <TabsTrigger value="branding">
-                  <Wand2 className="h-4 w-4" />
+                  <Brush className="h-4 w-4 mr-2" />
+                  Branding
                 </TabsTrigger>
                 <TabsTrigger value="colors">
-                  <Palette className="h-4 w-4" />
+                  <Palette className="h-4 w-4 mr-2" />
+                  Colors
                 </TabsTrigger>
                 <TabsTrigger value="mobile">
-                  <Smartphone className="h-4 w-4" />
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Mobile
+                </TabsTrigger>
+                <TabsTrigger value="features">
+                  <Layout className="h-4 w-4 mr-2" />
+                  Features
+                </TabsTrigger>
+                <TabsTrigger value="communication">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Communication
+                </TabsTrigger>
+                <TabsTrigger value="advanced">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Advanced
                 </TabsTrigger>
               </TabsList>
 
+              {/* Themes Tab */}
               <TabsContent value="themes" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span>Theme Presets</span>
-                      {appliedThemeId && (
-                        <Badge variant="secondary" className="ml-2">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Theme Applied
-                        </Badge>
-                      )}
-                    </CardTitle>
+                    <CardTitle>Quick Start Templates</CardTitle>
                     <CardDescription>
-                      Select a ready-made theme to quickly customize your application
+                      Select a pre-configured theme to get started quickly
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-[500px] pr-4">
-                      <ThemePresets
-                        selectedTheme={selectedThemeId}
-                        onSelectTheme={handleSelectTheme}
-                      />
-                    </ScrollArea>
+                    <ThemePresets 
+                      onSelectTheme={handleSelectTheme}
+                      selectedThemeId={selectedThemeId}
+                      appliedThemeId={appliedThemeId}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
 
+              {/* Branding Tab */}
               <TabsContent value="branding" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>App Branding</CardTitle>
-                    <CardDescription>Configure your app's identity</CardDescription>
+                    <CardTitle>Brand Identity</CardTitle>
+                    <CardDescription>Configure your app's brand elements</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>App Name</Label>
+                      <Label htmlFor="app_name">Application Name</Label>
                       <Input
-                        value={localSettings.app_name || ''}
+                        id="app_name"
+                        value={localSettings?.app_name || ''}
                         onChange={(e) => setLocalSettings({...localSettings, app_name: e.target.value})}
                         placeholder="Your App Name"
                       />
                     </div>
                     
-                    <div>
-                      <Label>App Logo</Label>
-                      <BrandingUploader
-                        logoUrl={localSettings.app_logo_url}
-                        onLogoChange={(url) => setLocalSettings({...localSettings, app_logo_url: url})}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>App Icon</Label>
-                      <BrandingUploader
-                        logoUrl={localSettings.app_icon_url}
-                        onLogoChange={(url) => setLocalSettings({...localSettings, app_icon_url: url})}
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>App Logo</Label>
+                        <BrandingUploader
+                          currentImageUrl={localSettings?.app_logo_url}
+                          onImageUploaded={(url) => setLocalSettings({...localSettings, app_logo_url: url})}
+                          uploadType="logo"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>App Icon</Label>
+                        <BrandingUploader
+                          currentImageUrl={localSettings?.app_icon_url}
+                          onImageUploaded={(url) => setLocalSettings({...localSettings, app_icon_url: url})}
+                          uploadType="icon"
+                        />
+                      </div>
                     </div>
                     
                     <div>
                       <Label>Splash Screen</Label>
                       <BrandingUploader
-                        logoUrl={localSettings.app_splash_screen_url}
-                        onLogoChange={(url) => setLocalSettings({...localSettings, app_splash_screen_url: url})}
+                        currentImageUrl={localSettings?.app_splash_screen_url}
+                        onImageUploaded={(url) => setLocalSettings({...localSettings, app_splash_screen_url: url})}
+                        uploadType="splash"
                       />
                     </div>
-                    
                   </CardContent>
                 </Card>
               </TabsContent>
 
+              {/* Colors Tab */}
               <TabsContent value="colors" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -334,239 +340,174 @@ export default function WhiteLabelConfigPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <ColorPicker
-                        label="Primary Color"
-                        value={localSettings.primary_color || '#10b981'}
-                        onChange={(color) => setLocalSettings({...localSettings, primary_color: color})}
-                      />
-                      <ColorPicker
-                        label="Secondary Color"
-                        value={localSettings.secondary_color || '#059669'}
-                        onChange={(color) => setLocalSettings({...localSettings, secondary_color: color})}
-                      />
-                      <ColorPicker
-                        label="Accent Color"
-                        value={localSettings.accent_color || '#14b8a6'}
-                        onChange={(color) => setLocalSettings({...localSettings, accent_color: color})}
-                      />
-                      <ColorPicker
-                        label="Background Color"
-                        value={localSettings.background_color || '#ffffff'}
-                        onChange={(color) => setLocalSettings({...localSettings, background_color: color})}
-                      />
-                      <ColorPicker
-                        label="Success Color"
-                        value={localSettings.success_color || '#10b981'}
-                        onChange={(color) => setLocalSettings({...localSettings, success_color: color})}
-                      />
-                      <ColorPicker
-                        label="Warning Color"
-                        value={localSettings.warning_color || '#f59e0b'}
-                        onChange={(color) => setLocalSettings({...localSettings, warning_color: color})}
-                      />
-                      <ColorPicker
-                        label="Error Color"
-                        value={localSettings.error_color || '#ef4444'}
-                        onChange={(color) => setLocalSettings({...localSettings, error_color: color})}
-                      />
-                      <ColorPicker
-                        label="Info Color"
-                        value={localSettings.info_color || '#3b82f6'}
-                        onChange={(color) => setLocalSettings({...localSettings, info_color: color})}
-                      />
+                      <div>
+                        <Label>Primary Color</Label>
+                        <ColorPicker
+                          color={localSettings?.primary_color || '#10b981'}
+                          onChange={(color) => setLocalSettings({...localSettings, primary_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Secondary Color</Label>
+                        <ColorPicker
+                          color={localSettings?.secondary_color || '#059669'}
+                          onChange={(color) => setLocalSettings({...localSettings, secondary_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Accent Color</Label>
+                        <ColorPicker
+                          color={localSettings?.accent_color || '#14b8a6'}
+                          onChange={(color) => setLocalSettings({...localSettings, accent_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Background Color</Label>
+                        <ColorPicker
+                          color={localSettings?.background_color || '#ffffff'}
+                          onChange={(color) => setLocalSettings({...localSettings, background_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Text Color</Label>
+                        <ColorPicker
+                          color={localSettings?.text_color || '#1f2937'}
+                          onChange={(color) => setLocalSettings({...localSettings, text_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Success Color</Label>
+                        <ColorPicker
+                          color={localSettings?.success_color || '#10b981'}
+                          onChange={(color) => setLocalSettings({...localSettings, success_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Warning Color</Label>
+                        <ColorPicker
+                          color={localSettings?.warning_color || '#f59e0b'}
+                          onChange={(color) => setLocalSettings({...localSettings, warning_color: color})}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Error Color</Label>
+                        <ColorPicker
+                          color={localSettings?.error_color || '#ef4444'}
+                          onChange={(color) => setLocalSettings({...localSettings, error_color: color})}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="mobile" className="space-y-4">
+              {/* Mobile Tab */}
+              <TabsContent value="mobile" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Mobile App Configuration</CardTitle>
-                    <CardDescription>Configure mobile-specific branding and UI settings</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Mobile UI Configuration */}
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">Mobile Navigation & UI</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Navigation Style</Label>
-                          <Select 
-                            value={localSettings.mobile_ui_config?.navigation_style || 'bottom-tabs'}
-                            onValueChange={(value) => setLocalSettings({
-                              ...localSettings, 
-                              mobile_ui_config: { ...localSettings.mobile_ui_config, navigation_style: value }
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="bottom-tabs">Bottom Tabs</SelectItem>
-                              <SelectItem value="hamburger">Hamburger Menu</SelectItem>
-                              <SelectItem value="floating-action">Floating Action Button</SelectItem>
-                              <SelectItem value="side-drawer">Side Drawer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <Label>Enable Animations</Label>
-                          <Switch
-                            checked={localSettings.mobile_ui_config?.animations_enabled ?? true}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_ui_config: { ...localSettings.mobile_ui_config, animations_enabled: checked }
-                            })}
-                          />
-                        </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">User Interface</h3>
+                      
+                      <div>
+                        <Label htmlFor="navigation_style">Navigation Style</Label>
+                        <Select
+                          value={localSettings?.mobile_ui_config?.navigation_style || 'bottom_tabs'}
+                          onValueChange={(value) => setLocalSettings(prev => ({
+                            ...prev,
+                            mobile_ui_config: {
+                              ...prev?.mobile_ui_config,
+                              navigation_style: value
+                            }
+                          }))}
+                        >
+                          <SelectTrigger id="navigation_style">
+                            <SelectValue placeholder="Select navigation style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="bottom_tabs">Bottom Tabs</SelectItem>
+                            <SelectItem value="drawer">Drawer Menu</SelectItem>
+                            <SelectItem value="hybrid">Hybrid</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label>Enable Animations</Label>
+                        <Switch
+                          checked={localSettings?.mobile_ui_config?.animations_enabled ?? true}
+                          onCheckedChange={(checked) => setLocalSettings(prev => ({
+                            ...prev,
+                            mobile_ui_config: {
+                              ...prev?.mobile_ui_config,
+                              animations_enabled: checked
+                            }
+                          }))}
+                        />
                       </div>
                     </div>
 
-                    {/* Mobile Features */}
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">Mobile Features</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label>Offline Mode</Label>
-                          <Switch
-                            checked={localSettings.mobile_features?.offline_mode ?? false}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_features: { ...localSettings.mobile_features, offline_mode: checked }
-                            })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Push Notifications</Label>
-                          <Switch
-                            checked={localSettings.mobile_features?.push_notifications ?? true}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_features: { ...localSettings.mobile_features, push_notifications: checked }
-                            })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Biometric Authentication</Label>
-                          <Switch
-                            checked={localSettings.mobile_features?.biometric_auth ?? false}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_features: { ...localSettings.mobile_features, biometric_auth: checked }
-                            })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Location Services</Label>
-                          <Switch
-                            checked={localSettings.mobile_features?.location_services ?? false}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_features: { ...localSettings.mobile_features, location_services: checked }
-                            })}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Camera Access</Label>
-                          <Switch
-                            checked={localSettings.mobile_features?.camera_access ?? true}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              mobile_features: { ...localSettings.mobile_features, camera_access: checked }
-                            })}
-                          />
-                        </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">PWA Configuration</h3>
+                      <div>
+                        <Label>Short Name</Label>
+                        <Input
+                          value={localSettings.pwa_config?.short_name || ''}
+                          onChange={(e) => setLocalSettings({
+                            ...localSettings,
+                            pwa_config: { ...localSettings.pwa_config, short_name: e.target.value }
+                          })}
+                          placeholder="App"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Theme Color</Label>
+                        <ColorPicker
+                          color={localSettings.pwa_config?.theme_color || localSettings.primary_color || '#10b981'}
+                          onChange={(color) => setLocalSettings({
+                            ...localSettings,
+                            pwa_config: { ...localSettings.pwa_config, theme_color: color }
+                          })}
+                        />
                       </div>
                     </div>
 
-                    {/* PWA Configuration */}
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">PWA Settings</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Cache Strategy</Label>
-                          <Select 
-                            value={localSettings.pwa_config?.cache_strategy || 'network-first'}
-                            onValueChange={(value) => setLocalSettings({
-                              ...localSettings,
-                              pwa_config: { ...localSettings.pwa_config, cache_strategy: value }
-                            })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="network-first">Network First</SelectItem>
-                              <SelectItem value="cache-first">Cache First</SelectItem>
-                              <SelectItem value="network-only">Network Only</SelectItem>
-                              <SelectItem value="cache-only">Cache Only</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Label>Enable PWA Features</Label>
-                          <Switch
-                            checked={localSettings.pwa_config?.enabled ?? false}
-                            onCheckedChange={(checked) => setLocalSettings({
-                              ...localSettings,
-                              pwa_config: { ...localSettings.pwa_config, enabled: checked }
-                            })}
-                          />
-                        </div>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">App Store Configuration</h3>
+                      <div>
+                        <Label>Bundle Identifier (iOS)</Label>
+                        <Input
+                          value={localSettings.bundle_identifier || ''}
+                          onChange={(e) => setLocalSettings({
+                            ...localSettings,
+                            bundle_identifier: e.target.value
+                          })}
+                          placeholder="com.yourcompany.app"
+                        />
+                      </div>
+                      <div>
+                        <Label>Package Name (Android)</Label>
+                        <Input
+                          value={localSettings.android_package_name || ''}
+                          onChange={(e) => setLocalSettings({
+                            ...localSettings,
+                            android_package_name: e.target.value
+                          })}
+                          placeholder="com.yourcompany.app"
+                        />
                       </div>
                     </div>
 
-                    {/* App Store Configuration */}
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">App Store Information</h3>
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Bundle Identifier (iOS)</Label>
-                            <Input
-                              value={localSettings.bundle_identifier || ''}
-                              onChange={(e) => setLocalSettings({...localSettings, bundle_identifier: e.target.value})}
-                              placeholder="com.company.app"
-                            />
-                          </div>
-                          <div>
-                            <Label>Package Name (Android)</Label>
-                            <Input
-                              value={localSettings.android_package_name || ''}
-                              onChange={(e) => setLocalSettings({...localSettings, android_package_name: e.target.value})}
-                              placeholder="com.company.app"
-                            />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <Label>iOS App Store URL</Label>
-                          <Input
-                            value={localSettings.app_store_config?.ios_url || ''}
-                            onChange={(e) => setLocalSettings({
-                              ...localSettings,
-                              app_store_config: { ...localSettings.app_store_config, ios_url: e.target.value }
-                            })}
-                            placeholder="https://apps.apple.com/app/your-app"
-                          />
-                        </div>
-                        <div>
-                          <Label>Google Play Store URL</Label>
-                          <Input
-                            value={localSettings.play_store_config?.android_url || ''}
-                            onChange={(e) => setLocalSettings({
-                              ...localSettings,
-                              play_store_config: { ...localSettings.play_store_config, android_url: e.target.value }
-                            })}
-                            placeholder="https://play.google.com/store/apps/details?id=com.yourapp"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Deep Linking */}
                     <div>
                       <h3 className="text-sm font-medium mb-3">Deep Linking Configuration</h3>
                       <div className="space-y-4">
@@ -597,8 +538,6 @@ export default function WhiteLabelConfigPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-            </Tabs>
-              </TabsContent>
 
               <TabsContent value="features" className="space-y-4">
                 <Card>
@@ -621,11 +560,11 @@ export default function WhiteLabelConfigPage() {
                         <div key={feature.key} className="flex items-center justify-between">
                           <Label>{feature.label}</Label>
                           <Switch
-                            checked={localSettings.feature_toggles?.[feature.key] ?? true}
+                            checked={localSettings.mobile_features?.[feature.key] ?? true}
                             onCheckedChange={(checked) => setLocalSettings({
                               ...localSettings, 
-                              feature_toggles: {
-                                ...localSettings.feature_toggles,
+                              mobile_features: {
+                                ...localSettings.mobile_features,
                                 [feature.key]: checked
                               }
                             })}
@@ -645,14 +584,14 @@ export default function WhiteLabelConfigPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>Default Language</Label>
+                      <Label>Default Notification Channel</Label>
                       <Select 
-                        value={localSettings.language_settings?.default || 'en'}
+                        value={localSettings.notification_config?.default_channel || 'push'}
                         onValueChange={(value) => setLocalSettings({
                           ...localSettings, 
-                          language_settings: {
-                            ...localSettings.language_settings,
-                            default: value
+                          notification_config: {
+                            ...localSettings.notification_config,
+                            default_channel: value
                           }
                         })}
                       >
@@ -660,35 +599,13 @@ export default function WhiteLabelConfigPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="en">English</SelectItem>
-                          <SelectItem value="hi">Hindi</SelectItem>
-                          <SelectItem value="mr">Marathi</SelectItem>
-                          <SelectItem value="gu">Gujarati</SelectItem>
-                          <SelectItem value="ta">Tamil</SelectItem>
-                          <SelectItem value="te">Telugu</SelectItem>
+                          <SelectItem value="push">Push Notifications</SelectItem>
+                          <SelectItem value="sms">SMS</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="whatsapp">WhatsApp</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label>Maintenance Mode</Label>
-                      <Switch
-                        checked={localSettings.maintenance_mode ?? false}
-                        onCheckedChange={(checked) => setLocalSettings({...localSettings, maintenance_mode: checked})}
-                      />
-                    </div>
-                    
-                    {localSettings.maintenance_mode && (
-                      <div>
-                        <Label>Maintenance Message</Label>
-                        <Textarea
-                          value={localSettings.maintenance_message || ''}
-                          onChange={(e) => setLocalSettings({...localSettings, maintenance_message: e.target.value})}
-                          placeholder="We're currently performing maintenance. Please check back later."
-                          rows={3}
-                        />
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -697,49 +614,43 @@ export default function WhiteLabelConfigPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Advanced Settings</CardTitle>
-                    <CardDescription>Custom CSS and scripts</CardDescription>
+                    <CardDescription>API and integration settings</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>Custom CSS</Label>
-                      <Textarea
-                        value={localSettings.custom_css || ''}
-                        onChange={(e) => setLocalSettings({...localSettings, custom_css: e.target.value})}
-                        placeholder="/* Add your custom CSS here */"
-                        rows={10}
-                        className="font-mono text-sm"
+                      <Label>API Version</Label>
+                      <Input
+                        value={localSettings.app_store_config?.api_version || 'v1'}
+                        onChange={(e) => setLocalSettings({
+                          ...localSettings,
+                          app_store_config: { 
+                            ...localSettings.app_store_config, 
+                            api_version: e.target.value 
+                          }
+                        })}
+                        placeholder="v1"
                       />
                     </div>
                     
                     <div>
-                      <Label>Head Scripts</Label>
+                      <Label>Custom Headers (JSON)</Label>
                       <Textarea
-                        value={localSettings.custom_scripts?.head || ''}
-                        onChange={(e) => setLocalSettings({
-                          ...localSettings, 
-                          custom_scripts: {
-                            ...localSettings.custom_scripts,
-                            head: e.target.value
+                        value={JSON.stringify(localSettings.app_store_config?.custom_headers || {}, null, 2)}
+                        onChange={(e) => {
+                          try {
+                            const headers = JSON.parse(e.target.value);
+                            setLocalSettings({
+                              ...localSettings,
+                              app_store_config: {
+                                ...localSettings.app_store_config,
+                                custom_headers: headers
+                              }
+                            });
+                          } catch (error) {
+                            // Invalid JSON, don't update
                           }
-                        })}
-                        placeholder="<!-- Add scripts for <head> tag -->"
-                        rows={5}
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Body Scripts</Label>
-                      <Textarea
-                        value={localSettings.custom_scripts?.body || ''}
-                        onChange={(e) => setLocalSettings({
-                          ...localSettings, 
-                          custom_scripts: {
-                            ...localSettings.custom_scripts,
-                            body: e.target.value
-                          }
-                        })}
-                        placeholder="<!-- Add scripts for <body> tag -->"
+                        }}
+                        placeholder='{"X-Custom-Header": "value"}'
                         rows={5}
                         className="font-mono text-sm"
                       />
@@ -814,6 +725,6 @@ export default function WhiteLabelConfigPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

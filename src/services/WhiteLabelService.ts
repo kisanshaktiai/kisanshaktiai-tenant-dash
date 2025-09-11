@@ -55,23 +55,48 @@ class WhiteLabelService {
    */
   async getWhiteLabelConfig(tenantId: string): Promise<WhiteLabelConfig | null> {
     try {
-      const { data, error } = await supabase
-        .from('white_label_configs')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No config found, return defaults
-          return this.getDefaultConfig(tenantId);
-        }
-        throw error;
+      // Use the existing edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No session available');
+        return this.getDefaultConfig(tenantId);
       }
 
-      return data as any as WhiteLabelConfig;
+      const response = await fetch(
+        `https://qfklkkzxemsbeniyugiz.supabase.co/functions/v1/get-white-label-config`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ tenant_id: tenantId }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error('Error fetching white label config from edge function');
+        // Fallback to direct database query
+        const { data, error } = await supabase
+          .from('white_label_configs')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .single();
+
+        if (error) {
+          if (error.code === 'PGRST116') {
+            return this.getDefaultConfig(tenantId);
+          }
+          throw error;
+        }
+
+        return data as any as WhiteLabelConfig;
+      }
+
+      const data = await response.json();
+      return data.config || this.getDefaultConfig(tenantId);
     } catch (error) {
-      console.error('Error fetching white label config:', error);
+      console.error('Error in getWhiteLabelConfig:', error);
       return this.getDefaultConfig(tenantId);
     }
   }
