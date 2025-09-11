@@ -42,10 +42,11 @@ import {
 } from 'lucide-react';
 import { AppearanceSettings } from '@/services/AppearanceSettingsService';
 import { ThemePresets, ThemePreset, themePresets } from '@/components/settings/ThemePresets';
+import { WhiteLabelConfig } from '@/services/WhiteLabelService';
 
 export default function WhiteLabelConfigPage() {
   const { settings, updateSettings, isUpdating } = useWhiteLabelSettings();
-  const [localSettings, setLocalSettings] = useState<Partial<AppearanceSettings>>(settings || {});
+  const [localSettings, setLocalSettings] = useState<Partial<WhiteLabelConfig>>(settings || {});
   const [previewMode, setPreviewMode] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [isPreviewVisible, setIsPreviewVisible] = useState(true);
   const [selectedThemeId, setSelectedThemeId] = useState<string>('');
@@ -239,7 +240,7 @@ export default function WhiteLabelConfigPage() {
             isPreviewVisible ? "lg:col-span-2" : "col-span-1"
           )}>
             <Tabs defaultValue="themes" className="w-full">
-              <TabsList className="grid grid-cols-7 w-full">
+              <TabsList className="grid grid-cols-8 w-full">
                 <TabsTrigger value="themes">
                   <Brush className="h-4 w-4" />
                 </TabsTrigger>
@@ -248,6 +249,9 @@ export default function WhiteLabelConfigPage() {
                 </TabsTrigger>
                 <TabsTrigger value="colors">
                   <Palette className="h-4 w-4" />
+                </TabsTrigger>
+                <TabsTrigger value="mobile">
+                  <Smartphone className="h-4 w-4" />
                 </TabsTrigger>
                 <TabsTrigger value="layout">
                   <Layout className="h-4 w-4" />
@@ -306,42 +310,30 @@ export default function WhiteLabelConfigPage() {
                       />
                     </div>
                     
-                    <BrandingUploader
-                      logoUrl={localSettings.logo_override_url}
-                      onLogoChange={(url) => setLocalSettings({...localSettings, logo_override_url: url})}
-                    />
-                    
-                    <BrandingUploader
-                      logoUrl={localSettings.app_icon}
-                      onLogoChange={(url) => setLocalSettings({...localSettings, app_icon: url})}
-                    />
-                    
-                    <BrandingUploader
-                      logoUrl={localSettings.app_splash_screen}
-                      onLogoChange={(url) => setLocalSettings({...localSettings, app_splash_screen: url})}
-                    />
-                    
-                    <BrandingUploader
-                      logoUrl={localSettings.favicon_url}
-                      onLogoChange={(url) => setLocalSettings({...localSettings, favicon_url: url})}
-                    />
+                    <div>
+                      <Label>App Logo</Label>
+                      <BrandingUploader
+                        logoUrl={localSettings.app_logo_url}
+                        onLogoChange={(url) => setLocalSettings({...localSettings, app_logo_url: url})}
+                      />
+                    </div>
                     
                     <div>
-                      <Label>Footer Text</Label>
-                      <Input
-                        value={localSettings.footer_text || ''}
-                        onChange={(e) => setLocalSettings({...localSettings, footer_text: e.target.value})}
-                        placeholder="© 2024 Your Company"
+                      <Label>App Icon</Label>
+                      <BrandingUploader
+                        logoUrl={localSettings.app_icon_url}
+                        onLogoChange={(url) => setLocalSettings({...localSettings, app_icon_url: url})}
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <Label>Show "Powered by" Badge</Label>
-                      <Switch
-                        checked={localSettings.show_powered_by ?? true}
-                        onCheckedChange={(checked) => setLocalSettings({...localSettings, show_powered_by: checked})}
+                    <div>
+                      <Label>Splash Screen</Label>
+                      <BrandingUploader
+                        logoUrl={localSettings.app_splash_screen_url}
+                        onLogoChange={(url) => setLocalSettings({...localSettings, app_splash_screen_url: url})}
                       />
                     </div>
+                    
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -403,6 +395,225 @@ export default function WhiteLabelConfigPage() {
                         onChange={(e) => setLocalSettings({...localSettings, primary_gradient: e.target.value})}
                         placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                       />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="mobile" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Mobile App Configuration</CardTitle>
+                    <CardDescription>Configure mobile-specific branding and UI settings</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Mobile UI Configuration */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">Mobile Navigation & UI</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Navigation Style</Label>
+                          <Select 
+                            value={localSettings.mobile_ui_config?.navigation_style || 'bottom-tabs'}
+                            onValueChange={(value) => setLocalSettings({
+                              ...localSettings, 
+                              mobile_ui_config: { ...localSettings.mobile_ui_config, navigation_style: value }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bottom-tabs">Bottom Tabs</SelectItem>
+                              <SelectItem value="hamburger">Hamburger Menu</SelectItem>
+                              <SelectItem value="floating-action">Floating Action Button</SelectItem>
+                              <SelectItem value="side-drawer">Side Drawer</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Label>Enable Animations</Label>
+                          <Switch
+                            checked={localSettings.mobile_ui_config?.animations_enabled ?? true}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_ui_config: { ...localSettings.mobile_ui_config, animations_enabled: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile Features */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">Mobile Features</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Offline Mode</Label>
+                          <Switch
+                            checked={localSettings.mobile_features?.offline_mode ?? false}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_features: { ...localSettings.mobile_features, offline_mode: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Push Notifications</Label>
+                          <Switch
+                            checked={localSettings.mobile_features?.push_notifications ?? true}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_features: { ...localSettings.mobile_features, push_notifications: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Biometric Authentication</Label>
+                          <Switch
+                            checked={localSettings.mobile_features?.biometric_auth ?? false}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_features: { ...localSettings.mobile_features, biometric_auth: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Location Services</Label>
+                          <Switch
+                            checked={localSettings.mobile_features?.location_services ?? false}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_features: { ...localSettings.mobile_features, location_services: checked }
+                            })}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Camera Access</Label>
+                          <Switch
+                            checked={localSettings.mobile_features?.camera_access ?? true}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              mobile_features: { ...localSettings.mobile_features, camera_access: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PWA Configuration */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">PWA Settings</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Cache Strategy</Label>
+                          <Select 
+                            value={localSettings.pwa_config?.cache_strategy || 'network-first'}
+                            onValueChange={(value) => setLocalSettings({
+                              ...localSettings,
+                              pwa_config: { ...localSettings.pwa_config, cache_strategy: value }
+                            })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="network-first">Network First</SelectItem>
+                              <SelectItem value="cache-first">Cache First</SelectItem>
+                              <SelectItem value="network-only">Network Only</SelectItem>
+                              <SelectItem value="cache-only">Cache Only</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Enable PWA Features</Label>
+                          <Switch
+                            checked={localSettings.pwa_config?.enabled ?? false}
+                            onCheckedChange={(checked) => setLocalSettings({
+                              ...localSettings,
+                              pwa_config: { ...localSettings.pwa_config, enabled: checked }
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* App Store Configuration */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">App Store Information</h3>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Bundle Identifier (iOS)</Label>
+                            <Input
+                              value={localSettings.bundle_identifier || ''}
+                              onChange={(e) => setLocalSettings({...localSettings, bundle_identifier: e.target.value})}
+                              placeholder="com.company.app"
+                            />
+                          </div>
+                          <div>
+                            <Label>Package Name (Android)</Label>
+                            <Input
+                              value={localSettings.android_package_name || ''}
+                              onChange={(e) => setLocalSettings({...localSettings, android_package_name: e.target.value})}
+                              placeholder="com.company.app"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <Label>iOS App Store URL</Label>
+                          <Input
+                            value={localSettings.app_store_config?.ios_url || ''}
+                            onChange={(e) => setLocalSettings({
+                              ...localSettings,
+                              app_store_config: { ...localSettings.app_store_config, ios_url: e.target.value }
+                            })}
+                            placeholder="https://apps.apple.com/app/your-app"
+                          />
+                        </div>
+                        <div>
+                          <Label>Google Play Store URL</Label>
+                          <Input
+                            value={localSettings.play_store_config?.android_url || ''}
+                            onChange={(e) => setLocalSettings({
+                              ...localSettings,
+                              play_store_config: { ...localSettings.play_store_config, android_url: e.target.value }
+                            })}
+                            placeholder="https://play.google.com/store/apps/details?id=com.yourapp"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Deep Linking */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">Deep Linking Configuration</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>URL Scheme</Label>
+                          <Input
+                            value={localSettings.deep_link_config?.url_scheme || ''}
+                            onChange={(e) => setLocalSettings({
+                              ...localSettings,
+                              deep_link_config: { ...localSettings.deep_link_config, url_scheme: e.target.value }
+                            })}
+                            placeholder="yourapp://"
+                          />
+                        </div>
+                        <div>
+                          <Label>Universal Links Domain</Label>
+                          <Input
+                            value={localSettings.deep_link_config?.universal_links_domain || ''}
+                            onChange={(e) => setLocalSettings({
+                              ...localSettings,
+                              deep_link_config: { ...localSettings.deep_link_config, universal_links_domain: e.target.value }
+                            })}
+                            placeholder="yourapp.com"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
