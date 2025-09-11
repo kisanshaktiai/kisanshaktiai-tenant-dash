@@ -329,23 +329,24 @@ const MobileAppearancePage: React.FC = () => {
         
         // Mobile UI configuration
         mobile_ui_config: {
-          ...uiConfig,
-          theme: {
-            ...themeConfig
-          }
+          ...uiConfig
         },
         
-        // Mobile features
+        // Mobile features (booleans only)
         mobile_features: {
           offline_mode_enabled: appSettings.offline_mode_enabled,
           push_notifications_enabled: appSettings.push_notifications_enabled,
           biometric_auth_enabled: appSettings.biometric_auth_enabled,
           location_services_enabled: appSettings.location_services_enabled,
           camera_access_enabled: appSettings.camera_access_enabled,
-          cache_strategy: appSettings.cache_strategy,
-          image_quality: appSettings.image_quality,
           lazy_loading_enabled: appSettings.lazy_loading_enabled,
           prefetch_enabled: appSettings.prefetch_enabled
+        },
+        
+        // Store performance settings in a separate config object
+        pwa_config: {
+          cache_strategy: appSettings.cache_strategy,
+          image_quality: appSettings.image_quality
         },
         
         // Deep link configuration
