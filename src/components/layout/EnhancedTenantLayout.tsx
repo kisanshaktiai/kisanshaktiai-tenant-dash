@@ -39,11 +39,15 @@ import {
   Sun,
   Globe,
   Activity,
-  Megaphone
+  Megaphone,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { authService } from '@/services/AuthService';
 import { useTheme } from 'next-themes';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
+import { toast } from 'sonner';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 const navigationItems = [
   {
@@ -183,12 +187,24 @@ const TenantSidebar = memo(() => {
 const TopBar = memo(() => {
   const { user } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants, switchTenant } = useTenantContextOptimized();
-  const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [notifications] = useState(3); // Mock notification count
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut();
+    setIsLoggingOut(true);
+    toast.loading('Signing out...');
+    
+    const result = await authService.logout({
+      redirectTo: '/auth',
+      clearLocalStorage: true,
+      showMessage: true
+    });
+
+    if (!result.success) {
+      toast.error('Failed to sign out. Please try again.');
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -291,9 +307,18 @@ const TopBar = memo(() => {
                 <span>Language</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+              <DropdownMenuItem onClick={handleSignOut} disabled={isLoggingOut}>
+                {isLoggingOut ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>Signing out...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -306,17 +331,27 @@ const TopBar = memo(() => {
 export const EnhancedTenantLayout: React.FC = () => {
   const { currentTenant, loading } = useTenantContextOptimized();
   const [mounted, setMounted] = useState(false);
+  const { isAuthenticated, isLoading } = useAuthGuard();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || loading) {
+  // Show loading state while checking authentication
+  if (isLoading || !mounted || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
+  }
+
+  // If not authenticated, the AuthGuard will handle redirect
+  if (!isAuthenticated) {
+    return null;
   }
 
   if (!currentTenant) {
