@@ -15,6 +15,9 @@ export const useWhiteLabelSettings = () => {
       return whiteLabelService.getWhiteLabelConfig(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
+    staleTime: 60 * 1000, // Consider data fresh for 1 minute
+    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on tab focus
   });
 
   const updateSettings = useMutation({

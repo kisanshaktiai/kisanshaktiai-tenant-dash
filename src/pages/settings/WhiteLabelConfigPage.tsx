@@ -30,15 +30,17 @@ import { ThemePresets, ThemePreset, themePresets } from '@/components/settings/T
 import { WhiteLabelConfig } from '@/services/WhiteLabelService';
 
 export default function WhiteLabelConfigPage() {
-  const { settings, updateSettings, isUpdating } = useWhiteLabelSettings();
-  const [localSettings, setLocalSettings] = useState<Partial<WhiteLabelConfig>>(settings || {});
+  const { settings, isLoading, updateSettings, isUpdating } = useWhiteLabelSettings();
+  const [localSettings, setLocalSettings] = useState<Partial<WhiteLabelConfig>>({});
   const [selectedThemeId, setSelectedThemeId] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (settings && Object.keys(localSettings).length === 0) {
+    if (settings && !isInitialized) {
       setLocalSettings(settings);
+      setIsInitialized(true);
     }
-  }, [settings]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [settings, isInitialized]);
 
   const handleSelectTheme = (preset: ThemePreset) => {
     setSelectedThemeId(preset.id);
@@ -105,6 +107,16 @@ export default function WhiteLabelConfigPage() {
     
     return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
   };
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
