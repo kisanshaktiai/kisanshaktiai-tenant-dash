@@ -249,6 +249,76 @@ const presetThemes = [
   }
 ];
 
+// Helper function to convert flat structure to nested Modern2025Theme
+const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
+  if (!flatTheme) return defaultTheme;
+  
+  // If it already has the core/neutral/status structure, return as is
+  if (flatTheme.core && flatTheme.neutral && flatTheme.status) {
+    return flatTheme as Modern2025Theme;
+  }
+  
+  // Convert flat structure to nested structure
+  return {
+    core: {
+      primary: flatTheme.primary_color || defaultTheme.core.primary,
+      primary_variant: flatTheme.primary_variant || defaultTheme.core.primary_variant,
+      secondary: flatTheme.secondary_color || defaultTheme.core.secondary,
+      secondary_variant: flatTheme.secondary_variant || defaultTheme.core.secondary_variant,
+      tertiary: flatTheme.tertiary_color || defaultTheme.core.tertiary,
+      accent: flatTheme.accent_color || defaultTheme.core.accent
+    },
+    neutral: {
+      background: flatTheme.background_color || defaultTheme.neutral.background,
+      surface: flatTheme.surface_color || defaultTheme.neutral.surface,
+      on_background: flatTheme.text_color || defaultTheme.neutral.on_background,
+      on_surface: flatTheme.on_surface_color || defaultTheme.neutral.on_surface,
+      border: flatTheme.border_color || defaultTheme.neutral.border
+    },
+    status: {
+      success: flatTheme.success_color || defaultTheme.status.success,
+      warning: flatTheme.warning_color || defaultTheme.status.warning,
+      error: flatTheme.error_color || defaultTheme.status.error,
+      info: flatTheme.info_color || defaultTheme.status.info
+    },
+    support: {
+      disabled: flatTheme.disabled_color || defaultTheme.support.disabled,
+      overlay: flatTheme.overlay_color || defaultTheme.support.overlay
+    },
+    typography: flatTheme.typography || defaultTheme.typography,
+    spacing: flatTheme.spacing || defaultTheme.spacing,
+    border_radius: flatTheme.border_radius || defaultTheme.border_radius,
+    shadows: flatTheme.shadows || defaultTheme.shadows
+  };
+};
+
+// Helper function to convert Modern2025Theme to flat structure for database
+const convertModern2025ThemeToFlat = (theme: Modern2025Theme): any => {
+  return {
+    primary_color: theme.core.primary,
+    primary_variant: theme.core.primary_variant,
+    secondary_color: theme.core.secondary,
+    secondary_variant: theme.core.secondary_variant,
+    tertiary_color: theme.core.tertiary,
+    accent_color: theme.core.accent,
+    background_color: theme.neutral.background,
+    surface_color: theme.neutral.surface,
+    text_color: theme.neutral.on_background,
+    on_surface_color: theme.neutral.on_surface,
+    border_color: theme.neutral.border,
+    success_color: theme.status.success,
+    warning_color: theme.status.warning,
+    error_color: theme.status.error,
+    info_color: theme.status.info,
+    disabled_color: theme.support.disabled,
+    overlay_color: theme.support.overlay,
+    typography: theme.typography,
+    spacing: theme.spacing,
+    border_radius: theme.border_radius,
+    shadows: theme.shadows
+  };
+};
+
 export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> = ({
   config,
   updateConfig,
@@ -265,10 +335,12 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
   useEffect(() => {
     if (config?.mobile_theme) {
       console.log('Loading mobile theme from config:', config.mobile_theme);
-      setCurrentTheme(config.mobile_theme);
+      const convertedTheme = convertFlatToModern2025Theme(config.mobile_theme);
+      setCurrentTheme(convertedTheme);
     } else if (config?.app_store_config?.mobile_theme) {
       console.log('Loading mobile theme from app_store_config:', config.app_store_config.mobile_theme);
-      setCurrentTheme(config.app_store_config.mobile_theme);
+      const convertedTheme = convertFlatToModern2025Theme(config.app_store_config.mobile_theme);
+      setCurrentTheme(convertedTheme);
     } else {
       console.log('No saved theme found, using default theme');
       setCurrentTheme(defaultTheme);
@@ -375,7 +447,9 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
       return;
     }
 
-    updateConfig('mobile_theme', '', currentTheme);
+    // Convert to flat structure for database storage
+    const flatTheme = convertModern2025ThemeToFlat(currentTheme);
+    updateConfig('mobile_theme', '', flatTheme);
     updateConfig('api_version', '', 'v1');
     updateConfig('is_validated', '', true);
     updateConfig('validation_errors', '', []);
