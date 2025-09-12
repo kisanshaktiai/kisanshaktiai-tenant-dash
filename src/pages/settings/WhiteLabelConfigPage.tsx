@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { MobileThemeEditor } from '@/components/settings/MobileThemeEditor';
+import { EnhancedMobileThemePanel } from '@/components/settings/EnhancedMobileThemePanel';
 
 const WhiteLabelConfigPage = () => {
   const { settings, isLoading, updateSettings, isUpdating } = useWhiteLabelSettings();
@@ -608,32 +608,25 @@ const WhiteLabelConfigPage = () => {
 
           {/* Mobile Tab */}
           <TabsContent value="mobile" className="space-y-6">
-            <MobileThemeEditor
-              mobileTheme={{
-                primary_color: localConfig.mobile_theme?.primary_color || localConfig.primary_color,
-                secondary_color: localConfig.mobile_theme?.secondary_color || localConfig.secondary_color,
-                accent_color: localConfig.mobile_theme?.accent_color || localConfig.accent_color,
-                background_color: localConfig.mobile_theme?.background_color || localConfig.background_color,
-                surface_color: localConfig.mobile_theme?.surface_color || localConfig.background_color,
-                text_color: localConfig.mobile_theme?.text_color || localConfig.text_color,
-                border_color: localConfig.mobile_theme?.border_color || '0 0% 94%',
-                success_color: localConfig.mobile_theme?.success_color || localConfig.success_color,
-                warning_color: localConfig.mobile_theme?.warning_color || localConfig.warning_color,
-                error_color: localConfig.mobile_theme?.error_color || localConfig.error_color,
-                info_color: localConfig.mobile_theme?.info_color || localConfig.info_color
-              }}
-              appName={localConfig.app_name}
-              logo={localConfig.app_logo_url}
-              onChange={(field, value) => {
-                setLocalConfig(prev => ({
-                  ...prev,
-                  mobile_theme: {
-                    ...prev.mobile_theme,
+            <EnhancedMobileThemePanel
+              config={localConfig}
+              updateConfig={(section, field, value) => {
+                if (section === 'mobile_theme') {
+                  setLocalConfig(prev => ({
+                    ...prev,
+                    mobile_theme: value
+                  }));
+                } else {
+                  setLocalConfig(prev => ({
+                    ...prev,
                     [field]: value
-                  }
-                }));
+                  }));
+                }
                 setHasUnsavedChanges(true);
               }}
+              
+              appName={localConfig.app_name}
+              logoUrl={localConfig.app_logo_url}
             />
 
             <Card>
