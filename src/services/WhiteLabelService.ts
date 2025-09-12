@@ -27,6 +27,25 @@ export interface WhiteLabelConfig {
   android_package_name?: string;
   ios_app_id?: string;
   
+  // Mobile Theme (stored in mobile_theme column)
+  mobile_theme?: {
+    primary_color?: string;
+    secondary_color?: string;
+    accent_color?: string;
+    background_color?: string;
+    surface_color?: string;
+    text_color?: string;
+    border_color?: string;
+    success_color?: string;
+    warning_color?: string;
+    error_color?: string;
+    info_color?: string;
+    primary_variant?: string;
+    secondary_variant?: string;
+    tertiary_color?: string;
+    on_surface_color?: string;
+  };
+  
   // Configuration Objects
   app_store_config?: Record<string, any>;
   play_store_config?: Record<string, any>;

@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { MobileThemeEditor } from '@/components/settings/MobileThemeEditor';
 
 const WhiteLabelConfigPage = () => {
   const { settings, isLoading, updateSettings, isUpdating } = useWhiteLabelSettings();
@@ -48,6 +49,25 @@ const WhiteLabelConfigPage = () => {
     warning_color: '#f59e0b',
     error_color: '#ef4444',
     info_color: '#3b82f6',
+    
+    // Mobile Theme (stored in mobile_theme column in DB)
+    mobile_theme: {
+      primary_color: '142 76% 36%',
+      secondary_color: '155 76% 36%',
+      accent_color: '220 14% 46%',
+      background_color: '0 0% 100%',
+      surface_color: '0 0% 100%',
+      text_color: '224 71% 4%',
+      border_color: '0 0% 94%',
+      success_color: '142 76% 36%',
+      warning_color: '45 93% 47%',
+      error_color: '0 84% 60%',
+      info_color: '199 89% 48%',
+      primary_variant: '142 76% 30%',
+      secondary_variant: '155 76% 30%',
+      tertiary_color: '280 50% 50%',
+      on_surface_color: '224 71% 4%'
+    },
     
     // Domain Configuration
     custom_domain: '',
@@ -118,6 +138,8 @@ const WhiteLabelConfigPage = () => {
         error_color: settings.error_color || prev.error_color,
         info_color: settings.info_color || prev.info_color,
         bundle_identifier: settings.bundle_identifier || prev.bundle_identifier,
+        // Load mobile_theme from database
+        mobile_theme: settings.mobile_theme || prev.mobile_theme,
         ...settings.pwa_config,
         ...settings.mobile_ui_config,
       }));
@@ -162,7 +184,9 @@ const WhiteLabelConfigPage = () => {
         },
         mobile_ui_config: {
           animations_enabled: localConfig.animations_enabled,
-        }
+        },
+        // Store mobile theme in the database
+        mobile_theme: localConfig.mobile_theme
       });
       
       setHasUnsavedChanges(false);
@@ -567,46 +591,33 @@ const WhiteLabelConfigPage = () => {
 
           {/* Mobile Tab */}
           <TabsContent value="mobile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Mobile App Preview</CardTitle>
-                <CardDescription>See how your theme looks on a real mobile app</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center items-center min-h-[500px] bg-muted/30 rounded-lg">
-                  <div className="bg-background border-2 border-border rounded-[3rem] p-4 shadow-xl" style={{ width: '320px', height: '640px' }}>
-                    <div className="bg-background rounded-[2rem] h-full flex flex-col overflow-hidden">
-                      {/* Mobile App Preview */}
-                      <div className="bg-primary p-4 text-primary-foreground">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold">{localConfig.app_name || 'Your App'}</span>
-                          <div className="flex gap-1">
-                            <div className="w-1 h-4 bg-primary-foreground/60 rounded-full" />
-                            <div className="w-1 h-4 bg-primary-foreground/80 rounded-full" />
-                            <div className="w-1 h-4 bg-primary-foreground rounded-full" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-1 p-4 space-y-4">
-                        <Card>
-                          <CardContent className="pt-6">
-                            <p className="text-sm">Preview content with your brand colors</p>
-                          </CardContent>
-                        </Card>
-                      </div>
-                      <div className="border-t p-4">
-                        <div className="flex justify-around">
-                          <Button variant="ghost" size="sm">Home</Button>
-                          <Button variant="ghost" size="sm">Dashboard</Button>
-                          <Button variant="ghost" size="sm">List</Button>
-                          <Button variant="ghost" size="sm">Profile</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <MobileThemeEditor
+              mobileTheme={{
+                primary_color: localConfig.mobile_theme?.primary_color || localConfig.primary_color,
+                secondary_color: localConfig.mobile_theme?.secondary_color || localConfig.secondary_color,
+                accent_color: localConfig.mobile_theme?.accent_color || localConfig.accent_color,
+                background_color: localConfig.mobile_theme?.background_color || localConfig.background_color,
+                surface_color: localConfig.mobile_theme?.surface_color || localConfig.background_color,
+                text_color: localConfig.mobile_theme?.text_color || localConfig.text_color,
+                border_color: localConfig.mobile_theme?.border_color || '0 0% 94%',
+                success_color: localConfig.mobile_theme?.success_color || localConfig.success_color,
+                warning_color: localConfig.mobile_theme?.warning_color || localConfig.warning_color,
+                error_color: localConfig.mobile_theme?.error_color || localConfig.error_color,
+                info_color: localConfig.mobile_theme?.info_color || localConfig.info_color
+              }}
+              appName={localConfig.app_name}
+              logo={localConfig.app_logo_url}
+              onChange={(field, value) => {
+                setLocalConfig(prev => ({
+                  ...prev,
+                  mobile_theme: {
+                    ...prev.mobile_theme,
+                    [field]: value
+                  }
+                }));
+                setHasUnsavedChanges(true);
+              }}
+            />
 
             <Card>
               <CardHeader>
