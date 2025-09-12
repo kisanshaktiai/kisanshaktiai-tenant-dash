@@ -54,7 +54,10 @@ export const useAuthGuard = () => {
 
     // Check session expiry
     if (session?.expires_at) {
-      const expiresAt = new Date(session.expires_at).getTime();
+      // expires_at is a Unix timestamp in seconds, convert to milliseconds
+      const expiresAt = typeof session.expires_at === 'number' 
+        ? session.expires_at * 1000 
+        : new Date(session.expires_at).getTime();
       const now = Date.now();
       const timeUntilExpiry = expiresAt - now;
 

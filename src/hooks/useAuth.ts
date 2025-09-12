@@ -267,7 +267,10 @@ export const useAuth = () => {
   const isSessionExpired = useCallback(() => {
     if (!session?.expires_at) return false;
     
-    const expiresAt = session.expires_at * 1000;
+    // expires_at is a Unix timestamp in seconds, convert to milliseconds
+    const expiresAt = typeof session.expires_at === 'number' 
+      ? session.expires_at * 1000 
+      : new Date(session.expires_at).getTime();
     const now = Date.now();
     const isExpired = now >= expiresAt;
     
