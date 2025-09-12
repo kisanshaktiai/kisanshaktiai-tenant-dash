@@ -138,10 +138,27 @@ const WhiteLabelConfigPage = () => {
         error_color: settings.error_color || prev.error_color,
         info_color: settings.info_color || prev.info_color,
         bundle_identifier: settings.bundle_identifier || prev.bundle_identifier,
-        // Load mobile_theme from database
-        mobile_theme: settings.mobile_theme || prev.mobile_theme,
-        ...settings.pwa_config,
-        ...settings.mobile_ui_config,
+        // Load mobile_theme from database with defaults for missing properties
+        mobile_theme: {
+          primary_color: settings.mobile_theme?.primary_color || prev.mobile_theme.primary_color,
+          secondary_color: settings.mobile_theme?.secondary_color || prev.mobile_theme.secondary_color,
+          accent_color: settings.mobile_theme?.accent_color || prev.mobile_theme.accent_color,
+          background_color: settings.mobile_theme?.background_color || prev.mobile_theme.background_color,
+          surface_color: settings.mobile_theme?.surface_color || prev.mobile_theme.surface_color,
+          text_color: settings.mobile_theme?.text_color || prev.mobile_theme.text_color,
+          border_color: settings.mobile_theme?.border_color || prev.mobile_theme.border_color,
+          success_color: settings.mobile_theme?.success_color || prev.mobile_theme.success_color,
+          warning_color: settings.mobile_theme?.warning_color || prev.mobile_theme.warning_color,
+          error_color: settings.mobile_theme?.error_color || prev.mobile_theme.error_color,
+          info_color: settings.mobile_theme?.info_color || prev.mobile_theme.info_color,
+          primary_variant: settings.mobile_theme?.primary_variant || prev.mobile_theme.primary_variant,
+          secondary_variant: settings.mobile_theme?.secondary_variant || prev.mobile_theme.secondary_variant,
+          tertiary_color: settings.mobile_theme?.tertiary_color || prev.mobile_theme.tertiary_color,
+          on_surface_color: settings.mobile_theme?.on_surface_color || prev.mobile_theme.on_surface_color
+        },
+        // Spread other config properties
+        ...(settings.pwa_config || {}),
+        ...(settings.mobile_ui_config || {})
       }));
     }
   }, [settings]); // Remove isLoading to prevent re-render loop
