@@ -33,7 +33,7 @@ import NotFound from '@/pages/NotFound';
 import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
 import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
-import WhiteLabelConfigPage from '@/pages/settings/WhiteLabelConfigPage';
+import WhiteLabelConfigPageOptimized from '@/pages/settings/WhiteLabelConfigPageOptimized';
 import NotificationPage from '@/pages/NotificationPage';
 import SecurityPage from '@/pages/SecurityPage';
 import DataPrivacyPage from '@/pages/DataPrivacyPage';
@@ -86,7 +86,7 @@ function App() {
                     <Route path="settings/organization" element={<EnhancedOrganizationPage />} />
                     <Route path="settings/users" element={<EnhancedUsersPage />} />
                     <Route path="settings/appearance" element={<AppearancePage />} />
-                    <Route path="settings/white-label" element={<WhiteLabelConfigPage />} />
+                    <Route path="settings/white-label" element={<WhiteLabelConfigPageOptimized />} />
                     <Route path="settings/notifications" element={<NotificationPage />} />
                     <Route path="settings/security" element={<SecurityPage />} />
                     <Route path="settings/data-privacy" element={<DataPrivacyPage />} />
