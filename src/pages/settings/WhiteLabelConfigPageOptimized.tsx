@@ -69,6 +69,23 @@ const getDefaultConfig = () => ({
   custom_domain: '',
   subdomain: '',
   enable_ssl: true,
+  ssl_certificate_status: 'pending',
+  domain_verification_status: 'pending',
+  dns_records: [],
+  
+  // Email Configuration
+  smtp_host: '',
+  smtp_port: '587',
+  smtp_username: '',
+  smtp_password: '',
+  smtp_encryption: 'TLS',
+  from_email: '',
+  from_name: '',
+  reply_to_email: '',
+  bounce_email: '',
+  email_footer_text: '',
+  email_signature: '',
+  enable_email_tracking: true,
   
   // Mobile Configuration
   bundle_identifier: '',
@@ -92,13 +109,17 @@ const getDefaultConfig = () => ({
   help_center_url: '',
   documentation_url: '',
   getting_started_guide: '',
+  privacy_policy_url: '',
+  terms_of_service_url: '',
   
   // Email Templates
   email_templates: {
-    welcome: { enabled: true, category: 'onboarding' },
-    notification: { enabled: true, category: 'notifications' },
-    invoice: { enabled: true, category: 'billing' },
-    password_reset: { enabled: true, category: 'authentication' }
+    welcome: { enabled: true, subject: 'Welcome to {{app_name}}', category: 'onboarding' },
+    notification: { enabled: true, subject: 'New Notification', category: 'notifications' },
+    invoice: { enabled: true, subject: 'Your Invoice', category: 'billing' },
+    password_reset: { enabled: true, subject: 'Reset Your Password', category: 'authentication' },
+    campaign: { enabled: true, subject: 'Campaign Update', category: 'marketing' },
+    reminder: { enabled: true, subject: 'Reminder', category: 'system' }
   },
   
   // Advanced Settings
@@ -126,24 +147,38 @@ const WhiteLabelConfigPageOptimized = () => {
   
   // Flag to track if initial load is complete
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log('White Label Config Page - Current settings:', settings);
+    console.log('White Label Config Page - Loading state:', isLoading);
+  }, [settings, isLoading]);
 
   // Merge settings with defaults when they arrive
   useEffect(() => {
     if (settings && !isInitialized) {
+      console.log('Loading white label settings from database:', settings);
+      
       const mergedConfig = {
         ...getDefaultConfig(),
         ...settings,
-        // Deep merge mobile_theme
-        mobile_theme: {
+        // Deep merge mobile_theme - ensure it's properly structured
+        mobile_theme: settings.mobile_theme ? {
           ...getDefaultConfig().mobile_theme,
-          ...(settings.mobile_theme || {})
-        },
+          ...(typeof settings.mobile_theme === 'object' ? settings.mobile_theme : {})
+        } : getDefaultConfig().mobile_theme,
         // Deep merge pwa_config
         ...(settings.pwa_config || {}),
         // Deep merge mobile_ui_config
-        ...(settings.mobile_ui_config || {})
+        ...(settings.mobile_ui_config || {}),
+        // Merge email templates if they exist
+        email_templates: settings.email_templates ? {
+          ...getDefaultConfig().email_templates,
+          ...settings.email_templates
+        } : getDefaultConfig().email_templates
       };
       
+      console.log('Merged config with mobile_theme:', mergedConfig.mobile_theme);
       setLocalConfig(mergedConfig);
       setIsInitialized(true);
     }
@@ -167,7 +202,7 @@ const WhiteLabelConfigPageOptimized = () => {
   const handleSave = async () => {
     try {
       // Prepare the update payload matching the database structure
-      const updatePayload = {
+      const updatePayload: any = {
         // Brand Identity
         app_name: localConfig.app_name,
         app_logo_url: localConfig.app_logo_url,
@@ -184,6 +219,10 @@ const WhiteLabelConfigPageOptimized = () => {
         warning_color: localConfig.warning_color,
         error_color: localConfig.error_color,
         info_color: localConfig.info_color,
+        
+        // Domain Configuration
+        custom_domain: localConfig.custom_domain,
+        subdomain: localConfig.subdomain,
         
         // Mobile App Settings
         bundle_identifier: localConfig.bundle_identifier,
@@ -204,11 +243,39 @@ const WhiteLabelConfigPageOptimized = () => {
         // Mobile UI Configuration
         mobile_ui_config: {
           animations_enabled: localConfig.animations_enabled,
+          font_family: localConfig.font_family,
+          enable_custom_css: localConfig.enable_custom_css,
+          custom_css: localConfig.custom_css,
         },
         
         // Mobile Theme - this is the complete theme object
-        mobile_theme: localConfig.mobile_theme
+        mobile_theme: localConfig.mobile_theme,
+        
+        // Deep Link Configuration
+        deep_link_config: {
+          enabled: localConfig.deep_links_enabled,
+          download_manifest_url: localConfig.download_manifest_url,
+        },
+        
+        // Mobile Features
+        mobile_features: {
+          auto_updates: localConfig.auto_updates_enabled,
+          enable_private_store: localConfig.enable_private_store,
+        }
       };
+      
+      // Only include email configuration if values are provided
+      if (localConfig.smtp_host || localConfig.from_email) {
+        updatePayload.notification_config = {
+          smtp_host: localConfig.smtp_host,
+          smtp_port: localConfig.smtp_port,
+          smtp_username: localConfig.smtp_username,
+          smtp_password: localConfig.smtp_password,
+          from_email: localConfig.from_email,
+          from_name: localConfig.from_name,
+          email_templates: localConfig.email_templates
+        };
+      }
       
       console.log('Saving white label config with mobile_theme:', updatePayload.mobile_theme);
       
@@ -460,6 +527,163 @@ const WhiteLabelConfigPageOptimized = () => {
             />
           </TabsContent>
 
+          {/* Domain Tab */}
+          <TabsContent value="domain" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Domain Configuration</CardTitle>
+                <CardDescription>Configure custom domain and subdomain settings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-domain">Custom Domain</Label>
+                    <Input
+                      id="custom-domain"
+                      value={localConfig.custom_domain}
+                      onChange={(e) => handleFieldChange('custom_domain', e.target.value)}
+                      placeholder="app.yourdomain.com"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Configure your custom domain for the application
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="subdomain">Subdomain</Label>
+                    <Input
+                      id="subdomain"
+                      value={localConfig.subdomain}
+                      onChange={(e) => handleFieldChange('subdomain', e.target.value)}
+                      placeholder="yourcompany"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Your subdomain: {localConfig.subdomain || 'yourcompany'}.kisanshakti.ai
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="enable-ssl">Enable SSL</Label>
+                      <p className="text-sm text-muted-foreground">Secure your domain with SSL certificate</p>
+                    </div>
+                    <Switch
+                      id="enable-ssl"
+                      checked={localConfig.enable_ssl}
+                      onCheckedChange={(checked) => handleFieldChange('enable_ssl', checked)}
+                    />
+                  </div>
+                  
+                  <Alert>
+                    <AlertDescription>
+                      <strong>DNS Configuration:</strong> After setting up your custom domain, 
+                      you'll need to configure DNS records. Instructions will be provided after saving.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Email Tab */}
+          <TabsContent value="email" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Email Configuration</CardTitle>
+                <CardDescription>Configure SMTP settings and email templates</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-host">SMTP Host</Label>
+                    <Input
+                      id="smtp-host"
+                      value={localConfig.smtp_host}
+                      onChange={(e) => handleFieldChange('smtp_host', e.target.value)}
+                      placeholder="smtp.gmail.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-port">SMTP Port</Label>
+                    <Input
+                      id="smtp-port"
+                      value={localConfig.smtp_port}
+                      onChange={(e) => handleFieldChange('smtp_port', e.target.value)}
+                      placeholder="587"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-username">SMTP Username</Label>
+                    <Input
+                      id="smtp-username"
+                      value={localConfig.smtp_username}
+                      onChange={(e) => handleFieldChange('smtp_username', e.target.value)}
+                      placeholder="your-email@domain.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-password">SMTP Password</Label>
+                    <Input
+                      id="smtp-password"
+                      type="password"
+                      value={localConfig.smtp_password}
+                      onChange={(e) => handleFieldChange('smtp_password', e.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="from-email">From Email</Label>
+                    <Input
+                      id="from-email"
+                      value={localConfig.from_email}
+                      onChange={(e) => handleFieldChange('from_email', e.target.value)}
+                      placeholder="noreply@yourdomain.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="from-name">From Name</Label>
+                    <Input
+                      id="from-name"
+                      value={localConfig.from_name}
+                      onChange={(e) => handleFieldChange('from_name', e.target.value)}
+                      placeholder="Your Company Name"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Email Templates</h3>
+                  <div className="space-y-3">
+                    {Object.entries(localConfig.email_templates || {}).map(([key, template]: [string, any]) => (
+                      <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <p className="font-medium capitalize">{key.replace('_', ' ')}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Category: {template.category}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={template.enabled}
+                          onCheckedChange={(checked) => {
+                            handleFieldChange('email_templates', {
+                              ...localConfig.email_templates,
+                              [key]: { ...template, enabled: checked }
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* PWA Settings Tab */}
           <TabsContent value="pwa" className="space-y-6">
             <Card>
@@ -552,7 +776,209 @@ const WhiteLabelConfigPageOptimized = () => {
             </Card>
           </TabsContent>
 
-          {/* Other tabs can be added similarly... */}
+          {/* Advanced Tab */}
+          <TabsContent value="advanced" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Advanced Settings</CardTitle>
+                <CardDescription>Configure advanced customization options</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="font-family">Font Family</Label>
+                    <Select 
+                      value={localConfig.font_family}
+                      onValueChange={(value) => handleFieldChange('font_family', value)}
+                    >
+                      <SelectTrigger id="font-family">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Inter">Inter</SelectItem>
+                        <SelectItem value="Roboto">Roboto</SelectItem>
+                        <SelectItem value="Open Sans">Open Sans</SelectItem>
+                        <SelectItem value="Lato">Lato</SelectItem>
+                        <SelectItem value="Poppins">Poppins</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="animations-enabled">Enable Animations</Label>
+                      <p className="text-sm text-muted-foreground">Enable smooth transitions and animations</p>
+                    </div>
+                    <Switch
+                      id="animations-enabled"
+                      checked={localConfig.animations_enabled}
+                      onCheckedChange={(checked) => handleFieldChange('animations_enabled', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="enable-custom-css">Enable Custom CSS</Label>
+                      <p className="text-sm text-muted-foreground">Allow custom CSS styling</p>
+                    </div>
+                    <Switch
+                      id="enable-custom-css"
+                      checked={localConfig.enable_custom_css}
+                      onCheckedChange={(checked) => handleFieldChange('enable_custom_css', checked)}
+                    />
+                  </div>
+                  
+                  {localConfig.enable_custom_css && (
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-css">Custom CSS</Label>
+                      <Textarea
+                        id="custom-css"
+                        value={localConfig.custom_css}
+                        onChange={(e) => handleFieldChange('custom_css', e.target.value)}
+                        placeholder="/* Your custom CSS here */"
+                        className="font-mono min-h-[200px]"
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Content Tab */}
+          <TabsContent value="content" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Management</CardTitle>
+                <CardDescription>Configure help resources and documentation links</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="help-center-url">Help Center URL</Label>
+                    <Input
+                      id="help-center-url"
+                      value={localConfig.help_center_url}
+                      onChange={(e) => handleFieldChange('help_center_url', e.target.value)}
+                      placeholder="https://help.yourdomain.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="documentation-url">Documentation URL</Label>
+                    <Input
+                      id="documentation-url"
+                      value={localConfig.documentation_url}
+                      onChange={(e) => handleFieldChange('documentation_url', e.target.value)}
+                      placeholder="https://docs.yourdomain.com"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="getting-started-guide">Getting Started Guide URL</Label>
+                    <Input
+                      id="getting-started-guide"
+                      value={localConfig.getting_started_guide}
+                      onChange={(e) => handleFieldChange('getting_started_guide', e.target.value)}
+                      placeholder="https://yourdomain.com/getting-started"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="privacy-policy-url">Privacy Policy URL</Label>
+                    <Input
+                      id="privacy-policy-url"
+                      value={localConfig.privacy_policy_url}
+                      onChange={(e) => handleFieldChange('privacy_policy_url', e.target.value)}
+                      placeholder="https://yourdomain.com/privacy"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="terms-of-service-url">Terms of Service URL</Label>
+                    <Input
+                      id="terms-of-service-url"
+                      value={localConfig.terms_of_service_url}
+                      onChange={(e) => handleFieldChange('terms_of_service_url', e.target.value)}
+                      placeholder="https://yourdomain.com/terms"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Distribution Tab */}
+          <TabsContent value="distribution" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribution Settings</CardTitle>
+                <CardDescription>Configure app distribution and deployment options</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="enable-pwa">Enable PWA Distribution</Label>
+                    <p className="text-sm text-muted-foreground">Allow users to install as Progressive Web App</p>
+                  </div>
+                  <Switch
+                    id="enable-pwa"
+                    checked={localConfig.enable_pwa}
+                    onCheckedChange={(checked) => handleFieldChange('enable_pwa', checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="enable-private-store">Enable Private Store</Label>
+                    <p className="text-sm text-muted-foreground">Distribute through private enterprise store</p>
+                  </div>
+                  <Switch
+                    id="enable-private-store"
+                    checked={localConfig.enable_private_store}
+                    onCheckedChange={(checked) => handleFieldChange('enable_private_store', checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="deep-links-enabled">Enable Deep Links</Label>
+                    <p className="text-sm text-muted-foreground">Support deep linking into app content</p>
+                  </div>
+                  <Switch
+                    id="deep-links-enabled"
+                    checked={localConfig.deep_links_enabled}
+                    onCheckedChange={(checked) => handleFieldChange('deep_links_enabled', checked)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto-updates-enabled">Enable Auto Updates</Label>
+                    <p className="text-sm text-muted-foreground">Automatically update app in background</p>
+                  </div>
+                  <Switch
+                    id="auto-updates-enabled"
+                    checked={localConfig.auto_updates_enabled}
+                    onCheckedChange={(checked) => handleFieldChange('auto_updates_enabled', checked)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="download-manifest-url">Download Manifest URL</Label>
+                  <Input
+                    id="download-manifest-url"
+                    value={localConfig.download_manifest_url}
+                    onChange={(e) => handleFieldChange('download_manifest_url', e.target.value)}
+                    placeholder="https://app.yourdomain.com/manifest.json"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    URL for app manifest file for PWA installation
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Action Buttons */}

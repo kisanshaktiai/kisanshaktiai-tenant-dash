@@ -25,6 +25,19 @@ export interface WhiteLabelConfig {
   error_color?: string;
   info_color?: string;
   
+  // Domain Configuration
+  custom_domain?: string;
+  subdomain?: string;
+  
+  // Email Configuration
+  smtp_host?: string;
+  smtp_port?: string;
+  smtp_username?: string;
+  smtp_password?: string;
+  from_email?: string;
+  from_name?: string;
+  email_templates?: any;
+  
   // Mobile App Settings
   bundle_identifier?: string;
   android_package_name?: string;
