@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { whiteLabelService, WhiteLabelConfig } from '@/services/WhiteLabelService';
-import { useTenantAuth } from '@/hooks/useTenantAuth';
+import { useTenantAuthStable } from '@/hooks/useTenantAuthStable';
 import { useToast } from '@/hooks/use-toast';
 
 export const useWhiteLabelSettings = () => {
-  const { currentTenant } = useTenantAuth();
+  const { currentTenant } = useTenantAuthStable();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -15,9 +15,11 @@ export const useWhiteLabelSettings = () => {
       return whiteLabelService.getWhiteLabelConfig(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
-    staleTime: 60 * 1000, // Consider data fresh for 1 minute
-    gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
     refetchOnWindowFocus: false, // Prevent refetch on tab focus
+    refetchOnMount: false, // Prevent refetch on component mount
+    refetchInterval: false, // Disable automatic refetching
   });
 
   const updateSettings = useMutation({

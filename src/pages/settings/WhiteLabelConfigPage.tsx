@@ -99,9 +99,9 @@ const WhiteLabelConfigPage = () => {
     download_manifest_url: ''
   });
 
-  // Initialize local config from settings
+  // Initialize local config from settings - only run when settings change
   useEffect(() => {
-    if (settings && !isLoading) {
+    if (settings) {
       setLocalConfig(prev => ({
         ...prev,
         app_name: settings.app_name || prev.app_name,
@@ -122,7 +122,7 @@ const WhiteLabelConfigPage = () => {
         ...settings.mobile_ui_config,
       }));
     }
-  }, [settings, isLoading]);
+  }, [settings]); // Remove isLoading to prevent re-render loop
 
   const handleFieldChange = (field: string, value: any) => {
     setLocalConfig(prev => ({

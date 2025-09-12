@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
@@ -90,7 +90,7 @@ const navigationItems = [
   }
 ];
 
-const TenantSidebar = () => {
+const TenantSidebar = memo(() => {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
@@ -178,9 +178,9 @@ const TenantSidebar = () => {
       </SidebarContent>
     </Sidebar>
   );
-};
+});
 
-const TopBar = () => {
+const TopBar = memo(() => {
   const { user } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants, switchTenant } = useTenantContextOptimized();
   const { signOut } = useAuth();
@@ -301,7 +301,7 @@ const TopBar = () => {
       </div>
     </header>
   );
-};
+});
 
 export const EnhancedTenantLayout: React.FC = () => {
   const { currentTenant, loading } = useTenantContextOptimized();
