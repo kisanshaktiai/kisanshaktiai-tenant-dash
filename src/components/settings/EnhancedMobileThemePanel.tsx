@@ -333,9 +333,15 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
 
   // Initialize theme from config when it changes
   useEffect(() => {
+    console.log('Config received:', config);
+    
     if (config?.mobile_theme) {
       console.log('Loading mobile theme from config:', config.mobile_theme);
+      console.log('Theme structure keys:', Object.keys(config.mobile_theme));
+      
+      // Convert flat structure to Modern2025Theme if needed
       const convertedTheme = convertFlatToModern2025Theme(config.mobile_theme);
+      console.log('Converted theme for display:', convertedTheme);
       setCurrentTheme(convertedTheme);
     } else if (config?.app_store_config?.mobile_theme) {
       console.log('Loading mobile theme from app_store_config:', config.app_store_config.mobile_theme);
@@ -345,7 +351,7 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
       console.log('No saved theme found, using default theme');
       setCurrentTheme(defaultTheme);
     }
-  }, [config, tenantId]);
+  }, [config]);
 
   const validateTheme = (theme: Modern2025Theme): string[] => {
     const errors: string[] = [];
@@ -440,6 +446,8 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
   };
 
   const saveTheme = () => {
+    console.log('Saving theme - Current theme structure:', currentTheme);
+    
     const errors = validateTheme(currentTheme);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -449,7 +457,24 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
 
     // Convert to flat structure for database storage
     const flatTheme = convertModern2025ThemeToFlat(currentTheme);
-    updateConfig('mobile_theme', '', flatTheme);
+    console.log('Converted to flat structure for DB:', flatTheme);
+    
+    // Save the flat structure that includes both old flat fields and new nested structure
+    const themeToSave = {
+      ...flatTheme,
+      // Also include the nested structure
+      core: currentTheme.core,
+      neutral: currentTheme.neutral,
+      status: currentTheme.status,
+      support: currentTheme.support,
+      typography: currentTheme.typography,
+      spacing: currentTheme.spacing,
+      border_radius: currentTheme.border_radius,
+      shadows: currentTheme.shadows
+    };
+    
+    console.log('Final theme to save:', themeToSave);
+    updateConfig('mobile_theme', '', themeToSave);
     updateConfig('api_version', '', 'v1');
     updateConfig('is_validated', '', true);
     updateConfig('validation_errors', '', []);

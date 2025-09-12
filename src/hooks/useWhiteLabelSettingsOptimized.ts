@@ -74,12 +74,15 @@ export const useWhiteLabelSettingsOptimized = () => {
       if (error) {
         if (error.code === 'PGRST116') {
           // No config exists, return null
+          console.log('No white label config found for tenant:', tenantId);
           return null;
         }
         throw error;
       }
 
-      return data;
+      console.log('Fetched white label config from DB:', data);
+      console.log('Mobile theme from DB:', (data as any)?.mobile_theme);
+      return data as WhiteLabelConfig;
     } catch (error) {
       console.error('Error fetching white label config:', error);
       return null;
@@ -108,11 +111,16 @@ export const useWhiteLabelSettingsOptimized = () => {
     mutationFn: async (updates: Partial<WhiteLabelConfig>) => {
       if (!currentTenant?.id) throw new Error('No tenant selected');
       
+      console.log('Update payload before processing:', updates);
+      console.log('Mobile theme in update payload:', updates.mobile_theme);
+      
       const payload = {
         ...updates,
         tenant_id: currentTenant.id,
         updated_at: new Date().toISOString(),
       };
+      
+      console.log('Final payload to save to DB:', payload);
 
       // Check if config exists
       const { data: existing } = await supabase

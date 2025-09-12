@@ -166,11 +166,15 @@ const WhiteLabelConfigPageOptimized = () => {
 
   const handleSave = async () => {
     try {
-      await updateSettings({
+      // Prepare the update payload matching the database structure
+      const updatePayload = {
+        // Brand Identity
         app_name: localConfig.app_name,
         app_logo_url: localConfig.app_logo_url,
         app_icon_url: localConfig.app_icon_url,
         app_splash_screen_url: localConfig.app_splash_screen_url,
+        
+        // Core Colors - these are stored at root level for backward compatibility
         primary_color: localConfig.primary_color,
         secondary_color: localConfig.secondary_color,
         accent_color: localConfig.accent_color,
@@ -180,8 +184,12 @@ const WhiteLabelConfigPageOptimized = () => {
         warning_color: localConfig.warning_color,
         error_color: localConfig.error_color,
         info_color: localConfig.info_color,
+        
+        // Mobile App Settings
         bundle_identifier: localConfig.bundle_identifier,
         android_package_name: localConfig.bundle_identifier,
+        
+        // PWA Configuration
         pwa_config: {
           pwa_enabled: localConfig.pwa_enabled,
           pwa_name: localConfig.pwa_name,
@@ -192,11 +200,19 @@ const WhiteLabelConfigPageOptimized = () => {
           install_prompt_text: localConfig.install_prompt_text,
           cache_strategy: localConfig.cache_strategy,
         },
+        
+        // Mobile UI Configuration
         mobile_ui_config: {
           animations_enabled: localConfig.animations_enabled,
         },
+        
+        // Mobile Theme - this is the complete theme object
         mobile_theme: localConfig.mobile_theme
-      });
+      };
+      
+      console.log('Saving white label config with mobile_theme:', updatePayload.mobile_theme);
+      
+      await updateSettings(updatePayload);
       
       setHasUnsavedChanges(false);
     } catch (error) {
