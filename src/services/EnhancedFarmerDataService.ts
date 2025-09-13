@@ -122,6 +122,8 @@ export interface PaginatedFarmersResult {
 class EnhancedFarmerDataService extends BaseApiService {
   async getComprehensiveFarmerData(tenantId: string, farmerId: string): Promise<ComprehensiveFarmerData> {
     try {
+      console.log('[EnhancedFarmerDataService] Fetching comprehensive data for farmer:', farmerId);
+      
       // Get basic farmer data
       const { data: farmerData, error: farmerError } = await supabase
         .from('farmers')
@@ -131,6 +133,15 @@ class EnhancedFarmerDataService extends BaseApiService {
         .single();
 
       if (farmerError) throw farmerError;
+      
+      console.log('[EnhancedFarmerDataService] Farmer base data:', {
+        id: farmerData.id,
+        farmer_code: farmerData.farmer_code,
+        total_land_acres: farmerData.total_land_acres,
+        total_app_opens: farmerData.total_app_opens,
+        is_verified: farmerData.is_verified,
+        last_login_at: farmerData.last_login_at
+      });
 
       // Get all related data in parallel
       const [
@@ -148,9 +159,17 @@ class EnhancedFarmerDataService extends BaseApiService {
         this.getFarmerCropHistory(tenantId, farmerId),
         this.getFarmerHealthAssessments(tenantId, farmerId)
       ]);
-
-      // Mock communication history since the table doesn't exist
-      const communicationResult: CommunicationItem[] = [];
+      
+      console.log('[EnhancedFarmerDataService] Related data fetched:', {
+        landsCount: landsResult.length,
+        cropHistoryCount: cropHistoryResult.length,
+        healthAssessmentsCount: healthAssessmentsResult.length,
+        tagsCount: tagsResult.length,
+        notesCount: notesResult.length
+      });
+      
+      // Get real communication history if available
+      const communicationResult = await this.getFarmerCommunications(tenantId, farmerId);
 
       // Calculate metrics
       const metrics = this.calculateFarmerMetrics(farmerData, {
@@ -160,11 +179,11 @@ class EnhancedFarmerDataService extends BaseApiService {
         communications: communicationResult
       });
 
-      // Get live status (placeholder for now)
+      // Get live status based on actual data
       const liveStatus = {
-        isOnline: Math.random() > 0.5,
-        lastSeen: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-        currentActivity: 'Viewing crop recommendations'
+        isOnline: (farmerData as any).is_online || false,
+        lastSeen: farmerData.last_login_at || farmerData.updated_at || farmerData.created_at,
+        currentActivity: (farmerData as any).current_activity || 'Offline'
       };
 
       // Transform the farmer data to match our interface
@@ -202,18 +221,109 @@ class EnhancedFarmerDataService extends BaseApiService {
   }
 
   async getFarmerTags(tenantId: string, farmerId?: string): Promise<FarmerTag[]> {
-    // Return mock data since farmer_tags table may not exist
-    return [];
+    try {
+      const { data, error } = await supabase
+        .from('farmer_tags')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId);
+      
+      if (error) {
+        console.warn('farmer_tags table may not exist:', error);
+        return [];
+      }
+      
+      return (data || []).map((tag: any) => ({
+        id: tag.id,
+        tag_name: tag.tag_name || tag.name || 'Tag',
+        tag_color: tag.tag_color || tag.color,
+        created_at: tag.created_at
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer tags:', error);
+      return [];
+    }
   }
 
   async getFarmerNotes(tenantId: string, farmerId: string): Promise<FarmerNote[]> {
-    // Return mock data since farmer_notes table may not exist
-    return [];
+    try {
+      const { data, error } = await supabase
+        .from('farmer_notes')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.warn('farmer_notes table may not exist:', error);
+        return [];
+      }
+      
+      return (data || []).map((note: any) => ({
+        id: note.id,
+        note_content: note.note_content || note.content || '',
+        is_important: note.is_important || false,
+        is_private: note.is_private || false,
+        created_by: note.created_by,
+        created_at: note.created_at
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer notes:', error);
+      return [];
+    }
   }
 
   async getFarmerSegments(tenantId: string, farmerId: string): Promise<string[]> {
-    // Return mock data since farmer_segments table may not exist
-    return [];
+    try {
+      // Query without chaining to avoid deep type instantiation
+      const query = supabase.from('farmer_segments');
+      const result = await query.select('segment_name');
+      
+      if ('error' in result && result.error) {
+        console.warn('farmer_segments table may not exist:', result.error);
+        return [];
+      }
+      
+      const data = result.data;
+      if (!data) return [];
+      
+      return data
+        .filter((seg: any) => seg.tenant_id === tenantId && seg.farmer_id === farmerId)
+        .map((seg: any) => seg.segment_name || '');
+    } catch (error) {
+      console.error('Error fetching farmer segments:', error);
+      return [];
+    }
+  }
+  
+  async getFarmerCommunications(tenantId: string, farmerId: string): Promise<CommunicationItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('farmer_communications')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId)
+        .order('sent_at', { ascending: false })
+        .limit(20);
+      
+      if (error) {
+        console.warn('farmer_communications table may not exist:', error);
+        return [];
+      }
+      
+      return (data || []).map((comm: any) => ({
+        id: comm.id,
+        communication_type: comm.communication_type || comm.type || 'message',
+        channel: comm.channel || 'app',
+        status: comm.status || 'sent',
+        sent_at: comm.sent_at || comm.created_at,
+        delivered_at: comm.delivered_at,
+        read_at: comm.read_at
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer communications:', error);
+      return [];
+    }
   }
 
   async getFarmerLands(tenantId: string, farmerId: string): Promise<FarmerLand[]> {
@@ -414,16 +524,16 @@ class EnhancedFarmerDataService extends BaseApiService {
             metrics: {
               totalLandArea: farmer.total_land_acres || 0,
               cropDiversityIndex: (farmer.primary_crops || []).length,
-              engagementScore: Math.min(100, (farmer.total_app_opens || 0) * 2),
-              healthScore: 75,
-              lastActivityDate: farmer.updated_at || farmer.created_at || '',
-              revenueScore: Math.min(100, (farmer.total_land_acres || 0) * 10),
-              riskLevel: (farmer.total_app_opens || 0) < 10 ? 'high' : 'low'
+              engagementScore: (farmer as any).engagement_score || Math.min(100, (farmer.total_app_opens || 0) * 2),
+              healthScore: (farmer as any).health_score || 75,
+              lastActivityDate: (farmer as any).last_activity_date || farmer.last_login_at || farmer.updated_at || farmer.created_at || '',
+              revenueScore: (farmer as any).revenue_score || Math.min(100, (farmer.total_land_acres || 0) * 10),
+              riskLevel: (farmer as any).risk_level || ((farmer.total_app_opens || 0) < 10 ? 'high' : 'low') as 'low' | 'medium' | 'high'
             },
             liveStatus: {
-              isOnline: Math.random() > 0.5,
-              lastSeen: new Date(Date.now() - Math.random() * 86400000).toISOString(),
-              currentActivity: 'Viewing recommendations'
+              isOnline: (farmer as any).is_online || false,
+              lastSeen: farmer.last_login_at || farmer.last_app_open || farmer.updated_at || new Date().toISOString(),
+              currentActivity: (farmer as any).current_activity || 'Offline'
             }
           };
           transformedData.push(transformed);
