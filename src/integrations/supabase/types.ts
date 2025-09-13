@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      achievements: {
+        Row: {
+          badge_type: string
+          category: string
+          created_at: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          points_required: number
+        }
+        Insert: {
+          badge_type: string
+          category: string
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          points_required: number
+        }
+        Update: {
+          badge_type?: string
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          points_required?: number
+        }
+        Relationships: []
+      }
       activation_codes: {
         Row: {
           code: string
@@ -1459,6 +1495,117 @@ export type Database = {
         }
         Relationships: []
       }
+      cart_items: {
+        Row: {
+          added_at: string | null
+          id: string
+          product_id: string | null
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          attachments: Json | null
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          session_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          session_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          is_favorite: boolean | null
+          land_id: string | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          land_id?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_favorite?: boolean | null
+          land_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collaborative_notes: {
         Row: {
           assigned_to: string | null
@@ -1519,6 +1666,658 @@ export type Database = {
           tags?: Json | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      communities: {
+        Row: {
+          banner_url: string | null
+          community_type: Database["public"]["Enums"]["community_type"]
+          cover_image_url: string | null
+          created_at: string | null
+          created_by: string | null
+          crop_id: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          language: string | null
+          language_code: string | null
+          member_count: number | null
+          metadata: Json | null
+          moderator_ids: string[] | null
+          name: string
+          pinned_posts: string[] | null
+          post_count: number | null
+          rules: string | null
+          slug: string
+          state_code: string | null
+          tags: string[] | null
+          tenant_id: string | null
+          trending_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          community_type: Database["public"]["Enums"]["community_type"]
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crop_id?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          language?: string | null
+          language_code?: string | null
+          member_count?: number | null
+          metadata?: Json | null
+          moderator_ids?: string[] | null
+          name: string
+          pinned_posts?: string[] | null
+          post_count?: number | null
+          rules?: string | null
+          slug: string
+          state_code?: string | null
+          tags?: string[] | null
+          tenant_id?: string | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          community_type?: Database["public"]["Enums"]["community_type"]
+          cover_image_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          crop_id?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          language?: string | null
+          language_code?: string | null
+          member_count?: number | null
+          metadata?: Json | null
+          moderator_ids?: string[] | null
+          name?: string
+          pinned_posts?: string[] | null
+          post_count?: number | null
+          rules?: string | null
+          slug?: string
+          state_code?: string | null
+          tags?: string[] | null
+          tenant_id?: string | null
+          trending_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communities_crop_id_fkey"
+            columns: ["crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_events: {
+        Row: {
+          attendees: string[] | null
+          community_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_time: string | null
+          event_type: string | null
+          id: string
+          is_online: boolean | null
+          location: string | null
+          meeting_link: string | null
+          start_time: string | null
+          title: string
+        }
+        Insert: {
+          attendees?: string[] | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_type?: string | null
+          id?: string
+          is_online?: boolean | null
+          location?: string | null
+          meeting_link?: string | null
+          start_time?: string | null
+          title: string
+        }
+        Update: {
+          attendees?: string[] | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time?: string | null
+          event_type?: string | null
+          id?: string
+          is_online?: boolean | null
+          location?: string | null
+          meeting_link?: string | null
+          start_time?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_events_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_member_activity: {
+        Row: {
+          activity_type: string
+          badges: Json | null
+          community_id: string | null
+          created_at: string | null
+          farmer_id: string | null
+          helpful_answers: number | null
+          id: string
+          last_active: string | null
+          level: number | null
+          points: number | null
+          streak_days: number | null
+          total_messages: number | null
+        }
+        Insert: {
+          activity_type: string
+          badges?: Json | null
+          community_id?: string | null
+          created_at?: string | null
+          farmer_id?: string | null
+          helpful_answers?: number | null
+          id?: string
+          last_active?: string | null
+          level?: number | null
+          points?: number | null
+          streak_days?: number | null
+          total_messages?: number | null
+        }
+        Update: {
+          activity_type?: string
+          badges?: Json | null
+          community_id?: string | null
+          created_at?: string | null
+          farmer_id?: string | null
+          helpful_answers?: number | null
+          id?: string
+          last_active?: string | null
+          level?: number | null
+          points?: number | null
+          streak_days?: number | null
+          total_messages?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_member_activity_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_member_activity_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          contribution_points: number | null
+          farmer_id: string
+          id: string
+          is_active: boolean | null
+          joined_at: string | null
+          role: string | null
+        }
+        Insert: {
+          community_id: string
+          contribution_points?: number | null
+          farmer_id: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          role?: string | null
+        }
+        Update: {
+          community_id?: string
+          contribution_points?: number | null
+          farmer_id?: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_members_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_messages: {
+        Row: {
+          attachments: Json | null
+          community_id: string | null
+          content: string
+          created_at: string | null
+          edited_at: string | null
+          farmer_id: string | null
+          id: string
+          is_ai_filtered: boolean | null
+          is_edited: boolean | null
+          is_pinned: boolean | null
+          is_verified: boolean | null
+          message_type: string | null
+          metadata: Json | null
+          parent_message_id: string | null
+          reactions: Json | null
+          read_by: Json | null
+          translation_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          community_id?: string | null
+          content: string
+          created_at?: string | null
+          edited_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          is_ai_filtered?: boolean | null
+          is_edited?: boolean | null
+          is_pinned?: boolean | null
+          is_verified?: boolean | null
+          message_type?: string | null
+          metadata?: Json | null
+          parent_message_id?: string | null
+          reactions?: Json | null
+          read_by?: Json | null
+          translation_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          community_id?: string | null
+          content?: string
+          created_at?: string | null
+          edited_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          is_ai_filtered?: boolean | null
+          is_edited?: boolean | null
+          is_pinned?: boolean | null
+          is_verified?: boolean | null
+          message_type?: string | null
+          metadata?: Json | null
+          parent_message_id?: string | null
+          reactions?: Json | null
+          read_by?: Json | null
+          translation_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_messages_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_moderation: {
+        Row: {
+          action_type: string
+          community_id: string | null
+          created_at: string | null
+          id: string
+          moderator_id: string | null
+          reason: string | null
+          target_message_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          community_id?: string | null
+          created_at?: string | null
+          id?: string
+          moderator_id?: string | null
+          reason?: string | null
+          target_message_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          community_id?: string | null
+          created_at?: string | null
+          id?: string
+          moderator_id?: string | null
+          reason?: string | null
+          target_message_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_moderation_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_moderator_id_fkey"
+            columns: ["moderator_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_target_message_id_fkey"
+            columns: ["target_message_id"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_moderation_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_polls: {
+        Row: {
+          allow_multiple: boolean | null
+          community_id: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_anonymous: boolean | null
+          message_id: string | null
+          options: Json
+          question: string
+          votes: Json | null
+        }
+        Insert: {
+          allow_multiple?: boolean | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          message_id?: string | null
+          options: Json
+          question: string
+          votes?: Json | null
+        }
+        Update: {
+          allow_multiple?: boolean | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          message_id?: string | null
+          options?: Json
+          question?: string
+          votes?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_polls_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_polls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_moderation: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string | null
+          id: string
+          reason: string | null
+          reported_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          reported_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          reported_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_moderation_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_moderation_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_reports: {
+        Row: {
+          content_id: string
+          content_type: string
+          created_at: string | null
+          id: string
+          moderator_id: string | null
+          moderator_notes: string | null
+          report_details: string | null
+          report_reason: string
+          reported_by: string
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          moderator_id?: string | null
+          moderator_notes?: string | null
+          report_details?: string | null
+          report_reason: string
+          reported_by: string
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          moderator_id?: string | null
+          moderator_notes?: string | null
+          report_details?: string | null
+          report_reason?: string
+          reported_by?: string
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      countries: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      crop_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          group_icon: string
+          group_key: string
+          group_name: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_icon?: string
+          group_key: string
+          group_name: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          group_icon?: string
+          group_key?: string
+          group_name?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1662,6 +2461,71 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crops: {
+        Row: {
+          created_at: string | null
+          crop_group_id: string | null
+          description: string | null
+          display_order: number
+          duration_days: number | null
+          icon: string
+          id: string
+          is_active: boolean | null
+          is_popular: boolean | null
+          label: string
+          label_local: string | null
+          local_name: string | null
+          metadata: Json | null
+          season: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          crop_group_id?: string | null
+          description?: string | null
+          display_order?: number
+          duration_days?: number | null
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          label: string
+          label_local?: string | null
+          local_name?: string | null
+          metadata?: Json | null
+          season?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          crop_group_id?: string | null
+          description?: string | null
+          display_order?: number
+          duration_days?: number | null
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          label?: string
+          label_local?: string | null
+          local_name?: string | null
+          metadata?: Json | null
+          season?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crops_crop_group_id_fkey"
+            columns: ["crop_group_id"]
+            isOneToOne: false
+            referencedRelation: "crop_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -2397,6 +3261,95 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          media_url: string | null
+          original_language: string | null
+          read_at: string | null
+          receiver_id: string
+          sender_id: string
+          translations: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          media_url?: string | null
+          original_language?: string | null
+          read_at?: string | null
+          receiver_id: string
+          sender_id: string
+          translations?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          media_url?: string | null
+          original_language?: string | null
+          read_at?: string | null
+          receiver_id?: string
+          sender_id?: string
+          translations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      districts: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          state_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          state_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          state_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "districts_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domain_mappings: {
         Row: {
           created_at: string | null
@@ -2443,6 +3396,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      edge_invocation_logs: {
+        Row: {
+          function_name: string
+          id: number
+          invoked_at: string | null
+          payload: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          function_name: string
+          id?: never
+          invoked_at?: string | null
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          function_name?: string
+          id?: never
+          invoked_at?: string | null
+          payload?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       email_events: {
         Row: {
@@ -2741,6 +3718,42 @@ export type Database = {
           },
         ]
       }
+      farmer_achievements: {
+        Row: {
+          achievement_id: string
+          earned_at: string | null
+          farmer_id: string
+          id: string
+        }
+        Insert: {
+          achievement_id: string
+          earned_at?: string | null
+          farmer_id: string
+          id?: string
+        }
+        Update: {
+          achievement_id?: string
+          earned_at?: string | null
+          farmer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmer_achievements_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farmer_analytics: {
         Row: {
           adoption_score: number | null
@@ -2928,6 +3941,107 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      farmer_follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmer_follows_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      farmer_gamification: {
+        Row: {
+          comments_count: number | null
+          created_at: string | null
+          crop_rank: number | null
+          current_level: number | null
+          farmer_id: string
+          helpful_answers: number | null
+          id: string
+          last_activity_at: string | null
+          likes_given: number | null
+          likes_received: number | null
+          monthly_points: number | null
+          posts_count: number | null
+          state_rank: number | null
+          total_points: number | null
+          updated_at: string | null
+          weekly_points: number | null
+        }
+        Insert: {
+          comments_count?: number | null
+          created_at?: string | null
+          crop_rank?: number | null
+          current_level?: number | null
+          farmer_id: string
+          helpful_answers?: number | null
+          id?: string
+          last_activity_at?: string | null
+          likes_given?: number | null
+          likes_received?: number | null
+          monthly_points?: number | null
+          posts_count?: number | null
+          state_rank?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          weekly_points?: number | null
+        }
+        Update: {
+          comments_count?: number | null
+          created_at?: string | null
+          crop_rank?: number | null
+          current_level?: number | null
+          farmer_id?: string
+          helpful_answers?: number | null
+          id?: string
+          last_activity_at?: string | null
+          likes_given?: number | null
+          likes_received?: number | null
+          monthly_points?: number | null
+          posts_count?: number | null
+          state_rank?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          weekly_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_gamification_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: true
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
         ]
@@ -3305,6 +4419,7 @@ export type Database = {
           failed_login_attempts: number | null
           farm_type: string | null
           farmer_code: string | null
+          farmer_name: string | null
           farming_experience_years: number | null
           has_irrigation: boolean | null
           has_loan: boolean | null
@@ -3319,6 +4434,7 @@ export type Database = {
           last_failed_login: string | null
           last_login_at: string | null
           loan_amount: number | null
+          location: string | null
           login_attempts: number | null
           metadata: Json | null
           mobile_number: string | null
@@ -3329,11 +4445,17 @@ export type Database = {
           preferred_contact_method: string | null
           preferred_dealer_id: string | null
           primary_crops: string[] | null
+          seller_profile: Json | null
+          seller_rating: number | null
+          seller_verified: boolean | null
           shc_id: string | null
+          store_description: string | null
+          store_name: string | null
           tenant_id: string | null
           total_app_opens: number | null
           total_land_acres: number | null
           total_queries: number | null
+          total_sales: number | null
           updated_at: string | null
           verification_documents: Json | null
           verified_at: string | null
@@ -3348,6 +4470,7 @@ export type Database = {
           failed_login_attempts?: number | null
           farm_type?: string | null
           farmer_code?: string | null
+          farmer_name?: string | null
           farming_experience_years?: number | null
           has_irrigation?: boolean | null
           has_loan?: boolean | null
@@ -3362,6 +4485,7 @@ export type Database = {
           last_failed_login?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
+          location?: string | null
           login_attempts?: number | null
           metadata?: Json | null
           mobile_number?: string | null
@@ -3372,11 +4496,17 @@ export type Database = {
           preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
+          seller_profile?: Json | null
+          seller_rating?: number | null
+          seller_verified?: boolean | null
           shc_id?: string | null
+          store_description?: string | null
+          store_name?: string | null
           tenant_id?: string | null
           total_app_opens?: number | null
           total_land_acres?: number | null
           total_queries?: number | null
+          total_sales?: number | null
           updated_at?: string | null
           verification_documents?: Json | null
           verified_at?: string | null
@@ -3391,6 +4521,7 @@ export type Database = {
           failed_login_attempts?: number | null
           farm_type?: string | null
           farmer_code?: string | null
+          farmer_name?: string | null
           farming_experience_years?: number | null
           has_irrigation?: boolean | null
           has_loan?: boolean | null
@@ -3405,6 +4536,7 @@ export type Database = {
           last_failed_login?: string | null
           last_login_at?: string | null
           loan_amount?: number | null
+          location?: string | null
           login_attempts?: number | null
           metadata?: Json | null
           mobile_number?: string | null
@@ -3415,11 +4547,17 @@ export type Database = {
           preferred_contact_method?: string | null
           preferred_dealer_id?: string | null
           primary_crops?: string[] | null
+          seller_profile?: Json | null
+          seller_rating?: number | null
+          seller_verified?: boolean | null
           shc_id?: string | null
+          store_description?: string | null
+          store_name?: string | null
           tenant_id?: string | null
           total_app_opens?: number | null
           total_land_acres?: number | null
           total_queries?: number | null
+          total_sales?: number | null
           updated_at?: string | null
           verification_documents?: Json | null
           verified_at?: string | null
@@ -3434,6 +4572,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      farming_stages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          sample_questions: Json
+          stage_description: string | null
+          stage_icon: string | null
+          stage_key: string
+          stage_name: string
+          stage_order: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          sample_questions?: Json
+          stage_description?: string | null
+          stage_icon?: string | null
+          stage_key: string
+          stage_name: string
+          stage_order: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          sample_questions?: Json
+          stage_description?: string | null
+          stage_icon?: string | null
+          stage_key?: string
+          stage_name?: string
+          stage_order?: number
+        }
+        Relationships: []
       }
       feature_configs: {
         Row: {
@@ -3684,6 +4858,186 @@ export type Database = {
         }
         Relationships: []
       }
+      followers: {
+        Row: {
+          followed_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          followed_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          followed_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "followers_following_id_fkey"
+            columns: ["following_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chat_members: {
+        Row: {
+          farmer_id: string
+          group_id: string
+          id: string
+          joined_at: string | null
+          last_read_at: string | null
+          role: string | null
+        }
+        Insert: {
+          farmer_id: string
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+        }
+        Update: {
+          farmer_id?: string
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chat_members_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chat_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_chats: {
+        Row: {
+          avatar_url: string | null
+          community_id: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          member_count: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          member_count?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          community_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          member_count?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_chats_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_chats_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          group_id: string
+          id: string
+          media_url: string | null
+          original_language: string | null
+          sender_id: string
+          translations: Json | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          media_url?: string | null
+          original_language?: string | null
+          sender_id: string
+          translations?: Json | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          media_url?: string | null
+          original_language?: string | null
+          sender_id?: string
+          translations?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_sync_logs: {
         Row: {
           completed_at: string | null
@@ -3890,6 +5244,33 @@ export type Database = {
           },
         ]
       }
+      irrigation_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          value?: string
+        }
+        Relationships: []
+      }
       land_activities: {
         Row: {
           activity_date: string
@@ -3957,27 +5338,38 @@ export type Database = {
           center_point_old: Json | null
           created_at: string
           crop_stage: string | null
+          cultivation_date: string | null
           current_crop: string | null
+          current_crop_id: string | null
           district: string | null
           elevation_meters: number | null
           expected_harvest_date: string | null
           farmer_id: string
           gps_accuracy_meters: number | null
           gps_recorded_at: string | null
+          harvest_date: string | null
           id: string
           irrigation_source: string | null
+          irrigation_type: string | null
           is_active: boolean | null
           land_documents: Json | null
           land_type: string | null
+          last_crop: string | null
+          last_harvest_date: string | null
           last_soil_test_date: string | null
           last_sowing_date: string | null
           location_context: Json | null
+          marketplace_enabled: boolean | null
           name: string
           nitrogen_kg_per_ha: number | null
+          notes: string | null
           organic_carbon_percent: number | null
           ownership_type: string | null
           phosphorus_kg_per_ha: number | null
+          planting_date: string | null
           potassium_kg_per_ha: number | null
+          previous_crop: string | null
+          previous_crop_id: string | null
           slope_percentage: number | null
           soil_ph: number | null
           soil_type: string | null
@@ -3998,27 +5390,38 @@ export type Database = {
           center_point_old?: Json | null
           created_at?: string
           crop_stage?: string | null
+          cultivation_date?: string | null
           current_crop?: string | null
+          current_crop_id?: string | null
           district?: string | null
           elevation_meters?: number | null
           expected_harvest_date?: string | null
           farmer_id: string
           gps_accuracy_meters?: number | null
           gps_recorded_at?: string | null
+          harvest_date?: string | null
           id?: string
           irrigation_source?: string | null
+          irrigation_type?: string | null
           is_active?: boolean | null
           land_documents?: Json | null
           land_type?: string | null
+          last_crop?: string | null
+          last_harvest_date?: string | null
           last_soil_test_date?: string | null
           last_sowing_date?: string | null
           location_context?: Json | null
+          marketplace_enabled?: boolean | null
           name: string
           nitrogen_kg_per_ha?: number | null
+          notes?: string | null
           organic_carbon_percent?: number | null
           ownership_type?: string | null
           phosphorus_kg_per_ha?: number | null
+          planting_date?: string | null
           potassium_kg_per_ha?: number | null
+          previous_crop?: string | null
+          previous_crop_id?: string | null
           slope_percentage?: number | null
           soil_ph?: number | null
           soil_type?: string | null
@@ -4039,27 +5442,38 @@ export type Database = {
           center_point_old?: Json | null
           created_at?: string
           crop_stage?: string | null
+          cultivation_date?: string | null
           current_crop?: string | null
+          current_crop_id?: string | null
           district?: string | null
           elevation_meters?: number | null
           expected_harvest_date?: string | null
           farmer_id?: string
           gps_accuracy_meters?: number | null
           gps_recorded_at?: string | null
+          harvest_date?: string | null
           id?: string
           irrigation_source?: string | null
+          irrigation_type?: string | null
           is_active?: boolean | null
           land_documents?: Json | null
           land_type?: string | null
+          last_crop?: string | null
+          last_harvest_date?: string | null
           last_soil_test_date?: string | null
           last_sowing_date?: string | null
           location_context?: Json | null
+          marketplace_enabled?: boolean | null
           name?: string
           nitrogen_kg_per_ha?: number | null
+          notes?: string | null
           organic_carbon_percent?: number | null
           ownership_type?: string | null
           phosphorus_kg_per_ha?: number | null
+          planting_date?: string | null
           potassium_kg_per_ha?: number | null
+          previous_crop?: string | null
+          previous_crop_id?: string | null
           slope_percentage?: number | null
           soil_ph?: number | null
           soil_type?: string | null
@@ -4071,7 +5485,22 @@ export type Database = {
           village?: string | null
           water_source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lands_current_crop_id_fkey"
+            columns: ["current_crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_previous_crop_id_fkey"
+            columns: ["previous_crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lead_activities: {
         Row: {
@@ -4476,6 +5905,53 @@ export type Database = {
           },
         ]
       }
+      leaderboards: {
+        Row: {
+          created_at: string | null
+          farmer_id: string
+          id: string
+          leaderboard_type: string
+          period_end: string | null
+          period_start: string | null
+          points: number | null
+          rank: number | null
+          reference_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          leaderboard_type: string
+          period_end?: string | null
+          period_start?: string | null
+          points?: number | null
+          rank?: number | null
+          reference_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          leaderboard_type?: string
+          period_end?: string | null
+          period_start?: string | null
+          points?: number | null
+          rank?: number | null
+          reference_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboards_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           ai_recommended_action: string | null
@@ -4764,6 +6240,280 @@ export type Database = {
           variety?: string | null
         }
         Relationships: []
+      }
+      marketplace_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_chat_messages: {
+        Row: {
+          attachments: Json | null
+          chat_id: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          chat_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          chat_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_chats: {
+        Row: {
+          buyer_id: string
+          buyer_unread: number | null
+          created_at: string | null
+          id: string
+          last_message: string | null
+          last_message_at: string | null
+          product_id: string | null
+          seller_id: string | null
+          seller_unread: number | null
+        }
+        Insert: {
+          buyer_id: string
+          buyer_unread?: number | null
+          created_at?: string | null
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          product_id?: string | null
+          seller_id?: string | null
+          seller_unread?: number | null
+        }
+        Update: {
+          buyer_id?: string
+          buyer_unread?: number | null
+          created_at?: string | null
+          id?: string
+          last_message?: string | null
+          last_message_at?: string | null
+          product_id?: string | null
+          seller_id?: string | null
+          seller_unread?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_chats_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_chats_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_orders: {
+        Row: {
+          buyer_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_number: string
+          order_status: string | null
+          payment_method: string | null
+          payment_status: string | null
+          seller_id: string | null
+          shipping_address: Json
+          total_amount: number
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          seller_id?: string | null
+          shipping_address: Json
+          total_amount: number
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string
+          order_status?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          seller_id?: string | null
+          shipping_address?: Json
+          total_amount?: number
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_orders_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_products: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          discount_price: number | null
+          featured: boolean | null
+          id: string
+          images: Json | null
+          land_id: string | null
+          name: string
+          price: number
+          quantity_available: number
+          seller_id: string | null
+          specifications: Json | null
+          status: string | null
+          tags: string[] | null
+          unit: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_price?: number | null
+          featured?: boolean | null
+          id?: string
+          images?: Json | null
+          land_id?: string | null
+          name: string
+          price: number
+          quantity_available?: number
+          seller_id?: string | null
+          specifications?: Json | null
+          status?: string | null
+          tags?: string[] | null
+          unit: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_price?: number | null
+          featured?: boolean | null
+          id?: string
+          images?: Json | null
+          land_id?: string | null
+          name?: string
+          price?: number
+          quantity_available?: number
+          seller_id?: string | null
+          specifications?: Json | null
+          status?: string | null
+          tags?: string[] | null
+          unit?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketplace_reviews: {
         Row: {
@@ -5059,6 +6809,39 @@ export type Database = {
           },
         ]
       }
+      master_languages: {
+        Row: {
+          code: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          native_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          native_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          native_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       master_product_categories: {
         Row: {
           created_at: string | null
@@ -5297,6 +7080,98 @@ export type Database = {
         }
         Relationships: []
       }
+      message_translations: {
+        Row: {
+          created_at: string | null
+          id: string
+          language_code: string
+          message_id: string
+          translated_content: string
+          translation_provider: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          language_code: string
+          message_id: string
+          translated_content: string
+          translation_provider?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          language_code?: string
+          message_id?: string
+          translated_content?: string
+          translation_provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_translations_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          media_urls: Json | null
+          original_language: string | null
+          read_at: string | null
+          receiver_id: string
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          media_urls?: Json | null
+          original_language?: string | null
+          read_at?: string | null
+          receiver_id: string
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          media_urls?: Json | null
+          original_language?: string | null
+          read_at?: string | null
+          receiver_id?: string
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ndvi_data: {
         Row: {
           cloud_cover: number | null
@@ -5421,6 +7296,44 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offline_sync_queue: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          farmer_id: string
+          id: string
+          payload: Json
+          synced: boolean | null
+          synced_at: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          payload: Json
+          synced?: boolean | null
+          synced_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          payload?: Json
+          synced?: boolean | null
+          synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offline_sync_queue_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
         ]
@@ -5560,6 +7473,51 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_id: string | null
+          product_id: string | null
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_id?: string | null
+          product_id?: string | null
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -6068,6 +8026,373 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          farmer_id: string
+          id: string
+          option_ids: Json
+          poll_id: string
+          voted_at: string | null
+        }
+        Insert: {
+          farmer_id: string
+          id?: string
+          option_ids: Json
+          poll_id: string
+          voted_at?: string | null
+        }
+        Update: {
+          farmer_id?: string
+          id?: string
+          option_ids?: Json
+          poll_id?: string
+          voted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "post_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          farmer_id: string
+          id: string
+          is_expert_comment: boolean | null
+          language_code: string | null
+          likes_count: number | null
+          parent_comment_id: string | null
+          post_id: string
+          translations: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          is_expert_comment?: boolean | null
+          language_code?: string | null
+          likes_count?: number | null
+          parent_comment_id?: string | null
+          post_id: string
+          translations?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          is_expert_comment?: boolean | null
+          language_code?: string | null
+          likes_count?: number | null
+          parent_comment_id?: string | null
+          post_id?: string
+          translations?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_interactions: {
+        Row: {
+          created_at: string | null
+          farmer_id: string
+          id: string
+          interaction_type: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          interaction_type: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          interaction_type?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_interactions_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_interactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string | null
+          farmer_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_polls: {
+        Row: {
+          allow_multiple: boolean | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          is_anonymous: boolean | null
+          options: Json
+          post_id: string
+          question: string
+        }
+        Insert: {
+          allow_multiple?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          options: Json
+          post_id: string
+          question: string
+        }
+        Update: {
+          allow_multiple?: boolean | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          options?: Json
+          post_id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_saves: {
+        Row: {
+          farmer_id: string
+          folder: string | null
+          id: string
+          post_id: string
+          saved_at: string | null
+        }
+        Insert: {
+          farmer_id: string
+          folder?: string | null
+          id?: string
+          post_id: string
+          saved_at?: string | null
+        }
+        Update: {
+          farmer_id?: string
+          folder?: string | null
+          id?: string
+          post_id?: string
+          saved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_saves_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_saves_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_shares: {
+        Row: {
+          farmer_id: string
+          id: string
+          post_id: string
+          share_message: string | null
+          share_type: string | null
+          shared_at: string | null
+          shared_to_community_id: string | null
+        }
+        Insert: {
+          farmer_id: string
+          id?: string
+          post_id: string
+          share_message?: string | null
+          share_type?: string | null
+          shared_at?: string | null
+          shared_to_community_id?: string | null
+        }
+        Update: {
+          farmer_id?: string
+          id?: string
+          post_id?: string
+          share_message?: string | null
+          share_type?: string | null
+          shared_at?: string | null
+          shared_to_community_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_shares_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_shares_shared_to_community_id_fkey"
+            columns: ["shared_to_community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          comments_count: number | null
+          community_id: string | null
+          content: string
+          created_at: string | null
+          farmer_id: string
+          id: string
+          is_pinned: boolean | null
+          likes_count: number | null
+          post_type: string | null
+          shares_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          comments_count?: number | null
+          community_id?: string | null
+          content: string
+          created_at?: string | null
+          farmer_id: string
+          id?: string
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          post_type?: string | null
+          shares_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          comments_count?: number | null
+          community_id?: string | null
+          content?: string
+          created_at?: string | null
+          farmer_id?: string
+          id?: string
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          post_type?: string | null
+          shares_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       predictive_analytics: {
         Row: {
           actual_value: number | null
@@ -6411,6 +8736,95 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_reviews: {
+        Row: {
+          buyer_id: string
+          comment: string | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          images: Json | null
+          order_id: string | null
+          product_id: string | null
+          rating: number
+          updated_at: string | null
+          verified_purchase: boolean | null
+        }
+        Insert: {
+          buyer_id: string
+          comment?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          images?: Json | null
+          order_id?: string | null
+          product_id?: string | null
+          rating: number
+          updated_at?: string | null
+          verified_purchase?: boolean | null
+        }
+        Update: {
+          buyer_id?: string
+          comment?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          images?: Json | null
+          order_id?: string | null
+          product_id?: string | null
+          rating?: number
+          updated_at?: string | null
+          verified_purchase?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_views: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          product_id: string | null
+          user_id: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          product_id?: string | null
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          product_id?: string | null
+          user_id?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_views_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -6979,6 +9393,30 @@ export type Database = {
         }
         Relationships: []
       }
+      search_history: {
+        Row: {
+          created_at: string | null
+          id: string
+          results_count: number | null
+          search_term: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          results_count?: number | null
+          search_term: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          results_count?: number | null
+          search_term?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       security_alerts: {
         Row: {
           alert_type: string
@@ -7110,6 +9548,128 @@ export type Database = {
           },
         ]
       }
+      social_posts: {
+        Row: {
+          comments_count: number | null
+          community_id: string | null
+          content: string | null
+          created_at: string | null
+          engagement_score: number | null
+          farmer_id: string
+          hashtags: string[] | null
+          id: string
+          is_expert_verified: boolean | null
+          is_pinned: boolean | null
+          is_published: boolean | null
+          is_success_story: boolean | null
+          language_code: string | null
+          likes_count: number | null
+          location_data: Json | null
+          media_urls: Json | null
+          metadata: Json | null
+          moderation_status: string | null
+          parent_post_id: string | null
+          poll_options: Json | null
+          post_type: Database["public"]["Enums"]["post_type"]
+          saves_count: number | null
+          shares_count: number | null
+          status: Database["public"]["Enums"]["post_status"] | null
+          tenant_id: string | null
+          translations: Json | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          comments_count?: number | null
+          community_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          engagement_score?: number | null
+          farmer_id: string
+          hashtags?: string[] | null
+          id?: string
+          is_expert_verified?: boolean | null
+          is_pinned?: boolean | null
+          is_published?: boolean | null
+          is_success_story?: boolean | null
+          language_code?: string | null
+          likes_count?: number | null
+          location_data?: Json | null
+          media_urls?: Json | null
+          metadata?: Json | null
+          moderation_status?: string | null
+          parent_post_id?: string | null
+          poll_options?: Json | null
+          post_type?: Database["public"]["Enums"]["post_type"]
+          saves_count?: number | null
+          shares_count?: number | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          tenant_id?: string | null
+          translations?: Json | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          comments_count?: number | null
+          community_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          engagement_score?: number | null
+          farmer_id?: string
+          hashtags?: string[] | null
+          id?: string
+          is_expert_verified?: boolean | null
+          is_pinned?: boolean | null
+          is_published?: boolean | null
+          is_success_story?: boolean | null
+          language_code?: string | null
+          likes_count?: number | null
+          location_data?: Json | null
+          media_urls?: Json | null
+          metadata?: Json | null
+          moderation_status?: string | null
+          parent_post_id?: string | null
+          poll_options?: Json | null
+          post_type?: Database["public"]["Enums"]["post_type"]
+          saves_count?: number | null
+          shares_count?: number | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          tenant_id?: string | null
+          translations?: Json | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_parent_post_id_fkey"
+            columns: ["parent_post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_posts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       soil_health: {
         Row: {
           bulk_density: number | null
@@ -7182,6 +9742,33 @@ export type Database = {
           },
         ]
       }
+      soil_types: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          value?: string
+        }
+        Relationships: []
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -7205,6 +9792,44 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      states: {
+        Row: {
+          code: string | null
+          country_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          code?: string | null
+          country_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string | null
+          country_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "states_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_movements: {
         Row: {
@@ -7632,6 +10257,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      talukas: {
+        Row: {
+          created_at: string | null
+          district_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          district_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          district_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talukas_district_id_fkey"
+            columns: ["district_id"]
+            isOneToOne: false
+            referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_invitations: {
         Row: {
@@ -8489,6 +11149,57 @@ export type Database = {
         }
         Relationships: []
       }
+      trending_topics: {
+        Row: {
+          crop_id: string | null
+          engagement_score: number | null
+          hashtag: string
+          id: string
+          last_updated: string | null
+          post_count: number | null
+          region: string | null
+          tenant_id: string | null
+          trending_since: string | null
+        }
+        Insert: {
+          crop_id?: string | null
+          engagement_score?: number | null
+          hashtag: string
+          id?: string
+          last_updated?: string | null
+          post_count?: number | null
+          region?: string | null
+          tenant_id?: string | null
+          trending_since?: string | null
+        }
+        Update: {
+          crop_id?: string | null
+          engagement_score?: number | null
+          hashtag?: string
+          id?: string
+          last_updated?: string | null
+          post_count?: number | null
+          region?: string | null
+          tenant_id?: string | null
+          trending_since?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trending_topics_crop_id_fkey"
+            columns: ["crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trending_topics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_analytics: {
         Row: {
           created_at: string | null
@@ -8538,6 +11249,44 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_category: string
+          badge_icon_url: string | null
+          badge_name: string
+          badge_type: string
+          earned_at: string | null
+          farmer_id: string
+          id: string
+        }
+        Insert: {
+          badge_category: string
+          badge_icon_url?: string | null
+          badge_name: string
+          badge_type: string
+          earned_at?: string | null
+          farmer_id: string
+          id?: string
+        }
+        Update: {
+          badge_category?: string
+          badge_icon_url?: string | null
+          badge_name?: string
+          badge_type?: string
+          earned_at?: string | null
+          farmer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
         ]
@@ -8636,6 +11385,44 @@ export type Database = {
           },
         ]
       }
+      user_points: {
+        Row: {
+          description: string | null
+          earned_at: string | null
+          farmer_id: string
+          id: string
+          points: number
+          points_type: string
+          reference_id: string | null
+        }
+        Insert: {
+          description?: string | null
+          earned_at?: string | null
+          farmer_id: string
+          id?: string
+          points: number
+          points_type: string
+          reference_id?: string | null
+        }
+        Update: {
+          description?: string | null
+          earned_at?: string | null
+          farmer_id?: string
+          id?: string
+          points?: number
+          points_type?: string
+          reference_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_presence: {
         Row: {
           created_at: string | null
@@ -8690,7 +11477,8 @@ export type Database = {
           email: string | null
           email_verified_at: string | null
           expertise_areas: string[] | null
-          farmer_id: string | null
+          farmer_code: string | null
+          farmer_id: string
           farming_experience_years: number | null
           full_name: string | null
           gender: string | null
@@ -8736,7 +11524,8 @@ export type Database = {
           email?: string | null
           email_verified_at?: string | null
           expertise_areas?: string[] | null
-          farmer_id?: string | null
+          farmer_code?: string | null
+          farmer_id: string
           farming_experience_years?: number | null
           full_name?: string | null
           gender?: string | null
@@ -8782,7 +11571,8 @@ export type Database = {
           email?: string | null
           email_verified_at?: string | null
           expertise_areas?: string[] | null
-          farmer_id?: string | null
+          farmer_code?: string | null
+          farmer_id?: string
           farming_experience_years?: number | null
           full_name?: string | null
           gender?: string | null
@@ -8811,7 +11601,15 @@ export type Database = {
           updated_at?: string | null
           village?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_farmer_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_sessions: {
         Row: {
@@ -8927,6 +11725,68 @@ export type Database = {
           },
         ]
       }
+      villages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          taluka_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          taluka_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          taluka_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "villages_taluka_id_fkey"
+            columns: ["taluka_id"]
+            isOneToOne: false
+            referencedRelation: "talukas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      water_sources: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          value?: string
+        }
+        Relationships: []
+      }
       weather_activity_recommendations: {
         Row: {
           activity_type: string
@@ -9010,6 +11870,7 @@ export type Database = {
           affected_activities: string[] | null
           alert_id: string
           area_name: string
+          cache_data: Json | null
           certainty: string
           created_at: string
           crop_impact_level: string | null
@@ -9020,18 +11881,24 @@ export type Database = {
           id: string
           instruction: string | null
           is_active: boolean
+          last_fetched: string | null
           latitude: number | null
           longitude: number | null
           recommendations: string[] | null
           severity: string
           start_time: string
+          tenant_id: string | null
           title: string
+          updated_at: string | null
           urgency: string
+          user_location: Json | null
+          user_preferences: Json | null
         }
         Insert: {
           affected_activities?: string[] | null
           alert_id: string
           area_name: string
+          cache_data?: Json | null
           certainty: string
           created_at?: string
           crop_impact_level?: string | null
@@ -9042,18 +11909,24 @@ export type Database = {
           id?: string
           instruction?: string | null
           is_active?: boolean
+          last_fetched?: string | null
           latitude?: number | null
           longitude?: number | null
           recommendations?: string[] | null
           severity: string
           start_time: string
+          tenant_id?: string | null
           title: string
+          updated_at?: string | null
           urgency: string
+          user_location?: Json | null
+          user_preferences?: Json | null
         }
         Update: {
           affected_activities?: string[] | null
           alert_id?: string
           area_name?: string
+          cache_data?: Json | null
           certainty?: string
           created_at?: string
           crop_impact_level?: string | null
@@ -9064,13 +11937,18 @@ export type Database = {
           id?: string
           instruction?: string | null
           is_active?: boolean
+          last_fetched?: string | null
           latitude?: number | null
           longitude?: number | null
           recommendations?: string[] | null
           severity?: string
           start_time?: string
+          tenant_id?: string | null
           title?: string
+          updated_at?: string | null
           urgency?: string
+          user_location?: Json | null
+          user_preferences?: Json | null
         }
         Relationships: []
       }
@@ -9580,6 +12458,7 @@ export type Database = {
       }
       white_label_configs: {
         Row: {
+          api_version: string | null
           app_customization: Json | null
           app_store_config: Json | null
           brand_identity: Json | null
@@ -9591,12 +12470,18 @@ export type Database = {
           domain_health: Json | null
           email_templates: Json | null
           id: string
+          is_validated: boolean | null
+          last_synced_at: string | null
+          mobile_theme: Json | null
           pwa_config: Json | null
           splash_screens: Json | null
           tenant_id: string | null
+          theme_colors: Json | null
           updated_at: string | null
+          validation_errors: Json | null
         }
         Insert: {
+          api_version?: string | null
           app_customization?: Json | null
           app_store_config?: Json | null
           brand_identity?: Json | null
@@ -9608,12 +12493,18 @@ export type Database = {
           domain_health?: Json | null
           email_templates?: Json | null
           id?: string
+          is_validated?: boolean | null
+          last_synced_at?: string | null
+          mobile_theme?: Json | null
           pwa_config?: Json | null
           splash_screens?: Json | null
           tenant_id?: string | null
+          theme_colors?: Json | null
           updated_at?: string | null
+          validation_errors?: Json | null
         }
         Update: {
+          api_version?: string | null
           app_customization?: Json | null
           app_store_config?: Json | null
           brand_identity?: Json | null
@@ -9625,10 +12516,15 @@ export type Database = {
           domain_health?: Json | null
           email_templates?: Json | null
           id?: string
+          is_validated?: boolean | null
+          last_synced_at?: string | null
+          mobile_theme?: Json | null
           pwa_config?: Json | null
           splash_screens?: Json | null
           tenant_id?: string | null
+          theme_colors?: Json | null
           updated_at?: string | null
+          validation_errors?: Json | null
         }
         Relationships: [
           {
@@ -9636,6 +12532,35 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_items: {
+        Row: {
+          added_at: string | null
+          id: string
+          product_id: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          product_id?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          product_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_products"
             referencedColumns: ["id"]
           },
         ]
@@ -9916,6 +12841,25 @@ export type Database = {
         }
         Returns: Json
       }
+      award_activity_points: {
+        Args: {
+          p_activity_type: string
+          p_community_id: string
+          p_farmer_id: string
+          p_points: number
+        }
+        Returns: undefined
+      }
+      award_points: {
+        Args: {
+          description: string
+          farmer_id: string
+          points: number
+          points_type: string
+          reference_id?: string
+        }
+        Returns: undefined
+      }
       box: {
         Args: { "": unknown } | { "": unknown }
         Returns: unknown
@@ -9960,6 +12904,10 @@ export type Database = {
         Args: { "": unknown } | { "": unknown }
         Returns: string
       }
+      calculate_engagement_score: {
+        Args: { post_id: string }
+        Returns: number
+      }
       calculate_evapotranspiration: {
         Args: {
           humidity_percent: number
@@ -10000,6 +12948,10 @@ export type Database = {
       check_admin_permission: {
         Args: { required_role?: string }
         Returns: boolean
+      }
+      check_badge_eligibility: {
+        Args: { farmer_id: string }
+        Returns: undefined
       }
       check_bootstrap_status: {
         Args: Record<PropertyKey, never>
@@ -10651,6 +13603,10 @@ export type Database = {
         Args: { lat: number; lng: number }
         Returns: Json
       }
+      get_mobile_white_label_config: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_onboarding_template: {
         Args: { subscription_plan: string; tenant_type: string }
         Returns: Json
@@ -10764,12 +13720,20 @@ export type Database = {
         Args: { target_tenant_id: string }
         Returns: boolean
       }
+      join_community: {
+        Args: { p_community_id: string; p_farmer_id: string }
+        Returns: Json
+      }
       json: {
         Args: { "": unknown }
         Returns: Json
       }
       jsonb: {
         Args: { "": unknown }
+        Returns: Json
+      }
+      leave_community: {
+        Args: { p_community_id: string; p_farmer_id: string }
         Returns: Json
       }
       log_admin_action: {
@@ -12209,6 +15173,10 @@ export type Database = {
         Args: { "": string }
         Returns: number
       }
+      update_community_trending_score: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_user_presence: {
         Args: {
           p_location?: Json
@@ -12242,7 +15210,9 @@ export type Database = {
         }[]
       }
       validate_farmer_pin: {
-        Args: { p_mobile_number: string; p_pin_hash: string }
+        Args:
+          | { p_farmer_id: string; p_pin: string; p_tenant_id: string }
+          | { p_mobile_number: string; p_pin_hash: string }
         Returns: boolean
       }
       validate_invitation_token: {
@@ -12281,6 +15251,10 @@ export type Database = {
           tenant_slug: string
         }[]
       }
+      validate_white_label_config: {
+        Args: { config_data: Json }
+        Returns: Json
+      }
       verify_admin_user_setup: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -12301,6 +15275,13 @@ export type Database = {
         | "annually"
         | "biannual"
         | "lifetime"
+      community_type:
+        | "state"
+        | "crop"
+        | "language"
+        | "practice"
+        | "market"
+        | "problem_solving"
       language_code:
         | "en"
         | "hi"
@@ -12339,6 +15320,8 @@ export type Database = {
         | "failed"
         | "refunded"
         | "chargeback"
+      post_status: "draft" | "published" | "moderated" | "deleted"
+      post_type: "text" | "image" | "video" | "poll"
       subscription_plan:
         | "Kisan_Basic"
         | "Shakti_Growth"
@@ -12527,6 +15510,14 @@ export const Constants = {
         "biannual",
         "lifetime",
       ],
+      community_type: [
+        "state",
+        "crop",
+        "language",
+        "practice",
+        "market",
+        "problem_solving",
+      ],
       language_code: [
         "en",
         "hi",
@@ -12569,6 +15560,8 @@ export const Constants = {
         "refunded",
         "chargeback",
       ],
+      post_status: ["draft", "published", "moderated", "deleted"],
+      post_type: ["text", "image", "video", "poll"],
       subscription_plan: [
         "Kisan_Basic",
         "Shakti_Growth",
