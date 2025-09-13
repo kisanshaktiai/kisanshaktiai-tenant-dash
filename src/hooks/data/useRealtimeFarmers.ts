@@ -196,43 +196,33 @@ export const useRealtimeFarmer = (farmerId: string) => {
       return;
     }
 
-    // Subscribe to changes for this specific farmer across all tables
-    const channels: any[] = [];
-
-    FARMER_RELATED_TABLES.forEach((tableName) => {
-      const filterColumn = tableName === 'farmers' ? 'id' : 'farmer_id';
-      
-      const channel = supabase
-        .channel(`farmer_${tableName}_${farmerId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: tableName,
-            filter: `${filterColumn}=eq.${farmerId}`,
-          },
-          (payload) => {
-            console.log(`[RealtimeFarmer] ${tableName} update for farmer ${farmerId}:`, payload);
-            setLastUpdate(new Date());
-            
-            // Invalidate this farmer's data
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.farmer(farmerId, currentTenant.id)
-            });
-          }
-        )
-        .subscribe((status) => {
-          setIsLive(status === 'SUBSCRIBED');
-        });
-
-      channels.push(channel);
-    });
+    // Subscribe to changes for this specific farmer
+    const channel = supabase
+      .channel(`farmer_${farmerId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'farmers',
+          filter: `id=eq.${farmerId}`,
+        },
+        (payload) => {
+          console.log(`[RealtimeFarmer] update for farmer ${farmerId}:`, payload);
+          setLastUpdate(new Date());
+          
+          // Invalidate this farmer's data
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.farmer(farmerId, currentTenant.id)
+          });
+        }
+      )
+      .subscribe((status) => {
+        setIsLive(status === 'SUBSCRIBED');
+      });
 
     return () => {
-      channels.forEach((channel) => {
-        supabase.removeChannel(channel);
-      });
+      supabase.removeChannel(channel);
       setIsLive(false);
     };
   }, [currentTenant, farmerId, queryClient]);
