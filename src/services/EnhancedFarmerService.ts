@@ -434,12 +434,7 @@ class EnhancedFarmerService extends BaseApiService {
   async searchFarmersAdvanced(tenantId: string, filters: AdvancedSearchFilters): Promise<any[]> {
     let query = supabase
       .from('farmers')
-      .select(`
-        *,
-        farmer_tags(tag_name, tag_color),
-        farmer_engagement(engagement_level, activity_score, churn_risk_score),
-        lands(*)
-      `)
+      .select('*')
       .eq('tenant_id', tenantId);
 
     if (filters.search) {
@@ -546,12 +541,7 @@ class EnhancedFarmerService extends BaseApiService {
   async exportFarmers(tenantId: string, farmerIds?: string[], format = 'csv'): Promise<Blob> {
     let query = supabase
       .from('farmers')
-      .select(`
-        *,
-        farmer_tags(tag_name),
-        farmer_engagement(engagement_level, activity_score),
-        lands(*)
-      `)
+      .select('*')
       .eq('tenant_id', tenantId);
 
     if (farmerIds?.length) {
@@ -563,7 +553,7 @@ class EnhancedFarmerService extends BaseApiService {
 
     // Convert to CSV format
     if (format === 'csv') {
-      const headers = ['Farmer Code', 'Experience (Years)', 'Land Size (Acres)', 'Primary Crops', 'Has Irrigation', 'Engagement Level', 'Tags'];
+      const headers = ['Farmer Code', 'Experience (Years)', 'Land Size (Acres)', 'Primary Crops', 'Has Irrigation'];
       const csvContent = [
         headers.join(','),
         ...data.map(farmer => [
@@ -571,9 +561,7 @@ class EnhancedFarmerService extends BaseApiService {
           farmer.farming_experience_years,
           farmer.total_land_acres,
           farmer.primary_crops.join(';'),
-          farmer.has_irrigation,
-          farmer.farmer_engagement?.[0]?.engagement_level || 'N/A',
-          farmer.farmer_tags?.map((tag: any) => tag.tag_name).join(';') || ''
+          farmer.has_irrigation
         ].join(','))
       ].join('\n');
 
