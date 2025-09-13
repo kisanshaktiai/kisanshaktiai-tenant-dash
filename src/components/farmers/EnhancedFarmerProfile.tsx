@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import {
   User, MapPin, Calendar, Phone, Mail, Tag, 
   Activity, TrendingUp, MessageSquare, X, 
   Edit, Eye, Download, Clock, AlertCircle,
-  Leaf, Beaker, Sprout, ChartBar
+  Leaf, Beaker, Sprout, ChartBar, Wifi, WifiOff, RefreshCw
 } from 'lucide-react';
 import { useFarmerNotesQuery } from '@/hooks/data/useEnhancedFarmerQuery';
 import { useFarmerEngagementQuery } from '@/hooks/data/useFarmerManagementQuery';
@@ -22,15 +22,23 @@ import { FarmerCropHistory } from '@/pages/farmers/components/FarmerCropHistory'
 import { FarmerInteractionTimeline } from '@/pages/farmers/components/FarmerInteractionTimeline';
 import { FarmerNotesSection } from '@/pages/farmers/components/FarmerNotesSection';
 import type { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
+import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehensiveFarmer';
+import { format } from 'date-fns';
 
 interface EnhancedFarmerProfileProps {
   farmer: ComprehensiveFarmerData;
   onClose: () => void;
 }
 
-export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ farmer, onClose }) => {
+export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ farmer: initialFarmer, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const { currentTenant } = useTenantIsolation();
+  
+  // Use real-time hook for live farmer data
+  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
+  
+  // Use real-time data if available, otherwise use initial data
+  const farmer = realtimeFarmer || initialFarmer;
   
   const { data: notes = [] } = useFarmerNotesQuery(farmer.id);
   const { data: engagement } = useFarmerEngagementQuery(farmer.id);
@@ -94,9 +102,35 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                 </div>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Real-time status indicator */}
+              <div className="flex items-center gap-2">
+                {realtimeStatus.isConnected ? (
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/50">
+                    <Wifi className="w-3 h-3 mr-1 animate-pulse" />
+                    Live Sync
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-muted">
+                    <WifiOff className="w-3 h-3 mr-1" />
+                    Offline
+                  </Badge>
+                )}
+                {realtimeStatus.lastSyncTime && (
+                  <span className="text-xs text-muted-foreground">
+                    Last sync: {format(realtimeStatus.lastSyncTime, 'HH:mm:ss')}
+                  </span>
+                )}
+                {!realtimeStatus.isConnected && (
+                  <Button variant="ghost" size="icon" onClick={refetch}>
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
 

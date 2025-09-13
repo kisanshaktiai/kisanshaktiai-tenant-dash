@@ -320,8 +320,9 @@ class EnhancedFarmerDataService extends BaseApiService {
     const uniqueCrops = [...new Set(cropHistory.map((ch: any) => ch.crop_name))];
     const cropDiversityIndex = uniqueCrops.length;
 
-    // Calculate engagement score based on app opens and communications
-    const engagementScore = Math.min(100, (farmer.total_app_opens * 2) + (communications.length * 5));
+    // Calculate engagement score based on app opens and communications  
+    const baseEngagement = Math.min(100, ((farmer.total_app_opens || 0) * 2) + (communications.length * 5));
+    const engagementScore = farmer.engagement_score || baseEngagement;
 
     // Calculate health score from assessments
     const recentHealthScores = healthAssessments
@@ -331,7 +332,7 @@ class EnhancedFarmerDataService extends BaseApiService {
     
     const healthScore = recentHealthScores.length > 0 
       ? recentHealthScores.reduce((sum: number, score: number) => sum + score, 0) / recentHealthScores.length
-      : 75; // Default health score
+      : farmer.health_score || 75; // Use farmer's health_score if available
 
     // Calculate last activity date
     const lastActivityDate = communications.length > 0 
@@ -341,11 +342,11 @@ class EnhancedFarmerDataService extends BaseApiService {
     // Calculate revenue score (simplified)
     const revenueScore = Math.min(100, totalLandArea * 10 + cropDiversityIndex * 5);
 
-    // Determine risk level
+    // Determine risk level based on multiple factors
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    if (engagementScore < 30 || healthScore < 50) {
+    if (engagementScore < 30 || healthScore < 50 || farmer.risk_level === 'high') {
       riskLevel = 'high';
-    } else if (engagementScore < 60 || healthScore < 70) {
+    } else if (engagementScore < 60 || healthScore < 70 || farmer.risk_level === 'medium') {
       riskLevel = 'medium';
     }
 

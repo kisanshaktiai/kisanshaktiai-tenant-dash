@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,11 +23,16 @@ import {
   Eye,
   Edit,
   MessageCircle,
-  Navigation
+  Navigation,
+  Wifi,
+  WifiOff,
+  RefreshCw
 } from 'lucide-react';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehensiveFarmer';
+import { format } from 'date-fns';
 
 interface EnhancedFarmerCardProps {
   farmer: ComprehensiveFarmerData;
@@ -38,19 +43,27 @@ interface EnhancedFarmerCardProps {
   isSelected?: boolean;
   onSelect?: (farmerId: string, selected: boolean) => void;
   className?: string;
+  showRealtimeStatus?: boolean;
 }
 
 export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
-  farmer,
+  farmer: initialFarmer,
   viewType = 'grid',
   onViewProfile,
   onEdit,
   onContact,
   isSelected = false,
   onSelect,
-  className
+  className,
+  showRealtimeStatus = true
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Use real-time hook to get latest farmer data
+  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
+  
+  // Use real-time data if available, otherwise use initial data
+  const farmer = realtimeFarmer || initialFarmer;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -269,6 +282,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
         "group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl",
         "bg-gradient-to-br from-white to-gray-50/30",
         isSelected && 'ring-2 ring-primary',
+        realtimeStatus.isConnected && 'border-success/50',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -276,6 +290,28 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
       onClick={() => onViewProfile?.(farmer)}
     >
       <CardContent className="p-6">
+        {/* Real-time Status Indicator */}
+        {showRealtimeStatus && (
+          <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+            {realtimeStatus.isConnected ? (
+              <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
+                <Wifi className="w-3 h-3 text-success animate-pulse" />
+                <span className="text-xs text-success font-medium">Live</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
+                <WifiOff className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Offline</span>
+              </div>
+            )}
+            {realtimeStatus.lastSyncTime && (
+              <span className="text-xs text-muted-foreground">
+                {format(realtimeStatus.lastSyncTime, 'HH:mm:ss')}
+              </span>
+            )}
+          </div>
+        )}
+        
         {/* Header with Avatar and Status */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -448,6 +484,21 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               </Button>
             </div>
           </div>
+        )}
+        
+        {/* Manual Refresh Button - Show when not connected */}
+        {!realtimeStatus.isConnected && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="absolute bottom-2 right-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              refetch();
+            }}
+          >
+            <RefreshCw className="w-3 h-3" />
+          </Button>
         )}
       </CardContent>
     </Card>
