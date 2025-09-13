@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Users, UserCheck, TrendingUp, AlertTriangle
+  Users, UserCheck, TrendingUp, AlertTriangle, Wifi, WifiOff
 } from 'lucide-react';
-import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
+import { useRealtimeFarmers } from '@/hooks/data/useRealtimeFarmers';
 
 export const FarmerStats = React.memo(() => {
-  const { data: farmersResponse, isLoading } = useRealTimeFarmersQuery();
-  const farmers = farmersResponse?.data || [];
+  const { farmers, isLoading, realtimeStatus } = useRealtimeFarmers();
 
   // Memoize expensive stats calculations
   const stats = useMemo(() => {
@@ -47,7 +46,25 @@ export const FarmerStats = React.memo(() => {
   }, [farmers]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-4">
+      {/* Real-time connection indicator */}
+      {realtimeStatus && (
+        <div className="flex items-center justify-end gap-2 text-xs">
+          {realtimeStatus.isConnected ? (
+            <>
+              <Wifi className="h-3 w-3 text-success animate-pulse" />
+              <span className="text-success">Live updates active</span>
+            </>
+          ) : (
+            <>
+              <WifiOff className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Offline mode</span>
+            </>
+          )}
+        </div>
+      )}
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card className="shadow-medium border-0 bg-gradient-to-br from-card/95 to-background/80 backdrop-blur-sm hover:shadow-strong transition-all duration-300 group">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-sm font-bold text-muted-foreground/80 uppercase tracking-wider">Total Farmers</CardTitle>
@@ -128,6 +145,7 @@ export const FarmerStats = React.memo(() => {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 });

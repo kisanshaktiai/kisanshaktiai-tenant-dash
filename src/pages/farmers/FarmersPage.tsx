@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { EnhancedFarmerDirectory } from './components/EnhancedFarmerDirectory';
+import { RealtimeFarmerDirectory } from '@/components/farmers/RealtimeFarmerDirectory';
 import { CreateFarmerModal } from './components/CreateFarmerModal';
 import { FarmerImportModal } from './components/FarmerImportModal';
 import { BulkOperations } from './components/BulkOperations';
@@ -143,7 +143,7 @@ export default function FarmersPage() {
         </TabsList>
 
         <TabsContent value="directory">
-          <EnhancedFarmerDirectory 
+          <RealtimeFarmerDirectory
             onSelectFarmer={handleFarmerSelect}
             selectedFarmers={selectedFarmers}
             onSelectedFarmersChange={setSelectedFarmers}
