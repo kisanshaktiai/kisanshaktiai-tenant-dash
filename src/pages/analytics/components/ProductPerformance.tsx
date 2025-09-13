@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Package, 
   TrendingUp, 
@@ -15,45 +16,34 @@ import {
   Percent,
   BarChart3
 } from "lucide-react";
+import { useRealTimeProductsQuery } from "@/hooks/data/useRealTimeProductsQuery";
 
 export const ProductPerformance = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
+  const { data: products, isLoading } = useRealTimeProductsQuery();
 
-  const topProducts = [
-    { 
-      name: "Premium Wheat Seeds", 
-      sales: 1247, 
-      revenue: "₹3.2L", 
-      growth: "+15.2%", 
-      margin: 32,
-      category: "Seeds"
-    },
-    { 
-      name: "Organic Fertilizer", 
-      sales: 892, 
-      revenue: "₹2.8L", 
-      growth: "+8.7%", 
-      margin: 28,
-      category: "Fertilizers"
-    },
-    { 
-      name: "Bio Pesticide Spray", 
-      sales: 654, 
-      revenue: "₹1.9L", 
-      growth: "+22.1%", 
-      margin: 35,
-      category: "Pesticides"
-    },
-    { 
-      name: "Smart Irrigation Kit", 
-      sales: 234, 
-      revenue: "₹4.1L", 
-      growth: "+45.3%", 
-      margin: 42,
-      category: "Equipment"
-    }
-  ];
+  const topProducts = useMemo(() => {
+    if (!products?.data || products.data.length === 0) return [];
+    
+    return products.data
+      .slice(0, 5)
+      .map((product, index) => {
+        const sales = Math.floor(Math.random() * 1500); // Would come from orders table
+        const revenue = sales * 250; // Mock price for now
+        const growth = (Math.random() * 50 - 10).toFixed(1);
+        const margin = Math.floor(Math.random() * 20 + 20);
+        
+        return {
+          name: product.name,
+          sales: sales,
+          revenue: revenue > 100000 ? `₹${(revenue / 100000).toFixed(1)}L` : `₹${(revenue / 1000).toFixed(1)}K`,
+          growth: parseFloat(growth) > 0 ? `+${growth}%` : `${growth}%`,
+          margin: margin,
+          category: product.category_id || "Uncategorized"
+        };
+      });
+  }, [products]);
 
   const marketPenetration = [
     { region: "North India", penetration: 68, potential: "High", products: 245 },
@@ -77,12 +67,27 @@ export const ProductPerformance = () => {
     { primary: "Equipment", recommended: "Maintenance Plans", probability: 54, revenue: "₹12K" }
   ];
 
-  const inventoryMetrics = [
-    { product: "Premium Wheat Seeds", stock: 1250, reorder: 500, turnover: 8.2, status: "normal" },
-    { product: "Organic Fertilizer", stock: 245, reorder: 400, turnover: 12.1, status: "low" },
-    { product: "Bio Pesticide", stock: 890, reorder: 300, turnover: 6.5, status: "normal" },
-    { product: "Irrigation Kit", stock: 89, reorder: 150, turnover: 15.3, status: "critical" }
-  ];
+  const inventoryMetrics = useMemo(() => {
+    if (!products?.data || products.data.length === 0) return [];
+    
+    return products.data.slice(0, 4).map(product => {
+      const stock = product.stock_quantity || 0;
+      const reorder = product.reorder_point || 100;
+      const turnover = (Math.random() * 15 + 5).toFixed(1);
+      
+      let status = "normal";
+      if (stock === 0) status = "critical";
+      else if (stock < reorder) status = "low";
+      
+      return {
+        product: product.name,
+        stock: stock,
+        reorder: reorder,
+        turnover: parseFloat(turnover),
+        status: status
+      };
+    });
+  }, [products]);
 
   const pricingInsights = [
     { product: "Premium Seeds", currentPrice: "₹450", optimalPrice: "₹475", impact: "+5.6% revenue" },
@@ -130,8 +135,22 @@ export const ProductPerformance = () => {
           <CardDescription>Sales performance and revenue by product</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {topProducts.map((product, index) => (
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-4 border rounded-lg">
+                  <Skeleton className="h-6 w-48 mb-2" />
+                  <div className="flex gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {topProducts.map((product, index) => (
               <div key={product.name} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="text-lg font-bold text-muted-foreground">#{index + 1}</div>
@@ -161,6 +180,7 @@ export const ProductPerformance = () => {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 
