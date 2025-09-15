@@ -24,9 +24,9 @@ import {
 import { EnhancedFarmerCard } from '../cards/EnhancedFarmerCard';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
 import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
-import { useRealtimeFarmersData } from '@/hooks/data/farmers/useRealtimeFarmersData';
+import { useRealtimeFarmersData, type Farmer } from '@/hooks/data/farmers/useRealtimeFarmersData';
 import { useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
-import { ComprehensiveFarmerData, PaginatedFarmersResult } from '@/services/EnhancedFarmerDataService';
+import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -93,11 +93,13 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
     toast.success('Farmer created successfully!');
   };
 
-  const handleViewProfile = (farmer: ComprehensiveFarmerData) => {
-    setSelectedFarmer(farmer);
+  const handleViewProfile = (farmer: Farmer) => {
+    // For now, just cast the farmer as we'll need to refactor EnhancedFarmerProfile 
+    // to work with the simpler Farmer type in the future
+    setSelectedFarmer(farmer as any);
   };
 
-  const handleContact = (farmer: ComprehensiveFarmerData, method: 'call' | 'sms' | 'whatsapp') => {
+  const handleContact = (farmer: Farmer, method: 'call' | 'sms' | 'whatsapp') => {
     const phoneNumber = farmer.mobile_number;
     if (!phoneNumber) {
       toast.error('No phone number available for this farmer');
