@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,35 +16,28 @@ import {
   Warehouse,
   Activity,
   Clock,
-  AlertTriangle,
   CheckCircle,
   MoreHorizontal,
   Eye,
   Edit,
-  MessageCircle,
-  Navigation,
-  Wifi,
-  WifiOff,
-  RefreshCw
+  MessageCircle
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
 import { Farmer } from '@/hooks/data/farmers/useRealtimeFarmersData';
 
-interface EnhancedFarmerCardProps {
+interface SimpleFarmerCardProps {
   farmer: Farmer;
-  viewType?: 'grid' | 'list' | 'compact' | 'kanban';
+  viewType?: 'grid' | 'list' | 'compact';
   onViewProfile?: (farmer: Farmer) => void;
   onEdit?: (farmer: Farmer) => void;
   onContact?: (farmer: Farmer, method: 'call' | 'sms' | 'whatsapp') => void;
   isSelected?: boolean;
   onSelect?: (farmerId: string, selected: boolean) => void;
   className?: string;
-  showRealtimeStatus?: boolean;
 }
 
-export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
+export const SimpleFarmerCard: React.FC<SimpleFarmerCardProps> = ({
   farmer,
   viewType = 'grid',
   onViewProfile,
@@ -53,37 +45,17 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
   onContact,
   isSelected = false,
   onSelect,
-  className,
-  showRealtimeStatus = false
+  className
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  
-  // Create default values for missing properties
-  const metrics = {
-    engagementScore: farmer.total_app_opens ? Math.min(100, (farmer.total_app_opens / 50) * 100) : 0,
-    totalLandArea: farmer.total_land_acres || 0,
-    cropDiversityIndex: farmer.primary_crop ? 1 : 0,
-    healthScore: 75,
-    riskLevel: 'low' as 'low' | 'medium' | 'high'
-  };
-  
-  const liveStatus = {
-    isOnline: farmer.last_app_open ? 
-      new Date(farmer.last_app_open).getTime() > Date.now() - 86400000 : false,
-    lastSeen: farmer.last_app_open || farmer.updated_at || new Date().toISOString()
-  };
-  
-  const tags = farmer.farmer_tags || [];
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'low': return 'text-green-600 bg-green-50 border-green-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-      case 'high': return 'text-red-600 bg-red-50 border-red-200';
-      default: return 'text-gray-600 bg-gray-50 border-gray-200';
-    }
-  };
-
+  // Calculate engagement score based on app opens
+  const engagementScore = farmer.total_app_opens ? Math.min(100, (farmer.total_app_opens / 50) * 100) : 0;
+  
+  // Check if online (active in last 24 hours)
+  const isOnline = farmer.last_app_open ? 
+    new Date(farmer.last_app_open).getTime() > Date.now() - 86400000 : false;
+  
   const getEngagementColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-yellow-600';
@@ -91,7 +63,8 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
     return 'text-red-600';
   };
 
-  const formatLastSeen = (dateString: string) => {
+  const formatLastSeen = (dateString?: string) => {
+    if (!dateString) return 'Never';
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -110,9 +83,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
     return (
       <Card 
         className={cn(
-          "p-3 cursor-pointer transition-all duration-200 hover:shadow-md border-l-4",
-          farmer.metrics.riskLevel === 'high' ? 'border-l-red-500' : 
-          farmer.metrics.riskLevel === 'medium' ? 'border-l-yellow-500' : 'border-l-green-500',
+          "p-3 cursor-pointer transition-all duration-200 hover:shadow-md",
           isSelected && 'ring-2 ring-primary',
           className
         )}
@@ -124,7 +95,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="text-xs">{farmerInitials}</AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
+              {isOnline && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
               )}
             </div>
@@ -134,15 +105,14 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {farmer.metrics.totalLandArea}ac
-            </Badge>
-            <Badge 
-              variant="outline" 
-              className={cn("text-xs", getRiskColor(farmer.metrics.riskLevel))}
-            >
-              {farmer.metrics.riskLevel}
-            </Badge>
+            {farmer.total_land_acres && (
+              <Badge variant="outline" className="text-xs">
+                {farmer.total_land_acres}ac
+              </Badge>
+            )}
+            {farmer.is_verified && (
+              <CheckCircle className="w-4 h-4 text-green-500" />
+            )}
           </div>
         </div>
       </Card>
@@ -166,7 +136,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Avatar className="w-12 h-12">
                 <AvatarFallback>{farmerInitials}</AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
+              {isOnline && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
               )}
             </div>
@@ -184,51 +154,28 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  <span className="truncate">
-                    {farmer.metadata?.address_info?.village || 'Location'}
-                  </span>
+                  <Phone className="w-3 h-3" />
+                  <span className="truncate">{farmer.mobile_number || 'No phone'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Wheat className="w-3 h-3" />
-                  <span>{farmer.metrics.totalLandArea} acres</span>
+                  <span>{farmer.total_land_acres || 0} acres</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  <span className={getEngagementColor(farmer.metrics.engagementScore)}>
-                    {farmer.metrics.engagementScore}% engaged
+                  <span className={getEngagementColor(engagementScore)}>
+                    {Math.round(engagementScore)}% engaged
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  <span>{formatLastSeen(farmer.liveStatus.lastSeen)}</span>
+                  <span>{formatLastSeen(farmer.last_app_open)}</span>
                 </div>
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex flex-col items-end gap-1">
-              <Badge 
-                variant="outline" 
-                className={cn("text-xs", getRiskColor(farmer.metrics.riskLevel))}
-              >
-                {farmer.metrics.riskLevel} risk
-              </Badge>
-              <div className="flex gap-1">
-                {farmer.tags.slice(0, 2).map(tag => (
-                  <Badge key={tag.id} variant="secondary" className="text-xs">
-                    {tag.tag_name}
-                  </Badge>
-                ))}
-                {farmer.tags.length > 2 && (
-                  <Badge variant="secondary" className="text-xs">
-                    +{farmer.tags.length - 2}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
             {isHovered && (
               <div className="flex gap-1">
                 <Button 
@@ -292,7 +239,6 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
         "group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl",
         "bg-gradient-to-br from-white to-gray-50/30",
         isSelected && 'ring-2 ring-primary',
-        realtimeStatus.isConnected && 'border-success/50',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -300,28 +246,6 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
       onClick={() => onViewProfile?.(farmer)}
     >
       <CardContent className="p-6">
-        {/* Real-time Status Indicator */}
-        {showRealtimeStatus && (
-          <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
-            {realtimeStatus.isConnected ? (
-              <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full">
-                <Wifi className="w-3 h-3 text-success animate-pulse" />
-                <span className="text-xs text-success font-medium">Live</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
-                <WifiOff className="w-3 h-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Offline</span>
-              </div>
-            )}
-            {realtimeStatus.lastSyncTime && (
-              <span className="text-xs text-muted-foreground">
-                {format(realtimeStatus.lastSyncTime, 'HH:mm:ss')}
-              </span>
-            )}
-          </div>
-        )}
-        
         {/* Header with Avatar and Status */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -331,7 +255,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
                   {farmerInitials}
                 </AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
+              {isOnline && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
               )}
             </div>
@@ -349,13 +273,6 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               </div>
             </div>
           </div>
-          
-          <Badge 
-            variant="outline" 
-            className={cn("text-xs font-medium", getRiskColor(farmer.metrics.riskLevel))}
-          >
-            {farmer.metrics.riskLevel} risk
-          </Badge>
         </div>
 
         {/* Key Metrics Grid */}
@@ -365,17 +282,19 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Wheat className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-gray-700">Land</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{farmer.metrics.totalLandArea} ac</p>
-            <p className="text-xs text-gray-500">{farmer.metrics.cropDiversityIndex} crops</p>
+            <p className="text-lg font-bold text-gray-900">{farmer.total_land_acres || 0} ac</p>
+            {farmer.primary_crop && (
+              <p className="text-xs text-gray-500">{farmer.primary_crop}</p>
+            )}
           </div>
           
           <div className="bg-white/60 rounded-lg p-3 border border-gray-100">
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Health</span>
+              <span className="text-sm font-medium text-gray-700">Activity</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{Math.round(farmer.metrics.healthScore)}%</p>
-            <p className="text-xs text-gray-500">Avg score</p>
+            <p className="text-lg font-bold text-gray-900">{farmer.total_app_opens || 0}</p>
+            <p className="text-xs text-gray-500">App opens</p>
           </div>
         </div>
 
@@ -383,19 +302,13 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Engagement</span>
-            <span className={cn("text-sm font-bold", getEngagementColor(farmer.metrics.engagementScore))}>
-              {farmer.metrics.engagementScore}%
+            <span className={cn("text-sm font-bold", getEngagementColor(engagementScore))}>
+              {Math.round(engagementScore)}%
             </span>
           </div>
           <Progress 
-            value={farmer.metrics.engagementScore} 
+            value={engagementScore} 
             className="h-2"
-            // @ts-ignore - Progress component styling
-            style={{
-              '--progress-background': farmer.metrics.engagementScore >= 80 ? '#22c55e' :
-                                     farmer.metrics.engagementScore >= 60 ? '#eab308' :
-                                     farmer.metrics.engagementScore >= 40 ? '#f97316' : '#ef4444'
-            } as any}
           />
         </div>
 
@@ -422,40 +335,18 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
           <div className="text-right">
             <p className="text-xs text-gray-500">Last seen</p>
             <p className="text-sm font-medium text-gray-700">
-              {formatLastSeen(farmer.liveStatus.lastSeen)}
+              {formatLastSeen(farmer.last_app_open)}
             </p>
           </div>
         </div>
 
-        {/* Tags */}
-        {farmer.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {farmer.tags.slice(0, 3).map(tag => (
-              <Badge 
-                key={tag.id} 
-                variant="secondary" 
-                className="text-xs"
-                style={{ backgroundColor: tag.tag_color || undefined }}
-              >
-                {tag.tag_name}
-              </Badge>
-            ))}
-            {farmer.tags.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{farmer.tags.length - 3} more
-              </Badge>
-            )}
+        {/* Contact Info */}
+        {farmer.mobile_number && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
+            <Phone className="w-4 h-4" />
+            <span>{farmer.mobile_number}</span>
           </div>
         )}
-
-        {/* Location */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-          <MapPin className="w-4 h-4" />
-          <span className="truncate">
-            {farmer.metadata?.address_info?.village || 'Location not specified'}, 
-            {farmer.metadata?.address_info?.district || 'District'}
-          </span>
-        </div>
 
         {/* Action Buttons - Show on Hover */}
         {isHovered && (
@@ -494,21 +385,6 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               </Button>
             </div>
           </div>
-        )}
-        
-        {/* Manual Refresh Button - Show when not connected */}
-        {!realtimeStatus.isConnected && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="absolute bottom-2 right-2"
-            onClick={(e) => {
-              e.stopPropagation();
-              refetch();
-            }}
-          >
-            <RefreshCw className="w-3 h-3" />
-          </Button>
         )}
       </CardContent>
     </Card>

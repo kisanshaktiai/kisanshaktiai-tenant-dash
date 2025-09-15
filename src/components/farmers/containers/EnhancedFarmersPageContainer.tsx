@@ -21,12 +21,12 @@ import {
   CheckCircle,
   BarChart3
 } from 'lucide-react';
-import { EnhancedFarmerCard } from '../cards/EnhancedFarmerCard';
+import { SimpleFarmerCard } from '../cards/SimpleFarmerCard';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
 import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
-import { useRealtimeFarmersData } from '@/hooks/data/farmers/useRealtimeFarmersData';
+import { useRealtimeFarmersData, Farmer } from '@/hooks/data/farmers/useRealtimeFarmersData';
 import { useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
-import { ComprehensiveFarmerData, PaginatedFarmersResult } from '@/services/EnhancedFarmerDataService';
+import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
