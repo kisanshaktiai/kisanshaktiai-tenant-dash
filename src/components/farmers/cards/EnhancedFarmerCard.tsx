@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,17 +28,18 @@ import {
   WifiOff,
   RefreshCw
 } from 'lucide-react';
+import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehensiveFarmer';
 import { format } from 'date-fns';
-import { Farmer } from '@/hooks/data/farmers/useRealtimeFarmersData';
 
 interface EnhancedFarmerCardProps {
-  farmer: Farmer;
+  farmer: ComprehensiveFarmerData;
   viewType?: 'grid' | 'list' | 'compact' | 'kanban';
-  onViewProfile?: (farmer: Farmer) => void;
-  onEdit?: (farmer: Farmer) => void;
-  onContact?: (farmer: Farmer, method: 'call' | 'sms' | 'whatsapp') => void;
+  onViewProfile?: (farmer: ComprehensiveFarmerData) => void;
+  onEdit?: (farmer: ComprehensiveFarmerData) => void;
+  onContact?: (farmer: ComprehensiveFarmerData, method: 'call' | 'sms' | 'whatsapp') => void;
   isSelected?: boolean;
   onSelect?: (farmerId: string, selected: boolean) => void;
   className?: string;
@@ -46,7 +47,7 @@ interface EnhancedFarmerCardProps {
 }
 
 export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
-  farmer,
+  farmer: initialFarmer,
   viewType = 'grid',
   onViewProfile,
   onEdit,
@@ -54,26 +55,15 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
   isSelected = false,
   onSelect,
   className,
-  showRealtimeStatus = false
+  showRealtimeStatus = true
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Create default values for missing properties
-  const metrics = {
-    engagementScore: farmer.total_app_opens ? Math.min(100, (farmer.total_app_opens / 50) * 100) : 0,
-    totalLandArea: farmer.total_land_acres || 0,
-    cropDiversityIndex: farmer.primary_crop ? 1 : 0,
-    healthScore: 75,
-    riskLevel: 'low' as 'low' | 'medium' | 'high'
-  };
+  // Use real-time hook to get latest farmer data
+  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
   
-  const liveStatus = {
-    isOnline: farmer.last_app_open ? 
-      new Date(farmer.last_app_open).getTime() > Date.now() - 86400000 : false,
-    lastSeen: farmer.last_app_open || farmer.updated_at || new Date().toISOString()
-  };
-  
-  const tags = farmer.farmer_tags || [];
+  // Use real-time data if available, otherwise use initial data
+  const farmer = realtimeFarmer || initialFarmer;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -103,7 +93,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
     return date.toLocaleDateString();
   };
 
-  const farmerName = farmer.full_name || farmer.farmer_code;
+  const farmerName = farmer.metadata?.personal_info?.full_name || farmer.farmer_code;
   const farmerInitials = farmerName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'F';
 
   if (viewType === 'compact') {
