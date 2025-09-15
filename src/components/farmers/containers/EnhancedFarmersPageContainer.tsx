@@ -24,7 +24,8 @@ import {
 import { EnhancedFarmerCard } from '../cards/EnhancedFarmerCard';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
 import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
-import { useEnhancedFarmersQuery, useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
+import { useRealtimeFarmersData } from '@/hooks/data/farmers/useRealtimeFarmersData';
+import { useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData, PaginatedFarmersResult } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -72,7 +73,7 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
     )
   };
 
-  const { data: farmersData, isLoading, error, refetch } = useEnhancedFarmersQuery(queryOptions);
+  const { data: farmersData, isLoading, error, refetch, realtimeStatus } = useRealtimeFarmersData(queryOptions);
   const { data: metrics, isLoading: metricsLoading } = useFarmerMetrics();
 
   const farmers = farmersData?.data || [];
