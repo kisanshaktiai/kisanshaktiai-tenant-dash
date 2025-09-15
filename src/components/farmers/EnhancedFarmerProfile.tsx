@@ -26,7 +26,7 @@ import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehe
 import { format } from 'date-fns';
 
 interface EnhancedFarmerProfileProps {
-  farmer: ComprehensiveFarmerData;
+  farmer: any; // Using any temporarily to handle both Farmer and ComprehensiveFarmerData types
   onClose: () => void;
 }
 
@@ -37,8 +37,23 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
   // Use real-time hook for live farmer data
   const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
   
-  // Use real-time data if available, otherwise use initial data
-  const farmer = realtimeFarmer || initialFarmer;
+  // Use real-time data if available, otherwise use initial data with defaults
+  const farmer = {
+    ...initialFarmer,
+    ...realtimeFarmer,
+    // Ensure metrics exist with default values
+    metrics: {
+      cropDiversityIndex: 1,
+      revenueScore: 0,
+      engagementScore: 0,
+      healthScore: 0,
+      totalLandArea: initialFarmer?.total_land_acres || 0,
+      lastActivityDate: initialFarmer?.last_app_open || new Date().toISOString(),
+      riskLevel: 'low' as 'low' | 'medium' | 'high',
+      ...(initialFarmer?.metrics || {}),
+      ...(realtimeFarmer?.metrics || {})
+    }
+  };
   
   const { data: notes = [] } = useFarmerNotesQuery(farmer.id);
   const { data: engagement } = useFarmerEngagementQuery(farmer.id);
@@ -189,7 +204,7 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                           <div>
                             <p className="text-sm text-muted-foreground">Crop Diversity</p>
                             <p className="text-2xl font-bold text-foreground">
-                              {farmer.metrics.cropDiversityIndex}
+                              {farmer?.metrics?.cropDiversityIndex || 1}
                             </p>
                           </div>
                         </div>
@@ -203,7 +218,7 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                           <div>
                             <p className="text-sm text-muted-foreground">Revenue Score</p>
                             <p className="text-2xl font-bold text-foreground">
-                              {farmer.metrics.revenueScore}
+                              {farmer?.metrics?.revenueScore || 0}
                             </p>
                           </div>
                         </div>
