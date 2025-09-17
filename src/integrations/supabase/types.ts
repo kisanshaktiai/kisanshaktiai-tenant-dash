@@ -1498,31 +1498,51 @@ export type Database = {
       cart_items: {
         Row: {
           added_at: string | null
+          farmer_id: string | null
           id: string
           product_id: string | null
           quantity: number
+          tenant_id: string | null
           user_id: string
         }
         Insert: {
           added_at?: string | null
+          farmer_id?: string | null
           id?: string
           product_id?: string | null
           quantity?: number
+          tenant_id?: string | null
           user_id: string
         }
         Update: {
           added_at?: string | null
+          farmer_id?: string | null
           id?: string
           product_id?: string | null
           quantity?: number
+          tenant_id?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1532,28 +1552,37 @@ export type Database = {
           attachments: Json | null
           content: string
           created_at: string
+          feedback: string | null
           id: string
+          land_name: string | null
           metadata: Json | null
           role: string
           session_id: string
+          tenant_id: string | null
         }
         Insert: {
           attachments?: Json | null
           content: string
           created_at?: string
+          feedback?: string | null
           id?: string
+          land_name?: string | null
           metadata?: Json | null
           role: string
           session_id: string
+          tenant_id?: string | null
         }
         Update: {
           attachments?: Json | null
           content?: string
           created_at?: string
+          feedback?: string | null
           id?: string
+          land_name?: string | null
           metadata?: Json | null
           role?: string
           session_id?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -1561,6 +1590,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1571,6 +1607,8 @@ export type Database = {
           id: string
           is_favorite: boolean | null
           land_id: string | null
+          land_name: string | null
+          tenant_id: string | null
           title: string
           type: string
           updated_at: string
@@ -1581,6 +1619,8 @@ export type Database = {
           id?: string
           is_favorite?: boolean | null
           land_id?: string | null
+          land_name?: string | null
+          tenant_id?: string | null
           title: string
           type?: string
           updated_at?: string
@@ -1591,6 +1631,8 @@ export type Database = {
           id?: string
           is_favorite?: boolean | null
           land_id?: string | null
+          land_name?: string | null
+          tenant_id?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -1602,6 +1644,13 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1681,6 +1730,7 @@ export type Database = {
           icon_url: string | null
           id: string
           is_active: boolean | null
+          is_global: boolean | null
           is_verified: boolean | null
           language: string | null
           language_code: string | null
@@ -1709,6 +1759,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           is_verified?: boolean | null
           language?: string | null
           language_code?: string | null
@@ -1737,6 +1788,7 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
+          is_global?: boolean | null
           is_verified?: boolean | null
           language?: string | null
           language_code?: string | null
@@ -1964,6 +2016,7 @@ export type Database = {
           parent_message_id: string | null
           reactions: Json | null
           read_by: Json | null
+          tenant_id: string | null
           translation_data: Json | null
           updated_at: string | null
         }
@@ -1984,6 +2037,7 @@ export type Database = {
           parent_message_id?: string | null
           reactions?: Json | null
           read_by?: Json | null
+          tenant_id?: string | null
           translation_data?: Json | null
           updated_at?: string | null
         }
@@ -2004,6 +2058,7 @@ export type Database = {
           parent_message_id?: string | null
           reactions?: Json | null
           read_by?: Json | null
+          tenant_id?: string | null
           translation_data?: Json | null
           updated_at?: string | null
         }
@@ -2027,6 +2082,13 @@ export type Database = {
             columns: ["parent_message_id"]
             isOneToOne: false
             referencedRelation: "community_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_messages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2464,6 +2526,128 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crop_schedules: {
+        Row: {
+          ai_model: string | null
+          completed_at: string | null
+          created_at: string | null
+          crop_name: string
+          crop_variety: string | null
+          expected_harvest_date: string | null
+          farmer_id: string
+          generated_at: string | null
+          generation_params: Json | null
+          id: string
+          is_active: boolean | null
+          land_id: string
+          last_weather_update: string | null
+          schedule_version: number | null
+          sowing_date: string
+          tenant_id: string
+          updated_at: string | null
+          weather_data: Json | null
+        }
+        Insert: {
+          ai_model?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          crop_name: string
+          crop_variety?: string | null
+          expected_harvest_date?: string | null
+          farmer_id: string
+          generated_at?: string | null
+          generation_params?: Json | null
+          id?: string
+          is_active?: boolean | null
+          land_id: string
+          last_weather_update?: string | null
+          schedule_version?: number | null
+          sowing_date: string
+          tenant_id: string
+          updated_at?: string | null
+          weather_data?: Json | null
+        }
+        Update: {
+          ai_model?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          crop_name?: string
+          crop_variety?: string | null
+          expected_harvest_date?: string | null
+          farmer_id?: string
+          generated_at?: string | null
+          generation_params?: Json | null
+          id?: string
+          is_active?: boolean | null
+          land_id?: string
+          last_weather_update?: string | null
+          schedule_version?: number | null
+          sowing_date?: string
+          tenant_id?: string
+          updated_at?: string | null
+          weather_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crop_schedules_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crop_templates: {
+        Row: {
+          best_practices: Json | null
+          common_issues: Json | null
+          created_at: string | null
+          crop_name: string
+          crop_variety: string | null
+          id: string
+          is_active: boolean | null
+          lifecycle_days: number | null
+          reference_url: string | null
+          region: string | null
+          schedule_template: Json
+          season: string | null
+          source: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          best_practices?: Json | null
+          common_issues?: Json | null
+          created_at?: string | null
+          crop_name: string
+          crop_variety?: string | null
+          id?: string
+          is_active?: boolean | null
+          lifecycle_days?: number | null
+          reference_url?: string | null
+          region?: string | null
+          schedule_template: Json
+          season?: string | null
+          source?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          best_practices?: Json | null
+          common_issues?: Json | null
+          created_at?: string | null
+          crop_name?: string
+          crop_variety?: string | null
+          id?: string
+          is_active?: boolean | null
+          lifecycle_days?: number | null
+          reference_url?: string | null
+          region?: string | null
+          schedule_template?: Json
+          season?: string | null
+          source?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       crops: {
         Row: {
@@ -5332,15 +5516,19 @@ export type Database = {
         Row: {
           area_acres: number
           area_guntas: number | null
+          area_sqft: number | null
           boundary: unknown | null
           boundary_method: string | null
           boundary_polygon_old: Json | null
+          center_lat: number | null
+          center_lon: number | null
           center_point_old: Json | null
           created_at: string
           crop_stage: string | null
           cultivation_date: string | null
           current_crop: string | null
           current_crop_id: string | null
+          deleted_at: string | null
           district: string | null
           district_id: string | null
           elevation_meters: number | null
@@ -5360,6 +5548,7 @@ export type Database = {
           last_soil_test_date: string | null
           last_sowing_date: string | null
           location_context: Json | null
+          location_coords: Json | null
           marketplace_enabled: boolean | null
           name: string
           nitrogen_kg_per_ha: number | null
@@ -5388,15 +5577,19 @@ export type Database = {
         Insert: {
           area_acres: number
           area_guntas?: number | null
+          area_sqft?: number | null
           boundary?: unknown | null
           boundary_method?: string | null
           boundary_polygon_old?: Json | null
+          center_lat?: number | null
+          center_lon?: number | null
           center_point_old?: Json | null
           created_at?: string
           crop_stage?: string | null
           cultivation_date?: string | null
           current_crop?: string | null
           current_crop_id?: string | null
+          deleted_at?: string | null
           district?: string | null
           district_id?: string | null
           elevation_meters?: number | null
@@ -5416,6 +5609,7 @@ export type Database = {
           last_soil_test_date?: string | null
           last_sowing_date?: string | null
           location_context?: Json | null
+          location_coords?: Json | null
           marketplace_enabled?: boolean | null
           name: string
           nitrogen_kg_per_ha?: number | null
@@ -5444,15 +5638,19 @@ export type Database = {
         Update: {
           area_acres?: number
           area_guntas?: number | null
+          area_sqft?: number | null
           boundary?: unknown | null
           boundary_method?: string | null
           boundary_polygon_old?: Json | null
+          center_lat?: number | null
+          center_lon?: number | null
           center_point_old?: Json | null
           created_at?: string
           crop_stage?: string | null
           cultivation_date?: string | null
           current_crop?: string | null
           current_crop_id?: string | null
+          deleted_at?: string | null
           district?: string | null
           district_id?: string | null
           elevation_meters?: number | null
@@ -5472,6 +5670,7 @@ export type Database = {
           last_soil_test_date?: string | null
           last_sowing_date?: string | null
           location_context?: Json | null
+          location_coords?: Json | null
           marketplace_enabled?: boolean | null
           name?: string
           nitrogen_kg_per_ha?: number | null
@@ -5531,6 +5730,13 @@ export type Database = {
             columns: ["current_crop_id"]
             isOneToOne: false
             referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lands_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
           {
@@ -6418,6 +6624,7 @@ export type Database = {
         Row: {
           buyer_id: string
           created_at: string | null
+          farmer_id: string | null
           id: string
           notes: string | null
           order_number: string
@@ -6426,6 +6633,7 @@ export type Database = {
           payment_status: string | null
           seller_id: string | null
           shipping_address: Json
+          tenant_id: string | null
           total_amount: number
           tracking_number: string | null
           updated_at: string | null
@@ -6433,6 +6641,7 @@ export type Database = {
         Insert: {
           buyer_id: string
           created_at?: string | null
+          farmer_id?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -6441,6 +6650,7 @@ export type Database = {
           payment_status?: string | null
           seller_id?: string | null
           shipping_address: Json
+          tenant_id?: string | null
           total_amount: number
           tracking_number?: string | null
           updated_at?: string | null
@@ -6448,6 +6658,7 @@ export type Database = {
         Update: {
           buyer_id?: string
           created_at?: string | null
+          farmer_id?: string | null
           id?: string
           notes?: string | null
           order_number?: string
@@ -6456,16 +6667,31 @@ export type Database = {
           payment_status?: string | null
           seller_id?: string | null
           shipping_address?: Json
+          tenant_id?: string | null
           total_amount?: number
           tracking_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
+            foreignKeyName: "marketplace_orders_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "marketplace_orders_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -6476,6 +6702,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           discount_price: number | null
+          farmer_id: string | null
           featured: boolean | null
           id: string
           images: Json | null
@@ -6487,6 +6714,7 @@ export type Database = {
           specifications: Json | null
           status: string | null
           tags: string[] | null
+          tenant_id: string | null
           unit: string
           updated_at: string | null
           views: number | null
@@ -6496,6 +6724,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           discount_price?: number | null
+          farmer_id?: string | null
           featured?: boolean | null
           id?: string
           images?: Json | null
@@ -6507,6 +6736,7 @@ export type Database = {
           specifications?: Json | null
           status?: string | null
           tags?: string[] | null
+          tenant_id?: string | null
           unit: string
           updated_at?: string | null
           views?: number | null
@@ -6516,6 +6746,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           discount_price?: number | null
+          farmer_id?: string | null
           featured?: boolean | null
           id?: string
           images?: Json | null
@@ -6527,6 +6758,7 @@ export type Database = {
           specifications?: Json | null
           status?: string | null
           tags?: string[] | null
+          tenant_id?: string | null
           unit?: string
           updated_at?: string | null
           views?: number | null
@@ -6537,6 +6769,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "marketplace_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
             referencedColumns: ["id"]
           },
           {
@@ -6551,6 +6790,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -7520,32 +7766,45 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string | null
+          farmer_id: string | null
           id: string
           order_id: string | null
           product_id: string | null
           quantity: number
+          tenant_id: string | null
           total_price: number
           unit_price: number
         }
         Insert: {
           created_at?: string | null
+          farmer_id?: string | null
           id?: string
           order_id?: string | null
           product_id?: string | null
           quantity: number
+          tenant_id?: string | null
           total_price: number
           unit_price: number
         }
         Update: {
           created_at?: string | null
+          farmer_id?: string | null
           id?: string
           order_id?: string | null
           product_id?: string | null
           quantity?: number
+          tenant_id?: string | null
           total_price?: number
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
@@ -7558,6 +7817,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -8785,12 +9051,14 @@ export type Database = {
           buyer_id: string
           comment: string | null
           created_at: string | null
+          farmer_id: string | null
           helpful_count: number | null
           id: string
           images: Json | null
           order_id: string | null
           product_id: string | null
           rating: number
+          tenant_id: string | null
           updated_at: string | null
           verified_purchase: boolean | null
         }
@@ -8798,12 +9066,14 @@ export type Database = {
           buyer_id: string
           comment?: string | null
           created_at?: string | null
+          farmer_id?: string | null
           helpful_count?: number | null
           id?: string
           images?: Json | null
           order_id?: string | null
           product_id?: string | null
           rating: number
+          tenant_id?: string | null
           updated_at?: string | null
           verified_purchase?: boolean | null
         }
@@ -8811,16 +9081,25 @@ export type Database = {
           buyer_id?: string
           comment?: string | null
           created_at?: string | null
+          farmer_id?: string | null
           helpful_count?: number | null
           id?: string
           images?: Json | null
           order_id?: string | null
           product_id?: string | null
           rating?: number
+          tenant_id?: string | null
           updated_at?: string | null
           verified_purchase?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_reviews_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_reviews_order_id_fkey"
             columns: ["order_id"]
@@ -8833,6 +9112,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "marketplace_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -9388,6 +9674,95 @@ export type Database = {
           },
         ]
       }
+      schedule_tasks: {
+        Row: {
+          auto_rescheduled: boolean | null
+          completed_at: string | null
+          completed_by: string | null
+          completion_notes: string | null
+          created_at: string | null
+          duration_hours: number | null
+          estimated_cost: number | null
+          id: string
+          ideal_weather: Json | null
+          instructions: string[] | null
+          original_date: string | null
+          precautions: string[] | null
+          priority: string | null
+          reschedule_reason: string | null
+          resources: Json | null
+          schedule_id: string
+          status: string | null
+          task_date: string
+          task_description: string | null
+          task_name: string
+          task_type: string
+          updated_at: string | null
+          weather_dependent: boolean | null
+          weather_risk_level: string | null
+        }
+        Insert: {
+          auto_rescheduled?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          duration_hours?: number | null
+          estimated_cost?: number | null
+          id?: string
+          ideal_weather?: Json | null
+          instructions?: string[] | null
+          original_date?: string | null
+          precautions?: string[] | null
+          priority?: string | null
+          reschedule_reason?: string | null
+          resources?: Json | null
+          schedule_id: string
+          status?: string | null
+          task_date: string
+          task_description?: string | null
+          task_name: string
+          task_type: string
+          updated_at?: string | null
+          weather_dependent?: boolean | null
+          weather_risk_level?: string | null
+        }
+        Update: {
+          auto_rescheduled?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          duration_hours?: number | null
+          estimated_cost?: number | null
+          id?: string
+          ideal_weather?: Json | null
+          instructions?: string[] | null
+          original_date?: string | null
+          precautions?: string[] | null
+          priority?: string | null
+          reschedule_reason?: string | null
+          resources?: Json | null
+          schedule_id?: string
+          status?: string | null
+          task_date?: string
+          task_description?: string | null
+          task_name?: string
+          task_type?: string
+          updated_at?: string | null
+          weather_dependent?: boolean | null
+          weather_risk_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "crop_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_reports: {
         Row: {
           created_at: string | null
@@ -9614,7 +9989,7 @@ export type Database = {
           saves_count: number | null
           shares_count: number | null
           status: Database["public"]["Enums"]["post_status"] | null
-          tenant_id: string | null
+          tenant_id: string
           translations: Json | null
           updated_at: string | null
           views_count: number | null
@@ -9644,7 +10019,7 @@ export type Database = {
           saves_count?: number | null
           shares_count?: number | null
           status?: Database["public"]["Enums"]["post_status"] | null
-          tenant_id?: string | null
+          tenant_id: string
           translations?: Json | null
           updated_at?: string | null
           views_count?: number | null
@@ -9674,7 +10049,7 @@ export type Database = {
           saves_count?: number | null
           shares_count?: number | null
           status?: Database["public"]["Enums"]["post_status"] | null
-          tenant_id?: string | null
+          tenant_id?: string
           translations?: Json | null
           updated_at?: string | null
           views_count?: number | null
@@ -10329,6 +10704,62 @@ export type Database = {
             columns: ["district_id"]
             isOneToOne: false
             referencedRelation: "districts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_completions: {
+        Row: {
+          action: string
+          action_date: string | null
+          actual_cost: number | null
+          actual_resources: Json | null
+          created_at: string | null
+          difficulty_rating: number | null
+          effectiveness_rating: number | null
+          farmer_id: string
+          id: string
+          notes: string | null
+          photos: string[] | null
+          task_id: string
+          weather_conditions: Json | null
+        }
+        Insert: {
+          action: string
+          action_date?: string | null
+          actual_cost?: number | null
+          actual_resources?: Json | null
+          created_at?: string | null
+          difficulty_rating?: number | null
+          effectiveness_rating?: number | null
+          farmer_id: string
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          task_id: string
+          weather_conditions?: Json | null
+        }
+        Update: {
+          action?: string
+          action_date?: string | null
+          actual_cost?: number | null
+          actual_resources?: Json | null
+          created_at?: string | null
+          difficulty_rating?: number | null
+          effectiveness_rating?: number | null
+          farmer_id?: string
+          id?: string
+          notes?: string | null
+          photos?: string[] | null
+          task_id?: string
+          weather_conditions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -11905,6 +12336,99 @@ export type Database = {
           },
         ]
       }
+      weather_aggregates: {
+        Row: {
+          aggregate_date: string
+          agricultural_alerts: Json | null
+          created_at: string
+          disease_risk_level: string | null
+          farmer_id: string | null
+          frost_risk: boolean | null
+          heat_stress_risk: boolean | null
+          humidity_avg_percent: number | null
+          id: string
+          land_id: string | null
+          rain_mm_afternoon: number | null
+          rain_mm_evening: number | null
+          rain_mm_morning: number | null
+          rain_mm_night: number | null
+          rain_mm_total: number
+          sunshine_hours: number | null
+          temp_avg_celsius: number | null
+          temp_max_celsius: number | null
+          temp_min_celsius: number | null
+          tenant_id: string
+          updated_at: string
+          wind_speed_avg_kmh: number | null
+          wind_speed_max_kmh: number | null
+        }
+        Insert: {
+          aggregate_date: string
+          agricultural_alerts?: Json | null
+          created_at?: string
+          disease_risk_level?: string | null
+          farmer_id?: string | null
+          frost_risk?: boolean | null
+          heat_stress_risk?: boolean | null
+          humidity_avg_percent?: number | null
+          id?: string
+          land_id?: string | null
+          rain_mm_afternoon?: number | null
+          rain_mm_evening?: number | null
+          rain_mm_morning?: number | null
+          rain_mm_night?: number | null
+          rain_mm_total?: number
+          sunshine_hours?: number | null
+          temp_avg_celsius?: number | null
+          temp_max_celsius?: number | null
+          temp_min_celsius?: number | null
+          tenant_id: string
+          updated_at?: string
+          wind_speed_avg_kmh?: number | null
+          wind_speed_max_kmh?: number | null
+        }
+        Update: {
+          aggregate_date?: string
+          agricultural_alerts?: Json | null
+          created_at?: string
+          disease_risk_level?: string | null
+          farmer_id?: string | null
+          frost_risk?: boolean | null
+          heat_stress_risk?: boolean | null
+          humidity_avg_percent?: number | null
+          id?: string
+          land_id?: string | null
+          rain_mm_afternoon?: number | null
+          rain_mm_evening?: number | null
+          rain_mm_morning?: number | null
+          rain_mm_night?: number | null
+          rain_mm_total?: number
+          sunshine_hours?: number | null
+          temp_avg_celsius?: number | null
+          temp_max_celsius?: number | null
+          temp_min_celsius?: number | null
+          tenant_id?: string
+          updated_at?: string
+          wind_speed_avg_kmh?: number | null
+          wind_speed_max_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_aggregates_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_aggregates_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weather_alerts: {
         Row: {
           affected_activities: string[] | null
@@ -12250,6 +12774,100 @@ export type Database = {
           wind_speed_avg_kmh?: number | null
         }
         Relationships: []
+      }
+      weather_observations: {
+        Row: {
+          cloud_coverage_percent: number | null
+          created_at: string
+          dew_point_celsius: number | null
+          farmer_id: string | null
+          feels_like_celsius: number | null
+          humidity_percent: number | null
+          id: string
+          land_id: string | null
+          metadata: Json | null
+          observation_date: string
+          observation_time: string
+          pressure_hpa: number | null
+          rainfall_mm: number
+          temperature_celsius: number | null
+          tenant_id: string
+          updated_at: string
+          uv_index: number | null
+          visibility_km: number | null
+          weather_condition: string | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          cloud_coverage_percent?: number | null
+          created_at?: string
+          dew_point_celsius?: number | null
+          farmer_id?: string | null
+          feels_like_celsius?: number | null
+          humidity_percent?: number | null
+          id?: string
+          land_id?: string | null
+          metadata?: Json | null
+          observation_date: string
+          observation_time?: string
+          pressure_hpa?: number | null
+          rainfall_mm?: number
+          temperature_celsius?: number | null
+          tenant_id: string
+          updated_at?: string
+          uv_index?: number | null
+          visibility_km?: number | null
+          weather_condition?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          cloud_coverage_percent?: number | null
+          created_at?: string
+          dew_point_celsius?: number | null
+          farmer_id?: string | null
+          feels_like_celsius?: number | null
+          humidity_percent?: number | null
+          id?: string
+          land_id?: string | null
+          metadata?: Json | null
+          observation_date?: string
+          observation_time?: string
+          pressure_hpa?: number | null
+          rainfall_mm?: number
+          temperature_celsius?: number | null
+          tenant_id?: string
+          updated_at?: string
+          uv_index?: number | null
+          visibility_km?: number | null
+          weather_condition?: string | null
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_observations_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weather_preferences: {
         Row: {
@@ -12714,6 +13332,61 @@ export type Database = {
         }
         Relationships: []
       }
+      weather_with_location: {
+        Row: {
+          area_acres: number | null
+          center_lat: number | null
+          center_lon: number | null
+          cloud_coverage_percent: number | null
+          created_at: string | null
+          dew_point_celsius: number | null
+          district: string | null
+          farmer_id: string | null
+          feels_like_celsius: number | null
+          humidity_percent: number | null
+          id: string | null
+          land_id: string | null
+          land_name: string | null
+          location_coords: Json | null
+          metadata: Json | null
+          observation_date: string | null
+          observation_time: string | null
+          pressure_hpa: number | null
+          rainfall_mm: number | null
+          temperature_celsius: number | null
+          tenant_id: string | null
+          updated_at: string | null
+          uv_index: number | null
+          village: string | null
+          visibility_km: number | null
+          weather_condition: string | null
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_observations_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _postgis_deprecate: {
@@ -12872,6 +13545,10 @@ export type Database = {
           p_step_id: string
         }
         Returns: Json
+      }
+      aggregate_weather_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       archive_tenant_data: {
         Args: {
@@ -13639,6 +14316,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_jwt_tenant_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_location_context: {
         Args: { lat: number; lng: number }
         Returns: Json
@@ -13657,6 +14338,14 @@ export type Database = {
       }
       get_proj4_from_srid: {
         Args: { "": number }
+        Returns: string
+      }
+      get_session_farmer_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_session_tenant_id: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_spray_suitability: {
@@ -13746,6 +14435,10 @@ export type Database = {
       }
       is_invite_valid: {
         Args: { invite_token: string }
+        Returns: boolean
+      }
+      is_moderator: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_super_admin: {
@@ -14085,6 +14778,16 @@ export type Database = {
           p_type?: string
         }
         Returns: string
+      }
+      set_app_session: {
+        Args:
+          | { p_farmer: string; p_tenant: string }
+          | {
+              p_farmer_id: string
+              p_session_token?: string
+              p_tenant_id: string
+            }
+        Returns: undefined
       }
       set_limit: {
         Args: { "": number }
@@ -15175,7 +15878,7 @@ export type Database = {
         Args:
           | { p_force_new?: boolean; p_tenant_id: string }
           | { p_tenant_id: string; p_version?: number }
-        Returns: string
+        Returns: Json
       }
       suspend_tenant: {
         Args: { p_reason?: string; p_tenant_id: string }
