@@ -66,11 +66,20 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
   const farmer = realtimeFarmer || initialFarmer;
   
   // Calculate real metrics from database data
-  // Fix: Use farmer.total_land_acres as primary source, calculate from lands as fallback
-  const totalLandArea = farmer.total_land_acres || 
-    (farmer.lands && farmer.lands.length > 0 
-      ? farmer.lands.reduce((sum, land) => sum + (land.area_acres || 0), 0) 
-      : 0);
+  // PRIORITY: Use database total_land_acres if available and > 0, otherwise calculate from lands
+  const dbLandArea = farmer.total_land_acres;
+  const calculatedLandArea = farmer.lands && farmer.lands.length > 0 
+    ? farmer.lands.reduce((sum, land) => sum + (land.area_acres || 0), 0) 
+    : 0;
+  const totalLandArea = (dbLandArea && dbLandArea > 0) ? dbLandArea : calculatedLandArea;
+  
+  console.log('Land Area Debug:', {
+    farmerId: farmer.id,
+    dbLandArea,
+    calculatedLandArea,
+    totalLandArea,
+    landsCount: farmer.lands?.length || 0
+  });
   const cropCount = farmer.cropHistory?.reduce((crops, history) => {
     const crop = history.crop_name;
     if (crop && !crops.includes(crop)) crops.push(crop);

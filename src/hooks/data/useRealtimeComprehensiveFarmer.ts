@@ -54,9 +54,11 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
 
       // Calculate metrics from real data
       const lands = landsData || [];
-      // Use total_land_acres from database as primary source, calculate from lands as fallback
-      const totalLandAcres = farmerData.total_land_acres || 
-        lands.reduce((sum: number, land: any) => sum + (land.area_acres || 0), 0);
+      // IMPORTANT: Prioritize database value for total_land_acres, use it if it exists and is greater than 0
+      const calculatedLandAcres = lands.reduce((sum: number, land: any) => sum + (land.area_acres || 0), 0);
+      const totalLandAcres = (farmerData.total_land_acres && farmerData.total_land_acres > 0) 
+        ? farmerData.total_land_acres 
+        : calculatedLandAcres;
       
       const uniqueCrops = new Set<string>();
       lands.forEach((land: any) => {
