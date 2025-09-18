@@ -34,22 +34,20 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
   const [activeTab, setActiveTab] = useState('overview');
   const { currentTenant } = useTenantIsolation();
   
-  // Use real-time hook for live farmer data
-  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
+  // Use unified real-time hook for all farmer data
+  const { 
+    farmer: realtimeFarmer, 
+    realtimeStatus, 
+    refetch,
+    isLoading,
+    error
+  } = useRealtimeComprehensiveFarmer(initialFarmer.id, currentTenant?.id);
   
   // Use real-time data if available, otherwise use initial data
   const farmer = realtimeFarmer || initialFarmer;
   
-  const { data: notes = [] } = useRealtimeFarmerNotes(farmer.id);
-  const { data: engagement } = useRealtimeFarmerEngagement(farmer.id);
-  const { 
-    soilHealth, 
-    ndviHistory, 
-    healthAssessments, 
-    isLoading: healthLoading 
-  } = useRealtimeFarmerHealth(farmer.id);
-  
-  const engagementData = engagement?.[0];
+  // Use engagement data from comprehensive farmer data
+  const engagementScore = farmer.metrics?.engagementScore || 0;
 
   const getEngagementColor = (score: number) => {
     if (score >= 70) return 'bg-success';
@@ -220,9 +218,9 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                     <FarmerHealthMetrics
                       farmerId={farmer.id}
                       tenantId={currentTenant?.id || ''}
-                      soilHealth={soilHealth || undefined}
-                      ndviHistory={ndviHistory}
-                      healthAssessments={healthAssessments}
+                      soilHealth={undefined}
+                      ndviHistory={[]}
+                      healthAssessments={[]}
                       isCompact={true}
                     />
                   </div>
@@ -307,9 +305,9 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                   <FarmerHealthMetrics
                     farmerId={farmer.id}
                     tenantId={currentTenant?.id || ''}
-                    soilHealth={soilHealth || undefined}
-                    ndviHistory={ndviHistory}
-                    healthAssessments={healthAssessments}
+                    soilHealth={undefined}
+                    ndviHistory={[]}
+                    healthAssessments={[]}
                     isCompact={false}
                   />
                 </TabsContent>

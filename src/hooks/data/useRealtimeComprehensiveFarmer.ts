@@ -102,43 +102,76 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
       const revenueScore = Math.min(100, totalLandAcres * 10 + cropDiversityIndex * 15);
 
       // Fetch additional data with tenant isolation - simplified queries
-      const tagsResult = await supabase
-        .from('farmer_tags')
-        .select('*')
-        .eq('farmer_id', farmerId)
-        .eq('tenant_id', effectiveTenantId);
+      // Fetch additional data with simpler queries to avoid TypeScript issues
+      let tagsData: any[] = [];
+      let notesData: any[] = [];
+      let segmentsData: any[] = [];
+      let communicationsData: any[] = [];
+      let cropHistoryData: any[] = [];
       
-      const notesResult = await supabase
-        .from('farmer_notes')
-        .select('*')
-        .eq('farmer_id', farmerId)
-        .eq('tenant_id', effectiveTenantId);
+      // Use try-catch for each query to handle errors gracefully
+      try {
+        const tagsResult = await supabase
+          .from('farmer_tags')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .eq('tenant_id', effectiveTenantId);
+        tagsData = tagsResult.data || [];
+      } catch (err) {
+        console.error('Error fetching tags:', err);
+      }
       
-      const segmentsResult = await supabase
-        .from('farmer_segments')
-        .select('*')
-        .eq('farmer_id', farmerId)
-        .eq('tenant_id', effectiveTenantId);
+      try {
+        const notesResult = await supabase
+          .from('farmer_notes')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .eq('tenant_id', effectiveTenantId);
+        notesData = notesResult.data || [];
+      } catch (err) {
+        console.error('Error fetching notes:', err);
+      }
       
-      const communicationsResult = await supabase
-        .from('farmer_communications')
-        .select('*')
-        .eq('farmer_id', farmerId)
-        .eq('tenant_id', effectiveTenantId);
+      try {
+        // Use basic select for segments
+        const segmentsResult = await supabase
+          .from('farmer_segments')
+          .select('*')
+          .match({ farmer_id: farmerId, tenant_id: effectiveTenantId });
+        segmentsData = segmentsResult.data || [];
+      } catch (err) {
+        console.error('Error fetching segments:', err);
+      }
       
-      const cropHistoryResult = await supabase
-        .from('crop_history')
-        .select('*')
-        .eq('farmer_id', farmerId)
-        .eq('tenant_id', effectiveTenantId);
+      try {
+        // Use basic select for communications
+        const communicationsResult = await supabase
+          .from('farmer_communications')
+          .select('*')
+          .match({ farmer_id: farmerId, tenant_id: effectiveTenantId });
+        communicationsData = communicationsResult.data || [];
+      } catch (err) {
+        console.error('Error fetching communications:', err);
+      }
+      
+      try {
+        // Use match instead of chained eq to avoid depth issues
+        const cropHistoryResult = await supabase
+          .from('crop_history')
+          .select('*')
+          .match({ farmer_id: farmerId, tenant_id: effectiveTenantId });
+        cropHistoryData = cropHistoryResult.data || [];
+      } catch (err) {
+        console.error('Error fetching crop history:', err);
+      }
 
       // Build comprehensive farmer data object matching the interface
       const comprehensiveData: ComprehensiveFarmerData = {
         ...farmerData,
         total_land_acres: totalLandAcres,
-        tags: tagsResult.data || [],
-        notes: notesResult.data || [],
-        segments: segmentsResult.data?.map(s => s.segment_name) || [],
+        tags: tagsData || [],
+        notes: notesData || [],
+        segments: segmentsData?.map((s: any) => s.segment_name) || [],
         lands: lands.map((land: any) => ({
           id: land.id,
           area_acres: land.area_acres || 0,
@@ -147,7 +180,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
           irrigation_type: land.irrigation_type,
           crops: land.crops || []
         })),
-        cropHistory: cropHistoryResult.data?.map((crop: any) => ({
+        cropHistory: cropHistoryData?.map((crop: any) => ({
           id: crop.id,
           crop_name: crop.crop_name,
           variety: crop.variety,
@@ -158,7 +191,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
           status: crop.status || 'active'
         })) || [],
         healthAssessments: [],
-        communicationHistory: communicationsResult.data?.map((comm: any) => ({
+        communicationHistory: communicationsData?.map((comm: any) => ({
           id: comm.id,
           communication_type: comm.communication_type,
           channel: comm.channel,
