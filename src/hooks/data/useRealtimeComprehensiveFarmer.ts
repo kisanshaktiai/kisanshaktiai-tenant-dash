@@ -34,7 +34,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
       if (!effectiveTenantId) throw new Error('No tenant ID provided');
       if (!farmerId) throw new Error('No farmer ID provided');
       
-      // Fetch farmer base data with tenant isolation
+      // Fetch farmer with user_profiles join for complete data (if exists)
       const { data: farmerData, error: farmerError } = await supabase
         .from('farmers')
         .select('*')
@@ -44,6 +44,36 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
 
       if (farmerError) throw farmerError;
       if (!farmerData) throw new Error('Farmer not found');
+      
+      // Try to fetch user_profiles data if it exists (optional join)
+      let userProfileData: any = null;
+      try {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .eq('tenant_id', effectiveTenantId)
+          .single();
+        userProfileData = profileData;
+      } catch (err) {
+        console.log('No user profile found for farmer:', farmerId);
+      }
+      
+      // Merge user_profile data into farmer object if available
+      const mergedFarmerData = {
+        ...farmerData,
+        email: userProfileData?.email || null,
+        full_name: userProfileData?.full_name || farmerData.farmer_name,
+        address: {
+          line1: userProfileData?.address_line1,
+          line2: userProfileData?.address_line2,
+          city: userProfileData?.city,
+          district: userProfileData?.district,
+          state: userProfileData?.state,
+          pincode: userProfileData?.pincode,
+          country: userProfileData?.country || 'India'
+        }
+      };
 
       // Fetch lands with tenant isolation
       const { data: landsData, error: landsError } = await supabase
@@ -170,7 +200,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
 
       // Build comprehensive farmer data object matching the interface
       const comprehensiveData: ComprehensiveFarmerData = {
-        ...farmerData,
+        ...mergedFarmerData,
         total_land_acres: totalLandAcres,
         tags: tagsData || [],
         notes: notesData || [],
@@ -183,6 +213,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
           irrigation_type: land.irrigation_type,
           crops: land.crops || []
         })),
+        
         cropHistory: cropHistoryData?.map((crop: any) => ({
           id: crop.id,
           crop_name: crop.crop_name,
@@ -208,13 +239,13 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
           cropDiversityIndex,
           engagementScore,
           healthScore,
-          lastActivityDate: farmerData.last_login_at || farmerData.created_at,
+          lastActivityDate: mergedFarmerData.last_login_at || mergedFarmerData.created_at,
           revenueScore,
           riskLevel,
         },
         liveStatus: {
           isOnline: lastLoginDays < 1,
-          lastSeen: farmerData.last_login_at || farmerData.created_at,
+          lastSeen: mergedFarmerData.last_login_at || mergedFarmerData.created_at,
           currentActivity: null,
         }
       };
@@ -378,6 +409,23 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
         }
       }
     );
+    
+    // Subscribe to user_profiles changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_profiles',
+        filter: `tenant_id=eq.${effectiveTenantId}`,
+      },
+      (payload: any) => {
+        if (payload.new?.farmer_id === farmerId || payload.old?.farmer_id === farmerId) {
+          console.log('[RealtimeComprehensiveFarmer] User profiles update:', payload);
+          invalidateFarmerData();
+        }
+      }
+    );
 
     // Subscribe to channel
     channel.subscribe((status) => {
@@ -387,7 +435,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
         setRealtimeStatus({
           isConnected: true,
           lastSyncTime: new Date(),
-          activeChannels: 7, // We're subscribing to 7 tables
+          activeChannels: 8, // We're subscribing to 8 tables
           error: null
         });
       } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {

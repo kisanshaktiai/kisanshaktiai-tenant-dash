@@ -32,6 +32,7 @@ import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehensiveFarmer';
+import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { format } from 'date-fns';
 
 interface EnhancedFarmerCardProps {
@@ -59,61 +60,30 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   
-  // Use real-time hook to get latest farmer data
-  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(initialFarmer.id);
+  // Use tenant isolation for safety
+  const { currentTenant } = useTenantIsolation();
+  
+  // Use real-time hook to get latest farmer data with tenant isolation
+  const { farmer: realtimeFarmer, realtimeStatus, refetch } = useRealtimeComprehensiveFarmer(
+    initialFarmer.id, 
+    currentTenant?.id || ''
+  );
   
   // Use real-time data if available, otherwise use initial data
   const farmer = realtimeFarmer || initialFarmer;
   
-  // Calculate real metrics from database data
-  // PRIORITY: Use database total_land_acres if available and > 0, otherwise calculate from lands
-  const dbLandArea = farmer.total_land_acres;
-  const calculatedLandArea = farmer.lands && farmer.lands.length > 0 
-    ? farmer.lands.reduce((sum, land) => sum + (land.area_acres || 0), 0) 
-    : 0;
-  const totalLandArea = (dbLandArea && dbLandArea > 0) ? dbLandArea : calculatedLandArea;
-  
-  console.log('Land Area Debug:', {
-    farmerId: farmer.id,
-    dbLandArea,
-    calculatedLandArea,
-    totalLandArea,
-    landsCount: farmer.lands?.length || 0
-  });
-  const cropCount = farmer.cropHistory?.reduce((crops, history) => {
-    const crop = history.crop_name;
-    if (crop && !crops.includes(crop)) crops.push(crop);
-    return crops;
-  }, [] as string[]).length || 0;
-  
-  // Get real data from database
-  const appOpens = farmer.total_app_opens || 0;
-  const totalQueries = farmer.metadata?.activity_data?.total_queries || 0;
-  const notesCount = farmer.notes?.length || 0;
+  // All metrics are calculated in the hook, use them directly
+  const totalLandArea = farmer.total_land_acres || 0;
   const landsCount = farmer.lands?.length || 0;
-  const communicationsCount = farmer.metadata?.activity_data?.communication_count || 0;
+  const cropCount = farmer.cropHistory?.length || 0;
+  const engagementScore = farmer.metrics?.engagementScore || 0;
+  const healthScore = farmer.metrics?.healthScore || 50;
+  const riskLevel = farmer.metrics?.riskLevel || 'low';
   const farmingYears = farmer.farming_experience_years || 0;
   
-  // Calculate engagement score based on actual farmer activity
-  const engagementScore = Math.min(100, Math.round(
-    (appOpens * 0.3) + // App opens contribute 30% max
-    (totalQueries * 0.2) + // Queries contribute 20% max
-    (notesCount * 5) + // Each note adds 5 points
-    (landsCount * 10) + // Each land adds 10 points
-    (communicationsCount * 2) + // Each communication adds 2 points
-    (farmer.is_verified ? 20 : 0) + // Verification adds 20 points
-    (farmer.mobile_number ? 10 : 0) + // Having mobile adds 10 points
-    (farmingYears > 5 ? 10 : farmingYears * 2) // Experience adds points
-  ));
-  
-  const healthScore = farmer.healthAssessments?.length > 0 
-    ? Math.round(farmer.healthAssessments.reduce((sum, h) => sum + (h.overall_health_score || 50), 0) / farmer.healthAssessments.length)
-    : 50;
-    
-  const riskLevel = engagementScore < 30 ? 'high' : engagementScore < 60 ? 'medium' : 'low';
-  const lastLoginDate = farmer.metadata?.activity_data?.last_active_at || farmer.liveStatus?.lastSeen;
-  const isOnline = lastLoginDate ? 
-    (new Date().getTime() - new Date(lastLoginDate).getTime()) < 3600000 : false;
+  // Live status from database
+  const isOnline = farmer.liveStatus?.isOnline || false;
+  const lastLoginDate = farmer.liveStatus?.lastSeen || farmer.created_at;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -413,7 +383,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
             </div>
             <p className="text-lg font-bold text-gray-900">{totalLandArea.toFixed(2)} ac</p>
             <p className="text-xs text-gray-500">
-              {landsCount} {landsCount === 1 ? 'plot' : 'plots'}, {cropCount} crops
+              {landsCount} {landsCount === 1 ? 'plot' : 'plots'}, {cropCount} {cropCount === 1 ? 'crop' : 'crops'}
             </p>
           </div>
           
