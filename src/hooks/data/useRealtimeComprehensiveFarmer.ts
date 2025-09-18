@@ -11,30 +11,17 @@ interface RealtimeStatus {
   error: string | null;
 }
 
-// All related farmer tables we care about
+// Core farmer tables that exist in our schema
 const FARMER_TABLES = [
   'farmers',
-  'farmer_profiles',
+  'user_profile',  // Changed from farmer_profiles
   'lands',
-  'farmer_land_holdings',
-  'farmer_crops',
   'crop_history',
   'crop_health_assessments',
-  'ndvi_history',            // if present in schema
   'farmer_tags',
   'farmer_notes',
   'farmer_segments',
-  'farmer_engagement',
-  'farmer_gamification',
-  'farmer_documents',
-  'farmer_transactions',
-  'farmer_finance_data',
-  'farmer_schedules',
-  'farmer_notifications',
-  'farmer_communications',
-  'farmer_iot_data',
-  'farmer_weather_data',
-  'weather_forecast'         // if present in schema
+  'farmer_communications'
 ];
 
 export const useRealtimeComprehensiveFarmer = (farmerId: string) => {
@@ -97,25 +84,79 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string) => {
 
     console.log('[RealtimeComprehensiveFarmer] Setting up channel for farmer:', farmerId);
 
-    // Unified channel for all farmer-related tables
+    // Unified channel for all farmer-related tables with proper tenant isolation
     const channel = supabase.channel(`comprehensive_farmer_${farmerId}_${currentTenant.id}`);
 
-    FARMER_TABLES.forEach((table) => {
+    // Subscribe to farmers table changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'farmers',
+        filter: `id=eq.${farmerId}`,
+      },
+      (payload) => {
+        console.log('[RealtimeComprehensiveFarmer] farmers update:', payload);
+        invalidateFarmerData();
+      }
+    );
+
+    // Subscribe to user_profile changes
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_profile',
+        filter: `farmer_id=eq.${farmerId}`,
+      },
+      (payload) => {
+        console.log('[RealtimeComprehensiveFarmer] user_profile update:', payload);
+        invalidateFarmerData();
+      }
+    );
+
+    // Subscribe to lands table changes with tenant isolation
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'lands',
+        filter: `farmer_id=eq.${farmerId}`,
+      },
+      (payload) => {
+        console.log('[RealtimeComprehensiveFarmer] lands update:', payload);
+        invalidateFarmerData();
+      }
+    );
+
+    // Subscribe to other tables with tenant-based filtering
+    const tenantScopedTables = [
+      'crop_history',
+      'crop_health_assessments',
+      'farmer_tags',
+      'farmer_notes',
+      'farmer_segments',
+      'farmer_communications'
+    ];
+
+    tenantScopedTables.forEach((table) => {
       channel.on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table,
-          filter: table === 'farmers'
-            ? `id=eq.${farmerId}`
-            : table === 'lands' || table === 'farmer_profiles'
-            ? `farmer_id=eq.${farmerId}`
-            : `tenant_id=eq.${currentTenant.id}`, // tenant scope fallback
+          filter: `tenant_id=eq.${currentTenant.id}`,
         },
-        (payload) => {
-          console.log(`[RealtimeComprehensiveFarmer] ${table} update:`, payload);
-          invalidateFarmerData();
+        (payload: any) => {
+          // Check if the change is for our farmer
+          if (payload.new?.farmer_id === farmerId || payload.old?.farmer_id === farmerId) {
+            console.log(`[RealtimeComprehensiveFarmer] ${table} update:`, payload);
+            invalidateFarmerData();
+          }
         }
       );
     });

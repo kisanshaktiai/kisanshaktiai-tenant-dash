@@ -179,11 +179,15 @@ class EnhancedFarmerDataService extends BaseApiService {
         communications: communicationResult
       });
 
-      // Get live status based on actual data
+      // Calculate live status from real last login data
+      const lastLoginTime = farmerData.last_login_at ? new Date(farmerData.last_login_at).getTime() : 0;
+      const currentTime = Date.now();
+      const minutesSinceLastLogin = Math.floor((currentTime - lastLoginTime) / (1000 * 60));
+      
       const liveStatus = {
-        isOnline: (farmerData as any).is_online || false,
+        isOnline: minutesSinceLastLogin <= 5, // Online if active in last 5 minutes
         lastSeen: farmerData.last_login_at || farmerData.updated_at || farmerData.created_at,
-        currentActivity: (farmerData as any).current_activity || 'Offline'
+        currentActivity: minutesSinceLastLogin <= 5 ? 'Active' : null
       };
 
       // Transform the farmer data to match our interface
@@ -430,43 +434,78 @@ class EnhancedFarmerDataService extends BaseApiService {
     const uniqueCrops = [...new Set(cropHistory.map((ch: any) => ch.crop_name))];
     const cropDiversityIndex = uniqueCrops.length;
 
-    // Calculate engagement score based on app opens and communications  
-    const baseEngagement = Math.min(100, ((farmer.total_app_opens || 0) * 2) + (communications.length * 5));
-    const engagementScore = farmer.engagement_score || baseEngagement;
+    // Calculate engagement score from actual data
+    const appOpens = farmer.total_app_opens || 0;
+    const commCount = communications.length;
+    const daysSinceLastLogin = farmer.last_login_at 
+      ? Math.floor((Date.now() - new Date(farmer.last_login_at).getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+    
+    // Weighted engagement score calculation from real data
+    let engagementScore = 0;
+    if (daysSinceLastLogin <= 7) engagementScore += 30;
+    else if (daysSinceLastLogin <= 30) engagementScore += 15;
+    
+    engagementScore += Math.min(40, appOpens); // App opens contribution (max 40)
+    engagementScore += Math.min(30, commCount * 3); // Communications contribution (max 30)
+    
+    // Use stored engagement score if available and higher
+    if (farmer.engagement_score && farmer.engagement_score > engagementScore) {
+      engagementScore = farmer.engagement_score;
+    }
 
-    // Calculate health score from assessments
+    // Calculate health score from actual assessments
     const recentHealthScores = healthAssessments
       .filter((ha: any) => ha.overall_health_score != null)
       .slice(0, 5)
       .map((ha: any) => ha.overall_health_score);
     
     const healthScore = recentHealthScores.length > 0 
-      ? recentHealthScores.reduce((sum: number, score: number) => sum + score, 0) / recentHealthScores.length
-      : farmer.health_score || 75; // Use farmer's health_score if available
+      ? Math.round(recentHealthScores.reduce((sum: number, score: number) => sum + score, 0) / recentHealthScores.length)
+      : (farmer.health_score || 0); // Use 0 if no data
 
-    // Calculate last activity date
-    const lastActivityDate = communications.length > 0 
-      ? communications[0].sent_at 
-      : farmer.updated_at || farmer.created_at;
+    // Calculate last activity date from real data
+    const lastActivityDate = farmer.last_login_at || communications[0]?.sent_at || farmer.updated_at || farmer.created_at;
 
-    // Calculate revenue score (simplified)
-    const revenueScore = Math.min(100, totalLandArea * 10 + cropDiversityIndex * 5);
+    // Calculate revenue score based on real factors
+    const avgYield = cropHistory.length > 0
+      ? cropHistory.reduce((sum: number, crop: any) => sum + (crop.yield_kg_per_acre || 0), 0) / cropHistory.length
+      : 0;
+    
+    const revenueScore = Math.min(100, 
+      (totalLandArea * 5) + // Land contribution
+      (cropDiversityIndex * 10) + // Crop diversity contribution  
+      (avgYield / 10) // Yield contribution
+    );
 
-    // Determine risk level based on multiple factors
+    // Determine risk level from actual data
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    if (engagementScore < 30 || healthScore < 50 || farmer.risk_level === 'high') {
+    
+    // Check multiple risk factors
+    const riskFactors = {
+      lowEngagement: engagementScore < 30,
+      poorHealth: healthScore < 50 && healthScore > 0,
+      inactive: daysSinceLastLogin > 60,
+      noLands: totalLandArea === 0,
+      lowDiversity: cropDiversityIndex < 2,
+      explicitRisk: farmer.risk_level === 'high'
+    };
+    
+    const riskCount = Object.values(riskFactors).filter(v => v).length;
+    
+    if (riskCount >= 3 || riskFactors.explicitRisk) {
       riskLevel = 'high';
-    } else if (engagementScore < 60 || healthScore < 70 || farmer.risk_level === 'medium') {
+    } else if (riskCount >= 1) {
       riskLevel = 'medium';
     }
 
     return {
       totalLandArea,
       cropDiversityIndex,
-      engagementScore,
+      engagementScore: Math.round(engagementScore),
       healthScore,
       lastActivityDate,
-      revenueScore,
+      revenueScore: Math.round(revenueScore),
       riskLevel
     };
   }

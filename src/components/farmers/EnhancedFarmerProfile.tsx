@@ -11,9 +11,9 @@ import {
   Edit, Eye, Download, Clock, AlertCircle,
   Leaf, Beaker, Sprout, ChartBar, Wifi, WifiOff, RefreshCw
 } from 'lucide-react';
-import { useFarmerNotesQuery } from '@/hooks/data/useEnhancedFarmerQuery';
-import { useFarmerEngagementQuery } from '@/hooks/data/useFarmerManagementQuery';
-import { useFarmerCompleteHealthData } from '@/hooks/data/useFarmerHealthData';
+import { useRealtimeFarmerNotes } from '@/hooks/data/useRealtimeFarmerNotes';
+import { useRealtimeFarmerEngagement } from '@/hooks/data/useRealtimeFarmerEngagement';
+import { useRealtimeFarmerHealth } from '@/hooks/data/useRealtimeFarmerHealth';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { FarmerHealthMetrics } from './analytics/FarmerHealthMetrics';
 import { FarmerCommunicationHistory } from '@/pages/farmers/components/FarmerCommunicationHistory';
@@ -40,14 +40,14 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
   // Use real-time data if available, otherwise use initial data
   const farmer = realtimeFarmer || initialFarmer;
   
-  const { data: notes = [] } = useFarmerNotesQuery(farmer.id);
-  const { data: engagement } = useFarmerEngagementQuery(farmer.id);
+  const { data: notes = [] } = useRealtimeFarmerNotes(farmer.id);
+  const { data: engagement } = useRealtimeFarmerEngagement(farmer.id);
   const { 
     soilHealth, 
     ndviHistory, 
     healthAssessments, 
     isLoading: healthLoading 
-  } = useFarmerCompleteHealthData(farmer.id);
+  } = useRealtimeFarmerHealth(farmer.id);
   
   const engagementData = engagement?.[0];
 
