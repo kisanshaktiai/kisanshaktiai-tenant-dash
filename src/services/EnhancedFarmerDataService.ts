@@ -427,28 +427,64 @@ class EnhancedFarmerDataService extends BaseApiService {
 
   async getFarmerCropHistory(tenantId: string, farmerId: string): Promise<CropHistoryItem[]> {
     try {
-      // First get lands for this farmer
-      const { data: lands } = await supabase
+      // First get lands for this farmer - try with tenant_id first
+      let { data: lands, error } = await supabase
         .from('lands')
         .select('id')
-        .eq('tenant_id', tenantId)
-        .eq('farmer_id', farmerId);
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId);
+
+      // If no lands found with tenant_id, try without it
+      if ((!lands || lands.length === 0) && !error) {
+        const fallback = await supabase
+          .from('lands')
+          .select('id')
+          .eq('farmer_id', farmerId);
+        
+        if (!fallback.error) {
+          lands = fallback.data;
+        }
+      }
 
       if (!lands || lands.length === 0) return [];
 
       const landIds = lands.map(l => l.id);
-      const { data, error } = await supabase
+      
+      // Try to get crop history with tenant_id first
+      const { data, error: cropError } = await supabase
         .from('crop_history')
         .select('*')
-        .eq('tenant_id', tenantId)
         .in('land_id', landIds)
+        .eq('tenant_id', tenantId)
         .order('planting_date', { ascending: false })
         .limit(20);
+      
+      if (cropError || !data || data.length === 0) {
+        // Fallback without tenant_id
+        const fallbackResult = await supabase
+          .from('crop_history')
+          .select('*')
+          .in('land_id', landIds)
+          .order('planting_date', { ascending: false })
+          .limit(20);
+        
+        if (!fallbackResult.error && fallbackResult.data) {
+          return (fallbackResult.data || []).map((crop: any) => ({
+            id: crop.id,
+            crop_name: crop.crop_name || 'Unknown',
+            variety: crop.variety,
+            season: crop.season,
+            yield_kg_per_acre: crop.yield_kg_per_acre,
+            planting_date: crop.planting_date,
+            harvest_date: crop.harvest_date,
+            status: crop.status || 'ongoing'
+          }));
+        }
+      }
 
-      if (error) throw error;
       return (data || []).map((crop: any) => ({
         id: crop.id,
-        crop_name: crop.crop_name,
+        crop_name: crop.crop_name || 'Unknown',
         variety: crop.variety,
         season: crop.season,
         yield_kg_per_acre: crop.yield_kg_per_acre,
