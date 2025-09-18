@@ -10,8 +10,9 @@ import {
   Activity, TrendingUp, MessageSquare, X, 
   Edit, Eye, Download, Clock, AlertCircle
 } from 'lucide-react';
-import { useFarmerNotesQuery, useAddFarmerNoteMutation } from '@/hooks/data/useEnhancedFarmerQuery';
-import { useFarmerEngagementQuery } from '@/hooks/data/useFarmerManagementQuery';
+import { useRealtimeFarmerNotes } from '@/hooks/data/useRealtimeFarmerNotes';
+import { useRealtimeFarmerEngagement } from '@/hooks/data/useRealtimeFarmerEngagement';
+import { useAddFarmerNoteMutation } from '@/hooks/data/useEnhancedFarmerQuery';
 import { FarmerCommunicationHistory } from './FarmerCommunicationHistory';
 import { FarmerLandHoldings } from './FarmerLandHoldings';
 import { FarmerCropHistory } from './FarmerCropHistory';
@@ -27,8 +28,8 @@ interface FarmerProfileProps {
 export const FarmerProfile: React.FC<FarmerProfileProps> = ({ farmer, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
   
-  const { data: notes = [] } = useFarmerNotesQuery(farmer.id);
-  const { data: engagement } = useFarmerEngagementQuery(farmer.id);
+  const { data: notes = [] } = useRealtimeFarmerNotes(farmer.id);
+  const { data: engagement } = useRealtimeFarmerEngagement(farmer.id);
   
   const engagementData = engagement?.[0];
 

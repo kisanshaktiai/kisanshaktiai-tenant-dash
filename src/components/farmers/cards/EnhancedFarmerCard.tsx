@@ -64,6 +64,34 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
   
   // Use real-time data if available, otherwise use initial data
   const farmer = realtimeFarmer || initialFarmer;
+  
+  // Calculate real metrics from database data
+  const totalLandArea = farmer.lands?.reduce((sum, land) => sum + (land.area_acres || 0), 0) || farmer.total_land_acres || 0;
+  const cropCount = farmer.cropHistory?.reduce((crops, history) => {
+    const crop = history.crop_name;
+    if (crop && !crops.includes(crop)) crops.push(crop);
+    return crops;
+  }, [] as string[]).length || 0;
+  
+  const appOpens = farmer.total_app_opens || 0;
+  const notesCount = farmer.notes?.length || 0;
+  const landsCount = farmer.lands?.length || 0;
+  
+  const engagementScore = Math.min(100, Math.round(
+    (appOpens * 0.5) + 
+    (notesCount * 10) + 
+    (landsCount * 15) +
+    (farmer.is_verified ? 10 : 0)
+  ));
+  
+  const healthScore = farmer.healthAssessments?.length > 0 
+    ? Math.round(farmer.healthAssessments.reduce((sum, h) => sum + (h.overall_health_score || 50), 0) / farmer.healthAssessments.length)
+    : 50;
+    
+  const riskLevel = engagementScore < 30 ? 'high' : engagementScore < 60 ? 'medium' : 'low';
+  const lastLoginDate = farmer.metadata?.activity_data?.last_active_at || farmer.liveStatus?.lastSeen;
+  const isOnline = lastLoginDate ? 
+    (new Date().getTime() - new Date(lastLoginDate).getTime()) < 3600000 : false;
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -114,26 +142,26 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="text-xs">{farmerInitials}</AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-              )}
+                {isOnline && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                )}
             </div>
             <div>
               <h4 className="font-medium text-sm">{farmerName}</h4>
               <p className="text-xs text-muted-foreground">{farmer.farmer_code}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {farmer.metrics.totalLandArea}ac
-            </Badge>
-            <Badge 
-              variant="outline" 
-              className={cn("text-xs", getRiskColor(farmer.metrics.riskLevel))}
-            >
-              {farmer.metrics.riskLevel}
-            </Badge>
-          </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="outline" className="text-xs">
+          {totalLandArea.toFixed(1)}ac
+        </Badge>
+        <Badge 
+          variant="outline" 
+          className={cn("text-xs", getRiskColor(riskLevel))}
+        >
+          {riskLevel}
+        </Badge>
+      </div>
         </div>
       </Card>
     );
@@ -156,7 +184,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Avatar className="w-12 h-12">
                 <AvatarFallback>{farmerInitials}</AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
+              {isOnline && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
               )}
             </div>
@@ -181,17 +209,17 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
                 </div>
                 <div className="flex items-center gap-1">
                   <Wheat className="w-3 h-3" />
-                  <span>{farmer.metrics.totalLandArea} acres</span>
+                  <span>{totalLandArea.toFixed(1)} acres</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
-                  <span className={getEngagementColor(farmer.metrics.engagementScore)}>
-                    {farmer.metrics.engagementScore}% engaged
+                  <span className={getEngagementColor(engagementScore)}>
+                    {engagementScore}% engaged
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  <span>{formatLastSeen(farmer.liveStatus.lastSeen)}</span>
+                  <span>{formatLastSeen(lastLoginDate || new Date().toISOString())}</span>
                 </div>
               </div>
             </div>
@@ -201,9 +229,9 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
             <div className="flex flex-col items-end gap-1">
               <Badge 
                 variant="outline" 
-                className={cn("text-xs", getRiskColor(farmer.metrics.riskLevel))}
+                className={cn("text-xs", getRiskColor(riskLevel))}
               >
-                {farmer.metrics.riskLevel} risk
+                {riskLevel} risk
               </Badge>
               <div className="flex gap-1">
                 {farmer.tags.slice(0, 2).map(tag => (
@@ -321,7 +349,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
                   {farmerInitials}
                 </AvatarFallback>
               </Avatar>
-              {farmer.liveStatus.isOnline && (
+              {isOnline && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
               )}
             </div>
@@ -342,9 +370,9 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
           
           <Badge 
             variant="outline" 
-            className={cn("text-xs font-medium", getRiskColor(farmer.metrics.riskLevel))}
+            className={cn("text-xs font-medium", getRiskColor(riskLevel))}
           >
-            {farmer.metrics.riskLevel} risk
+            {riskLevel} risk
           </Badge>
         </div>
 
@@ -355,8 +383,8 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Wheat className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-gray-700">Land</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{farmer.metrics.totalLandArea} ac</p>
-            <p className="text-xs text-gray-500">{farmer.metrics.cropDiversityIndex} crops</p>
+            <p className="text-lg font-bold text-gray-900">{totalLandArea.toFixed(1)} ac</p>
+            <p className="text-xs text-gray-500">{cropCount} crops</p>
           </div>
           
           <div className="bg-white/60 rounded-lg p-3 border border-gray-100">
@@ -364,7 +392,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
               <Activity className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-gray-700">Health</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{Math.round(farmer.metrics.healthScore)}%</p>
+            <p className="text-lg font-bold text-gray-900">{healthScore}%</p>
             <p className="text-xs text-gray-500">Avg score</p>
           </div>
         </div>
@@ -373,18 +401,18 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-700">Engagement</span>
-            <span className={cn("text-sm font-bold", getEngagementColor(farmer.metrics.engagementScore))}>
-              {farmer.metrics.engagementScore}%
+            <span className={cn("text-sm font-bold", getEngagementColor(engagementScore))}>
+              {engagementScore}%
             </span>
           </div>
           <Progress 
-            value={farmer.metrics.engagementScore} 
+            value={engagementScore} 
             className="h-2"
             // @ts-ignore - Progress component styling
             style={{
-              '--progress-background': farmer.metrics.engagementScore >= 80 ? '#22c55e' :
-                                     farmer.metrics.engagementScore >= 60 ? '#eab308' :
-                                     farmer.metrics.engagementScore >= 40 ? '#f97316' : '#ef4444'
+              '--progress-background': engagementScore >= 80 ? '#22c55e' :
+                                     engagementScore >= 60 ? '#eab308' :
+                                     engagementScore >= 40 ? '#f97316' : '#ef4444'
             } as any}
           />
         </div>
@@ -412,7 +440,7 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
           <div className="text-right">
             <p className="text-xs text-gray-500">Last seen</p>
             <p className="text-sm font-medium text-gray-700">
-              {formatLastSeen(farmer.liveStatus.lastSeen)}
+              {formatLastSeen(lastLoginDate || new Date().toISOString())}
             </p>
           </div>
         </div>

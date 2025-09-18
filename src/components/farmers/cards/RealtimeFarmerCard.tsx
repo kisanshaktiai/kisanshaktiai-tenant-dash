@@ -25,6 +25,18 @@ export const RealtimeFarmerCard = memo<RealtimeFarmerCardProps>(({
   showSyncStatus = true,
 }) => {
   const { isLive, lastUpdate } = useRealtimeFarmer(farmer.id);
+  
+  // Calculate engagement score from real data
+  const engagementScore = Math.min(100, Math.round(
+    ((farmer.total_app_opens || 0) * 0.5) + 
+    ((farmer.total_queries || 0) * 2) +
+    (farmer.is_verified ? 20 : 0) +
+    (farmer.total_land_acres ? Math.min(farmer.total_land_acres * 2, 30) : 0)
+  ));
+  
+  // Determine activity status based on last login
+  const isActive = farmer.last_login_at ? 
+    (new Date().getTime() - new Date(farmer.last_login_at).getTime()) < 7 * 24 * 60 * 60 * 1000 : false;
 
   const handleCheckboxClick = () => {
     onSelect(farmer.id, !isSelected);
