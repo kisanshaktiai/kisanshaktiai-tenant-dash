@@ -54,8 +54,9 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
 
       // Calculate metrics from real data
       const lands = landsData || [];
-      const totalLandAcres = lands.reduce((sum: number, land: any) => 
-        sum + (land.area_acres || 0), 0);
+      // Use total_land_acres from database as primary source, calculate from lands as fallback
+      const totalLandAcres = farmerData.total_land_acres || 
+        lands.reduce((sum: number, land: any) => sum + (land.area_acres || 0), 0);
       
       const uniqueCrops = new Set<string>();
       lands.forEach((land: any) => {
@@ -219,10 +220,10 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
       return comprehensiveData;
     },
     enabled: !!effectiveTenantId && !!farmerId,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
+    staleTime: 10000, // Consider data fresh for 10 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     refetchInterval: realtimeStatus.isConnected ? false : 30000, // Fallback polling if not connected
   });
 
@@ -241,7 +242,7 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
         lastSyncTime: new Date(),
         error: null
       }));
-    }, 300); // Debounce for 300ms
+    }, 500); // Debounce for 500ms to reduce flicker
   }, [effectiveTenantId, farmerId, queryClient]);
 
   // Setup realtime subscriptions

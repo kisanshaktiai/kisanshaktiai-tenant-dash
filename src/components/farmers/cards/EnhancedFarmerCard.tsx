@@ -66,22 +66,35 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
   const farmer = realtimeFarmer || initialFarmer;
   
   // Calculate real metrics from database data
-  const totalLandArea = farmer.lands?.reduce((sum, land) => sum + (land.area_acres || 0), 0) || farmer.total_land_acres || 0;
+  // Fix: Use farmer.total_land_acres as primary source, calculate from lands as fallback
+  const totalLandArea = farmer.total_land_acres || 
+    (farmer.lands && farmer.lands.length > 0 
+      ? farmer.lands.reduce((sum, land) => sum + (land.area_acres || 0), 0) 
+      : 0);
   const cropCount = farmer.cropHistory?.reduce((crops, history) => {
     const crop = history.crop_name;
     if (crop && !crops.includes(crop)) crops.push(crop);
     return crops;
   }, [] as string[]).length || 0;
   
+  // Get real data from database
   const appOpens = farmer.total_app_opens || 0;
+  const totalQueries = farmer.metadata?.activity_data?.total_queries || 0;
   const notesCount = farmer.notes?.length || 0;
   const landsCount = farmer.lands?.length || 0;
+  const communicationsCount = farmer.metadata?.activity_data?.communication_count || 0;
+  const farmingYears = farmer.farming_experience_years || 0;
   
+  // Calculate engagement score based on actual farmer activity
   const engagementScore = Math.min(100, Math.round(
-    (appOpens * 0.5) + 
-    (notesCount * 10) + 
-    (landsCount * 15) +
-    (farmer.is_verified ? 10 : 0)
+    (appOpens * 0.3) + // App opens contribute 30% max
+    (totalQueries * 0.2) + // Queries contribute 20% max
+    (notesCount * 5) + // Each note adds 5 points
+    (landsCount * 10) + // Each land adds 10 points
+    (communicationsCount * 2) + // Each communication adds 2 points
+    (farmer.is_verified ? 20 : 0) + // Verification adds 20 points
+    (farmer.mobile_number ? 10 : 0) + // Having mobile adds 10 points
+    (farmingYears > 5 ? 10 : farmingYears * 2) // Experience adds points
   ));
   
   const healthScore = farmer.healthAssessments?.length > 0 
@@ -200,16 +213,22 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
                 </Badge>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   <span className="truncate">
-                    {farmer.metadata?.address_info?.village || 'Location'}
+                    {farmer.metadata?.address_info?.village || 
+                     farmer.metadata?.address_info?.district || 
+                     'Location'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Phone className="w-3 h-3" />
+                  <span>{farmer.mobile_number || 'No phone'}</span>
+                </div>
+                <div className="flex items-center gap-1">
                   <Wheat className="w-3 h-3" />
-                  <span>{totalLandArea.toFixed(1)} acres</span>
+                  <span>{totalLandArea.toFixed(2)} acres</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
@@ -376,24 +395,32 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
           </Badge>
         </div>
 
-        {/* Key Metrics Grid */}
+        {/* Key Metrics Grid - Display real database values */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-white/60 rounded-lg p-3 border border-gray-100">
             <div className="flex items-center gap-2 mb-1">
               <Wheat className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-gray-700">Land</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{totalLandArea.toFixed(1)} ac</p>
-            <p className="text-xs text-gray-500">{cropCount} crops</p>
+            <p className="text-lg font-bold text-gray-900">{totalLandArea.toFixed(2)} ac</p>
+            <p className="text-xs text-gray-500">
+              {landsCount} {landsCount === 1 ? 'plot' : 'plots'}, {cropCount} crops
+            </p>
           </div>
           
           <div className="bg-white/60 rounded-lg p-3 border border-gray-100">
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-700">Health</span>
+              <span className="text-sm font-medium text-gray-700">Experience</span>
             </div>
-            <p className="text-lg font-bold text-gray-900">{healthScore}%</p>
-            <p className="text-xs text-gray-500">Avg score</p>
+            <p className="text-lg font-bold text-gray-900">
+              {farmingYears > 0 ? `${farmingYears} yrs` : 'New'}
+            </p>
+            <p className="text-xs text-gray-500">
+              {farmer.metadata?.financial_info?.annual_income 
+                ? `₹${(farmer.metadata.financial_info.annual_income / 100000).toFixed(1)}L` 
+                : 'Income N/A'}
+            </p>
           </div>
         </div>
 
@@ -466,13 +493,21 @@ export const EnhancedFarmerCard: React.FC<EnhancedFarmerCardProps> = ({
           </div>
         )}
 
-        {/* Location */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-          <MapPin className="w-4 h-4" />
-          <span className="truncate">
-            {farmer.metadata?.address_info?.village || 'Location not specified'}, 
-            {farmer.metadata?.address_info?.district || 'District'}
-          </span>
+        {/* Location and Contact Info */}
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="w-4 h-4" />
+            <span className="truncate">
+              {farmer.metadata?.address_info?.village || 'Location not specified'}, 
+              {farmer.metadata?.address_info?.district || 'District'}
+            </span>
+          </div>
+          {farmer.mobile_number && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="w-4 h-4" />
+              <span>{farmer.mobile_number}</span>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons - Show on Hover */}
