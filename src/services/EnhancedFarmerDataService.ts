@@ -536,8 +536,15 @@ class EnhancedFarmerDataService extends BaseApiService {
   private calculateFarmerMetrics(farmer: any, relatedData: any) {
     const { lands, cropHistory, healthAssessments, communications } = relatedData;
 
+    // Calculate total land area from actual lands data
     const totalLandArea = lands.reduce((sum: number, land: any) => sum + (land.area_acres || 0), 0);
-    const uniqueCrops = [...new Set(cropHistory.map((ch: any) => ch.crop_name))];
+    
+    // Get unique crops from multiple sources
+    const cropsFromLands = lands.flatMap((land: any) => land.crops || []);
+    const cropsFromHistory = cropHistory.map((ch: any) => ch.crop_name).filter(Boolean);
+    const cropsFromFarmer = farmer.primary_crops || [];
+    const allCrops = [...cropsFromLands, ...cropsFromHistory, ...cropsFromFarmer];
+    const uniqueCrops = [...new Set(allCrops.filter(Boolean))];
     const cropDiversityIndex = uniqueCrops.length;
 
     // Calculate engagement score from actual data
@@ -549,16 +556,25 @@ class EnhancedFarmerDataService extends BaseApiService {
     
     // Weighted engagement score calculation from real data
     let engagementScore = 0;
-    if (daysSinceLastLogin <= 7) engagementScore += 30;
+    
+    // Recency scoring (0-40 points)
+    if (daysSinceLastLogin <= 1) engagementScore += 40;
+    else if (daysSinceLastLogin <= 7) engagementScore += 30;
     else if (daysSinceLastLogin <= 30) engagementScore += 15;
+    else if (daysSinceLastLogin <= 90) engagementScore += 5;
     
-    engagementScore += Math.min(40, appOpens); // App opens contribution (max 40)
-    engagementScore += Math.min(30, commCount * 3); // Communications contribution (max 30)
+    // App usage scoring (0-40 points) 
+    if (appOpens >= 100) engagementScore += 40;
+    else if (appOpens >= 50) engagementScore += 30;
+    else if (appOpens >= 20) engagementScore += 20;
+    else if (appOpens >= 5) engagementScore += 10;
+    else if (appOpens > 0) engagementScore += 5;
     
-    // Use stored engagement score if available and higher
-    if (farmer.engagement_score && farmer.engagement_score > engagementScore) {
-      engagementScore = farmer.engagement_score;
-    }
+    // Communication scoring (0-20 points)
+    if (commCount >= 10) engagementScore += 20;
+    else if (commCount >= 5) engagementScore += 15;
+    else if (commCount >= 2) engagementScore += 10;
+    else if (commCount > 0) engagementScore += 5;
 
     // Calculate health score from actual assessments
     const recentHealthScores = healthAssessments
@@ -568,7 +584,7 @@ class EnhancedFarmerDataService extends BaseApiService {
     
     const healthScore = recentHealthScores.length > 0 
       ? Math.round(recentHealthScores.reduce((sum: number, score: number) => sum + score, 0) / recentHealthScores.length)
-      : (farmer.health_score || 0); // Use 0 if no data
+      : 75; // Default to 75 if no data
 
     // Calculate last activity date from real data
     const lastActivityDate = farmer.last_login_at || communications[0]?.sent_at || farmer.updated_at || farmer.created_at;
@@ -578,11 +594,26 @@ class EnhancedFarmerDataService extends BaseApiService {
       ? cropHistory.reduce((sum: number, crop: any) => sum + (crop.yield_kg_per_acre || 0), 0) / cropHistory.length
       : 0;
     
-    const revenueScore = Math.min(100, 
-      (totalLandArea * 5) + // Land contribution
-      (cropDiversityIndex * 10) + // Crop diversity contribution  
-      (avgYield / 10) // Yield contribution
-    );
+    // More balanced revenue score calculation
+    let revenueScore = 0;
+    
+    // Land size contribution (0-40 points)
+    if (totalLandArea >= 10) revenueScore += 40;
+    else if (totalLandArea >= 5) revenueScore += 30;
+    else if (totalLandArea >= 2) revenueScore += 20;
+    else if (totalLandArea > 0) revenueScore += 10;
+    
+    // Crop diversity contribution (0-30 points)  
+    if (cropDiversityIndex >= 5) revenueScore += 30;
+    else if (cropDiversityIndex >= 3) revenueScore += 20;
+    else if (cropDiversityIndex >= 2) revenueScore += 10;
+    else if (cropDiversityIndex > 0) revenueScore += 5;
+    
+    // Yield contribution (0-30 points)
+    if (avgYield >= 1000) revenueScore += 30;
+    else if (avgYield >= 500) revenueScore += 20;
+    else if (avgYield >= 200) revenueScore += 10;
+    else if (avgYield > 0) revenueScore += 5;
 
     // Determine risk level from actual data
     let riskLevel: 'low' | 'medium' | 'high' = 'low';
@@ -594,16 +625,33 @@ class EnhancedFarmerDataService extends BaseApiService {
       inactive: daysSinceLastLogin > 60,
       noLands: totalLandArea === 0,
       lowDiversity: cropDiversityIndex < 2,
-      explicitRisk: farmer.risk_level === 'high'
+      lowAppUsage: appOpens < 5
     };
     
     const riskCount = Object.values(riskFactors).filter(v => v).length;
     
-    if (riskCount >= 3 || riskFactors.explicitRisk) {
+    if (riskCount >= 3) {
       riskLevel = 'high';
     } else if (riskCount >= 1) {
       riskLevel = 'medium';
     }
+
+    console.log('[EnhancedFarmerDataService] Calculated metrics:', {
+      farmerId: farmer.id,
+      totalLandArea,
+      cropDiversityIndex,
+      engagementScore,
+      healthScore,
+      revenueScore,
+      riskLevel,
+      factors: {
+        appOpens,
+        commCount,
+        daysSinceLastLogin,
+        uniqueCrops,
+        avgYield
+      }
+    });
 
     return {
       totalLandArea,

@@ -168,14 +168,26 @@ class DashboardService {
 
   private async getDealersCount(tenantId: string) {
     try {
+      // Try multiple column names since dealers table structure may vary
       const { data, error } = await supabase
         .from('dealers')
-        .select('id, name')
+        .select('id, dealer_name, business_name, created_at')
         .eq('tenant_id', tenantId);
 
       if (error) {
-        console.error('DashboardService: Error fetching dealers:', error);
-        throw error;
+        // Fallback to simpler query if columns don't exist
+        console.warn('DashboardService: Trying fallback dealer query:', error);
+        const fallback = await supabase
+          .from('dealers')
+          .select('id')
+          .eq('tenant_id', tenantId);
+        
+        if (fallback.error) {
+          console.error('DashboardService: Error fetching dealers:', fallback.error);
+          throw fallback.error;
+        }
+        
+        return fallback.data || [];
       }
 
       return data || [];
