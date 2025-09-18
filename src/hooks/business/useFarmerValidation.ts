@@ -15,6 +15,7 @@ export interface FarmerFormData {
   languagePreference: string;
   
   // Address Information - Optional
+  country: string;
   village: string;
   taluka: string;
   district: string;

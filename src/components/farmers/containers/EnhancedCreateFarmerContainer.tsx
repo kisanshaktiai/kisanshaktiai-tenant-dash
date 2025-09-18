@@ -27,6 +27,7 @@ const initialFormData: FarmerFormData = {
   languagePreference: DEFAULT_LOCALE, // Default to English
   
   // Address Information - Optional
+  country: 'india',
   village: '',
   taluka: '',
   district: '',

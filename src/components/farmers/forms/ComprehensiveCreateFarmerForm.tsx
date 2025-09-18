@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { HierarchicalAddressFields } from './HierarchicalAddressFields';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -233,85 +234,15 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                 <CardHeader>
                   <CardTitle>Address Information</CardTitle>
                   <p className="text-sm text-gray-600">
-                    Address details are optional and can be updated later.
+                    Select location hierarchically. If options are not available, you can enter manually.
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="village">Village</Label>
-                      <Input
-                        id="village"
-                        value={formData.village}
-                        onChange={(e) => onFormChange('village', e.target.value)}
-                        placeholder="Enter village name"
-                        className={errors.village ? 'border-red-500' : ''}
-                      />
-                      {errors.village && (
-                        <p className="text-sm text-red-500 mt-1">{errors.village}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="taluka">Taluka</Label>
-                      <Input
-                        id="taluka"
-                        value={formData.taluka}
-                        onChange={(e) => onFormChange('taluka', e.target.value)}
-                        placeholder="Enter taluka name"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="district">District</Label>
-                      <Input
-                        id="district"
-                        value={formData.district}
-                        onChange={(e) => onFormChange('district', e.target.value)}
-                        placeholder="Enter district name"
-                        className={errors.district ? 'border-red-500' : ''}
-                      />
-                      {errors.district && (
-                        <p className="text-sm text-red-500 mt-1">{errors.district}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="state">State</Label>
-                      <Select value={formData.state} onValueChange={(value) => onFormChange('state', value)}>
-                        <SelectTrigger className={errors.state ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {INDIAN_STATES.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.state && (
-                        <p className="text-sm text-red-500 mt-1">{errors.state}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="pincode">Pincode</Label>
-                    <Input
-                      id="pincode"
-                      value={formData.pincode}
-                      onChange={(e) => onFormChange('pincode', e.target.value)}
-                      placeholder="Enter 6-digit pincode"
-                      maxLength={6}
-                      className={errors.pincode ? 'border-red-500' : ''}
-                    />
-                    {errors.pincode && (
-                      <p className="text-sm text-red-500 mt-1">{errors.pincode}</p>
-                    )}
-                  </div>
+                <CardContent>
+                  <HierarchicalAddressFields
+                    formData={formData}
+                    errors={errors}
+                    onFormChange={onFormChange}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

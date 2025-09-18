@@ -21,6 +21,7 @@ const initialFormData: FarmerFormData = {
   dateOfBirth: '',
   gender: '',
   languagePreference: DEFAULT_LOCALE,
+  country: 'india',
   village: '',
   taluka: '',
   district: '',
