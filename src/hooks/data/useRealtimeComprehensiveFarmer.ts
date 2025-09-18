@@ -46,6 +46,9 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string) => {
     },
     enabled: !!currentTenant && !!farmerId,
     staleTime: 0,
+    gcTime: 0, // Don't cache at all
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     refetchInterval: realtimeStatus.isConnected ? false : 30000, // fallback polling
   });
 

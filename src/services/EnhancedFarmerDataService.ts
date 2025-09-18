@@ -160,12 +160,14 @@ class EnhancedFarmerDataService extends BaseApiService {
         this.getFarmerHealthAssessments(tenantId, farmerId)
       ]);
       
+      
       console.log('[EnhancedFarmerDataService] Related data fetched:', {
         landsCount: landsResult.length,
         cropHistoryCount: cropHistoryResult.length,
         healthAssessmentsCount: healthAssessmentsResult.length,
         tagsCount: tagsResult.length,
-        notesCount: notesResult.length
+        notesCount: notesResult.length,
+        totalLandAcres: landsResult.reduce((sum, land) => sum + land.area_acres, 0)
       });
       
       // Get real communication history if available
@@ -196,7 +198,8 @@ class EnhancedFarmerDataService extends BaseApiService {
         farmer_code: farmerData.farmer_code,
         mobile_number: farmerData.mobile_number,
         farming_experience_years: farmerData.farming_experience_years || 0,
-        total_land_acres: farmerData.total_land_acres || 0,
+        // Use calculated total from actual lands data instead of stored value
+        total_land_acres: metrics.totalLandArea || farmerData.total_land_acres || 0,
         primary_crops: farmerData.primary_crops || [],
         farm_type: farmerData.farm_type || 'small',
         has_irrigation: farmerData.has_irrigation || false,
@@ -226,16 +229,38 @@ class EnhancedFarmerDataService extends BaseApiService {
 
   async getFarmerTags(tenantId: string, farmerId?: string): Promise<FarmerTag[]> {
     try {
-      const { data, error } = await supabase
+      // First try with tenant_id
+      let query = supabase
         .from('farmer_tags')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('farmer_id', farmerId);
+        .select('*');
+      
+      if (farmerId) {
+        query = query.eq('farmer_id', farmerId);
+      }
+      query = query.eq('tenant_id', tenantId);
+      
+      let { data, error } = await query;
+      
+      // If error or no data, try without tenant_id
+      if (error || !data || data.length === 0) {
+        console.log('[EnhancedFarmerDataService] Trying farmer_tags without tenant_id filter');
+        const fallback = await supabase
+          .from('farmer_tags')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        if (!fallback.error && fallback.data) {
+          data = fallback.data;
+          error = null;
+        }
+      }
       
       if (error) {
-        console.warn('farmer_tags table may not exist:', error);
+        console.warn('[EnhancedFarmerDataService] farmer_tags table may not exist:', error);
         return [];
       }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} tags for farmer ${farmerId}`);
       
       return (data || []).map((tag: any) => ({
         id: tag.id,
@@ -244,24 +269,42 @@ class EnhancedFarmerDataService extends BaseApiService {
         created_at: tag.created_at
       }));
     } catch (error) {
-      console.error('Error fetching farmer tags:', error);
+      console.error('[EnhancedFarmerDataService] Error fetching farmer tags:', error);
       return [];
     }
   }
 
   async getFarmerNotes(tenantId: string, farmerId: string): Promise<FarmerNote[]> {
     try {
-      const { data, error } = await supabase
+      // First try with tenant_id
+      let { data, error } = await supabase
         .from('farmer_notes')
         .select('*')
-        .eq('tenant_id', tenantId)
         .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false });
       
+      // If error or no data, try without tenant_id filter
+      if (error || !data || data.length === 0) {
+        console.log('[EnhancedFarmerDataService] Trying farmer_notes without tenant_id filter');
+        const fallback = await supabase
+          .from('farmer_notes')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .order('created_at', { ascending: false });
+        
+        if (!fallback.error && fallback.data) {
+          data = fallback.data;
+          error = null;
+        }
+      }
+      
       if (error) {
-        console.warn('farmer_notes table may not exist:', error);
+        console.warn('[EnhancedFarmerDataService] farmer_notes table may not exist:', error);
         return [];
       }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} notes for farmer ${farmerId}`);
       
       return (data || []).map((note: any) => ({
         id: note.id,
@@ -272,7 +315,7 @@ class EnhancedFarmerDataService extends BaseApiService {
         created_at: note.created_at
       }));
     } catch (error) {
-      console.error('Error fetching farmer notes:', error);
+      console.error('[EnhancedFarmerDataService] Error fetching farmer notes:', error);
       return [];
     }
   }
@@ -332,21 +375,48 @@ class EnhancedFarmerDataService extends BaseApiService {
 
   async getFarmerLands(tenantId: string, farmerId: string): Promise<FarmerLand[]> {
     try {
-      const { data, error } = await supabase
+      // First try with tenant_id filter
+      let { data, error } = await supabase
         .from('lands')
         .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('farmer_id', farmerId);
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId);
 
-      if (error) throw error;
+      // If no data found, try without tenant_id (lands might not have tenant_id column)
+      if ((!data || data.length === 0) && !error) {
+        const result = await supabase
+          .from('lands')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] Error fetching lands:', error);
+        // Try one more time with just farmer_id
+        const fallbackResult = await supabase
+          .from('lands')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        if (fallbackResult.error) {
+          console.error('[EnhancedFarmerDataService] Failed to fetch lands:', fallbackResult.error);
+          return [];
+        }
+        data = fallbackResult.data;
+      }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} lands for farmer ${farmerId}`);
       
       // Map the actual database columns to our interface
       return (data || []).map((land: any) => ({
         id: land.id,
-        area_acres: land.area_acres || 0,
+        area_acres: parseFloat(land.area_acres) || parseFloat(land.area) || 0,
         soil_type: land.soil_type || land.land_type || 'unknown',
         location: land.center_point_old || land.boundary || null,
-        irrigation_type: land.water_source || 'unknown',
+        irrigation_type: land.water_source || land.irrigation_type || 'unknown',
         crops: land.current_crop ? [land.current_crop] : []
       }));
     } catch (error) {
