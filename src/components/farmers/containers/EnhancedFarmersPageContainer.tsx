@@ -21,7 +21,7 @@ import {
   CheckCircle,
   BarChart3
 } from 'lucide-react';
-import { EnhancedFarmerCard } from '../cards/EnhancedFarmerCard';
+import { Modern2025FarmerCard } from '../cards/Modern2025FarmerCard';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
 import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
 import { useEnhancedFarmersQuery, useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
@@ -472,20 +472,20 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
             </div>
           ) : (
             <div className={cn(
-              "gap-4",
-              viewType === 'grid' && "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+              "gap-6",
+              viewType === 'grid' && "grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3",
               viewType === 'list' && "space-y-4",
-              viewType === 'compact' && "space-y-2"
+              viewType === 'compact' && "grid grid-cols-1 lg:grid-cols-2 gap-4"
             )}>
               {filteredFarmers.map((farmer) => (
-                <EnhancedFarmerCard
+                <Modern2025FarmerCard
                   key={farmer.id}
-                  farmer={farmer}
-                  viewType={viewType}
-                  onViewProfile={handleViewProfile}
-                  onContact={handleContact}
+                  farmerId={farmer.id}
+                  farmerData={farmer}
+                  onViewDetails={(id) => handleViewProfile(farmer)}
+                  onContact={(id, method) => handleContact(farmer, method === 'whatsapp' ? 'whatsapp' : 'call')}
                   isSelected={selectedFarmers.includes(farmer.id)}
-                  onSelect={handleFarmerSelect}
+                  onSelect={(selected) => handleFarmerSelect(farmer.id, selected)}
                 />
               ))}
             </div>
