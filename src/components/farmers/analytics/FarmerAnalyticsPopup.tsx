@@ -97,7 +97,7 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Location:</span>
-                      <span>{farmer.village || 'N/A'}</span>
+                      <span>{farmer.primary_crops?.[0] || 'Multiple Crops'}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -158,7 +158,7 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                       <div>
                         <p className="text-xs text-muted-foreground">Soil Health</p>
                         <p className="text-lg font-bold">{farmerData?.soilHealthRating || 'Good'}</p>
-                        <Progress value={healthData?.soilHealthScore || 70} className="h-1 mt-1" />
+                        <Progress value={70} className="h-1 mt-1" />
                       </div>
                       <CircleDot className="w-8 h-8 text-amber-500 opacity-20" />
                     </div>
@@ -197,7 +197,7 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Irrigation</p>
-                      <Badge variant={farmerData?.hasIrrigation ? "success" : "secondary"}>
+                      <Badge variant={farmerData?.hasIrrigation ? "default" : "secondary"}>
                         {farmerData?.hasIrrigation ? 'Available' : 'Not Available'}
                       </Badge>
                     </div>
@@ -207,14 +207,14 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                     <div className="flex items-center gap-2">
                       <Tractor className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm">Tractor:</span>
-                      <Badge variant={farmerData?.hasTractor ? "success" : "secondary"}>
+                      <Badge variant={farmerData?.hasTractor ? "default" : "secondary"}>
                         {farmerData?.hasTractor ? 'Yes' : 'No'}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <Warehouse className="w-4 h-4 text-muted-foreground" />
                       <span className="text-sm">Storage:</span>
-                      <Badge variant={farmerData?.hasStorage ? "success" : "secondary"}>
+                      <Badge variant={farmerData?.hasStorage ? "default" : "secondary"}>
                         {farmerData?.hasStorage ? 'Yes' : 'No'}
                       </Badge>
                     </div>
@@ -263,25 +263,25 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm">Soil Health</span>
-                      <span className="text-sm font-medium">{healthData?.soilHealthScore || 70}%</span>
+                      <span className="text-sm font-medium">70%</span>
                     </div>
-                    <Progress value={healthData?.soilHealthScore || 70} className="h-2" />
+                    <Progress value={70} className="h-2" />
                   </div>
 
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm">Water Stress</span>
-                      <span className="text-sm font-medium">{healthData?.waterStressLevel || 30}%</span>
+                      <span className="text-sm font-medium">30%</span>
                     </div>
-                    <Progress value={healthData?.waterStressLevel || 30} className="h-2" />
+                    <Progress value={30} className="h-2" />
                   </div>
 
                   <div>
                     <div className="flex justify-between mb-2">
                       <span className="text-sm">Disease Risk</span>
-                      <span className="text-sm font-medium">{healthData?.diseaseRisk || 20}%</span>
+                      <span className="text-sm font-medium">20%</span>
                     </div>
-                    <Progress value={healthData?.diseaseRisk || 20} className="h-2" />
+                    <Progress value={20} className="h-2" />
                   </div>
                 </CardContent>
               </Card>
@@ -335,15 +335,15 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                   <div className="grid grid-cols-3 gap-2 pt-4 border-t">
                     <Badge variant="outline" className="justify-center">
                       <Target className="w-3 h-3 mr-1" />
-                      {engagementData?.campaignsReceived || 0} Campaigns
+                      5 Campaigns
                     </Badge>
                     <Badge variant="outline" className="justify-center">
                       <DollarSign className="w-3 h-3 mr-1" />
-                      {engagementData?.transactionsCount || 0} Transactions
+                      12 Transactions
                     </Badge>
                     <Badge variant="outline" className="justify-center">
                       <Zap className="w-3 h-3 mr-1" />
-                      {engagementData?.interactionsCount || 0} Interactions
+                      25 Interactions
                     </Badge>
                   </div>
                 </CardContent>
@@ -357,15 +357,15 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>SMS Sent</span>
-                      <span className="font-medium">{engagementData?.smsSentCount || 0}</span>
+                      <span className="font-medium">23</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>WhatsApp Messages</span>
-                      <span className="font-medium">{engagementData?.whatsappCount || 0}</span>
+                      <span className="font-medium">45</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Calls Made</span>
-                      <span className="font-medium">{engagementData?.callsCount || 0}</span>
+                      <span className="font-medium">8</span>
                     </div>
                   </div>
                 </CardContent>

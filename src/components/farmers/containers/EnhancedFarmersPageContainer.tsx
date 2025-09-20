@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modern2025FarmersPresentation } from '../presentation/Modern2025FarmersPresentation';
 import { EnhancedCreateFarmerContainer } from './EnhancedCreateFarmerContainer';
-import { EnhancedFarmerProfile } from '../EnhancedFarmerProfile';
+import { FarmerAnalyticsPopup } from '../analytics/FarmerAnalyticsPopup';
 import { useEnhancedFarmersQuery, useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
@@ -105,13 +105,12 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
         onSuccess={handleCreateSuccess}
       />
 
-      {/* Farmer Profile Modal */}
-      {selectedFarmer && (
-        <EnhancedFarmerProfile
-          farmer={selectedFarmer}
-          onClose={() => setSelectedFarmer(null)}
-        />
-      )}
+      {/* Farmer Analytics Popup */}
+      <FarmerAnalyticsPopup
+        farmer={selectedFarmer!}
+        isOpen={!!selectedFarmer}
+        onClose={() => setSelectedFarmer(null)}
+      />
     </>
   );
 };
