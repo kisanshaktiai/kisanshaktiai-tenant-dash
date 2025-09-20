@@ -9,7 +9,7 @@ import {
   sanitizeWhiteLabelConfig,
   CURRENT_SCHEMA_VERSION,
   isCompatible
-} from '@kisanshakti/whitelabel-types';
+} from '@/lib/whitelabel-types';
 
 export const useWhiteLabelSettingsOptimized = () => {
   const { currentTenant } = useTenantAuthStable();
