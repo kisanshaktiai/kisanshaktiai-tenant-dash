@@ -65,13 +65,14 @@ export const useWhiteLabelSettingsOptimized = () => {
       return fetchWhiteLabelConfig(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
-    staleTime: 30 * 60 * 1000, // Consider data fresh for 30 minutes
-    gcTime: 60 * 60 * 1000, // Keep cache for 1 hour
+    staleTime: 5 * 60 * 1000, // Reduced to 5 minutes to prevent stale data issues
+    gcTime: 10 * 60 * 1000, // Reduced cache time to 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: 'always', // Changed to always refetch on mount
     refetchInterval: false,
     retry: 1,
     retryDelay: 1000,
+    networkMode: 'offlineFirst', // Use cache first when offline
   });
 
   // Optimized update mutation

@@ -213,7 +213,7 @@ const WhiteLabelConfigPageOptimized = () => {
       setLocalConfig(mergedConfig);
       setIsInitialized(true);
     }
-  }, [settings, isInitialized]);
+  }, [settings]); // Fixed: Removed isInitialized from dependencies to prevent infinite loop
 
   // Cleanup on unmount
   useEffect(() => {

@@ -179,7 +179,7 @@ const WhiteLabelConfigPage = () => {
         ...(settings.mobile_ui_config || {})
       }));
     }
-  }, [settings]); // Remove isLoading to prevent re-render loop
+  }, [settings]); // Fixed: Only depend on settings to prevent re-render loop
 
   const handleFieldChange = (field: string, value: any) => {
     setLocalConfig(prev => ({
