@@ -171,10 +171,10 @@ const WhiteLabelConfigPageOptimized = () => {
         ...(settings.pwa_config || {}),
         // Deep merge mobile_ui_config
         ...(settings.mobile_ui_config || {}),
-        // Merge email templates if they exist
-        email_templates: settings.email_templates ? {
+        // Merge email templates if they exist (handle as 'any' type)
+        email_templates: (settings as any).email_templates ? {
           ...getDefaultConfig().email_templates,
-          ...settings.email_templates
+          ...(settings as any).email_templates
         } : getDefaultConfig().email_templates
       };
       
@@ -282,8 +282,21 @@ const WhiteLabelConfigPageOptimized = () => {
       await updateSettings(updatePayload);
       
       setHasUnsavedChanges(false);
-    } catch (error) {
+      
+      // Force refresh to show real DB values in preview
+      setTimeout(() => {
+        // Settings will auto-refresh from query cache
+      }, 100);
+    } catch (error: any) {
       console.error('Save error:', error);
+      // Show validation errors if any
+      if (error.message?.includes('Invalid configuration')) {
+        toast({
+          title: "Validation Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     }
   };
 

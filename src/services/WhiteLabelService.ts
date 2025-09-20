@@ -1,72 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 import * as colorUtils from '@/utils/colorUtils';
+import {
+  WhiteLabelConfigData as WhiteLabelConfig,
+  validateWhiteLabelConfig,
+  sanitizeWhiteLabelConfig,
+  CURRENT_SCHEMA_VERSION,
+  isCompatible
+} from '@kisanshakti/whitelabel-types';
 
-export interface WhiteLabelConfig {
-  id?: string;
-  tenant_id: string;
-  
-  // Brand Identity for Mobile App
-  app_name?: string;
-  app_logo_url?: string;
-  app_icon_url?: string;
-  app_splash_screen_url?: string;
-  
-  // Color Theme (shared with web app appearance settings)
-  primary_color: string;
-  secondary_color: string;
-  accent_color: string;
-  background_color: string;
-  text_color: string;
-  success_color: string;
-  warning_color: string;
-  error_color: string;
-  info_color: string;
-  
-  // Mobile App Specific Settings
-  bundle_identifier?: string;
-  android_package_name?: string;
-  ios_app_id?: string;
-  
-  // Mobile Theme (stored in mobile_theme column)
-  mobile_theme?: {
-    primary_color?: string;
-    secondary_color?: string;
-    accent_color?: string;
-    background_color?: string;
-    surface_color?: string;
-    text_color?: string;
-    border_color?: string;
-    success_color?: string;
-    warning_color?: string;
-    error_color?: string;
-    info_color?: string;
-    primary_variant?: string;
-    secondary_variant?: string;
-    tertiary_color?: string;
-    on_surface_color?: string;
-  };
-  
-  // Configuration Objects
-  app_store_config?: Record<string, any>;
-  play_store_config?: Record<string, any>;
-  pwa_config?: Record<string, any>;
-  mobile_features?: Record<string, boolean>;
-  notification_config?: Record<string, any>;
-  deep_link_config?: Record<string, any>;
-  mobile_ui_config?: {
-    navigation_style?: string;
-    animations_enabled?: boolean;
-    button_style?: string;
-    input_style?: string;
-    card_style?: string;
-  };
-  
-  // Metadata
-  is_active?: boolean;
-  version?: number;
-  created_at?: string;
-  updated_at?: string;
-}
+// Re-export the type for backward compatibility
+export type { WhiteLabelConfig };
 
 class WhiteLabelService {
   /**
@@ -109,11 +52,23 @@ class WhiteLabelService {
           throw error;
         }
 
+        // Check schema compatibility
+        if (data && !isCompatible((data as any).schema_version, CURRENT_SCHEMA_VERSION)) {
+          console.warn(`White label config schema version ${(data as any).schema_version} may not be compatible with current version ${CURRENT_SCHEMA_VERSION}`);
+        }
+
         return data as any as WhiteLabelConfig;
       }
 
       const data = await response.json();
-      return data.config || this.getDefaultConfig(tenantId);
+      const config = data.config || this.getDefaultConfig(tenantId);
+      
+      // Check schema compatibility
+      if (config && !isCompatible(config.schema_version, CURRENT_SCHEMA_VERSION)) {
+        console.warn(`White label config schema version ${config.schema_version} may not be compatible with current version ${CURRENT_SCHEMA_VERSION}`);
+      }
+      
+      return config;
     } catch (error) {
       console.error('Error in getWhiteLabelConfig:', error);
       return this.getDefaultConfig(tenantId);
@@ -125,6 +80,9 @@ class WhiteLabelService {
    */
   async upsertWhiteLabelConfig(config: Partial<WhiteLabelConfig> & { tenant_id: string }): Promise<WhiteLabelConfig> {
     try {
+      // Get current user for audit metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Generate semantic colors if primary color is provided
       let processedConfig = { ...config };
       
@@ -143,12 +101,39 @@ class WhiteLabelService {
         };
       }
 
+      // Add audit metadata
+      const now = new Date().toISOString();
+      const configWithAudit = {
+        ...processedConfig,
+        updated_at: now,
+        updated_by: user?.id,
+        changed_by: user?.email,
+        schema_version: CURRENT_SCHEMA_VERSION,
+      };
+
+      // Validate configuration
+      const validation = validateWhiteLabelConfig(configWithAudit as WhiteLabelConfig);
+      if (!validation.valid) {
+        throw new Error(`Invalid configuration: ${validation.errors?.join(', ')}`);
+      }
+
+      // Sanitize configuration before saving
+      const sanitizedConfig = sanitizeWhiteLabelConfig(configWithAudit as WhiteLabelConfig);
+
+      // Check if config exists to set created_by
+      const { data: existing } = await supabase
+        .from('white_label_configs')
+        .select('id')
+        .eq('tenant_id', config.tenant_id)
+        .single();
+
+      if (!existing) {
+        (sanitizedConfig as any).created_by = user?.id;
+      }
+
       const { data, error } = await supabase
         .from('white_label_configs')
-        .upsert({
-          ...processedConfig,
-          updated_at: new Date().toISOString(),
-        }, {
+        .upsert(sanitizedConfig as any, {
           onConflict: 'tenant_id'
         })
         .select()

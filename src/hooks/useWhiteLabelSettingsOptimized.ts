@@ -2,65 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenantAuthStable } from '@/hooks/useTenantAuthStable';
 import { useToast } from '@/hooks/use-toast';
-import { useRef, useCallback } from 'react';
-
-export interface WhiteLabelConfig {
-  id?: string;
-  tenant_id: string;
-  
-  // Brand Identity
-  app_name?: string;
-  app_logo_url?: string;
-  app_icon_url?: string;
-  app_splash_screen_url?: string;
-  
-  // Core Colors
-  primary_color?: string;
-  secondary_color?: string;
-  accent_color?: string;
-  background_color?: string;
-  text_color?: string;
-  success_color?: string;
-  warning_color?: string;
-  error_color?: string;
-  info_color?: string;
-  
-  // Domain Configuration
-  custom_domain?: string;
-  subdomain?: string;
-  
-  // Email Configuration
-  smtp_host?: string;
-  smtp_port?: string;
-  smtp_username?: string;
-  smtp_password?: string;
-  from_email?: string;
-  from_name?: string;
-  email_templates?: any;
-  
-  // Mobile App Settings
-  bundle_identifier?: string;
-  android_package_name?: string;
-  ios_app_id?: string;
-  
-  // Mobile Theme
-  mobile_theme?: any;
-  
-  // Configuration Objects
-  app_store_config?: any;
-  play_store_config?: any;
-  pwa_config?: any;
-  mobile_features?: any;
-  notification_config?: any;
-  deep_link_config?: any;
-  mobile_ui_config?: any;
-  
-  // Metadata
-  is_active?: boolean;
-  version?: number;
-  created_at?: string;
-  updated_at?: string;
-}
+import { useRef, useCallback, useEffect } from 'react';
+import {
+  WhiteLabelConfigData as WhiteLabelConfig,
+  validateWhiteLabelConfig,
+  sanitizeWhiteLabelConfig,
+  CURRENT_SCHEMA_VERSION,
+  isCompatible
+} from '@kisanshakti/whitelabel-types';
 
 export const useWhiteLabelSettingsOptimized = () => {
   const { currentTenant } = useTenantAuthStable();
@@ -95,7 +44,13 @@ export const useWhiteLabelSettingsOptimized = () => {
 
       console.log('Fetched white label config from DB:', data);
       console.log('Mobile theme from DB:', (data as any)?.mobile_theme);
-      return data as WhiteLabelConfig;
+      
+      // Check schema compatibility
+      if (data && !isCompatible((data as any).schema_version, CURRENT_SCHEMA_VERSION)) {
+        console.warn(`White label config schema version ${(data as any).schema_version} may not be compatible with current version ${CURRENT_SCHEMA_VERSION}`);
+      }
+      
+      return data as any as WhiteLabelConfig;
     } catch (error) {
       console.error('Error fetching white label config:', error);
       return null;
@@ -127,13 +82,28 @@ export const useWhiteLabelSettingsOptimized = () => {
       console.log('Update payload before processing:', updates);
       console.log('Mobile theme in update payload:', updates.mobile_theme);
       
+      // Get current user for audit metadata
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const payload = {
         ...updates,
         tenant_id: currentTenant.id,
         updated_at: new Date().toISOString(),
+        updated_by: user?.id,
+        changed_by: user?.email,
+        schema_version: CURRENT_SCHEMA_VERSION,
       };
       
-      console.log('Final payload to save to DB:', payload);
+      // Validate configuration
+      const validation = validateWhiteLabelConfig(payload as WhiteLabelConfig);
+      if (!validation.valid) {
+        throw new Error(`Invalid configuration: ${validation.errors?.join(', ')}`);
+      }
+      
+      // Sanitize configuration before saving
+      const sanitizedPayload = sanitizeWhiteLabelConfig(payload as WhiteLabelConfig);
+      
+      console.log('Final sanitized payload to save to DB:', sanitizedPayload);
 
       // Check if config exists
       const { data: existing } = await supabase
@@ -146,7 +116,7 @@ export const useWhiteLabelSettingsOptimized = () => {
         // Update existing
         const { data, error } = await supabase
           .from('white_label_configs')
-          .update(payload)
+          .update(sanitizedPayload as any)
           .eq('tenant_id', currentTenant.id)
           .select()
           .single();
@@ -154,10 +124,13 @@ export const useWhiteLabelSettingsOptimized = () => {
         if (error) throw error;
         return data;
       } else {
-        // Insert new
+        // Insert new - add created_by
         const { data, error } = await supabase
           .from('white_label_configs')
-          .insert(payload)
+          .insert({
+            ...sanitizedPayload,
+            created_by: user?.id,
+          } as any)
           .select()
           .single();
         
@@ -183,6 +156,17 @@ export const useWhiteLabelSettingsOptimized = () => {
       });
     },
   });
+
+  // Check schema compatibility on settings change
+  useEffect(() => {
+    if (settings && !isCompatible(settings.schema_version, CURRENT_SCHEMA_VERSION)) {
+      toast({
+        title: "Schema Version Warning",
+        description: `Configuration schema version ${settings.schema_version} may not be compatible with current version ${CURRENT_SCHEMA_VERSION}`,
+        variant: "default",
+      });
+    }
+  }, [settings, toast]);
 
   // Cleanup on unmount
   const cleanup = useCallback(() => {

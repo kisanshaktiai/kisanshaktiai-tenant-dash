@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { whiteLabelService, WhiteLabelConfig } from '@/services/WhiteLabelService';
+import { whiteLabelService } from '@/services/WhiteLabelService';
+import type { WhiteLabelConfig } from '@/services/WhiteLabelService';
 import { useTenantAuthStable } from '@/hooks/useTenantAuthStable';
 import { useToast } from '@/hooks/use-toast';
 
