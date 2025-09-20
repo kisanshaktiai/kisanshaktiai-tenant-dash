@@ -254,15 +254,53 @@ const presetThemes = [
 const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
   if (!flatTheme) return defaultTheme;
   
-  // If it already has the complete nested structure (core/neutral/status), use it directly
-  // Check for proper nested structure with all required sections
-  if (flatTheme.core && flatTheme.neutral && flatTheme.status && flatTheme.support) {
-    // It's already in the correct format, just ensure all properties exist
+  console.log('Converting theme - Input structure:', {
+    hasCore: !!flatTheme.core,
+    hasFlat: !!flatTheme.primary_color,
+    keys: Object.keys(flatTheme)
+  });
+  
+  // Priority 1: Use nested structure if ALL required sections exist and are valid
+  if (flatTheme.core && flatTheme.neutral && flatTheme.status && flatTheme.support &&
+      Object.keys(flatTheme.core).length >= 6 &&
+      Object.keys(flatTheme.neutral).length >= 5 &&
+      Object.keys(flatTheme.status).length >= 4 &&
+      Object.keys(flatTheme.support).length >= 2) {
+    
+    console.log('Using nested structure from database');
+    // Validate HSL format and fallback to defaults if invalid
+    const validateAndFallback = (value: any, fallback: string): string => {
+      if (typeof value !== 'string') return fallback;
+      const hslPattern = /^\d{1,3}\s+\d{1,3}%\s+\d{1,3}%$/;
+      return hslPattern.test(value) ? value : fallback;
+    };
+    
     return {
-      core: flatTheme.core,
-      neutral: flatTheme.neutral,
-      status: flatTheme.status,
-      support: flatTheme.support,
+      core: {
+        primary: validateAndFallback(flatTheme.core.primary, defaultTheme.core.primary),
+        primary_variant: validateAndFallback(flatTheme.core.primary_variant, defaultTheme.core.primary_variant),
+        secondary: validateAndFallback(flatTheme.core.secondary, defaultTheme.core.secondary),
+        secondary_variant: validateAndFallback(flatTheme.core.secondary_variant, defaultTheme.core.secondary_variant),
+        tertiary: validateAndFallback(flatTheme.core.tertiary, defaultTheme.core.tertiary),
+        accent: validateAndFallback(flatTheme.core.accent, defaultTheme.core.accent)
+      },
+      neutral: {
+        background: validateAndFallback(flatTheme.neutral.background, defaultTheme.neutral.background),
+        surface: validateAndFallback(flatTheme.neutral.surface, defaultTheme.neutral.surface),
+        on_background: validateAndFallback(flatTheme.neutral.on_background, defaultTheme.neutral.on_background),
+        on_surface: validateAndFallback(flatTheme.neutral.on_surface, defaultTheme.neutral.on_surface),
+        border: validateAndFallback(flatTheme.neutral.border, defaultTheme.neutral.border)
+      },
+      status: {
+        success: validateAndFallback(flatTheme.status.success, defaultTheme.status.success),
+        warning: validateAndFallback(flatTheme.status.warning, defaultTheme.status.warning),
+        error: validateAndFallback(flatTheme.status.error, defaultTheme.status.error),
+        info: validateAndFallback(flatTheme.status.info, defaultTheme.status.info)
+      },
+      support: {
+        disabled: validateAndFallback(flatTheme.support.disabled, defaultTheme.support.disabled),
+        overlay: validateAndFallback(flatTheme.support.overlay, defaultTheme.support.overlay)
+      },
       typography: flatTheme.typography || defaultTheme.typography,
       spacing: flatTheme.spacing || defaultTheme.spacing,
       border_radius: flatTheme.border_radius || defaultTheme.border_radius,
@@ -270,33 +308,47 @@ const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
     };
   }
   
-  // Convert flat structure to nested structure
-  // This handles the case where mobile_theme has flat properties
+  // Priority 2: Convert from flat structure (legacy format)
+  console.log('Converting from flat structure');
+  
+  // Helper to convert hex to HSL if needed
+  const convertToHSL = (color: string | undefined): string => {
+    if (!color) return '';
+    // If already in HSL format
+    if (/^\d{1,3}\s+\d{1,3}%\s+\d{1,3}%$/.test(color)) return color;
+    // If it's a hex color, we'd need a converter (for now, return default)
+    if (color.startsWith('#')) {
+      console.warn(`Hex color ${color} needs conversion to HSL`);
+      return '';
+    }
+    return color;
+  };
+  
   return {
     core: {
-      primary: flatTheme.primary_color || defaultTheme.core.primary,
-      primary_variant: flatTheme.primary_variant || defaultTheme.core.primary_variant,
-      secondary: flatTheme.secondary_color || defaultTheme.core.secondary,
-      secondary_variant: flatTheme.secondary_variant || defaultTheme.core.secondary_variant,
-      tertiary: flatTheme.tertiary_color || defaultTheme.core.tertiary,
-      accent: flatTheme.accent_color || defaultTheme.core.accent
+      primary: convertToHSL(flatTheme.primary_color) || defaultTheme.core.primary,
+      primary_variant: convertToHSL(flatTheme.primary_variant) || defaultTheme.core.primary_variant,
+      secondary: convertToHSL(flatTheme.secondary_color) || defaultTheme.core.secondary,
+      secondary_variant: convertToHSL(flatTheme.secondary_variant) || defaultTheme.core.secondary_variant,
+      tertiary: convertToHSL(flatTheme.tertiary_color) || defaultTheme.core.tertiary,
+      accent: convertToHSL(flatTheme.accent_color) || defaultTheme.core.accent
     },
     neutral: {
-      background: flatTheme.background_color || defaultTheme.neutral.background,
-      surface: flatTheme.surface_color || defaultTheme.neutral.surface,
-      on_background: flatTheme.text_color || defaultTheme.neutral.on_background,
-      on_surface: flatTheme.on_surface_color || defaultTheme.neutral.on_surface,
-      border: flatTheme.border_color || defaultTheme.neutral.border
+      background: convertToHSL(flatTheme.background_color) || defaultTheme.neutral.background,
+      surface: convertToHSL(flatTheme.surface_color) || defaultTheme.neutral.surface,
+      on_background: convertToHSL(flatTheme.text_color) || defaultTheme.neutral.on_background,
+      on_surface: convertToHSL(flatTheme.on_surface_color) || defaultTheme.neutral.on_surface,
+      border: convertToHSL(flatTheme.border_color) || defaultTheme.neutral.border
     },
     status: {
-      success: flatTheme.success_color || defaultTheme.status.success,
-      warning: flatTheme.warning_color || defaultTheme.status.warning,
-      error: flatTheme.error_color || defaultTheme.status.error,
-      info: flatTheme.info_color || defaultTheme.status.info
+      success: convertToHSL(flatTheme.success_color) || defaultTheme.status.success,
+      warning: convertToHSL(flatTheme.warning_color) || defaultTheme.status.warning,
+      error: convertToHSL(flatTheme.error_color) || defaultTheme.status.error,
+      info: convertToHSL(flatTheme.info_color) || defaultTheme.status.info
     },
     support: {
-      disabled: flatTheme.disabled_color || defaultTheme.support.disabled,
-      overlay: flatTheme.overlay_color || defaultTheme.support.overlay
+      disabled: convertToHSL(flatTheme.disabled_color) || defaultTheme.support.disabled,
+      overlay: convertToHSL(flatTheme.overlay_color) || defaultTheme.support.overlay
     },
     typography: flatTheme.typography || defaultTheme.typography,
     spacing: flatTheme.spacing || defaultTheme.spacing,
@@ -346,20 +398,35 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
 
   // Initialize theme from config when it changes
   useEffect(() => {
-    console.log('Config received:', config);
+    console.log('EnhancedMobileThemePanel - Config received:', config);
+    console.log('EnhancedMobileThemePanel - Mobile theme data:', config?.mobile_theme);
     
-    if (config?.mobile_theme) {
-      console.log('Loading mobile theme from config:', config.mobile_theme);
+    if (config?.mobile_theme && Object.keys(config.mobile_theme).length > 0) {
+      console.log('Loading mobile theme from config');
       console.log('Theme structure keys:', Object.keys(config.mobile_theme));
+      console.log('Has core?', !!config.mobile_theme.core);
+      console.log('Core data:', config.mobile_theme.core);
       
       // Convert flat structure to Modern2025Theme if needed
       const convertedTheme = convertFlatToModern2025Theme(config.mobile_theme);
       console.log('Converted theme for display:', convertedTheme);
-      setCurrentTheme(convertedTheme);
+      
+      // Verify the converted theme has valid data
+      if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
+        console.log('Setting theme with valid data');
+        setCurrentTheme(convertedTheme);
+      } else {
+        console.warn('Converted theme missing required data, using default');
+        setCurrentTheme(defaultTheme);
+      }
     } else if (config?.app_store_config?.mobile_theme) {
       console.log('Loading mobile theme from app_store_config:', config.app_store_config.mobile_theme);
       const convertedTheme = convertFlatToModern2025Theme(config.app_store_config.mobile_theme);
-      setCurrentTheme(convertedTheme);
+      if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
+        setCurrentTheme(convertedTheme);
+      } else {
+        setCurrentTheme(defaultTheme);
+      }
     } else {
       console.log('No saved theme found, using default theme');
       setCurrentTheme(defaultTheme);

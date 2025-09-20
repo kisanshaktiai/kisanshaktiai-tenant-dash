@@ -18,6 +18,12 @@ export const MobileAppPreview: React.FC<MobileAppPreviewProps> = ({
   appName = 'Your App',
   logoUrl
 }) => {
+  // Debug logging
+  React.useEffect(() => {
+    console.log('MobileAppPreview - Theme received:', theme);
+    console.log('MobileAppPreview - Core colors:', theme?.core);
+    console.log('MobileAppPreview - Primary color:', theme?.core?.primary);
+  }, [theme]);
   const getDeviceFrame = () => {
     switch (deviceType) {
       case 'iphone':
@@ -32,15 +38,40 @@ export const MobileAppPreview: React.FC<MobileAppPreviewProps> = ({
   };
 
   const getCoreColor = (colorKey: string) => {
-    return theme?.core?.[colorKey] ? `hsl(${theme.core[colorKey]})` : '#ccc';
+    const color = theme?.core?.[colorKey];
+    // Provide better defaults based on key
+    const defaults: Record<string, string> = {
+      primary: 'hsl(210 100% 50%)',
+      primary_variant: 'hsl(210 100% 40%)',
+      secondary: 'hsl(160 60% 45%)',
+      secondary_variant: 'hsl(160 60% 35%)',
+      tertiary: 'hsl(280 60% 50%)',
+      accent: 'hsl(45 90% 50%)'
+    };
+    return color ? `hsl(${color})` : (defaults[colorKey] || 'hsl(210 100% 50%)');
   };
 
   const getNeutralColor = (colorKey: string) => {
-    return theme?.neutral?.[colorKey] ? `hsl(${theme.neutral[colorKey]})` : '#ccc';
+    const color = theme?.neutral?.[colorKey];
+    const defaults: Record<string, string> = {
+      background: 'hsl(0 0% 98%)',
+      surface: 'hsl(0 0% 100%)',
+      on_background: 'hsl(0 0% 10%)',
+      on_surface: 'hsl(0 0% 15%)',
+      border: 'hsl(0 0% 90%)'
+    };
+    return color ? `hsl(${color})` : (defaults[colorKey] || 'hsl(0 0% 50%)');
   };
 
   const getStatusColor = (colorKey: string) => {
-    return theme?.status?.[colorKey] ? `hsl(${theme.status[colorKey]})` : '#ccc';
+    const color = theme?.status?.[colorKey];
+    const defaults: Record<string, string> = {
+      success: 'hsl(142 71% 45%)',
+      warning: 'hsl(38 92% 50%)',
+      error: 'hsl(0 84% 60%)',
+      info: 'hsl(199 89% 48%)'
+    };
+    return color ? `hsl(${color})` : (defaults[colorKey] || 'hsl(210 100% 50%)');
   };
 
   return (

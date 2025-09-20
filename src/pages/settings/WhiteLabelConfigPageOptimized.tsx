@@ -44,8 +44,62 @@ const getDefaultConfig = () => ({
   error_color: '#ef4444',
   info_color: '#3b82f6',
   
-  // Mobile Theme
+  // Mobile Theme - Use nested structure as primary format
   mobile_theme: {
+    // Nested structure (new format)
+    core: {
+      primary: "210 100% 50%",
+      primary_variant: "210 100% 40%",
+      secondary: "160 60% 45%",
+      secondary_variant: "160 60% 35%",
+      tertiary: "280 60% 50%",
+      accent: "45 90% 50%"
+    },
+    neutral: {
+      background: "0 0% 98%",
+      surface: "0 0% 100%",
+      on_background: "0 0% 10%",
+      on_surface: "0 0% 15%",
+      border: "0 0% 90%"
+    },
+    status: {
+      success: "142 71% 45%",
+      warning: "38 92% 50%",
+      error: "0 84% 60%",
+      info: "199 89% 48%"
+    },
+    support: {
+      disabled: "0 0% 60%",
+      overlay: "0 0% 0%"
+    },
+    typography: {
+      font_family: "Inter",
+      font_size_base: 16,
+      font_weight_regular: 400,
+      font_weight_medium: 500,
+      font_weight_bold: 700
+    },
+    spacing: {
+      unit: 4,
+      xs: 4,
+      sm: 8,
+      md: 16,
+      lg: 24,
+      xl: 32
+    },
+    border_radius: {
+      sm: 4,
+      md: 8,
+      lg: 12,
+      full: 9999
+    },
+    shadows: {
+      sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      md: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      lg: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+      xl: "0 20px 25px -5px rgba(0, 0, 0, 0.1)"
+    },
+    // Keep flat structure for backward compatibility
     primary_color: '142 76% 36%',
     secondary_color: '155 76% 36%',
     accent_color: '220 14% 46%',
