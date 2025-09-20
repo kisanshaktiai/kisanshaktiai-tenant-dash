@@ -159,14 +159,45 @@ const WhiteLabelConfigPageOptimized = () => {
     if (settings && !isInitialized) {
       console.log('Loading white label settings from database:', settings);
       
+      // Handle mobile_theme properly - check if it exists and has the nested structure
+      let processedMobileTheme = getDefaultConfig().mobile_theme;
+      
+      if (settings.mobile_theme) {
+        const mobileThemeData = settings.mobile_theme as any;
+        
+        // Check if mobile_theme has the nested structure (core, neutral, status, support)
+        if (mobileThemeData.core && mobileThemeData.neutral && 
+            mobileThemeData.status && mobileThemeData.support) {
+          // It's already in the nested format from DB, use it as is
+          // But still ensure we have all flat properties for compatibility
+          processedMobileTheme = {
+            ...getDefaultConfig().mobile_theme,
+            ...mobileThemeData,
+            // Preserve nested structure
+            core: mobileThemeData.core,
+            neutral: mobileThemeData.neutral,
+            status: mobileThemeData.status,
+            support: mobileThemeData.support,
+            typography: mobileThemeData.typography,
+            spacing: mobileThemeData.spacing,
+            border_radius: mobileThemeData.border_radius,
+            shadows: mobileThemeData.shadows
+          };
+          console.log('Using nested mobile_theme from database:', processedMobileTheme);
+        } else {
+          // It's in flat format, merge with defaults
+          processedMobileTheme = {
+            ...getDefaultConfig().mobile_theme,
+            ...mobileThemeData
+          };
+          console.log('Using flat mobile_theme merged with defaults:', processedMobileTheme);
+        }
+      }
+      
       const mergedConfig = {
         ...getDefaultConfig(),
         ...settings,
-        // Deep merge mobile_theme - ensure it's properly structured
-        mobile_theme: settings.mobile_theme ? {
-          ...getDefaultConfig().mobile_theme,
-          ...(typeof settings.mobile_theme === 'object' ? settings.mobile_theme : {})
-        } : getDefaultConfig().mobile_theme,
+        mobile_theme: processedMobileTheme,
         // Deep merge pwa_config
         ...(settings.pwa_config || {}),
         // Deep merge mobile_ui_config
@@ -178,7 +209,7 @@ const WhiteLabelConfigPageOptimized = () => {
         } : getDefaultConfig().email_templates
       };
       
-      console.log('Merged config with mobile_theme:', mergedConfig.mobile_theme);
+      console.log('Final merged config with mobile_theme:', mergedConfig.mobile_theme);
       setLocalConfig(mergedConfig);
       setIsInitialized(true);
     }

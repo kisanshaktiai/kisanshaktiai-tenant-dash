@@ -122,6 +122,41 @@ const WhiteLabelConfigPage = () => {
   // Initialize local config from settings - only run when settings change
   useEffect(() => {
     if (settings) {
+      // Handle mobile_theme - check if it has nested structure from DB
+      let processedMobileTheme = localConfig.mobile_theme;
+      
+      if (settings.mobile_theme) {
+        const mobileThemeData = settings.mobile_theme as any;
+        
+        // Check if it's already in the nested Modern2025Theme format
+        if (mobileThemeData.core && mobileThemeData.neutral && 
+            mobileThemeData.status && mobileThemeData.support) {
+          // Use the nested structure directly, preserving all properties
+          processedMobileTheme = mobileThemeData;
+        } else if (mobileThemeData.primary_color || mobileThemeData.secondary_color) {
+          // It's in flat format, use the flat properties
+          processedMobileTheme = {
+            primary_color: mobileThemeData.primary_color || localConfig.mobile_theme.primary_color,
+            secondary_color: mobileThemeData.secondary_color || localConfig.mobile_theme.secondary_color,
+            accent_color: mobileThemeData.accent_color || localConfig.mobile_theme.accent_color,
+            background_color: mobileThemeData.background_color || localConfig.mobile_theme.background_color,
+            surface_color: mobileThemeData.surface_color || localConfig.mobile_theme.surface_color,
+            text_color: mobileThemeData.text_color || localConfig.mobile_theme.text_color,
+            border_color: mobileThemeData.border_color || localConfig.mobile_theme.border_color,
+            success_color: mobileThemeData.success_color || localConfig.mobile_theme.success_color,
+            warning_color: mobileThemeData.warning_color || localConfig.mobile_theme.warning_color,
+            error_color: mobileThemeData.error_color || localConfig.mobile_theme.error_color,
+            info_color: mobileThemeData.info_color || localConfig.mobile_theme.info_color,
+            primary_variant: mobileThemeData.primary_variant || localConfig.mobile_theme.primary_variant,
+            secondary_variant: mobileThemeData.secondary_variant || localConfig.mobile_theme.secondary_variant,
+            tertiary_color: mobileThemeData.tertiary_color || localConfig.mobile_theme.tertiary_color,
+            on_surface_color: mobileThemeData.on_surface_color || localConfig.mobile_theme.on_surface_color,
+            // Include nested structure if present
+            ...mobileThemeData
+          };
+        }
+      }
+      
       setLocalConfig(prev => ({
         ...prev,
         app_name: settings.app_name || prev.app_name,
@@ -138,24 +173,7 @@ const WhiteLabelConfigPage = () => {
         error_color: settings.error_color || prev.error_color,
         info_color: settings.info_color || prev.info_color,
         bundle_identifier: settings.bundle_identifier || prev.bundle_identifier,
-        // Load mobile_theme from database with defaults for missing properties
-        mobile_theme: {
-          primary_color: settings.mobile_theme?.primary_color || prev.mobile_theme.primary_color,
-          secondary_color: settings.mobile_theme?.secondary_color || prev.mobile_theme.secondary_color,
-          accent_color: settings.mobile_theme?.accent_color || prev.mobile_theme.accent_color,
-          background_color: settings.mobile_theme?.background_color || prev.mobile_theme.background_color,
-          surface_color: settings.mobile_theme?.surface_color || prev.mobile_theme.surface_color,
-          text_color: settings.mobile_theme?.text_color || prev.mobile_theme.text_color,
-          border_color: settings.mobile_theme?.border_color || prev.mobile_theme.border_color,
-          success_color: settings.mobile_theme?.success_color || prev.mobile_theme.success_color,
-          warning_color: settings.mobile_theme?.warning_color || prev.mobile_theme.warning_color,
-          error_color: settings.mobile_theme?.error_color || prev.mobile_theme.error_color,
-          info_color: settings.mobile_theme?.info_color || prev.mobile_theme.info_color,
-          primary_variant: settings.mobile_theme?.primary_variant || prev.mobile_theme.primary_variant,
-          secondary_variant: settings.mobile_theme?.secondary_variant || prev.mobile_theme.secondary_variant,
-          tertiary_color: settings.mobile_theme?.tertiary_color || prev.mobile_theme.tertiary_color,
-          on_surface_color: settings.mobile_theme?.on_surface_color || prev.mobile_theme.on_surface_color
-        },
+        mobile_theme: processedMobileTheme,
         // Spread other config properties
         ...(settings.pwa_config || {}),
         ...(settings.mobile_ui_config || {})

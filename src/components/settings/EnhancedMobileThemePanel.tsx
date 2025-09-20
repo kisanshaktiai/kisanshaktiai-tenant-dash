@@ -254,12 +254,24 @@ const presetThemes = [
 const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
   if (!flatTheme) return defaultTheme;
   
-  // If it already has the core/neutral/status structure, return as is
-  if (flatTheme.core && flatTheme.neutral && flatTheme.status) {
-    return flatTheme as Modern2025Theme;
+  // If it already has the complete nested structure (core/neutral/status), use it directly
+  // Check for proper nested structure with all required sections
+  if (flatTheme.core && flatTheme.neutral && flatTheme.status && flatTheme.support) {
+    // It's already in the correct format, just ensure all properties exist
+    return {
+      core: flatTheme.core,
+      neutral: flatTheme.neutral,
+      status: flatTheme.status,
+      support: flatTheme.support,
+      typography: flatTheme.typography || defaultTheme.typography,
+      spacing: flatTheme.spacing || defaultTheme.spacing,
+      border_radius: flatTheme.border_radius || defaultTheme.border_radius,
+      shadows: flatTheme.shadows || defaultTheme.shadows
+    };
   }
   
   // Convert flat structure to nested structure
+  // This handles the case where mobile_theme has flat properties
   return {
     core: {
       primary: flatTheme.primary_color || defaultTheme.core.primary,
