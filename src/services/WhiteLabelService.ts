@@ -6,7 +6,7 @@ import {
   sanitizeWhiteLabelConfig,
   CURRENT_SCHEMA_VERSION,
   isCompatible
-} from '@kisanshakti/whitelabel-types';
+} from '@/lib/whitelabel-types';
 
 // Re-export the type for backward compatibility
 export type { WhiteLabelConfig };
