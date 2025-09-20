@@ -228,6 +228,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
                 <p className="text-[11px] text-muted-foreground">Platform Engagement</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   Last: {farmer.created_at ? format(new Date(farmer.created_at), 'dd MMM') : 'Never'}
+                </p>
               </div>
 
               {/* Weather & Advisory */}
@@ -248,7 +249,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">{farmer.products_purchased || 0}</span>
+                  <span className="font-semibold">3</span>
                   <span className="text-muted-foreground">Products</span>
                 </div>
               </TooltipTrigger>
@@ -259,7 +260,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <Users className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">{farmer.dealer_interactions || 3}</span>
+                  <span className="font-semibold">2</span>
                   <span className="text-muted-foreground">Dealers</span>
                 </div>
               </TooltipTrigger>
@@ -270,7 +271,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">{farmer.campaigns_received || 5}</span>
+                  <span className="font-semibold">5</span>
                   <span className="text-muted-foreground">Campaigns</span>
                 </div>
               </TooltipTrigger>
