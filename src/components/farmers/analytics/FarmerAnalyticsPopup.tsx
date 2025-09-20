@@ -28,9 +28,13 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
   isOpen,
   onClose
 }) => {
-  const { data: farmerData, isLoading } = useModern2025FarmerData(farmer.id);
-  const { soilHealth: healthData } = useRealtimeFarmerHealth(farmer.id);
-  const { data: engagementData } = useRealtimeFarmerEngagement(farmer.id);
+  const { data: farmerData, isLoading } = useModern2025FarmerData(farmer?.id);
+  const { soilHealth: healthData } = useRealtimeFarmerHealth(farmer?.id);
+  const { data: engagementData } = useRealtimeFarmerEngagement(farmer?.id);
+  
+  if (!farmer) {
+    return null;
+  }
 
   const getRiskBadge = (level: string) => {
     const colors = {

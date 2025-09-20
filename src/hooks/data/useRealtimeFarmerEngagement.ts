@@ -16,10 +16,10 @@ export const useRealtimeFarmerEngagement = (farmerId?: string) => {
   const queryClient = useQueryClient();
   const channelRef = useRef<any>(null);
 
-  const engagementQuery = useQuery<FarmerEngagement>({
+  const engagementQuery = useQuery<FarmerEngagement | null>({
     queryKey: ['farmer-engagement', currentTenant?.id, farmerId],
     queryFn: async () => {
-      if (!currentTenant || !farmerId) throw new Error('No tenant or farmer selected');
+      if (!currentTenant || !farmerId) return null;
       
       // Fetch farmer data (using only columns that exist in the farmers table)
       const { data: farmer, error: farmerError } = await supabase
