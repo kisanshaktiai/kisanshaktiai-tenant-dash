@@ -17,6 +17,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
+import { VegetationSnapshotCard } from '../VegetationSnapshotCard';
+import { VegetationTrendsModal } from '../VegetationTrendsModal';
 
 interface Modern2025FarmerCardProps {
   farmer: ComprehensiveFarmerData;
@@ -37,6 +39,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
 }) => {
   const [farmerName, setFarmerName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showVegetationModal, setShowVegetationModal] = useState(false);
   const currentTenant = useAppSelector(state => state.tenant.currentTenant);
 
   // Fetch farmer name from farmers table (which has these fields)
@@ -113,7 +116,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           "bg-gradient-to-br from-background via-background to-muted/5",
           "hover:scale-[1.01] hover:border-primary/40",
           isSelected && "ring-2 ring-primary shadow-xl border-primary/50",
-          "h-[340px]" // Increased height for vertical layout
+          "h-auto" // Dynamic height to accommodate vegetation data
         )}
         onClick={() => onSelect?.(farmer)}
       >
@@ -323,9 +326,23 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           </div>
         </CardContent>
 
+        {/* Vegetation Snapshot Card */}
+        <VegetationSnapshotCard 
+          farmerId={farmer.id} 
+          onClick={() => setShowVegetationModal(true)}
+        />
+
         {/* Hover Effect Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </Card>
+      
+      {/* Vegetation Trends Modal */}
+      <VegetationTrendsModal
+        isOpen={showVegetationModal}
+        onClose={() => setShowVegetationModal(false)}
+        farmerId={farmer.id}
+        farmerName={farmerName || farmer.farmer_code}
+      />
     </TooltipProvider>
   );
 };
