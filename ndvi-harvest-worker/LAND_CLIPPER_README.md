@@ -1,6 +1,6 @@
 # Land Clipper Worker
 
-Production-ready worker for clipping tile-level NDVI rasters to individual land boundaries for KisanShakti AI platform.
+Production-ready worker for clipping tile-level satellite rasters to individual land boundaries and computing multiple vegetation indices (NDVI, EVI, NDWI, SAVI) for KisanShakti AI platform.
 
 ## Architecture
 
@@ -56,14 +56,39 @@ python3 land_clipper_worker.py --max-jobs 10
 python3 land_clipper_worker.py --continuous --max-jobs 5
 ```
 
+## Vegetation Indices Computed
+
+The worker computes four key vegetation indices from satellite imagery:
+
+### NDVI (Normalized Difference Vegetation Index)
+- **Formula**: `(NIR - Red) / (NIR + Red)`
+- **Range**: -1 to 1 (healthy vegetation: 0.2 to 0.8)
+- **Use**: General vegetation health, chlorophyll content
+
+### EVI (Enhanced Vegetation Index)
+- **Formula**: `2.5 * (NIR - Red) / (NIR + 6*Red - 7.5*Blue + 1)`
+- **Range**: -1 to 1 (healthy vegetation: 0.2 to 0.7)
+- **Use**: Improved sensitivity in high biomass regions, reduces atmospheric influences
+
+### NDWI (Normalized Difference Water Index)
+- **Formula**: `(NIR - SWIR) / (NIR + SWIR)`
+- **Range**: -1 to 1 (water bodies: > 0)
+- **Use**: Water content in vegetation, drought monitoring
+
+### SAVI (Soil Adjusted Vegetation Index)
+- **Formula**: `(1.5 * (NIR - Red)) / (NIR + Red + 0.5)`
+- **Range**: -1 to 1 (healthy vegetation: 0.2 to 0.8)
+- **Use**: Minimizes soil brightness influences, better for sparse vegetation
+
 ## Integration with NDVI Harvest Worker
 
 The Land Clipper Worker processes jobs created by the NDVI Harvest Worker:
 
-1. **Harvest Worker** downloads Sentinel-2 tiles and creates NDVI rasters
+1. **Harvest Worker** downloads Sentinel-2 tiles with multiple spectral bands
 2. **Harvest Worker** creates `land_clipping` jobs in `system_jobs` table
 3. **Land Clipper** picks up jobs and clips rasters to land boundaries
-4. **Land Clipper** computes stats and stores in `ndvi_data` table
+4. **Land Clipper** computes all vegetation indices and stores in `ndvi_data` table
+5. **Land Clipper** generates multi-panel PNG previews for visualization
 
 ## Job Processing Flow
 
@@ -144,10 +169,16 @@ Run workers on schedule to process jobs:
 
 ## Preview Images
 
-Optional PNG previews are generated with:
-- Color ramp: Red (low) → Yellow (medium) → Green (high NDVI)
-- Stored in `land-previews/{land_id}/{date}/ndvi_preview.png`
-- Linked in `ndvi_data.image_url` for map overlays
+Multi-panel PNG previews are automatically generated showing all computed indices:
+- **Color ramp**: Red (low) → Yellow (medium) → Green (high vegetation health)
+- **Layout**: 2x2 grid showing NDVI, EVI, NDWI, and SAVI
+- **Storage path**: `land-previews/{land_id}/{date}/vegetation_indices_preview.png`
+- **Access**: Public URL stored in `ndvi_data.image_url` for direct display
+- **Resolution**: 120 DPI for clear visualization on web and mobile
+- **Use cases**:
+  - Farmer mobile app: Display vegetation health overlays on land maps
+  - Tenant dashboard: Quick visual assessment of crop conditions
+  - Reports: Include in PDF exports for field analysis
 
 ## Security
 

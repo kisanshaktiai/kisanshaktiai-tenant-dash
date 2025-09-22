@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Land Clipper Worker for KisanShakti AI
-Clips tile-level NDVI rasters to individual land boundaries
+Clips tile-level satellite rasters to individual land boundaries
+Computes NDVI, EVI, NDWI, SAVI vegetation indices and generates preview images
 """
 
 import os
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class LandClipperWorker:
-    """Worker to clip NDVI rasters to land boundaries"""
+    """Worker to clip satellite rasters to land boundaries and compute vegetation indices"""
     
     def __init__(self, supabase_url: str, supabase_key: str):
         """Initialize the worker with Supabase credentials"""
@@ -44,6 +45,61 @@ class LandClipperWorker:
         self.storage_bucket = "satellite-tiles"
         self.preview_bucket = "land-previews"
         
+    def compute_vegetation_indices(
+        self,
+        red: np.ndarray,
+        nir: np.ndarray,
+        blue: Optional[np.ndarray] = None,
+        swir: Optional[np.ndarray] = None
+    ) -> Dict[str, np.ndarray]:
+        """
+        Compute various vegetation indices from satellite bands
+        
+        Args:
+            red: Red band array
+            nir: Near-infrared band array
+            blue: Blue band array (optional, for EVI)
+            swir: Short-wave infrared band array (optional, for NDWI)
+            
+        Returns:
+            Dictionary with computed indices arrays
+        """
+        indices = {}
+        
+        # Avoid division by zero
+        epsilon = 1e-10
+        
+        # NDVI = (NIR - Red) / (NIR + Red)
+        ndvi_num = nir - red
+        ndvi_denom = nir + red + epsilon
+        indices['ndvi'] = np.divide(ndvi_num, ndvi_denom, where=ndvi_denom!=0)
+        
+        # SAVI = (1.5 * (NIR - Red)) / (NIR + Red + 0.5)
+        L = 0.5  # Soil brightness correction factor
+        savi_num = (1 + L) * (nir - red)
+        savi_denom = nir + red + L + epsilon
+        indices['savi'] = np.divide(savi_num, savi_denom, where=savi_denom!=0)
+        
+        # EVI = 2.5 * (NIR - Red) / (NIR + 6*Red - 7.5*Blue + 1)
+        if blue is not None:
+            evi_num = 2.5 * (nir - red)
+            evi_denom = nir + 6 * red - 7.5 * blue + 1 + epsilon
+            indices['evi'] = np.divide(evi_num, evi_denom, where=evi_denom!=0)
+            # Clip EVI to reasonable range
+            indices['evi'] = np.clip(indices['evi'], -1, 1)
+        
+        # NDWI = (NIR - SWIR) / (NIR + SWIR)
+        if swir is not None:
+            ndwi_num = nir - swir
+            ndwi_denom = nir + swir + epsilon
+            indices['ndwi'] = np.divide(ndwi_num, ndwi_denom, where=ndwi_denom!=0)
+        
+        # Clip all indices to [-1, 1] range
+        for key in indices:
+            indices[key] = np.clip(indices[key], -1, 1)
+            
+        return indices
+    
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def fetch_pending_job(self) -> Optional[Dict]:
         """Fetch one pending land_clipping job and lock it"""
@@ -134,12 +190,16 @@ class LandClipperWorker:
         self, 
         raster_data: bytes, 
         land_geojson: Dict
-    ) -> Tuple[Optional[np.ndarray], Dict]:
-        """Clip raster to land boundary and compute statistics"""
+    ) -> Tuple[Optional[Dict[str, np.ndarray]], Dict]:
+        """Clip raster to land boundary and compute vegetation indices statistics"""
         stats = {
             "min_ndvi": None,
             "max_ndvi": None,
             "mean_ndvi": None,
+            "ndvi_value": None,
+            "evi_value": None,
+            "ndwi_value": None,
+            "savi_value": None,
             "valid_pixels": 0,
             "total_pixels": 0,
             "coverage_percentage": 0.0
@@ -171,27 +231,84 @@ class LandClipperWorker:
                     all_touched=True
                 )
                 
-                # Get the first band (NDVI)
-                ndvi_array = clipped[0]
+                # Determine what bands we have
+                band_count = src.count
+                band_descriptions = [src.descriptions[i] if src.descriptions else f"Band_{i+1}" 
+                                   for i in range(band_count)]
                 
-                # Compute statistics
-                valid_mask = (ndvi_array != -9999) & (~np.isnan(ndvi_array))
-                valid_pixels = np.sum(valid_mask)
-                total_pixels = ndvi_array.size
+                logger.info(f"Processing {band_count} bands: {band_descriptions}")
                 
-                if valid_pixels > 0:
-                    valid_data = ndvi_array[valid_mask]
-                    stats["min_ndvi"] = float(np.min(valid_data))
-                    stats["max_ndvi"] = float(np.max(valid_data))
-                    stats["mean_ndvi"] = float(np.mean(valid_data))
-                    stats["valid_pixels"] = int(valid_pixels)
-                    stats["total_pixels"] = int(total_pixels)
-                    stats["coverage_percentage"] = float(valid_pixels / total_pixels * 100)
+                # Try to identify bands or use them directly for indices
+                bands = {}
+                indices_arrays = {}
+                
+                if band_count >= 4:
+                    # Assume bands are in order: Blue, Green, Red, NIR (common for Sentinel-2)
+                    # Or check if it's already processed NDVI
+                    if 'NDVI' in str(band_descriptions[0]).upper() and band_count == 1:
+                        # Single NDVI band
+                        ndvi_array = clipped[0]
+                        indices_arrays['ndvi'] = ndvi_array
+                    else:
+                        # Multi-band raster - extract bands
+                        # Common Sentinel-2 band order after processing
+                        blue = clipped[0] if band_count > 0 else None
+                        green = clipped[1] if band_count > 1 else None  
+                        red = clipped[2] if band_count > 2 else None
+                        nir = clipped[3] if band_count > 3 else None
+                        swir = clipped[4] if band_count > 4 else None
+                        
+                        # Compute vegetation indices if we have the required bands
+                        if red is not None and nir is not None:
+                            indices_arrays = self.compute_vegetation_indices(
+                                red=red,
+                                nir=nir,
+                                blue=blue,
+                                swir=swir
+                            )
+                        else:
+                            logger.warning("Insufficient bands for vegetation index calculation")
+                elif band_count == 1:
+                    # Single band - assume it's NDVI
+                    ndvi_array = clipped[0]
+                    indices_arrays['ndvi'] = ndvi_array
+                
+                # Compute statistics for each index
+                for index_name, index_array in indices_arrays.items():
+                    valid_mask = (index_array != -9999) & (~np.isnan(index_array)) & (index_array != 0)
+                    valid_pixels = np.sum(valid_mask)
+                    total_pixels = index_array.size
                     
-                    logger.info(f"Clipped raster stats: mean={stats['mean_ndvi']:.3f}, "
-                              f"coverage={stats['coverage_percentage']:.1f}%")
+                    if valid_pixels > 0:
+                        valid_data = index_array[valid_mask]
+                        
+                        if index_name == 'ndvi':
+                            stats["min_ndvi"] = float(np.min(valid_data))
+                            stats["max_ndvi"] = float(np.max(valid_data))
+                            stats["mean_ndvi"] = float(np.mean(valid_data))
+                            stats["ndvi_value"] = stats["mean_ndvi"]
+                        elif index_name == 'evi':
+                            stats["evi_value"] = float(np.mean(valid_data))
+                        elif index_name == 'ndwi':
+                            stats["ndwi_value"] = float(np.mean(valid_data))
+                        elif index_name == 'savi':
+                            stats["savi_value"] = float(np.mean(valid_data))
+                        
+                        # Update overall pixel stats
+                        stats["valid_pixels"] = max(stats["valid_pixels"], int(valid_pixels))
+                        stats["total_pixels"] = max(stats["total_pixels"], int(total_pixels))
+                
+                if stats["total_pixels"] > 0:
+                    stats["coverage_percentage"] = float(stats["valid_pixels"] / stats["total_pixels"] * 100)
+                
+                if stats["valid_pixels"] > 0:
+                    logger.info(f"Computed indices - NDVI: {stats.get('ndvi_value', 'N/A'):.3f}, "
+                              f"EVI: {stats.get('evi_value', 'N/A'):.3f}, "
+                              f"NDWI: {stats.get('ndwi_value', 'N/A'):.3f}, "
+                              f"SAVI: {stats.get('savi_value', 'N/A'):.3f}, "
+                              f"Coverage: {stats['coverage_percentage']:.1f}%")
                     
-                    return ndvi_array, stats
+                    return indices_arrays, stats
                 else:
                     logger.warning("No valid pixels found in clipped area")
                     return None, stats
@@ -202,57 +319,113 @@ class LandClipperWorker:
             
     def generate_preview_image(
         self, 
-        ndvi_array: np.ndarray, 
+        indices_arrays: Dict[str, np.ndarray], 
         land_id: str, 
         date: str
     ) -> Optional[str]:
-        """Generate PNG preview of clipped NDVI and upload to storage"""
+        """Generate PNG preview of vegetation indices and upload to storage"""
         try:
             import matplotlib
             matplotlib.use('Agg')
             import matplotlib.pyplot as plt
             from matplotlib.colors import LinearSegmentedColormap
+            import matplotlib.gridspec as gridspec
             
-            # Create NDVI colormap (red -> yellow -> green)
+            # Create vegetation index colormap (red -> yellow -> green)
             colors = ['#8B0000', '#FF0000', '#FFA500', '#FFFF00', '#90EE90', '#228B22', '#006400']
             n_bins = 100
-            cmap = LinearSegmentedColormap.from_list('ndvi', colors, N=n_bins)
+            cmap = LinearSegmentedColormap.from_list('vegetation', colors, N=n_bins)
             
-            # Create figure
-            fig, ax = plt.subplots(figsize=(8, 8))
+            # Determine which indices we have
+            available_indices = list(indices_arrays.keys())
+            num_indices = len(available_indices)
             
-            # Mask invalid values
-            masked_array = np.ma.masked_where(
-                (ndvi_array == -9999) | np.isnan(ndvi_array), 
-                ndvi_array
-            )
+            if num_indices == 0:
+                logger.warning("No indices available for preview generation")
+                return None
             
-            # Plot NDVI
-            im = ax.imshow(masked_array, cmap=cmap, vmin=-0.2, vmax=0.8)
-            ax.set_title(f'NDVI - {date}', fontsize=12)
-            ax.axis('off')
+            # Create figure with subplots for each index
+            if num_indices == 1:
+                fig, ax = plt.subplots(figsize=(8, 8))
+                axes = [ax]
+            elif num_indices == 2:
+                fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+            elif num_indices <= 4:
+                fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+                axes = axes.flatten()
+            else:
+                # For more than 4 indices, still use 2x2 grid and show first 4
+                fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+                axes = axes.flatten()
+                available_indices = available_indices[:4]
             
-            # Add colorbar
-            cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label('NDVI', rotation=270, labelpad=15)
+            # Plot each index
+            for idx, (index_name, index_array) in enumerate(indices_arrays.items()):
+                if idx >= len(axes):
+                    break
+                    
+                ax = axes[idx]
+                
+                # Mask invalid values
+                masked_array = np.ma.masked_where(
+                    (index_array == -9999) | np.isnan(index_array) | (index_array == 0), 
+                    index_array
+                )
+                
+                # Determine appropriate value range for each index
+                if index_name in ['ndvi', 'evi', 'savi']:
+                    vmin, vmax = -0.2, 0.8
+                elif index_name == 'ndwi':
+                    vmin, vmax = -0.5, 0.5
+                else:
+                    vmin, vmax = -1, 1
+                
+                # Plot index
+                im = ax.imshow(masked_array, cmap=cmap, vmin=vmin, vmax=vmax)
+                ax.set_title(f'{index_name.upper()} - {date}', fontsize=12)
+                ax.axis('off')
+                
+                # Add colorbar
+                cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+                cbar.set_label(index_name.upper(), rotation=270, labelpad=15)
+            
+            # Hide any unused subplots
+            if num_indices < len(axes):
+                for idx in range(num_indices, len(axes)):
+                    axes[idx].axis('off')
+            
+            plt.suptitle(f'Vegetation Indices - Land {land_id}', fontsize=14, y=1.02)
+            plt.tight_layout()
             
             # Save to bytes
             buf = BytesIO()
-            plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+            plt.savefig(buf, format='png', dpi=120, bbox_inches='tight')
             buf.seek(0)
             plt.close()
             
             # Upload to storage
-            file_path = f"{land_id}/{date}/ndvi_preview.png"
+            file_path = f"{land_id}/{date}/vegetation_indices_preview.png"
+            
+            # Check if file already exists and delete it first
+            try:
+                existing = self.supabase.storage.from_(self.preview_bucket).list(f"{land_id}/{date}")
+                if any(f['name'] == 'vegetation_indices_preview.png' for f in existing):
+                    self.supabase.storage.from_(self.preview_bucket).remove([file_path])
+            except:
+                pass  # File might not exist
+            
             response = self.supabase.storage.from_(self.preview_bucket).upload(
                 file_path,
                 buf.read(),
-                {"content-type": "image/png"}
+                {"content-type": "image/png", "upsert": "true"}
             )
             
             if response:
                 logger.info(f"Preview uploaded to {file_path}")
-                return file_path
+                
+                # Generate public URL
+                public_url = self.supabase.storage.from_(self.preview_bucket).get_public_url(file_path)
+                return public_url
             
         except ImportError:
             logger.warning("Matplotlib not available, skipping preview generation")
@@ -271,17 +444,20 @@ class LandClipperWorker:
         scene_id: Optional[str] = None,
         image_url: Optional[str] = None
     ) -> bool:
-        """Insert or update NDVI data in database"""
+        """Insert or update vegetation indices data in database"""
         try:
-            # Prepare data
+            # Prepare data with all vegetation indices
             ndvi_record = {
                 "tenant_id": tenant_id,
                 "land_id": land_id,
                 "date": date,
-                "ndvi_value": stats.get("mean_ndvi"),
+                "ndvi_value": stats.get("ndvi_value") or stats.get("mean_ndvi"),
                 "min_ndvi": stats.get("min_ndvi"),
                 "max_ndvi": stats.get("max_ndvi"),
                 "mean_ndvi": stats.get("mean_ndvi"),
+                "evi_value": stats.get("evi_value"),
+                "ndwi_value": stats.get("ndwi_value"),
+                "savi_value": stats.get("savi_value"),
                 "valid_pixels": stats.get("valid_pixels"),
                 "total_pixels": stats.get("total_pixels"),
                 "coverage_percentage": stats.get("coverage_percentage"),
@@ -368,22 +544,22 @@ class LandClipperWorker:
             if not raster_data:
                 raise ValueError(f"Could not download NDVI raster from {ndvi_path}")
                 
-            # Clip raster to land boundary
-            clipped_ndvi, stats = self.clip_raster_to_land(raster_data, land_boundary)
+            # Clip raster to land boundary and compute indices
+            indices_arrays, stats = self.clip_raster_to_land(raster_data, land_boundary)
             
             if stats["valid_pixels"] == 0:
                 raise ValueError("No valid pixels in clipped area (possibly fully cloudy)")
                 
-            # Generate preview image (optional)
-            preview_path = None
-            if clipped_ndvi is not None:
-                preview_path = self.generate_preview_image(
-                    clipped_ndvi, 
+            # Generate preview image with all indices
+            preview_url = None
+            if indices_arrays is not None and len(indices_arrays) > 0:
+                preview_url = self.generate_preview_image(
+                    indices_arrays, 
                     land_id, 
                     acquisition_date
                 )
                 
-            # Update NDVI data
+            # Update vegetation indices data
             success = self.update_ndvi_data(
                 tenant_id=tenant_id,
                 land_id=land_id,
@@ -391,7 +567,7 @@ class LandClipperWorker:
                 stats=stats,
                 tile_id=tile_id,
                 scene_id=params.get("scene_id"),
-                image_url=preview_path
+                image_url=preview_url
             )
             
             if success:
@@ -400,8 +576,8 @@ class LandClipperWorker:
                     job["id"],
                     "completed",
                     result={
-                        "stats": stats,
-                        "preview_path": preview_path
+                    "stats": stats,
+                    "preview_url": preview_url
                     }
                 )
                 return True
