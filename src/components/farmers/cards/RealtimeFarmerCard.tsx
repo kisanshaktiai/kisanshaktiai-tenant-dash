@@ -2,10 +2,12 @@ import React, { memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckSquare, Square, Phone, MapPin, Tag, Wifi, WifiOff, RefreshCw, Clock, MoreHorizontal, User, Calendar, TrendingUp, DollarSign, Globe } from 'lucide-react';
+import { CheckSquare, Square, Phone, MapPin, Tag, Wifi, WifiOff, RefreshCw, Clock, MoreHorizontal, User, Calendar, TrendingUp, DollarSign, Globe, Leaf, TrendingDown, Minus } from 'lucide-react';
 import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useRealtimeFarmer } from '@/hooks/data/useRealtimeFarmers';
+import { useNDVIData } from '@/hooks/data/useNDVIData';
 import { cn } from '@/lib/utils';
 import type { Farmer } from '@/services/FarmersService';
 
@@ -25,6 +27,7 @@ export const RealtimeFarmerCard = memo<RealtimeFarmerCardProps>(({
   showSyncStatus = true,
 }) => {
   const { isLive, lastUpdate } = useRealtimeFarmer(farmer.id);
+  const { data: ndviData, isLoading: ndviLoading } = useNDVIData(farmer.id);
   
   // Calculate engagement score from real data
   const engagementScore = Math.min(100, Math.round(
@@ -37,6 +40,14 @@ export const RealtimeFarmerCard = memo<RealtimeFarmerCardProps>(({
   // Determine activity status based on last login
   const isActive = farmer.last_login_at ? 
     (new Date().getTime() - new Date(farmer.last_login_at).getTime()) < 7 * 24 * 60 * 60 * 1000 : false;
+
+  // Get NDVI health status
+  const getHealthStatus = (ndvi: number) => {
+    if (ndvi >= 0.7) return { label: 'Excellent', color: 'text-green-600 bg-green-50' };
+    if (ndvi >= 0.5) return { label: 'Good', color: 'text-emerald-600 bg-emerald-50' };
+    if (ndvi >= 0.3) return { label: 'Moderate', color: 'text-yellow-600 bg-yellow-50' };
+    return { label: 'Poor', color: 'text-red-600 bg-red-50' };
+  };
 
   const handleCheckboxClick = () => {
     onSelect(farmer.id, !isSelected);
@@ -166,6 +177,46 @@ export const RealtimeFarmerCard = memo<RealtimeFarmerCardProps>(({
             <Badge variant="secondary" className="text-xs">Storage</Badge>
           )}
         </div>
+
+        {/* NDVI Data Section */}
+        {ndviData && (
+          <div className="flex items-center justify-between p-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg border border-green-200/30 dark:border-green-800/30">
+            <div className="flex items-center gap-2">
+              <Leaf className="h-4 w-4 text-green-600" />
+              <span className="text-xs font-medium">Vegetation Health</span>
+              <Badge className={cn("text-xs", getHealthStatus(ndviData.ndvi).color)}>
+                {getHealthStatus(ndviData.ndvi).label}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="font-medium">NDVI:</span>
+                <span className="font-bold text-green-600">{ndviData.ndvi.toFixed(2)}</span>
+              </div>
+              {ndviData.trend && (
+                <div className="flex items-center gap-1">
+                  {ndviData.trend === 'up' ? (
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                  ) : ndviData.trend === 'down' ? (
+                    <TrendingDown className="h-3 w-3 text-red-600" />
+                  ) : (
+                    <Minus className="h-3 w-3 text-gray-600" />
+                  )}
+                </div>
+              )}
+              <span className="text-muted-foreground">
+                {new Date(ndviData.capturedDate).toLocaleDateString()}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {ndviLoading && (
+          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        )}
 
         {/* Actions and Last Sync */}
         <div className="flex items-center justify-between pt-2 border-t">
