@@ -10,7 +10,8 @@ import {
   TrendingUp, TrendingDown, Minus, Calendar, Activity,
   Wheat, Cloud, ThermometerSun, Zap, Target, DollarSign,
   Timer, Tractor, Package, AlertTriangle, Building2, Users,
-  Sprout, BarChart3, Banknote, Shield, Clock
+  Sprout, BarChart3, Banknote, Shield, Clock, TreePine,
+  Wifi, WifiOff
 } from 'lucide-react';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { format } from 'date-fns';
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { VegetationSnapshotCard } from '../VegetationSnapshotCard';
 import { VegetationTrendsModal } from '../VegetationTrendsModal';
+import { useNDVIData } from '@/hooks/data/useNDVIData';
 
 interface Modern2025FarmerCardProps {
   farmer: ComprehensiveFarmerData;
@@ -41,7 +43,11 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showVegetationModal, setShowVegetationModal] = useState(false);
   const [realtimeData, setRealtimeData] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(false);
   const currentTenant = useAppSelector(state => state.tenant.currentTenant);
+  
+  // Fetch NDVI data
+  const { data: ndviSnapshot } = useNDVIData(farmer.id);
 
   // Fetch farmer name and real-time data from farmers table
   useEffect(() => {
@@ -61,6 +67,13 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           setRealtimeData(data);
           // Use farmer_code since name field doesn't exist
           setFarmerName(data.farmer_code || 'Farmer');
+          
+          // Check if user is online (last login within 5 minutes)
+          if (data.last_login_at) {
+            const lastLogin = new Date(data.last_login_at);
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            setIsOnline(lastLogin > fiveMinutesAgo);
+          }
         } else {
           setFarmerName(farmer.farmer_code || 'Farmer');
         }
@@ -90,6 +103,14 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           if (payload.new) {
             setRealtimeData(payload.new);
             setFarmerName((payload.new as any).farmer_code || 'Farmer');
+            
+            // Update online status
+            const data = payload.new as any;
+            if (data.last_login_at) {
+              const lastLogin = new Date(data.last_login_at);
+              const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+              setIsOnline(lastLogin > fiveMinutesAgo);
+            }
           }
         }
       )
@@ -121,8 +142,8 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
     return <Minus className="w-3 h-3" />;
   };
 
-  const getStatusColor = (isOnline?: boolean) => {
-    return isOnline ? 'bg-green-500' : 'bg-gray-400';
+  const getStatusColor = () => {
+    return isOnline ? 'bg-green-500 animate-pulse' : 'bg-gray-400';
   };
 
   // Calculate yield prediction based on mock data
@@ -153,7 +174,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           "bg-gradient-to-br from-background via-background to-muted/5",
           "hover:scale-[1.01] hover:border-primary/40",
           isSelected && "ring-2 ring-primary shadow-xl border-primary/50",
-          "min-h-[480px]" // Increased minimum height for better layout
+          "min-h-[520px]" // Further increased height for NDVI section
         )}
         onClick={() => onSelect?.(farmer)}
       >
@@ -163,10 +184,24 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
             <Shield className="w-3 h-3 mr-1" />
             {currentTenant?.name || 'Tenant'}
           </Badge>
-          <div className={cn(
-            "w-2.5 h-2.5 rounded-full animate-pulse",
-            getStatusColor(true) // Mock online status
-          )} />
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center gap-1 px-2 py-1 bg-background/90 rounded-full">
+                {isOnline ? (
+                  <Wifi className="w-3 h-3 text-green-500" />
+                ) : (
+                  <WifiOff className="w-3 h-3 text-gray-400" />
+                )}
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  getStatusColor()
+                )} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isOnline ? 'Online' : `Last seen: ${realtimeData?.last_login_at ? format(new Date(realtimeData.last_login_at), 'dd MMM, HH:mm') : 'Never'}`}
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <CardContent className="p-5 h-full flex flex-col">
@@ -208,17 +243,22 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
             {/* Left Column - Land & Agriculture */}
             <div className="space-y-2.5">
-              {/* Land Holdings */}
+              {/* Land Holdings with NDVI */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg p-2.5 border border-green-200/30 dark:border-green-800/30">
                 <div className="flex items-center justify-between mb-1.5">
                   <Wheat className="w-4 h-4 text-green-600" />
                   <span className="text-sm font-bold">{realtimeData?.land_in_acres || farmer.total_land_acres?.toFixed(1) || 0} acres</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground font-medium">{realtimeData?.primary_crop || farmer.primary_crops?.join(', ') || 'Mixed Crops'}</p>
-                <div className="flex items-center gap-2 mt-1.5">
-                  <Progress value={70} className="h-1.5 flex-1" />
-                  <span className="text-[10px] font-medium">NDVI</span>
-                </div>
+                {ndviSnapshot && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <Progress 
+                      value={ndviSnapshot.ndvi * 100} 
+                      className="h-1.5 flex-1" 
+                    />
+                    <span className="text-[10px] font-medium">NDVI: {ndviSnapshot.ndvi.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               
               {/* Water & Soil */}
@@ -283,13 +323,68 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
             </div>
           </div>
 
+          {/* NDVI Vegetation Health Section */}
+          {ndviSnapshot && (
+            <div className="mb-3 p-2.5 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg border border-green-200/30 dark:border-green-800/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <TreePine className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-semibold">Vegetation Health</span>
+                </div>
+                <Badge className={cn(
+                  "text-[10px]",
+                  ndviSnapshot.ndvi >= 0.7 ? "bg-green-100 text-green-800" :
+                  ndviSnapshot.ndvi >= 0.5 ? "bg-emerald-100 text-emerald-800" :
+                  ndviSnapshot.ndvi >= 0.3 ? "bg-yellow-100 text-yellow-800" :
+                  "bg-red-100 text-red-800"
+                )}>
+                  {ndviSnapshot.ndvi >= 0.7 ? "Excellent" :
+                   ndviSnapshot.ndvi >= 0.5 ? "Good" :
+                   ndviSnapshot.ndvi >= 0.3 ? "Moderate" : "Poor"}
+                </Badge>
+              </div>
+              
+              {/* NDVI Indices */}
+              <div className="grid grid-cols-4 gap-1.5">
+                <div className="text-center">
+                  <div className="text-[10px] text-muted-foreground">NDVI</div>
+                  <div className="text-xs font-bold text-green-600">{ndviSnapshot.ndvi.toFixed(2)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-muted-foreground">EVI</div>
+                  <div className="text-xs font-bold text-emerald-600">{ndviSnapshot.evi.toFixed(2)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-muted-foreground">NDWI</div>
+                  <div className="text-xs font-bold text-blue-600">{ndviSnapshot.ndwi.toFixed(2)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-muted-foreground">SAVI</div>
+                  <div className="text-xs font-bold text-amber-600">{ndviSnapshot.savi.toFixed(2)}</div>
+                </div>
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2 h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVegetationModal(true);
+                }}
+              >
+                View Detailed Trends →
+              </Button>
+            </div>
+          )}
+
           {/* Additional Metrics Row - Multi-tenant SaaS specific */}
           <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border/50">
             <Tooltip>
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <Package className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">3</span>
+                  <span className="font-semibold">{realtimeData?.product_count || 3}</span>
                   <span className="text-muted-foreground">Products</span>
                 </div>
               </TooltipTrigger>
@@ -300,7 +395,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <Users className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">2</span>
+                  <span className="font-semibold">{realtimeData?.dealer_count || 2}</span>
                   <span className="text-muted-foreground">Dealers</span>
                 </div>
               </TooltipTrigger>
@@ -311,7 +406,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <TooltipTrigger>
                 <div className="flex items-center gap-1.5 text-xs">
                   <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                  <span className="font-semibold">5</span>
+                  <span className="font-semibold">{realtimeData?.campaign_count || 5}</span>
                   <span className="text-muted-foreground">Campaigns</span>
                 </div>
               </TooltipTrigger>
@@ -377,12 +472,6 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
             </div>
           </div>
         </CardContent>
-
-        {/* Vegetation Snapshot Card */}
-        <VegetationSnapshotCard 
-          farmerId={farmer.id} 
-          onClick={() => setShowVegetationModal(true)}
-        />
 
         {/* Hover Effect Gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />

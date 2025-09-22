@@ -33,6 +33,7 @@ import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { useModern2025FarmerData } from '@/hooks/data/useModern2025FarmerData';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { format } from 'date-fns';
+import { Modern2025FarmerCard } from '@/components/farmers/cards/Modern2025FarmerCard';
 
 interface MetricCardProps {
   title: string;
