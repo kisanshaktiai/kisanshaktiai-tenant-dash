@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Download, Users, Upload, Target, MessageSquare } from 'lucide-react';
+import { Plus, Search, Filter, Download, Users, Upload, Target, MessageSquare, Satellite } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,8 @@ import { AdvancedFilters } from './components/AdvancedFilters';
 import { FarmerAnalytics } from './components/FarmerAnalytics';
 import { CampaignCenter } from './components/CampaignCenter';
 import { IntegrationHub } from './components/IntegrationHub';
+import { NDVIHarvestManager } from './components/NDVIHarvestManager';
+import { NDVIHarvestPanel } from '@/components/ndvi/NDVIHarvestPanel';
 import type { Farmer } from '@/services/FarmersService';
 
 export default function FarmersPage() {
@@ -123,10 +125,14 @@ export default function FarmersPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
           <TabsTrigger value="directory" className="flex items-center gap-2">
             <Users className="h-4 w-4 hidden sm:block" />
             Directory
+          </TabsTrigger>
+          <TabsTrigger value="ndvi" className="flex items-center gap-2">
+            <Satellite className="h-4 w-4 hidden sm:block" />
+            NDVI
           </TabsTrigger>
           <TabsTrigger value="bulk" className="flex items-center gap-2">
             <Target className="h-4 w-4 hidden sm:block" />
@@ -149,6 +155,13 @@ export default function FarmersPage() {
             onSelectedFarmersChange={setSelectedFarmers}
             searchTerm={searchTerm}
           />
+        </TabsContent>
+
+        <TabsContent value="ndvi">
+          <div className="space-y-6">
+            <NDVIHarvestManager />
+            <NDVIHarvestPanel />
+          </div>
         </TabsContent>
 
         <TabsContent value="bulk">
