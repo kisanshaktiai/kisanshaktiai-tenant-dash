@@ -7816,13 +7816,18 @@ export type Database = {
           cloud_cover: number | null
           cloud_coverage: number | null
           collection_id: string | null
+          computed_at: string | null
+          coverage_percentage: number | null
           created_at: string
           date: string
           evi_value: number | null
           id: string
           image_url: string | null
           land_id: string
+          max_ndvi: number | null
+          mean_ndvi: number | null
           metadata: Json | null
+          min_ndvi: number | null
           ndvi_value: number | null
           ndwi_value: number | null
           processing_level: string | null
@@ -7832,18 +7837,25 @@ export type Database = {
           spatial_resolution: number | null
           tenant_id: string
           tile_id: string | null
+          total_pixels: number | null
+          valid_pixels: number | null
         }
         Insert: {
           cloud_cover?: number | null
           cloud_coverage?: number | null
           collection_id?: string | null
+          computed_at?: string | null
+          coverage_percentage?: number | null
           created_at?: string
           date: string
           evi_value?: number | null
           id?: string
           image_url?: string | null
           land_id: string
+          max_ndvi?: number | null
+          mean_ndvi?: number | null
           metadata?: Json | null
+          min_ndvi?: number | null
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
@@ -7853,18 +7865,25 @@ export type Database = {
           spatial_resolution?: number | null
           tenant_id: string
           tile_id?: string | null
+          total_pixels?: number | null
+          valid_pixels?: number | null
         }
         Update: {
           cloud_cover?: number | null
           cloud_coverage?: number | null
           collection_id?: string | null
+          computed_at?: string | null
+          coverage_percentage?: number | null
           created_at?: string
           date?: string
           evi_value?: number | null
           id?: string
           image_url?: string | null
           land_id?: string
+          max_ndvi?: number | null
+          mean_ndvi?: number | null
           metadata?: Json | null
+          min_ndvi?: number | null
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
@@ -7874,6 +7893,8 @@ export type Database = {
           spatial_resolution?: number | null
           tenant_id?: string
           tile_id?: string | null
+          total_pixels?: number | null
+          valid_pixels?: number | null
         }
         Relationships: [
           {

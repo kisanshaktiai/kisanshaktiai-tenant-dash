@@ -1,13 +1,14 @@
 # NDVI Harvest & Cache System
 
-Production-ready NDVI processing system for multi-tenant SaaS AgriTech platform.
+Production-ready NDVI processing system for multi-tenant SaaS AgriTech platform with land-level clipping.
 
 ## Architecture
 
-- **Python Worker**: Fetches Sentinel-2 data from Microsoft Planetary Computer
+- **Python Harvest Worker**: Fetches Sentinel-2 data from Microsoft Planetary Computer
+- **Python Land Clipper Worker**: Clips tile-level NDVI to individual land boundaries  
 - **Supabase Backend**: Stores metadata, manages jobs, handles tenant isolation
 - **React Frontend**: Tenant portal UI for triggering and monitoring harvests
-- **Storage**: Supabase Storage for NDVI GeoTIFF files
+- **Storage**: Supabase Storage for NDVI GeoTIFF files and land preview images
 
 ## Quick Start
 
@@ -79,6 +80,67 @@ await supabase.functions.invoke('ndvi-harvest', {
     tenant_id: 'uuid'
   }
 })
+```
+
+### Create Land Clipping Jobs
+```javascript
+await supabase.functions.invoke('land-clipper', {
+  body: {
+    action: 'create_clipping_jobs',
+    tenant_id: 'uuid',
+    tile_id: '43RFN',
+    date: '2024-01-15',
+    land_ids: ['land-uuid-1', 'land-uuid-2'] // optional, all lands if not specified
+  }
+})
+```
+
+### Get Land NDVI Data
+```javascript
+await supabase.functions.invoke('land-clipper', {
+  body: {
+    action: 'get_land_ndvi',
+    tenant_id: 'uuid',
+    land_ids: ['land-uuid-1', 'land-uuid-2']
+  }
+})
+```
+
+## Land Clipper Integration
+
+The system includes a Land Clipper Worker that processes tile-level NDVI to produce land-level statistics:
+
+1. **Harvest Worker** downloads Sentinel-2 tiles and creates NDVI rasters
+2. **Harvest Worker** or **API** creates `land_clipping` jobs in `system_jobs`
+3. **Land Clipper Worker** processes jobs:
+   - Downloads NDVI raster from storage
+   - Clips to land boundary (PostGIS polygon)
+   - Computes statistics (mean, min, max, coverage)
+   - Generates preview PNG (optional)
+   - Stores results in `ndvi_data` table
+
+### Deploy Land Clipper
+
+```bash
+# Build Docker image
+cd ndvi-harvest-worker
+docker build -f land_clipper.Dockerfile -t land-clipper .
+
+# Run locally
+docker run --env-file .env land-clipper --max-jobs 10
+
+# Deploy to Cloud Run
+gcloud run deploy land-clipper \
+  --image gcr.io/PROJECT/land-clipper \
+  --memory 1Gi \
+  --timeout 300
+```
+
+### Land Clipper Cron
+
+```cron
+# Process land clipping jobs every 15 minutes
+*/15 * * * * docker run land-clipper --max-jobs 50
 ```
 
 ## Quota Limits
