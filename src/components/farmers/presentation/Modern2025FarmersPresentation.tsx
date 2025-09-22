@@ -77,242 +77,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon, g
   </div>
 );
 
-interface Modern2025FarmerCardProps {
-  farmer: ComprehensiveFarmerData;
-  onSelect?: (selected: boolean) => void;
-  selected?: boolean;
-  onViewDetails?: () => void;
-  onContact?: (method: 'call' | 'message' | 'assign') => void;
-  viewType?: 'grid' | 'list' | 'compact';
-}
-
-const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({ 
-  farmer, 
-  onSelect, 
-  selected, 
-  onViewDetails,
-  onContact,
-  viewType = 'grid'
-}) => {
-  const { data, isLoading } = useModern2025FarmerData(farmer.id);
-  const [isLive, setIsLive] = useState(false);
-
-  React.useEffect(() => {
-    // Simulate realtime updates
-    const interval = setInterval(() => {
-      setIsLive(Math.random() > 0.7);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getRiskColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'high': return 'bg-red-500 text-white';
-      case 'medium': return 'bg-yellow-500 text-white';
-      case 'low': return 'bg-green-500 text-white';
-      default: return 'bg-gray-500 text-white';
-    }
-  };
-
-  // Table/List View
-  if (viewType === 'list') {
-    return (
-      <tr 
-        className={cn(
-          "hover:bg-muted/50 cursor-pointer transition-colors",
-          selected && "bg-primary/5"
-        )}
-        onClick={onViewDetails}
-      >
-        <td className="p-3">
-          <div className="flex items-center gap-2">
-            {isLive && <LiveIndicator isConnected={true} />}
-            <span className="font-medium text-sm">{farmer.farmer_code || 'Unknown'}</span>
-          </div>
-        </td>
-        <td className="p-3 text-sm">{farmer.farmer_code}</td>
-        <td className="p-3">
-          <Badge className={cn("text-xs px-2 py-0.5", getRiskColor(data?.riskLevel || 'low'))}>
-            {data?.riskLevel || 'Low'}
-          </Badge>
-        </td>
-        <td className="p-3 text-sm">{farmer.primary_crops?.[0] || 'N/A'}</td>
-        <td className="p-3 text-sm">{farmer.total_land_acres?.toFixed(1) || 0} acres</td>
-        <td className="p-3 text-sm">{data?.ndviScore?.toFixed(0) || 0}%</td>
-        <td className="p-3 text-sm">{data?.engagementScore || 0}%</td>
-        <td className="p-3">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={(e) => { e.stopPropagation(); onContact?.('call'); }}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
-            >
-              <Phone className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onContact?.('message'); }}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onContact?.('assign'); }}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
-  // Card View
-  return (
-    <Card 
-      className={cn(
-        "overflow-hidden transition-all duration-300 cursor-pointer",
-        "hover:shadow-lg border",
-        selected && "border-primary ring-2 ring-primary/20",
-        isLive && "shadow-emerald-500/10"
-      )}
-      onClick={onViewDetails}
-    >
-      <CardContent className="p-0">
-        <div className="flex items-stretch h-28">
-          {/* Left Section - Avatar & Info */}
-          <div className="w-1/4 p-3 bg-gradient-to-br from-muted/50 to-muted/30 flex flex-col items-center justify-center border-r">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">
-                {farmer.farmer_code?.slice(0, 2).toUpperCase() || 'FA'}
-              </div>
-              {isLive && (
-                <div className="absolute -top-1 -right-1">
-                  <LiveIndicator isConnected={true} />
-                </div>
-              )}
-            </div>
-            <h3 className="font-semibold text-xs mt-1.5 text-center line-clamp-1">
-              {farmer.farmer_code || 'Unknown'}
-            </h3>
-            <Badge 
-              className={cn("text-[10px] mt-1 px-1.5 py-0", getRiskColor(data?.riskLevel || 'low'))}
-            >
-              {data?.riskLevel || 'Low'}
-            </Badge>
-          </div>
-
-          {/* Middle Section - Land & Metrics */}
-          <div className="flex-1 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-muted-foreground" />
-                <span className="text-xs font-medium line-clamp-1">
-                  {farmer.primary_crops?.[0] || 'Multiple crops'}
-                </span>
-              </div>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                {farmer.total_land_acres?.toFixed(0) || 0} acres
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-0.5">
-                  <Droplets className="w-2.5 h-2.5 text-blue-500" />
-                  <span className="text-[10px] text-muted-foreground">Land</span>
-                </div>
-                <p className="text-xs font-semibold">
-                  {farmer.total_land_acres?.toFixed(1) || 0}a
-                </p>
-              </div>
-              
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-0.5">
-                  <Leaf className="w-2.5 h-2.5 text-green-500" />
-                  <span className="text-[10px] text-muted-foreground">NDVI</span>
-                </div>
-                <p className="text-xs font-semibold">
-                  {data?.ndviScore?.toFixed(0) || 0}%
-                </p>
-              </div>
-              
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-0.5">
-                  <CircleDot className="w-2.5 h-2.5 text-amber-500" />
-                  <span className="text-[10px] text-muted-foreground">Soil</span>
-                </div>
-                <p className="text-xs font-semibold">
-                  {data?.soilHealthRating?.slice(0, 4) || 'Good'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Cloud className="w-3 h-3 text-sky-500" />
-                <span className="text-[10px]">
-                  {data?.weatherCondition || 'Clear'} • {data?.currentTemp || 28}°C
-                </span>
-              </div>
-              <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                <Clock className="w-2.5 h-2.5" />
-                {data?.lastSeenHours ? `${data.lastSeenHours}h` : 'N/A'}
-              </div>
-            </div>
-
-            {/* Engagement Bar */}
-            <div className="space-y-0.5">
-              <div className="flex justify-between text-[10px]">
-                <span className="text-muted-foreground">Engagement</span>
-                <span className="font-medium">{data?.engagementScore || 0}%</span>
-              </div>
-              <div className="h-1 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-500"
-                  style={{ width: `${data?.engagementScore || 0}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Right Section - Actions (Icons only) */}
-          <div className="w-20 p-3 flex items-center justify-center gap-1 bg-gradient-to-br from-background to-muted/20 border-l">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onContact?.('call');
-              }}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              title="Call"
-            >
-              <Phone className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onContact?.('message');
-              }}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              title="Message"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onContact?.('assign');
-              }}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              title="Assign"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+// Using the imported Modern2025FarmerCard from the cards folder
 
 interface Modern2025FarmersPresentationProps {
   farmers: ComprehensiveFarmerData[];
@@ -531,21 +296,24 @@ export const Modern2025FarmersPresentation: React.FC<Modern2025FarmersPresentati
                       </tr>
                     ) : (
                       farmers.map(farmer => (
-                        <Modern2025FarmerCard
-                          key={farmer.id}
-                          farmer={farmer}
-                          viewType="list"
-                          selected={selectedFarmers.includes(farmer.id)}
-                          onSelect={(selected) => {
-                            if (selected) {
-                              setSelectedFarmers(prev => [...prev, farmer.id]);
-                            } else {
-                              setSelectedFarmers(prev => prev.filter(id => id !== farmer.id));
-                            }
-                          }}
-                          onViewDetails={() => onViewFarmer(farmer)}
-                          onContact={(method) => onContactFarmer(farmer, method)}
-                        />
+                        <tr key={farmer.id} className="hover:bg-muted/50 transition-colors">
+                          <td colSpan={8}>
+                            <Modern2025FarmerCard
+                              farmer={farmer}
+                              isSelected={selectedFarmers.includes(farmer.id)}
+                              onSelect={() => {
+                                if (selectedFarmers.includes(farmer.id)) {
+                                  setSelectedFarmers(prev => prev.filter(id => id !== farmer.id));
+                                } else {
+                                  setSelectedFarmers(prev => [...prev, farmer.id]);
+                                }
+                              }}
+                              onCall={() => onContactFarmer(farmer, 'call')}
+                              onMessage={() => onContactFarmer(farmer, 'message')}
+                              onAssign={() => onContactFarmer(farmer, 'assign')}
+                            />
+                          </td>
+                        </tr>
                       ))
                     )}
                   </tbody>
@@ -573,17 +341,17 @@ export const Modern2025FarmersPresentation: React.FC<Modern2025FarmersPresentati
                 <Modern2025FarmerCard
                   key={farmer.id}
                   farmer={farmer}
-                  viewType={viewType}
-                  selected={selectedFarmers.includes(farmer.id)}
-                  onSelect={(selected) => {
-                    if (selected) {
-                      setSelectedFarmers(prev => [...prev, farmer.id]);
-                    } else {
+                  isSelected={selectedFarmers.includes(farmer.id)}
+                  onSelect={() => {
+                    if (selectedFarmers.includes(farmer.id)) {
                       setSelectedFarmers(prev => prev.filter(id => id !== farmer.id));
+                    } else {
+                      setSelectedFarmers(prev => [...prev, farmer.id]);
                     }
                   }}
-                  onViewDetails={() => onViewFarmer(farmer)}
-                  onContact={(method) => onContactFarmer(farmer, method)}
+                  onCall={() => onContactFarmer(farmer, 'call')}
+                  onMessage={() => onContactFarmer(farmer, 'message')}
+                  onAssign={() => onContactFarmer(farmer, 'assign')}
                 />
               ))
             )}
