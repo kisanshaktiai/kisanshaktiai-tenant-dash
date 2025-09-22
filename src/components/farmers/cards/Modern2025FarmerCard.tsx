@@ -40,27 +40,64 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
   const [farmerName, setFarmerName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [showVegetationModal, setShowVegetationModal] = useState(false);
+  const [realtimeData, setRealtimeData] = useState<any>(null);
   const currentTenant = useAppSelector(state => state.tenant.currentTenant);
 
-  // Fetch farmer name from farmers table (which has these fields)
+  // Fetch farmer name and real-time data from farmers table
   useEffect(() => {
-    const fetchFarmerName = async () => {
+    const fetchFarmerData = async () => {
       if (!farmer.id || !currentTenant) return;
       
       try {
-        // For now, use farmer_code as the name since user_profile is not in the schema
-        // In a real implementation, you would fetch from the correct table
-        const farmerDisplayName = farmer.farmer_code || 'Farmer';
-        setFarmerName(farmerDisplayName);
+        // Fetch real-time farmer data
+        const { data, error } = await supabase
+          .from('farmers')
+          .select('*')
+          .eq('id', farmer.id)
+          .eq('tenant_id', currentTenant.id)
+          .single();
+
+        if (data && !error) {
+          setRealtimeData(data);
+          // Use farmer_code since name field doesn't exist
+          setFarmerName(data.farmer_code || 'Farmer');
+        } else {
+          setFarmerName(farmer.farmer_code || 'Farmer');
+        }
       } catch (err) {
-        console.error('Error setting farmer name:', err);
+        console.error('Error fetching farmer data:', err);
         setFarmerName(farmer.farmer_code);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchFarmerName();
+    fetchFarmerData();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel(`farmer-${farmer.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'farmers',
+          filter: `id=eq.${farmer.id}`
+        },
+        (payload) => {
+          console.log('Farmer update:', payload);
+          if (payload.new) {
+            setRealtimeData(payload.new);
+            setFarmerName((payload.new as any).farmer_code || 'Farmer');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [farmer.id, farmer.farmer_code, currentTenant]);
 
   const getRiskColor = (level?: string) => {
@@ -116,7 +153,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           "bg-gradient-to-br from-background via-background to-muted/5",
           "hover:scale-[1.01] hover:border-primary/40",
           isSelected && "ring-2 ring-primary shadow-xl border-primary/50",
-          "h-auto" // Dynamic height to accommodate vegetation data
+          "min-h-[480px]" // Increased minimum height for better layout
         )}
         onClick={() => onSelect?.(farmer)}
       >
@@ -153,7 +190,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
                 </h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3" />
-                  Location: District
+                  {realtimeData?.village || 'District'}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5 font-mono">
                   ID: {farmer.farmer_code}
@@ -175,9 +212,9 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg p-2.5 border border-green-200/30 dark:border-green-800/30">
                 <div className="flex items-center justify-between mb-1.5">
                   <Wheat className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-bold">{farmer.total_land_acres?.toFixed(1) || 0} acres</span>
+                  <span className="text-sm font-bold">{realtimeData?.land_in_acres || farmer.total_land_acres?.toFixed(1) || 0} acres</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground font-medium">{farmer.primary_crops?.join(', ') || 'Mixed Crops'}</p>
+                <p className="text-[11px] text-muted-foreground font-medium">{realtimeData?.primary_crop || farmer.primary_crops?.join(', ') || 'Mixed Crops'}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <Progress value={70} className="h-1.5 flex-1" />
                   <span className="text-[10px] font-medium">NDVI</span>
@@ -190,8 +227,8 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
                   <Droplets className="w-4 h-4 text-blue-600" />
                   <span className="text-xs font-semibold">Irrigated</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">Soil: Loamy</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Water Source: Borewell</p>
+                <p className="text-[11px] text-muted-foreground">Soil: {realtimeData?.soil_type || 'Loamy'}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Water: {realtimeData?.irrigation_type || 'Borewell'}</p>
               </div>
 
               {/* Yield Prediction */}
@@ -230,7 +267,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
                 </div>
                 <p className="text-[11px] text-muted-foreground">Platform Engagement</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  Last: {farmer.created_at ? format(new Date(farmer.created_at), 'dd MMM') : 'Never'}
+                  Last: {realtimeData?.last_login_at ? format(new Date(realtimeData.last_login_at), 'dd MMM') : farmer.created_at ? format(new Date(farmer.created_at), 'dd MMM') : 'Never'}
                 </p>
               </div>
 
@@ -282,47 +319,62 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
             </Tooltip>
           </div>
 
-          {/* Action Buttons - Vertical Layout with Icons and Text */}
-          <div className="flex flex-col gap-2 mt-auto">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onCall?.(farmer);
-              }}
-              className="w-full justify-start gap-2.5 h-9 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
-            >
-              <Phone className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              Call Farmer
-              <span className="ml-auto text-[10px] opacity-60">{farmer.mobile_number?.slice(-4) || 'N/A'}</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onMessage?.(farmer);
-              }}
-              className="w-full justify-start gap-2.5 h-9 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
-            >
-              <MessageSquare className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              Send Message
-              <Badge variant="secondary" className="ml-auto text-[10px] px-1 py-0">WhatsApp</Badge>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAssign?.(farmer);
-              }}
-              className="w-full justify-start gap-2.5 h-9 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
-            >
-              <UserPlus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-              Assign to Dealer
-              <Clock className="w-3 h-3 ml-auto opacity-60" />
-            </Button>
+          {/* Action Buttons - Vertical Icon Layout */}
+          <div className="flex gap-2 mt-auto">
+            <div className="flex flex-col gap-2 flex-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCall?.(farmer);
+                    }}
+                    className="h-10 w-full hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
+                  >
+                    <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  Call {realtimeData?.mobile_number || farmer.mobile_number || 'N/A'}
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMessage?.(farmer);
+                    }}
+                    className="h-10 w-full hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
+                  >
+                    <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Send WhatsApp Message</TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAssign?.(farmer);
+                    }}
+                    className="h-10 w-full hover:bg-primary hover:text-primary-foreground transition-all duration-200 group"
+                  >
+                    <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Assign to Dealer</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </CardContent>
 

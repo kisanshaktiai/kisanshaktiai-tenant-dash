@@ -4,6 +4,8 @@ import { useDashboardQuery } from '@/hooks/data/useDashboardQuery';
 import { DashboardSkeleton } from '../presentation/DashboardSkeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import { useTenantRealtime } from '@/hooks/data/useTenantRealtime';
+import { Badge } from '@/components/ui/badge';
 
 // Lazy load the heavy DashboardPresentation component
 const DashboardPresentation = lazy(() => 
@@ -14,6 +16,7 @@ const DashboardPresentation = lazy(() =>
 
 export const DashboardContainer: React.FC = () => {
   const { data: stats, isLoading, error } = useDashboardQuery();
+  const { isConnected, lastUpdate } = useTenantRealtime();
 
   // Enhanced error handling
   if (error) {
@@ -36,12 +39,24 @@ export const DashboardContainer: React.FC = () => {
   }
 
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardPresentation
-        stats={stats}
-        isLoading={isLoading}
-        error={error}
-      />
-    </Suspense>
+    <div className="relative">
+      {/* Real-time connection indicator */}
+      {isConnected && (
+        <div className="absolute top-4 right-4 z-10">
+          <Badge variant="outline" className="text-xs">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+            Live Data
+          </Badge>
+        </div>
+      )}
+      
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardPresentation
+          stats={stats}
+          isLoading={isLoading}
+          error={error}
+        />
+      </Suspense>
+    </div>
   );
 };

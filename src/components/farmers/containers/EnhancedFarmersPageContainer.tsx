@@ -5,6 +5,7 @@ import { FarmerAnalyticsPopup } from '../analytics/FarmerAnalyticsPopup';
 import { useEnhancedFarmersQuery, useFarmerMetrics } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
+import { useTenantRealtime } from '@/hooks/data/useTenantRealtime';
 
 export const EnhancedFarmersPageContainer: React.FC = () => {
   const [viewType, setViewType] = useState<'grid' | 'list' | 'compact'>('grid');
@@ -26,6 +27,7 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
 
   const { data: farmersData, isLoading, error, refetch } = useEnhancedFarmersQuery(queryOptions);
   const { data: metrics, isLoading: metricsLoading } = useFarmerMetrics();
+  const { isConnected, lastUpdate } = useTenantRealtime();
 
   const farmers = farmersData?.data || [];
 
