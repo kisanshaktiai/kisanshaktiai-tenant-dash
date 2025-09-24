@@ -12,7 +12,8 @@ import { LucideIcon,
   CreditCard,
   Building2,
   Palette,
-  UserCog
+  UserCog,
+  Satellite
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -71,6 +72,16 @@ export const navigationConfig: NavigationItem[] = [
     description: 'Marketing campaigns',
     category: 'management',
     badge: 'New'
+  },
+  {
+    id: 'ndvi',
+    title: 'NDVI',
+    href: '/app/ndvi',
+    icon: Satellite,
+    description: 'Vegetation health monitoring',
+    category: 'management',
+    badge: 'New',
+    isNew: true
   },
 
   // Analytics

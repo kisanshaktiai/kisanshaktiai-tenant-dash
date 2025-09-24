@@ -20,7 +20,7 @@ import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
-import FarmersPage from '@/pages/farmers/FarmersPage';
+import FarmersPage from '@/pages/FarmersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
@@ -28,6 +28,7 @@ import DealersPage from '@/pages/DealersPage';
 import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
+import NDVIPage from '@/pages/NDVIPage';
 
 // Settings sub-pages
 import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
@@ -77,6 +78,7 @@ function App() {
                     <Route index element={<Navigate to="/app/dashboard" replace />} />
                     <Route path="dashboard" element={<EnhancedDashboard />} />
                     <Route path="farmers" element={<FarmersPage />} />
+                    <Route path="ndvi" element={<NDVIPage />} />
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="campaigns" element={<CampaignsPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
