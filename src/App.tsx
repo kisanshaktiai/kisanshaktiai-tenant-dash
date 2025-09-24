@@ -20,7 +20,7 @@ import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
-import FarmersPage from '@/pages/FarmersPage';
+import FarmersPage from '@/pages/farmers/FarmersPage';
 import ProductsPage from '@/pages/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
