@@ -1,4 +1,4 @@
-FROM osgeo/gdal:ubuntu-small-3.7.2
+FROM FROM osgeo/gdal:ubuntu-small-latest
 
 # Install Python and dependencies
 RUN apt-get update && apt-get install -y \
