@@ -27,19 +27,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { 
-  LayoutDashboard,
-  Users,
-  Package,
-  Store,
-  BarChart3,
-  Settings,
   Bell,
   LogOut,
   Moon,
   Sun,
   Globe,
   Activity,
-  Megaphone,
+  Settings,
   Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,51 +42,15 @@ import { useTheme } from 'next-themes';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { toast } from 'sonner';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { navigationConfig } from '@/config/navigation';
 
-const navigationItems = [
-  {
-    title: 'Dashboard',
-    url: '/app/dashboard',
-    icon: LayoutDashboard,
-    badge: null
-  },
-  {
-    title: 'Farmer Management',
-    url: '/app/farmers',
-    icon: Users,
-    badge: 'New'
-  },
-  {
-    title: 'Product Catalog',
-    url: '/app/products',
-    icon: Package,
-    badge: null
-  },
-  {
-    title: 'Dealer Network',
-    url: '/app/dealers',
-    icon: Store,
-    badge: null
-  },
-  {
-    title: 'Campaigns',
-    url: '/app/campaigns',
-    icon: Megaphone,
-    badge: 'Beta'
-  },
-  {
-    title: 'Analytics & Reports',
-    url: '/app/analytics',
-    icon: BarChart3,
-    badge: null
-  },
-  {
-    title: 'Settings',
-    url: '/app/settings',
-    icon: Settings,
-    badge: null
-  }
-];
+// Group navigation items by category
+const groupedNavigation = {
+  main: navigationConfig.filter(item => item.category === 'main'),
+  management: navigationConfig.filter(item => item.category === 'management'),
+  analytics: navigationConfig.filter(item => item.category === 'analytics'),
+  settings: navigationConfig.filter(item => item.category === 'settings').slice(0, 2) // Only Settings and Organization for main nav
+};
 
 const TenantSidebar = memo(() => {
   const { state } = useSidebar();
@@ -136,38 +94,148 @@ const TenantSidebar = memo(() => {
         </div>
 
         {/* Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={isActive(item.url)}
-                  >
-                    <button
-                      onClick={() => navigate(item.url)}
-                      className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
+        {groupedNavigation.main.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Main</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {groupedNavigation.main.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={isActive(item.href)}
                     >
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && (
-                        <>
-                          <span className="flex-1 text-left">{item.title}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="text-xs">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </>
-                      )}
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                      <button
+                        onClick={() => navigate(item.href)}
+                        className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-left">{item.title}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Management Section */}
+        {groupedNavigation.management.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Management</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {groupedNavigation.management.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={isActive(item.href)}
+                    >
+                      <button
+                        onClick={() => navigate(item.href)}
+                        className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-left">{item.title}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Analytics Section */}
+        {groupedNavigation.analytics.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {groupedNavigation.analytics.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={isActive(item.href)}
+                    >
+                      <button
+                        onClick={() => navigate(item.href)}
+                        className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-left">{item.title}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Settings Section */}
+        {groupedNavigation.settings.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Settings</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {groupedNavigation.settings.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={isActive(item.href)}
+                    >
+                      <button
+                        onClick={() => navigate(item.href)}
+                        className="flex items-center gap-3 w-full p-2 rounded-md transition-colors"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!isCollapsed && (
+                          <>
+                            <span className="flex-1 text-left">{item.title}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="text-xs">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                      </button>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Activity Status */}
         {!isCollapsed && (
