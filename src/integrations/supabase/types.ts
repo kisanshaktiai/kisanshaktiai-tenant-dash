@@ -15023,6 +15023,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_lands_in_tile: {
+        Args: { p_tenant_id: string; p_tile_id: string }
+        Returns: {
+          area_acres: number
+          farmer_id: string
+          id: string
+          name: string
+        }[]
+      }
       get_location_context: {
         Args: { lat: number; lng: number }
         Returns: Json
@@ -15069,7 +15078,6 @@ export type Database = {
         Returns: {
           land_count: number
           tile_id: string
-          total_area_ha: number
         }[]
       }
       get_user_tenant_relationships: {
