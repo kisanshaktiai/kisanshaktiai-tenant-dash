@@ -1,0 +1,39 @@
+name: Build and Push Workers
+
+on:
+  push:
+    branches: [ "main" ]     # Run when you push to main
+  workflow_dispatch:         # Manual trigger button in Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Login to Azure
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # 3. Login to ACR
+    - name: Log in to Azure Container Registry
+      run: az acr login --name kisanshaktiacr
+
+    # 4. Build and Push Harvest Worker
+    - name: Build Harvest Worker
+      run: |
+        docker build -t kisanshaktiacr.azurecr.io/harvest-worker:latest \
+          -f ./ndvi-harvest-worker/Dockerfile ./ndvi-harvest-worker
+        docker push kisanshaktiacr.azurecr.io/harvest-worker:latest
+
+    # 5. Build and Push Land Clipper Worker
+    - name: Build Land Clipper Worker
+      run: |
+        docker build -t kisanshaktiacr.azurecr.io/land-clipper:latest \
+          -f ./ndvi-harvest-worker/land_clipper.Dockerfile ./ndvi-harvest-worker
+        docker push kisanshaktiacr.azurecr.io/land-clipper:latest
