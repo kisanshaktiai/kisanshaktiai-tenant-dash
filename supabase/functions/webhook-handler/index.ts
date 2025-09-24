@@ -88,7 +88,7 @@ async function deliverWebhook(delivery: WebhookDelivery): Promise<boolean> {
 
   } catch (error) {
     console.error('Webhook delivery error:', error);
-    errorMessage = error.message;
+    errorMessage = error instanceof Error ? error.message : 'Unknown error';
     success = false;
   }
 
