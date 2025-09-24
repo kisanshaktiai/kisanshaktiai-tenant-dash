@@ -19,7 +19,7 @@ import { FarmerAnalytics } from './components/FarmerAnalytics';
 import { CampaignCenter } from './components/CampaignCenter';
 import { IntegrationHub } from './components/IntegrationHub';
 import { NDVIHarvestManager } from './components/NDVIHarvestManager';
-import { NDVIHarvestPanel } from '@/components/ndvi/NDVIHarvestPanel';
+import { NDVIGlobalDashboard } from '@/components/ndvi/NDVIGlobalDashboard';
 import type { Farmer } from '@/services/FarmersService';
 
 export default function FarmersPage() {
@@ -159,8 +159,8 @@ export default function FarmersPage() {
 
         <TabsContent value="ndvi">
           <div className="space-y-6">
+            <NDVIGlobalDashboard />
             <NDVIHarvestManager />
-            <NDVIHarvestPanel />
           </div>
         </TabsContent>
 
