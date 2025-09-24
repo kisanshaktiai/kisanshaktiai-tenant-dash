@@ -1,4 +1,4 @@
-FROM osgeo/gdal:ubuntu-full-3.8.0
+FROM osgeo/gdal:ubuntu-full-3.8.5
 
 ARG BUILDTIME
 ARG VERSION
