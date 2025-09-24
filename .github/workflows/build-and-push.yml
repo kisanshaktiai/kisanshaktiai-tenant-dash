@@ -2,38 +2,166 @@ name: Build and Push Workers
 
 on:
   push:
-    branches: [ "main" ]     # Run when you push to main
-  workflow_dispatch:         # Manual trigger button in Actions tab
+    branches: [ "main" ]
+    paths:
+      - 'ndvi-harvest-worker/**'  # Only run when worker files change
+      - '.github/workflows/**'    # Or when workflow changes
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'ndvi-harvest-worker/**'
+  workflow_dispatch:              # Manual trigger button in Actions tab
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all images'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  REGISTRY: kisanshaktiacr.azurecr.io
+  REGISTRY_NAME: kisanshaktiacr
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      security-events: write    # For security scanning
+    
+    strategy:
+      matrix:
+        worker:
+          - name: harvest-worker
+            dockerfile: Dockerfile
+            context: ./ndvi-harvest-worker
+          - name: land-clipper
+            dockerfile: land_clipper.Dockerfile
+            context: ./ndvi-harvest-worker
+    
     steps:
-    # 1. Checkout code
+    # 1. Checkout code with full history for better caching
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    # 2. Login to Azure
+    # 2. Set up Docker Buildx for advanced features
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: |
+          network=host
+
+    # 3. Login to Azure
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v2
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # 3. Login to ACR
+    # 4. Login to ACR
     - name: Log in to Azure Container Registry
-      run: az acr login --name kisanshaktiacr
-
-    # 4. Build and Push Harvest Worker
-    - name: Build Harvest Worker
       run: |
-        docker build -t kisanshaktiacr.azurecr.io/harvest-worker:latest \
-          -f ./ndvi-harvest-worker/Dockerfile ./ndvi-harvest-worker
-        docker push kisanshaktiacr.azurecr.io/harvest-worker:latest
+        echo "Logging into ACR: ${{ env.REGISTRY_NAME }}"
+        az acr login --name ${{ env.REGISTRY_NAME }}
 
-    # 5. Build and Push Land Clipper Worker
-    - name: Build Land Clipper Worker
+    # 5. Generate image tags
+    - name: Generate image metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ matrix.worker.name }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+        labels: |
+          org.opencontainers.image.title=${{ matrix.worker.name }}
+          org.opencontainers.image.description=NDVI Processing Worker
+          org.opencontainers.image.vendor=KisanShakti
+
+    # 6. Check if rebuild is needed
+    - name: Check for changes
+      id: changes
       run: |
-        docker build -t kisanshaktiacr.azurecr.io/land-clipper:latest \
-          -f ./ndvi-harvest-worker/land_clipper.Dockerfile ./ndvi-harvest-worker
-        docker push kisanshaktiacr.azurecr.io/land-clipper:latest
+        if [[ "${{ github.event.inputs.force_rebuild }}" == "true" ]]; then
+          echo "rebuild=true" >> $GITHUB_OUTPUT
+          echo "Force rebuild requested"
+        else
+          # Check if worker-specific files changed
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E "^${{ matrix.worker.context }}|^\.github/workflows"; then
+            echo "rebuild=true" >> $GITHUB_OUTPUT
+            echo "Changes detected for ${{ matrix.worker.name }}"
+          else
+            echo "rebuild=false" >> $GITHUB_OUTPUT
+            echo "No changes detected for ${{ matrix.worker.name }}"
+          fi
+        fi
+
+    # 7. Build and push Docker image
+    - name: Build and push ${{ matrix.worker.name }}
+      if: steps.changes.outputs.rebuild == 'true'
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.worker.context }}
+        file: ${{ matrix.worker.context }}/${{ matrix.worker.dockerfile }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64
+        build-args: |
+          BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+          REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+
+    # 8. Security scan (optional but recommended)
+    - name: Run Trivy vulnerability scanner
+      if: steps.changes.outputs.rebuild == 'true'
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ matrix.worker.name }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      continue-on-error: true
+
+    # 9. Upload security scan results
+    - name: Upload Trivy scan results to GitHub Security tab
+      if: steps.changes.outputs.rebuild == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+      continue-on-error: true
+
+    # 10. Clean up
+    - name: Clean up Docker
+      if: always()
+      run: |
+        docker system prune -af --volumes || true
+        docker builder prune -af || true
+
+  # Summary job to report results
+  summary:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Job Summary
+      run: |
+        echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Worker | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
+          echo "| All Workers | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "| All Workers | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Images pushed to: \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`harvest-worker:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "- \`land-clipper:latest\`" >> $GITHUB_STEP_SUMMARY
