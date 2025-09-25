@@ -1,15 +1,15 @@
-name: Build, Push, and Deploy Workers
+name: Build, Push, and Deploy Land Clipper
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'ndvi-harvest-worker/**'
+      - 'ndvi-land-clipper/**'
       - '.github/workflows/**'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'ndvi-harvest-worker/**'
+      - 'ndvi-land-clipper/**'
   workflow_dispatch:
     inputs:
       force_rebuild:
@@ -34,7 +34,7 @@ jobs:
         worker:
           - name: land-clipper
             dockerfile: land_clipper.Dockerfile
-            context: ./ndvi-harvest-worker
+            context: ./ndvi-land-clipper
 
     steps:
     - name: Checkout code
@@ -68,7 +68,6 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    # NEW STEP: Link ACR to Container App (fixes UNAUTHORIZED issue)
     - name: Ensure Container App has access to ACR
       run: |
         echo "Linking ACR to ${{ matrix.worker.name }}..."
@@ -100,11 +99,10 @@ jobs:
         echo "| Worker | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
         if [[ "${{ needs.build-and-deploy.result }}" == "success" ]]; then
-          echo "| All Workers | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| Land Clipper | ✅ Success |" >> $GITHUB_STEP_SUMMARY
         else
-          echo "| All Workers | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Land Clipper | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Images deployed to Container Apps" >> $GITHUB_STEP_SUMMARY
-        echo "- harvest-worker (latest)" >> $GITHUB_STEP_SUMMARY
         echo "- land-clipper (latest)" >> $GITHUB_STEP_SUMMARY
