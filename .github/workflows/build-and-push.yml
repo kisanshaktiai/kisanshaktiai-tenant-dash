@@ -17,20 +17,18 @@ on:
         required: false
         default: 'false'
         type: boolean
+  schedule:
+    - cron: "0 2 * * *"   # Run daily at 2 AM UTC (7:30 AM IST)
 
 env:
   REGISTRY: kisanshaktiacr.azurecr.io
   REGISTRY_NAME: kisanshaktiacr
   RESOURCE_GROUP: kisanshakti-rg
-  CONTAINERAPPS_ENV: managedEnvironment-kisanshaktirg-ab65
+  ENVIRONMENT: managedEnvironment-kisanshaktirg-ab65
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    
     strategy:
       matrix:
         worker:
@@ -40,7 +38,7 @@ jobs:
           - name: land-clipper
             dockerfile: land_clipper.Dockerfile
             context: ./ndvi-harvest-worker
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -49,9 +47,6 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      with:
-        driver-opts: |
-          network=host
 
     - name: Log in to ACR
       uses: docker/login-action@v2
@@ -60,110 +55,36 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
 
-    - name: Generate image metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ matrix.worker.name }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value={{date 'YYYYMMDD-HHmmss'}}
-        labels: |
-          org.opencontainers.image.title=${{ matrix.worker.name }}
-          org.opencontainers.image.description=NDVI Processing Worker
-          org.opencontainers.image.vendor=KisanShakti
-
-    - name: Check for changes
-      id: changes
-      run: |
-        if [[ "${{ github.event.inputs.force_rebuild }}" == "true" ]]; then
-          echo "rebuild=true" >> $GITHUB_OUTPUT
-          echo "Force rebuild requested"
-        else
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E "^${{ matrix.worker.context }}|^\.github/workflows"; then
-            echo "rebuild=true" >> $GITHUB_OUTPUT
-            echo "Changes detected for ${{ matrix.worker.name }}"
-          else
-            echo "rebuild=false" >> $GITHUB_OUTPUT
-            echo "No changes detected for ${{ matrix.worker.name }}"
-          fi
-        fi
-
     - name: Build and push ${{ matrix.worker.name }}
-      if: steps.changes.outputs.rebuild == 'true'
       uses: docker/build-push-action@v5
       with:
         context: ${{ matrix.worker.context }}
         file: ${{ matrix.worker.context }}/${{ matrix.worker.dockerfile }}
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ env.REGISTRY }}/${{ matrix.worker.name }}:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64
-        build-args: |
-          BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
-          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
-          REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
 
-    - name: Run Trivy vulnerability scanner
-      if: steps.changes.outputs.rebuild == 'true'
-      uses: aquasecurity/trivy-action@master
+    - name: Azure Login
+      uses: azure/login@v2
       with:
-        image-ref: ${{ env.REGISTRY }}/${{ matrix.worker.name }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-      continue-on-error: true
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      if: steps.changes.outputs.rebuild == 'true'
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
-      continue-on-error: true
-
-    - name: Clean up Docker
-      if: always()
+    - name: Update Container App ${{ matrix.worker.name }}
       run: |
-        docker system prune -af --volumes || true
-        docker builder prune -af || true
-
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Deploy to Container Apps
-        uses: azure/CLI@v1
-        with:
-          azcliversion: 2.52.0
-          inlineScript: |
-            echo "Deploying workers to Azure Container Apps..."
-
-            ACR_NAME=${{ env.REGISTRY_NAME }}
-
-            for APP in harvest-worker land-clipper; do
-              az containerapp update \
-                --name $APP \
-                --resource-group ${{ env.RESOURCE_GROUP }} \
-                --image ${{ env.REGISTRY }}/$APP:latest \
-                --set-env-vars SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-                              SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }} \
-                              STORAGE_BUCKET=satellite-tiles \
-                              CLOUD_COVER_THRESHOLD=20 \
-                              MAX_TILES_PER_RUN=10 \
-                              RETENTION_DAYS=30
-            done
+        echo "Deploying ${{ matrix.worker.name }} with image ${{ env.REGISTRY }}/${{ matrix.worker.name }}:latest"
+        az containerapp update \
+          --name ${{ matrix.worker.name }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ env.REGISTRY }}/${{ matrix.worker.name }}:latest \
+          --min-replicas 1 \
+          --max-replicas 3
 
   summary:
-    needs: [build-and-push, deploy]
+    needs: build-and-deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -172,17 +93,12 @@ jobs:
         echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "| Worker | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-        
-        if [[ "${{ needs.build-and-push.result }}" == "success" && "${{ needs.deploy.result }}" == "success" ]]; then
-          echo "| All Workers | ✅ Built & Deployed |" >> $GITHUB_STEP_SUMMARY
-        elif [[ "${{ needs.build-and-push.result }}" == "success" ]]; then
-          echo "| Build | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+        if [[ "${{ needs.build-and-deploy.result }}" == "success" ]]; then
+          echo "| All Workers | ✅ Success |" >> $GITHUB_STEP_SUMMARY
         else
-          echo "| Build | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          echo "| All Workers | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
         fi
-        
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Images pushed to: \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- \`harvest-worker:latest\`" >> $GITHUB_STEP_SUMMARY
-        echo "- \`land-clipper:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "### Images deployed to Container Apps" >> $GITHUB_STEP_SUMMARY
+        echo "- harvest-worker (latest)" >> $GITHUB_STEP_SUMMARY
+        echo "- land-clipper (latest)" >> $GITHUB_STEP_SUMMARY
