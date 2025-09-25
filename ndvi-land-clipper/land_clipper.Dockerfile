@@ -44,8 +44,9 @@ ENV PYTHONUNBUFFERED=1 \
     GDAL_HTTP_TIMEOUT=30 \
     GDAL_HTTP_CONNECTTIMEOUT=10 \
     CPL_VSIL_CURL_ALLOWED_EXTENSIONS=.tif,.TIF,.tiff,.TIFF,.jp2,.JP2 \
-    CPL_VSIL_CURL_CACHE_SIZE=25000000
-    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC  
+    CPL_VSIL_CURL_CACHE_SIZE=25000000 \
+    DEBIAN_FRONTEND=noninteractive \
+    TZ=Etc/UTC  
 
 # Healthcheck: ensure rasterio + shapely load properly
 HEALTHCHECK --interval=30s --timeout=15s --start-period=10s --retries=3 \
