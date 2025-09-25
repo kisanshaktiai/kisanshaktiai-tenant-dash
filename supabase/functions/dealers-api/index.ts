@@ -157,8 +157,8 @@ serve(async (req) => {
     console.error('Dealers API error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        details: error.toString()
+        error: error instanceof Error ? error.message : 'Internal server error',
+        details: error instanceof Error ? error.toString() : 'Unknown error'
       }),
       { 
         status: 500, 

@@ -6,4 +6,3 @@ supabase==2.4.0
 httpx==0.25.2
 tenacity==8.2.3
 click==8.1.7
-GDAL==3.7.3
