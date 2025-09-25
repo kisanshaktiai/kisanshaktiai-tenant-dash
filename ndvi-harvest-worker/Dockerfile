@@ -1,5 +1,5 @@
-# Use the latest available GDAL full image
-FROM osgeo/gdal:ubuntu-full-3.8.3
+# Use stable GDAL build
+FROM osgeo/gdal:ubuntu-full-3.11.4
 
 ARG BUILDTIME
 ARG VERSION
