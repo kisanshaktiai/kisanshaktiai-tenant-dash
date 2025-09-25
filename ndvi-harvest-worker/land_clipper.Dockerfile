@@ -1,8 +1,10 @@
-FROM osgeo/gdal:ubuntu-full-3.8.5
+# Use the latest available GDAL full image
+FROM osgeo/gdal:ubuntu-full-3.8.4
 
 ARG BUILDTIME
 ARG VERSION
 ARG REVISION
+
 
 LABEL org.opencontainers.image.title="Land Clipper Worker" \
       org.opencontainers.image.description="Clips satellite tiles to land boundaries and computes NDVI/EVI/NDWI/SAVI" \
