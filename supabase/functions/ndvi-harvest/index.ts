@@ -106,26 +106,32 @@ serve(async (req) => {
 
         if (jobsError) throw jobsError
 
-        // Get tile metadata
-        const { data: tiles, error: tilesError } = await supabaseClient
-          .from('satellite_tiles')
+        // Get harvest queue entries for this tenant
+        const { data: queueEntries, error: queueError } = await supabaseClient
+          .from('harvest_queue')
           .select('*')
           .eq('tenant_id', tenant_id)
-          .order('acquisition_date', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(20)
 
-        if (tilesError) throw tilesError
+        if (queueError) throw queueError
 
         return new Response(
           JSON.stringify({
             jobs,
-            tiles,
+            queue: queueEntries,
             summary: {
               total_jobs: jobs.length,
               completed: jobs.filter((j: any) => j.status === 'completed').length,
               failed: jobs.filter((j: any) => j.status === 'failed').length,
               pending: jobs.filter((j: any) => j.status === 'pending').length,
               running: jobs.filter((j: any) => j.status === 'running').length
+            },
+            quota: {
+              can_harvest: true,
+              current_usage: 0,
+              monthly_limit: 100,
+              remaining: 100
             }
           }),
           {
@@ -135,36 +141,38 @@ serve(async (req) => {
       }
 
       case 'get_tenant_tiles': {
-        // Get tiles that cover tenant's lands
-        const { data: tilesData, error: tilesError } = await supabaseClient
-          .rpc('get_tenant_tiles', { p_tenant_id: tenant_id })
+        // Get MGRS tiles for tenant's lands
+        const { data: lands, error: landsError } = await supabaseClient
+          .from('lands')
+          .select('mgrs_tile_id')
+          .eq('tenant_id', tenant_id)
+          .not('mgrs_tile_id', 'is', null)
+
+        if (landsError) throw landsError
+
+        // Get unique tile IDs
+        const uniqueTileIds = [...new Set(lands.map((l: any) => l.mgrs_tile_id))]
+
+        // Get tile metadata from mgrs_tiles
+        const { data: tiles, error: tilesError } = await supabaseClient
+          .from('mgrs_tiles')
+          .select('*')
+          .in('tile_id', uniqueTileIds)
 
         if (tilesError) throw tilesError
 
-        // Get latest NDVI data for each tile
-        const tileIds = tilesData.map((t: any) => t.tile_id)
-        
-        const { data: latestNdvi, error: ndviError } = await supabaseClient
-          .from('satellite_tiles')
-          .select('tile_id, acquisition_date, cloud_cover, ndvi_path, status')
-          .in('tile_id', tileIds)
-          .order('acquisition_date', { ascending: false })
-
-        if (ndviError) throw ndviError
-
-        // Combine data
-        const enrichedTiles = tilesData.map((tile: any) => {
-          const latestData = latestNdvi.find((n: any) => n.tile_id === tile.tile_id)
-          return {
-            ...tile,
-            latest_ndvi: latestData
-          }
-        })
+        // Count lands per tile
+        const tilesWithCounts = tiles.map((tile: any) => ({
+          tile_id: tile.tile_id,
+          land_count: lands.filter((l: any) => l.mgrs_tile_id === tile.tile_id).length,
+          total_area_ha: 0, // Calculate from actual land areas if needed
+          latest_ndvi: null
+        }))
 
         return new Response(
           JSON.stringify({
-            tiles: enrichedTiles,
-            total_tiles: enrichedTiles.length
+            tiles: tilesWithCounts,
+            total_tiles: tilesWithCounts.length
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -173,18 +181,6 @@ serve(async (req) => {
       }
 
       case 'get_storage_usage': {
-        // Calculate storage usage for tenant
-        const { data: storageData, error: storageError } = await supabaseClient
-          .from('satellite_tiles')
-          .select('file_size_mb')
-          .eq('tenant_id', tenant_id)
-
-        if (storageError) throw storageError
-
-        const totalSizeMb = storageData.reduce((sum: number, tile: any) => 
-          sum + (tile.file_size_mb || 0), 0
-        )
-
         // Get tenant plan limits
         const { data: tenantData, error: tenantError } = await supabaseClient
           .from('tenants')
@@ -197,12 +193,14 @@ serve(async (req) => {
         const storageLimit = tenantData.subscription_plan === 'AI_Enterprise' ? 500 :
                            tenantData.subscription_plan === 'Shakti_Growth' ? 200 : 50
 
+        // For now, return placeholder storage data
+        // In production, this would query actual file storage
         return new Response(
           JSON.stringify({
-            used_mb: totalSizeMb,
+            used_mb: 0,
             limit_mb: storageLimit * 1024,
-            percentage_used: (totalSizeMb / (storageLimit * 1024)) * 100,
-            files_count: storageData.length
+            percentage_used: 0,
+            files_count: 0
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
