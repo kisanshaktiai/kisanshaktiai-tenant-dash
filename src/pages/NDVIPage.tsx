@@ -1,8 +1,9 @@
 import React from 'react';
 import { NDVIGlobalDashboard } from '@/components/ndvi/NDVIGlobalDashboard';
+import { RenderServiceStatus } from '@/components/ndvi/RenderServiceStatus';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Satellite, TrendingUp, Database, AlertCircle } from 'lucide-react';
+import { Satellite, TrendingUp, Database, AlertCircle, Server } from 'lucide-react';
 
 export default function NDVIPage() {
   return (
@@ -22,10 +23,14 @@ export default function NDVIPage() {
 
       {/* Main Content */}
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="render" className="flex items-center gap-2">
+            <Server className="w-4 h-4" />
+            Render Service
           </TabsTrigger>
           <TabsTrigger value="harvest" className="flex items-center gap-2">
             <Database className="w-4 h-4" />
@@ -43,6 +48,10 @@ export default function NDVIPage() {
 
         <TabsContent value="dashboard" className="space-y-6">
           <NDVIGlobalDashboard />
+        </TabsContent>
+
+        <TabsContent value="render" className="space-y-6">
+          <RenderServiceStatus />
         </TabsContent>
 
         <TabsContent value="harvest" className="space-y-6">
