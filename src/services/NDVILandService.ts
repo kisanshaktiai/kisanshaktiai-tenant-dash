@@ -66,13 +66,13 @@ export class NDVILandService {
     farmerId?: string
   ): Promise<NDVIApiResponse> {
     try {
-      console.log(`Fetching NDVI for land ${landId} with geometry:`, {
+      console.log(`📡 Fetching NDVI for land ${landId}:`, {
         tenant_id: tenantId,
         farmer_id: farmerId,
         has_geometry: !!geometry
       });
 
-      // Send POST request with land boundary geometry
+      // Send POST request with land boundary geometry to specific land endpoint
       const response = await fetch(`${NDVI_API_BASE_URL}/lands/${landId}/ndvi`, {
         method: 'POST',
         headers: {
@@ -83,26 +83,25 @@ export class NDVILandService {
           land_id: landId,
           tenant_id: tenantId,
           farmer_id: farmerId,
-          geometry: geometry, // GeoJSON geometry from lands table
+          geometry: geometry,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`NDVI API error for land ${landId}:`, {
+        console.error(`❌ NDVI API error for land ${landId}:`, {
           status: response.status,
           statusText: response.statusText,
-          body: errorText,
-          geometry_sent: !!geometry
+          error: errorText
         });
-        throw new Error(`API request failed: ${response.status} - ${errorText || response.statusText}`);
+        throw new Error(`API failed (${response.status}): ${errorText || response.statusText}`);
       }
 
       const data = await response.json();
-      console.log(`✅ NDVI data received for land ${landId}:`, data);
+      console.log(`✅ NDVI data fetched for land ${landId}`);
       return data;
     } catch (error) {
-      console.error(`Failed to fetch NDVI for land ${landId}:`, error);
+      console.error(`❌ Failed to fetch NDVI for land ${landId}:`, error);
       throw error;
     }
   }
@@ -183,6 +182,7 @@ export class NDVILandService {
 
   /**
    * Fetch NDVI data for a single land with caching
+   * Calls /lands/{land_id}/ndvi endpoint with land geometry
    */
   async fetchNDVIForLand(
     landId: string,
@@ -193,7 +193,9 @@ export class NDVILandService {
     forceRefresh: boolean = false
   ): Promise<FetchNDVIResult> {
     try {
-      // Check if geometry exists
+      console.log(`🔄 Processing land: ${landName} (${landId})`);
+
+      // Validate geometry
       if (!geometry) {
         throw new Error('Land geometry is required for NDVI processing');
       }
@@ -202,7 +204,7 @@ export class NDVILandService {
       if (!forceRefresh) {
         const isFresh = await this.isCacheFresh(landId);
         if (isFresh) {
-          console.log(`Using cached NDVI data for land ${landId}`);
+          console.log(`💾 Using cached data for ${landName}`);
           return {
             success: true,
             land_id: landId,
@@ -212,12 +214,14 @@ export class NDVILandService {
         }
       }
 
-      // Fetch from API with geometry
+      // Fetch fresh data from API
+      console.log(`🌐 Fetching fresh NDVI data for ${landName}...`);
       const ndviData = await this.fetchFromAPI(landId, geometry, tenantId, farmerId);
 
       // Save to database
       await this.saveToDatabase(landId, tenantId, ndviData);
 
+      console.log(`✅ Successfully processed ${landName}`);
       return {
         success: true,
         land_id: landId,
@@ -226,7 +230,7 @@ export class NDVILandService {
         data: ndviData,
       };
     } catch (error) {
-      console.error(`Error fetching NDVI for land ${landId}:`, error);
+      console.error(`❌ Failed to process ${landName}:`, error);
       return {
         success: false,
         land_id: landId,
@@ -239,7 +243,7 @@ export class NDVILandService {
 
   /**
    * Fetch NDVI data for all lands under a tenant and farmer
-   * Uses bulk API when farmer_id is provided, otherwise individual requests
+   * Loops through each land individually and fetches from /lands/{land_id}/ndvi
    */
   async fetchNDVIForLands(
     tenantId: string,
@@ -247,13 +251,13 @@ export class NDVILandService {
     forceRefresh: boolean = false
   ): Promise<FetchNDVIResult[]> {
     try {
-      console.log('🔍 Fetching lands with boundaries:', {
+      console.log('🔍 Starting NDVI fetch for lands:', {
         tenant_id: tenantId,
         farmer_id: farmerId,
         force_refresh: forceRefresh
       });
 
-      // Get all active lands WITH BOUNDARY (geometry) for the tenant/farmer
+      // Get all active lands WITH BOUNDARY for the tenant/farmer
       let query = supabase
         .from('lands')
         .select('id, name, tenant_id, farmer_id, boundary')
@@ -271,17 +275,15 @@ export class NDVILandService {
       }
 
       if (!lands || lands.length === 0) {
-        console.warn('⚠️ No lands found for tenant:', {
-          tenant_id: tenantId,
-          farmer_id: farmerId
-        });
+        console.warn('⚠️ No lands found');
         return [];
       }
 
-      console.log(`✅ Found ${lands.length} lands with boundaries`);
+      console.log(`✅ Found ${lands.length} lands`);
 
-      // Validate that lands have boundary geometry
+      // Filter lands with boundary data
       const landsWithGeometry = lands.filter(land => land.boundary);
+      
       if (landsWithGeometry.length === 0) {
         throw new Error('No lands have boundary data. Please add land boundaries first.');
       }
@@ -290,96 +292,44 @@ export class NDVILandService {
         console.warn(`⚠️ ${lands.length - landsWithGeometry.length} lands missing boundary data`);
       }
 
+      // Process each land individually in batches
+      console.log(`📡 Processing ${landsWithGeometry.length} lands individually...`);
       const results: FetchNDVIResult[] = [];
-
-      // Prepare land geometries for API (convert boundary to GeoJSON)
-      const landGeometries: LandGeometry[] = landsWithGeometry.map(land => ({
-        land_id: land.id,
-        land_name: land.name,
-        geometry: land.boundary // PostGIS geometry from boundary column
-      }));
-
-      // Use bulk fetch if we have a farmer_id and multiple lands
-      if (farmerId && landGeometries.length > 1) {
-        try {
-          console.log(`📡 Using bulk fetch for farmer ${farmerId} with ${landGeometries.length} lands`);
-          const bulkData = await this.fetchBulkForFarmer(farmerId, tenantId, landGeometries);
-          
-          // Create a map of land_id to land info
-          const landMap = new Map(landsWithGeometry.map(l => [l.id, l]));
-          
-          // Process each NDVI response
-          for (const ndviData of bulkData) {
-            const land = landMap.get(ndviData.land_id);
-            if (!land) continue;
-
-            try {
-              // Check cache unless force refresh
-              if (!forceRefresh) {
-                const isFresh = await this.isCacheFresh(land.id);
-                if (isFresh) {
-                  results.push({
-                    success: true,
-                    land_id: land.id,
-                    land_name: land.name,
-                    cached: true,
-                  });
-                  continue;
-                }
-              }
-
-              // Save to database
-              await this.saveToDatabase(land.id, tenantId, ndviData);
-
-              results.push({
-                success: true,
-                land_id: land.id,
-                land_name: land.name,
-                cached: false,
-                data: ndviData,
-              });
-            } catch (saveError) {
-              console.error(`Failed to save NDVI for land ${land.id}:`, saveError);
-              results.push({
-                success: false,
-                land_id: land.id,
-                land_name: land.name,
-                cached: false,
-                error: saveError instanceof Error ? saveError.message : 'Failed to save data',
-              });
-            }
-          }
-          
-          return results;
-        } catch (bulkError) {
-          console.warn('⚠️ Bulk fetch failed, falling back to individual requests:', bulkError);
-          // Fall through to individual fetch logic
-        }
-      }
-
-      // Fetch NDVI data individually with batching
-      console.log('📡 Using individual fetch with batching');
-      const batchSize = 5;
+      const batchSize = 3; // Process 3 lands at a time to avoid overwhelming the API
+      
       for (let i = 0; i < landsWithGeometry.length; i += batchSize) {
         const batch = landsWithGeometry.slice(i, i + batchSize);
-        const batchPromises = batch.map(land =>
-          this.fetchNDVIForLand(
+        console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(landsWithGeometry.length / batchSize)}`);
+        
+        const batchPromises = batch.map(async (land) => {
+          return await this.fetchNDVIForLand(
             land.id,
             land.name,
             land.tenant_id,
-            land.boundary, // Send boundary geometry!
+            land.boundary,
             land.farmer_id,
             forceRefresh
-          )
-        );
+          );
+        });
 
         const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
+        
+        // Small delay between batches to avoid rate limiting
+        if (i + batchSize < landsWithGeometry.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
+
+      const successCount = results.filter(r => r.success).length;
+      const cachedCount = results.filter(r => r.cached).length;
+      const failedCount = results.filter(r => !r.success).length;
+
+      console.log(`✅ NDVI fetch complete: ${successCount} successful (${cachedCount} cached), ${failedCount} failed`);
 
       return results;
     } catch (error) {
-      console.error('Error in fetchNDVIForLands:', error);
+      console.error('❌ Error in fetchNDVIForLands:', error);
       throw error;
     }
   }
