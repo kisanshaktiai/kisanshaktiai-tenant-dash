@@ -59,23 +59,59 @@ export class NDVILandService {
   /**
    * Fetch NDVI data from API for a single land
    */
-  private async fetchFromAPI(landId: string, geometry: any): Promise<NDVIApiResponse> {
-    const response = await fetch(`${NDVI_API_BASE_URL}/api/ndvi`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        land_id: landId,
-        geometry: geometry,
-      }),
-    });
+  private async fetchFromAPI(landId: string): Promise<NDVIApiResponse> {
+    try {
+      const response = await fetch(`${NDVI_API_BASE_URL}/lands/${landId}/ndvi`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`NDVI API error for land ${landId}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to fetch NDVI for land ${landId}:`, error);
+      throw error;
     }
+  }
 
-    return await response.json();
+  /**
+   * Fetch NDVI data for all lands of a farmer in bulk (optimized)
+   */
+  private async fetchBulkForFarmer(farmerId: string): Promise<NDVIApiResponse[]> {
+    try {
+      const response = await fetch(`${NDVI_API_BASE_URL}/farmers/${farmerId}/ndvi`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`NDVI bulk API error for farmer ${farmerId}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`Bulk API request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Failed to fetch bulk NDVI for farmer ${farmerId}:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -109,7 +145,6 @@ export class NDVILandService {
   async fetchNDVIForLand(
     landId: string,
     landName: string,
-    geometry: any,
     tenantId: string,
     forceRefresh: boolean = false
   ): Promise<FetchNDVIResult> {
@@ -128,7 +163,7 @@ export class NDVILandService {
       }
 
       // Fetch from API
-      const ndviData = await this.fetchFromAPI(landId, geometry);
+      const ndviData = await this.fetchFromAPI(landId);
 
       // Save to database
       await this.saveToDatabase(landId, tenantId, ndviData);
@@ -154,7 +189,7 @@ export class NDVILandService {
 
   /**
    * Fetch NDVI data for all lands under a tenant and farmer
-   * Uses parallel requests for efficiency
+   * Uses bulk API when farmer_id is provided, otherwise individual requests
    */
   async fetchNDVIForLands(
     tenantId: string,
@@ -165,7 +200,7 @@ export class NDVILandService {
       // Get all active lands for the tenant/farmer
       let query = supabase
         .from('lands')
-        .select('id, name, boundary, tenant_id, farmer_id')
+        .select('id, name, tenant_id, farmer_id')
         .eq('tenant_id', tenantId)
         .eq('is_active', true);
 
@@ -183,20 +218,74 @@ export class NDVILandService {
         return [];
       }
 
-      // Filter out lands without geometry
-      const validLands = lands.filter(land => land.boundary);
-
-      // Fetch NDVI data in parallel with batching to avoid overwhelming the API
-      const batchSize = 5;
       const results: FetchNDVIResult[] = [];
 
-      for (let i = 0; i < validLands.length; i += batchSize) {
-        const batch = validLands.slice(i, i + batchSize);
+      // Use bulk fetch if we have a farmer_id and multiple lands
+      if (farmerId && lands.length > 1) {
+        try {
+          console.log(`Using bulk fetch for farmer ${farmerId} with ${lands.length} lands`);
+          const bulkData = await this.fetchBulkForFarmer(farmerId);
+          
+          // Create a map of land_id to land info
+          const landMap = new Map(lands.map(l => [l.id, l]));
+          
+          // Process each NDVI response
+          for (const ndviData of bulkData) {
+            const land = landMap.get(ndviData.land_id);
+            if (!land) continue;
+
+            try {
+              // Check cache unless force refresh
+              if (!forceRefresh) {
+                const isFresh = await this.isCacheFresh(land.id);
+                if (isFresh) {
+                  results.push({
+                    success: true,
+                    land_id: land.id,
+                    land_name: land.name,
+                    cached: true,
+                  });
+                  continue;
+                }
+              }
+
+              // Save to database
+              await this.saveToDatabase(land.id, tenantId, ndviData);
+
+              results.push({
+                success: true,
+                land_id: land.id,
+                land_name: land.name,
+                cached: false,
+                data: ndviData,
+              });
+            } catch (saveError) {
+              console.error(`Failed to save NDVI for land ${land.id}:`, saveError);
+              results.push({
+                success: false,
+                land_id: land.id,
+                land_name: land.name,
+                cached: false,
+                error: saveError instanceof Error ? saveError.message : 'Failed to save data',
+              });
+            }
+          }
+          
+          return results;
+        } catch (bulkError) {
+          console.warn('Bulk fetch failed, falling back to individual requests:', bulkError);
+          // Fall through to individual fetch logic
+        }
+      }
+
+      // Fetch NDVI data individually with batching
+      const batchSize = 5;
+      for (let i = 0; i < lands.length; i += batchSize) {
+        const batch = lands.slice(i, i + batchSize);
         const batchPromises = batch.map(land =>
           this.fetchNDVIForLand(
             land.id,
             land.name,
-            land.boundary,
             land.tenant_id,
             forceRefresh
           )
