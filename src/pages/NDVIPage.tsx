@@ -66,14 +66,25 @@ export default function NDVIPage() {
         </Alert>
       )}
 
-      {/* No Lands Alert */}
-      {!isLoading && !isAutoFetching && (!cachedData || cachedData.length === 0) && (
+      {/* Error Alert */}
+      {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Land Data Found</AlertTitle>
+          <AlertTitle>Unable to Fetch NDVI Data</AlertTitle>
           <AlertDescription>
-            You need to add land boundaries for your farmers before NDVI data can be processed. 
-            Please go to the Farmers page and add land parcels with boundary coordinates.
+            {error.message || 'An error occurred while fetching NDVI data. Please try again.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* No Lands Info */}
+      {!isLoading && !isAutoFetching && !error && (!cachedData || cachedData.length === 0) && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Land Data Available</AlertTitle>
+          <AlertDescription>
+            No land parcels found with boundary data. Please add land parcels with GPS coordinates 
+            or boundary polygons in the Farmers section to start monitoring vegetation health.
           </AlertDescription>
         </Alert>
       )}

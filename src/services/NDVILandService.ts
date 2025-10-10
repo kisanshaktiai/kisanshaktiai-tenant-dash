@@ -34,6 +34,24 @@ export interface FetchNDVIResult {
   data?: any;
 }
 
+export interface NDVIRequestPayload {
+  land_ids: string[];
+  tile_id?: string;
+  date_from?: string;
+  date_to?: string;
+  tenant_id: string;
+  farmer_id?: string;
+  cloud_coverage?: number;
+  processing_priority?: 'low' | 'medium' | 'high';
+}
+
+export interface NDVIRequestResponse {
+  request_id: string;
+  status: string;
+  land_count: number;
+  estimated_completion: string;
+}
+
 export class NDVILandService {
   /**
    * Check if cached NDVI data exists and is fresh (< 7 days old)
@@ -242,8 +260,43 @@ export class NDVILandService {
   }
 
   /**
+   * Create an NDVI processing request via the /requests API endpoint
+   * Automatically maps farmer_id to land_ids
+   */
+  async createNDVIRequest(payload: NDVIRequestPayload): Promise<NDVIRequestResponse> {
+    try {
+      console.log('📡 Creating NDVI request:', payload);
+
+      const response = await fetch(`${NDVI_API_BASE_URL}/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ NDVI request creation failed:', {
+          status: response.status,
+          error: errorText
+        });
+        throw new Error(`Failed to create NDVI request: ${errorText || response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ NDVI request created:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error creating NDVI request:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch NDVI data for all lands under a tenant and farmer
-   * Loops through each land individually and fetches from /lands/{land_id}/ndvi
+   * Uses the /requests API endpoint for batch processing
    */
   async fetchNDVIForLands(
     tenantId: string,
@@ -253,11 +306,11 @@ export class NDVILandService {
     try {
       console.log('🔍 Starting NDVI fetch for lands:', {
         tenant_id: tenantId,
-        farmer_id: farmerId,
+        farmer_id: farmerId || 'all',
         force_refresh: forceRefresh
       });
 
-      // Get all active lands WITH BOUNDARY for the tenant/farmer
+      // Step 1: Get all active lands with boundaries for the tenant/farmer
       let query = supabase
         .from('lands')
         .select('id, name, tenant_id, farmer_id, boundary')
@@ -275,63 +328,117 @@ export class NDVILandService {
       }
 
       if (!lands || lands.length === 0) {
-        console.warn('⚠️ No lands found');
-        return [];
+        const message = farmerId 
+          ? `No lands found for farmer. Please add land parcels for this farmer.`
+          : `No lands found for your organization. Please add land parcels in the Farmers section.`;
+        
+        throw new Error(message);
       }
 
-      console.log(`✅ Found ${lands.length} lands`);
+      console.log(`✅ Found ${lands.length} land(s) for ${farmerId ? 'farmer' : 'tenant'}`);
 
-      // Filter lands with boundary data
+      // Step 2: Filter lands with boundary data
       const landsWithGeometry = lands.filter(land => land.boundary);
       
       if (landsWithGeometry.length === 0) {
-        throw new Error('No lands have boundary data. Please add land boundaries first.');
+        throw new Error('None of your lands have boundary data. Please add GPS coordinates or boundary polygons to your land parcels before fetching NDVI data.');
       }
 
       if (landsWithGeometry.length < lands.length) {
-        console.warn(`⚠️ ${lands.length - landsWithGeometry.length} lands missing boundary data`);
+        const missingCount = lands.length - landsWithGeometry.length;
+        console.warn(`⚠️ ${missingCount} land(s) missing boundary data - they will be skipped`);
       }
 
-      // Process each land individually in batches
-      console.log(`📡 Processing ${landsWithGeometry.length} lands individually...`);
-      const results: FetchNDVIResult[] = [];
-      const batchSize = 3; // Process 3 lands at a time to avoid overwhelming the API
+      // Step 3: Create NDVI request via /requests API
+      const landIds = landsWithGeometry.map(l => l.id);
       
-      for (let i = 0; i < landsWithGeometry.length; i += batchSize) {
-        const batch = landsWithGeometry.slice(i, i + batchSize);
-        console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(landsWithGeometry.length / batchSize)}`);
+      const requestPayload: NDVIRequestPayload = {
+        land_ids: landIds,
+        tenant_id: tenantId,
+        farmer_id: farmerId,
+        cloud_coverage: 20, // Default cloud coverage threshold
+        processing_priority: 'medium',
+        // Optional: Add date range for historical data
+        // date_from: '2024-01-01',
+        // date_to: new Date().toISOString().split('T')[0],
+      };
+
+      try {
+        const requestResponse = await this.createNDVIRequest(requestPayload);
         
-        const batchPromises = batch.map(async (land) => {
-          return await this.fetchNDVIForLand(
-            land.id,
-            land.name,
-            land.tenant_id,
-            land.boundary,
-            land.farmer_id,
-            forceRefresh
-          );
+        console.log(`✅ NDVI request created successfully:`, {
+          request_id: requestResponse.request_id,
+          land_count: requestResponse.land_count,
+          status: requestResponse.status
         });
 
-        const batchResults = await Promise.all(batchPromises);
-        results.push(...batchResults);
+        // Return success results for all lands
+        return landsWithGeometry.map(land => ({
+          success: true,
+          land_id: land.id,
+          land_name: land.name,
+          cached: false,
+          data: {
+            request_id: requestResponse.request_id,
+            status: requestResponse.status
+          }
+        }));
+
+      } catch (apiError) {
+        console.error('❌ NDVI request API failed, falling back to individual processing:', apiError);
         
-        // Small delay between batches to avoid rate limiting
-        if (i + batchSize < landsWithGeometry.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+        // Fallback: Process each land individually if /requests endpoint fails
+        return await this.fallbackIndividualProcessing(landsWithGeometry, tenantId, forceRefresh);
       }
 
-      const successCount = results.filter(r => r.success).length;
-      const cachedCount = results.filter(r => r.cached).length;
-      const failedCount = results.filter(r => !r.success).length;
-
-      console.log(`✅ NDVI fetch complete: ${successCount} successful (${cachedCount} cached), ${failedCount} failed`);
-
-      return results;
     } catch (error) {
       console.error('❌ Error in fetchNDVIForLands:', error);
       throw error;
     }
+  }
+
+  /**
+   * Fallback method: Process lands individually if batch request fails
+   */
+  private async fallbackIndividualProcessing(
+    lands: any[],
+    tenantId: string,
+    forceRefresh: boolean
+  ): Promise<FetchNDVIResult[]> {
+    console.log(`📡 Processing ${lands.length} lands individually (fallback mode)...`);
+    const results: FetchNDVIResult[] = [];
+    const batchSize = 3;
+    
+    for (let i = 0; i < lands.length; i += batchSize) {
+      const batch = lands.slice(i, i + batchSize);
+      console.log(`📦 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(lands.length / batchSize)}`);
+      
+      const batchPromises = batch.map(async (land) => {
+        return await this.fetchNDVIForLand(
+          land.id,
+          land.name,
+          land.tenant_id,
+          land.boundary,
+          land.farmer_id,
+          forceRefresh
+        );
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+      
+      if (i + batchSize < lands.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    const cachedCount = results.filter(r => r.cached).length;
+    const failedCount = results.filter(r => !r.success).length;
+
+    console.log(`✅ Fallback processing complete: ${successCount} successful (${cachedCount} cached), ${failedCount} failed`);
+
+    return results;
   }
 
   /**
