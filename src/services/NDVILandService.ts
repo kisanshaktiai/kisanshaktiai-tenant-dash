@@ -36,13 +36,19 @@ export interface FetchNDVIResult {
 
 export interface NDVIRequestPayload {
   land_ids: string[];
-  tile_id?: string;
-  date_from?: string;
-  date_to?: string;
+  tile_id: string; // REQUIRED by API
+  date_from: string; // REQUIRED by API
+  date_to: string; // REQUIRED by API
   tenant_id: string;
   farmer_id?: string;
   cloud_coverage?: number;
   processing_priority?: 'low' | 'medium' | 'high';
+}
+
+export interface TileLandGroup {
+  tile_id: string;
+  land_ids: string[];
+  land_names: string[];
 }
 
 export interface NDVIRequestResponse {
@@ -135,8 +141,92 @@ export class NDVILandService {
   }
 
   /**
+   * Get tile mappings for lands
+   */
+  private async getTileMappingsForLands(landIds: string[]): Promise<Map<string, TileLandGroup>> {
+    const { data: tileMappings, error } = await supabase
+      .from('land_tile_mapping')
+      .select(`
+        land_id,
+        mgrs_tile_id,
+        lands!inner(id, name)
+      `)
+      .in('land_id', landIds);
+
+    if (error) {
+      console.warn('⚠️ No tile mappings found, will attempt to get tiles from Supabase function');
+      // Fallback: try to get tiles via RPC
+      return await this.getTilesViaFunction(landIds);
+    }
+
+    // Group lands by tile
+    const tileGroups = new Map<string, TileLandGroup>();
+    
+    tileMappings?.forEach((mapping: any) => {
+      const tileId = mapping.mgrs_tile_id;
+      if (!tileId) return;
+      
+      if (!tileGroups.has(tileId)) {
+        tileGroups.set(tileId, {
+          tile_id: tileId,
+          land_ids: [],
+          land_names: []
+        });
+      }
+      
+      const group = tileGroups.get(tileId)!;
+      group.land_ids.push(mapping.land_id);
+      group.land_names.push(mapping.lands.name);
+    });
+
+    return tileGroups;
+  }
+
+  /**
+   * Fallback method to get tiles via Supabase function
+   */
+  private async getTilesViaFunction(landIds: string[]): Promise<Map<string, TileLandGroup>> {
+    try {
+      const { data: lands } = await supabase
+        .from('lands')
+        .select('id, name')
+        .in('id', landIds);
+
+      // Try to get all available tiles for the tenant
+      const response = await supabase.rpc('get_tiles_with_lands');
+      
+      if (response.error) throw response.error;
+
+      const tileGroups = new Map<string, TileLandGroup>();
+      
+      // For now, assign all lands to a default tile if we can't determine tiles
+      // This is a fallback - ideally tiles should be properly mapped
+      if (!response.data || response.data.length === 0) {
+        console.warn('⚠️ No tiles found via function, using fallback approach');
+        return tileGroups;
+      }
+
+      // Use the first available tile as fallback
+      const defaultTile = response.data[0]?.tile_id;
+      if (defaultTile && lands) {
+        tileGroups.set(defaultTile, {
+          tile_id: defaultTile,
+          land_ids: lands.map(l => l.id),
+          land_names: lands.map(l => l.name)
+        });
+      }
+
+      return tileGroups;
+    } catch (error) {
+      console.error('❌ Failed to get tiles via function:', error);
+      return new Map();
+    }
+  }
+
+  /**
    * Fetch NDVI data for all lands under a tenant and farmer
    * Uses the /requests API endpoint for batch processing
+   * Groups lands by tile and creates separate requests per tile
    */
   async fetchNDVIForLands(
     tenantId: string,
@@ -189,39 +279,109 @@ export class NDVILandService {
         console.warn(`⚠️ ${missingCount} land(s) missing boundary data - they will be skipped`);
       }
 
-      // Step 3: Extract land_ids and create NDVI request via /requests API
+      // Step 3: Get tile mappings for lands
       const landIds = landsWithGeometry.map(l => l.id);
-      
-      const requestPayload: NDVIRequestPayload = {
-        land_ids: landIds,
-        tenant_id: tenantId,
-        farmer_id: farmerId,
-        cloud_coverage: 20, // Default cloud coverage threshold
-        processing_priority: 'medium',
-        // Optional: Add date range for historical data
-        // date_from: '2024-01-01',
-        // date_to: new Date().toISOString().split('T')[0],
-      };
+      const tileGroups = await this.getTileMappingsForLands(landIds);
 
-      const requestResponse = await this.createNDVIRequest(requestPayload);
-      
-      console.log(`✅ NDVI request created successfully:`, {
-        request_id: requestResponse.request_id,
-        land_count: requestResponse.land_count,
-        status: requestResponse.status
-      });
+      if (tileGroups.size === 0) {
+        throw new Error('Unable to determine satellite tiles for your lands. Please contact support to set up tile mappings.');
+      }
 
-      // Return success results for all lands
-      return landsWithGeometry.map(land => ({
-        success: true,
-        land_id: land.id,
-        land_name: land.name,
-        cached: false,
-        data: {
-          request_id: requestResponse.request_id,
-          status: requestResponse.status
+      console.log(`📍 Found ${tileGroups.size} tile(s) covering the selected lands`);
+
+      // Step 4: Set date range (last 30 days by default)
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+      const dateTo = today.toISOString().split('T')[0];
+
+      // Step 5: Create NDVI requests for each tile group
+      const allResults: FetchNDVIResult[] = [];
+      const requestPromises: Promise<any>[] = [];
+
+      for (const [tileId, group] of tileGroups.entries()) {
+        console.log(`📡 Creating NDVI request for tile ${tileId} with ${group.land_ids.length} land(s)`);
+        
+        const requestPayload: NDVIRequestPayload = {
+          land_ids: group.land_ids,
+          tile_id: tileId,
+          date_from: dateFrom,
+          date_to: dateTo,
+          tenant_id: tenantId,
+          farmer_id: farmerId,
+          cloud_coverage: 20,
+          processing_priority: 'medium',
+        };
+
+        requestPromises.push(
+          this.createNDVIRequest(requestPayload)
+            .then(response => ({
+              success: true,
+              tile_id: tileId,
+              group,
+              response
+            }))
+            .catch(error => ({
+              success: false,
+              tile_id: tileId,
+              group,
+              error: error.message
+            }))
+        );
+      }
+
+      // Wait for all requests to complete
+      const requestResults = await Promise.all(requestPromises);
+
+      // Process results
+      for (const result of requestResults) {
+        if (result.success) {
+          console.log(`✅ NDVI request created for tile ${result.tile_id}:`, {
+            request_id: result.response.request_id,
+            land_count: result.group.land_ids.length,
+            status: result.response.status
+          });
+
+          // Add success results for all lands in this tile
+          result.group.land_ids.forEach((landId, idx) => {
+            allResults.push({
+              success: true,
+              land_id: landId,
+              land_name: result.group.land_names[idx],
+              cached: false,
+              data: {
+                tile_id: result.tile_id,
+                request_id: result.response.request_id,
+                status: result.response.status,
+                date_from: dateFrom,
+                date_to: dateTo
+              }
+            });
+          });
+        } else {
+          console.error(`❌ Failed to create NDVI request for tile ${result.tile_id}:`, result.error);
+          
+          // Add failure results for all lands in this tile
+          result.group.land_ids.forEach((landId, idx) => {
+            allResults.push({
+              success: false,
+              land_id: landId,
+              land_name: result.group.land_names[idx],
+              cached: false,
+              error: result.error
+            });
+          });
         }
-      }));
+      }
+
+      const successCount = allResults.filter(r => r.success).length;
+      const failCount = allResults.filter(r => !r.success).length;
+      
+      console.log(`📊 NDVI fetch summary: ${successCount} successful, ${failCount} failed`);
+
+      return allResults;
 
     } catch (error) {
       console.error('❌ Error in fetchNDVIForLands:', error);
