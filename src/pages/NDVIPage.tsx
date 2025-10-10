@@ -19,6 +19,7 @@ export default function NDVIPage() {
     isAutoFetching,
     manualRefresh,
     isRefreshing,
+    error,
   } = useNDVILandData();
 
   // Auto-fetch NDVI data on page load (respects 7-day cache)
@@ -61,6 +62,18 @@ export default function NDVIPage() {
           <AlertTitle>Fetching NDVI Data</AlertTitle>
           <AlertDescription>
             Checking for updates and fetching fresh satellite data where needed...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* No Lands Alert */}
+      {!isLoading && !isAutoFetching && (!cachedData || cachedData.length === 0) && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Land Data Found</AlertTitle>
+          <AlertDescription>
+            You need to add land boundaries for your farmers before NDVI data can be processed. 
+            Please go to the Farmers page and add land parcels with boundary coordinates.
           </AlertDescription>
         </Alert>
       )}
