@@ -24,10 +24,78 @@ serve(async (req) => {
       }
     )
 
-    const { action, tenant_id, tile_ids, params } = await req.json()
+    const { action, tenant_id, tile_ids, farmer_ids, harvest_all, params } = await req.json()
 
     switch (action) {
       case 'trigger_harvest': {
+        // Validate tenant_id
+        if (!tenant_id) {
+          return new Response(
+            JSON.stringify({
+              error: 'tenant_id is required'
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        // Determine which tiles to harvest
+        let tilesToHarvest: string[] = []
+
+        if (tile_ids && Array.isArray(tile_ids) && tile_ids.length > 0) {
+          // Use provided tile_ids
+          tilesToHarvest = tile_ids
+        } else if (farmer_ids && Array.isArray(farmer_ids) && farmer_ids.length > 0) {
+          // Get tiles for specific farmers
+          const { data: lands, error: landsError } = await supabaseClient
+            .from('lands')
+            .select('mgrs_tile_id')
+            .eq('tenant_id', tenant_id)
+            .in('farmer_id', farmer_ids)
+            .not('mgrs_tile_id', 'is', null)
+
+          if (landsError) throw landsError
+
+          tilesToHarvest = [...new Set(lands.map((l: any) => l.mgrs_tile_id).filter(Boolean))]
+        } else if (harvest_all === true) {
+          // Get all tiles for tenant
+          const { data: lands, error: landsError } = await supabaseClient
+            .from('lands')
+            .select('mgrs_tile_id')
+            .eq('tenant_id', tenant_id)
+            .not('mgrs_tile_id', 'is', null)
+
+          if (landsError) throw landsError
+
+          tilesToHarvest = [...new Set(lands.map((l: any) => l.mgrs_tile_id).filter(Boolean))]
+        } else {
+          return new Response(
+            JSON.stringify({
+              error: 'Either tile_ids, farmer_ids, or harvest_all must be provided'
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        // Validate we have tiles to harvest
+        if (tilesToHarvest.length === 0) {
+          return new Response(
+            JSON.stringify({
+              error: 'No valid tiles found to harvest',
+              hint: 'Make sure lands have mgrs_tile_id assigned'
+            }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
         // Check quota first
         const { data: quotaData, error: quotaError } = await supabaseClient
           .rpc('check_harvest_quota', { p_tenant_id: tenant_id })
@@ -48,7 +116,7 @@ serve(async (req) => {
         }
 
         // Create harvest queue entries
-        const queueEntries = tile_ids.map((tile_id: string) => ({
+        const queueEntries = tilesToHarvest.map((tile_id: string) => ({
           tenant_id,
           tile_id,
           priority: params?.priority || 5,
