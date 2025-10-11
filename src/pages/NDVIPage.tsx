@@ -120,23 +120,6 @@ export default function NDVIPage() {
     autoFetch();
   }, []);
 
-  // Auto-poll for completed requests every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      processQueueMutation.mutate();
-    }, 30000); // 30 seconds
-
-    // Initial poll after 5 seconds
-    const initialPoll = setTimeout(() => {
-      processQueueMutation.mutate();
-    }, 5000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(initialPoll);
-    };
-  }, []);
-
   return (
     <PageLayout maxWidth="none" padding="md">
       <div className="space-y-6">
