@@ -60,6 +60,18 @@ export interface NDVIRequestResponse {
 
 export class NDVILandService {
   /**
+   * Convert string priority to integer for database storage
+   */
+  private priorityToInt(priority: string): number {
+    const map: Record<string, number> = {
+      'low': 1,
+      'medium': 5,
+      'high': 10
+    };
+    return map[priority] || 5;
+  }
+
+  /**
    * Check if cached NDVI data exists and is fresh (< 7 days old)
    */
   private async isCacheFresh(landId: string): Promise<boolean> {
@@ -327,7 +339,7 @@ export class NDVILandService {
                 date_from: dateFrom,
                 date_to: dateTo,
                 cloud_coverage: 20,
-                priority: 'medium' as const,
+                priority: this.priorityToInt('medium'),
                 status: 'queued' as const,
                 farmer_id: farmerId,
                 metadata: {
