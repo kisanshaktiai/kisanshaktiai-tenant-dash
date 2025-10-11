@@ -8353,8 +8353,10 @@ export type Database = {
           date_from: string
           date_to: string
           error_message: string | null
+          farmer_id: string | null
           id: string
           land_ids: string[]
+          metadata: Json | null
           priority: number | null
           processed_count: number | null
           processing_units_consumed: number | null
@@ -8373,8 +8375,10 @@ export type Database = {
           date_from: string
           date_to: string
           error_message?: string | null
+          farmer_id?: string | null
           id?: string
           land_ids: string[]
+          metadata?: Json | null
           priority?: number | null
           processed_count?: number | null
           processing_units_consumed?: number | null
@@ -8393,8 +8397,10 @@ export type Database = {
           date_from?: string
           date_to?: string
           error_message?: string | null
+          farmer_id?: string | null
           id?: string
           land_ids?: string[]
+          metadata?: Json | null
           priority?: number | null
           processed_count?: number | null
           processing_units_consumed?: number | null
