@@ -7,9 +7,13 @@ import { NDVIDataVisualization } from '@/components/ndvi/NDVIDataVisualization';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Satellite, TrendingUp, Database, AlertCircle, Server, RefreshCw, Activity, BarChart3 } from 'lucide-react';
+import { Satellite, TrendingUp, Database, AlertCircle, Server, RefreshCw, Activity, BarChart3, MapPin } from 'lucide-react';
 import { useNDVILandData } from '@/hooks/data/useNDVILandData';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { useMutation } from '@tanstack/react-query';
 
 export default function NDVIPage() {
   const {
@@ -22,117 +26,176 @@ export default function NDVIPage() {
     error,
   } = useNDVILandData();
 
+  // Mutation to assign MGRS tiles to lands
+  const assignTilesMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('assign_mgrs_tile_to_land');
+      if (error) throw error;
+      return data as { success: boolean; message: string; inserted: number; updated: number; skipped: number };
+    },
+    onSuccess: (result) => {
+      toast({
+        title: 'Tile Assignment Complete',
+        description: result?.message || 'Successfully assigned MGRS tiles to lands',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Tile Assignment Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Auto-fetch NDVI data on page load (respects 7-day cache)
   useEffect(() => {
     autoFetch();
   }, []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-foreground flex items-center gap-3 mb-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Satellite className="w-8 h-8 text-primary" />
+    <PageLayout maxWidth="none" padding="md">
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Satellite className="w-6 h-6 lg:w-8 lg:h-8 text-primary" />
+              </div>
+              <h1 className="text-2xl lg:text-4xl font-bold text-foreground">
+                NDVI Management Center
+              </h1>
             </div>
-            NDVI Management Center
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Real-time satellite vegetation monitoring powered by NDVI Land Processor API
-          </p>
+            <p className="text-sm lg:text-base text-muted-foreground">
+              Real-time satellite vegetation monitoring powered by NDVI Land Processor API
+            </p>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => assignTilesMutation.mutate()}
+              disabled={assignTilesMutation.isPending}
+              variant="outline"
+              size="default"
+              className="shadow-sm"
+            >
+              <MapPin className={`h-4 w-4 mr-2 ${assignTilesMutation.isPending ? 'animate-pulse' : ''}`} />
+              {assignTilesMutation.isPending ? 'Assigning...' : 'Assign Tiles'}
+            </Button>
+            
+            <Button
+              onClick={() => manualRefresh()}
+              disabled={isRefreshing || isAutoFetching}
+              size="default"
+              className="shadow-sm"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh NDVI'}
+            </Button>
+          </div>
         </div>
-        
-        {/* Manual Refresh Button */}
-        <Button
-          onClick={() => manualRefresh()}
-          disabled={isRefreshing || isAutoFetching}
-          size="lg"
-          className="shadow-lg hover-scale"
-        >
-          <RefreshCw className={`h-5 w-5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh NDVI Now'}
-        </Button>
+
+        {/* Status Alerts */}
+        {isAutoFetching && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <Satellite className="h-4 w-4 animate-pulse text-primary" />
+            <AlertTitle>Fetching NDVI Data</AlertTitle>
+            <AlertDescription>
+              Checking for updates and fetching fresh satellite data where needed...
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Unable to Fetch NDVI Data</AlertTitle>
+            <AlertDescription>
+              {error.message || 'An error occurred while fetching NDVI data. Please try again.'}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!isLoading && !isAutoFetching && !error && (!cachedData || cachedData.length === 0) && (
+          <Alert className="border-muted-foreground/20">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No Land Data Available</AlertTitle>
+            <AlertDescription>
+              No land parcels found with boundary data. Please add land parcels with GPS coordinates 
+              or boundary polygons in the Farmers section, then click "Assign Tiles" to map them to MGRS tiles.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Main Content Tabs */}
+        <Card className="border-muted">
+          <Tabs defaultValue="monitoring" className="w-full">
+            <div className="border-b px-4 pt-4">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-1 bg-transparent p-0">
+                <TabsTrigger 
+                  value="monitoring" 
+                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
+                >
+                  <Activity className="w-4 h-4" />
+                  <span className="hidden sm:inline">API Monitoring</span>
+                  <span className="sm:hidden">Monitor</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="visualization" 
+                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Visualization</span>
+                  <span className="sm:hidden">Charts</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="data" 
+                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
+                >
+                  <Database className="w-4 h-4" />
+                  <span className="hidden sm:inline">NDVI Data</span>
+                  <span className="sm:hidden">Data</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="dashboard" 
+                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Stats</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <div className="p-4 lg:p-6">
+              {/* API Monitoring Tab */}
+              <TabsContent value="monitoring" className="space-y-4 mt-0">
+                <NDVIApiMonitoring />
+              </TabsContent>
+
+              {/* Data Visualization Tab */}
+              <TabsContent value="visualization" className="space-y-4 mt-0">
+                <NDVIDataVisualization data={cachedData || []} />
+              </TabsContent>
+
+              {/* NDVI Data Tab */}
+              <TabsContent value="data" className="space-y-4 mt-0">
+                <NDVILandDataTable 
+                  data={cachedData} 
+                  isLoading={isLoading || isAutoFetching} 
+                />
+              </TabsContent>
+
+              {/* Dashboard Tab */}
+              <TabsContent value="dashboard" className="space-y-4 mt-0">
+                <NDVIGlobalDashboard />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </Card>
       </div>
-
-      {/* Auto-fetch Status Alert */}
-      {isAutoFetching && (
-        <Alert>
-          <Satellite className="h-4 w-4 animate-pulse" />
-          <AlertTitle>Fetching NDVI Data</AlertTitle>
-          <AlertDescription>
-            Checking for updates and fetching fresh satellite data where needed...
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Unable to Fetch NDVI Data</AlertTitle>
-          <AlertDescription>
-            {error.message || 'An error occurred while fetching NDVI data. Please try again.'}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* No Lands Info */}
-      {!isLoading && !isAutoFetching && !error && (!cachedData || cachedData.length === 0) && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Land Data Available</AlertTitle>
-          <AlertDescription>
-            No land parcels found with boundary data. Please add land parcels with GPS coordinates 
-            or boundary polygons in the Farmers section to start monitoring vegetation health.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Main Content */}
-      <Tabs defaultValue="monitoring" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto shadow-md">
-          <TabsTrigger value="monitoring" className="flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            API Monitoring
-          </TabsTrigger>
-          <TabsTrigger value="visualization" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Data Visualization
-          </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
-            <Database className="w-4 h-4" />
-            NDVI Data
-          </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
-            Dashboard
-          </TabsTrigger>
-        </TabsList>
-
-        {/* API Monitoring Tab - NEW PRIMARY TAB */}
-        <TabsContent value="monitoring" className="space-y-6">
-          <NDVIApiMonitoring />
-        </TabsContent>
-
-        {/* Data Visualization Tab - NEW */}
-        <TabsContent value="visualization" className="space-y-6">
-          <NDVIDataVisualization data={cachedData || []} />
-        </TabsContent>
-
-        {/* NDVI Data Tab */}
-        <TabsContent value="data" className="space-y-6">
-          <NDVILandDataTable 
-            data={cachedData} 
-            isLoading={isLoading || isAutoFetching} 
-          />
-        </TabsContent>
-
-        {/* Dashboard Tab */}
-        <TabsContent value="dashboard" className="space-y-6">
-          <NDVIGlobalDashboard />
-        </TabsContent>
-      </Tabs>
-    </div>
+    </PageLayout>
   );
 }
