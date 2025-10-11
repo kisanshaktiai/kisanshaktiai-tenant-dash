@@ -335,8 +335,9 @@ export class NDVILandService {
           this.createNDVIRequest(requestPayload)
             .then(async response => {
               // Insert queue record immediately after successful API call
+              // Generate client-side UUID to avoid conflicts
               const queueRecord = {
-                id: response.request_id, // Use Render API's request_id as the primary key
+                // Don't specify id - let Supabase generate it via gen_random_uuid()
                 tenant_id: tenantId,
                 land_ids: group.land_ids,
                 tile_id: tileId,
@@ -347,6 +348,7 @@ export class NDVILandService {
                 status: 'queued' as const,
                 farmer_id: farmerId,
                 metadata: {
+                  render_request_id: response.request_id, // Store Render API's request_id here
                   estimated_completion: response.estimated_completion,
                   land_count: response.land_count,
                   created_via: 'ndvi_service'
@@ -355,14 +357,14 @@ export class NDVILandService {
 
               const { error: queueError } = await supabase
                 .from('ndvi_request_queue')
-                .insert(queueRecord as any); // Type assertion needed for custom id
+                .insert(queueRecord);
 
               if (queueError) {
                 console.error('❌ Failed to insert queue record:', queueError);
                 throw new Error(`Queue insertion failed: ${queueError.message}`);
               }
 
-              console.log(`✅ Queue record created for request_id: ${response.request_id}`);
+              console.log(`✅ Queue record created for render request_id: ${response.request_id}`);
 
               return {
                 success: true,
