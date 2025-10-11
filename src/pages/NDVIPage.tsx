@@ -31,15 +31,42 @@ export default function NDVIPage() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc('assign_mgrs_tile_to_land');
       if (error) throw error;
-      return data as { success: boolean; message: string; inserted: number; updated: number; skipped: number };
+      return data as { 
+        success: boolean; 
+        message: string; 
+        inserted: number; 
+        updated: number; 
+        skipped: number;
+        errors: number;
+        error_details: Array<{
+          land_id: string;
+          land_name: string;
+          reason?: string;
+          centroid?: string;
+          error_code?: string;
+          error_message?: string;
+        }>;
+      };
     },
     onSuccess: (result) => {
-      toast({
-        title: 'Tile Assignment Complete',
-        description: result?.message || 'Successfully assigned MGRS tiles to lands',
-      });
+      console.log('Tile assignment result:', result);
+      
+      if (result.error_details && result.error_details.length > 0) {
+        console.error('Tile assignment details:', result.error_details);
+        toast({
+          title: 'Tile Assignment Issues',
+          description: `${result.message}. Check console for detailed error information.`,
+          variant: result.errors > 0 ? 'destructive' : 'default',
+        });
+      } else {
+        toast({
+          title: 'Tile Assignment Complete',
+          description: result?.message || 'Successfully assigned MGRS tiles to lands',
+        });
+      }
     },
     onError: (error: Error) => {
+      console.error('Tile assignment error:', error);
       toast({
         title: 'Tile Assignment Failed',
         description: error.message,
