@@ -24,7 +24,47 @@ export default function NDVIPage() {
     manualRefresh,
     isRefreshing,
     error,
+    refetch: refetchData,
   } = useNDVILandData();
+
+  // Mutation to process queued NDVI requests
+  const processQueueMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('ndvi-request-processor', {
+        body: { action: 'process_queue', limit: 10 }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.results) {
+        const { completed, failed, still_processing } = data.results;
+        if (completed > 0) {
+          toast({
+            title: "✅ NDVI Data Processed",
+            description: `Successfully processed ${completed} request(s)`,
+          });
+          refetchData();
+        }
+        if (failed > 0) {
+          toast({
+            title: "⚠️ Some Requests Failed",
+            description: `${failed} request(s) failed to process`,
+            variant: "destructive",
+          });
+        }
+        console.log('🔄 Queue processing results:', data.results);
+      }
+    },
+    onError: (error: Error) => {
+      console.error('❌ Failed to process queue:', error);
+      toast({
+        title: 'Processing Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
 
   // Mutation to assign MGRS tiles to lands
   const assignTilesMutation = useMutation({
@@ -80,6 +120,23 @@ export default function NDVIPage() {
     autoFetch();
   }, []);
 
+  // Auto-poll for completed requests every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      processQueueMutation.mutate();
+    }, 30000); // 30 seconds
+
+    // Initial poll after 5 seconds
+    const initialPoll = setTimeout(() => {
+      processQueueMutation.mutate();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialPoll);
+    };
+  }, []);
+
   return (
     <PageLayout maxWidth="none" padding="md">
       <div className="space-y-6">
@@ -120,6 +177,17 @@ export default function NDVIPage() {
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               {isRefreshing ? 'Refreshing...' : 'Refresh NDVI'}
+            </Button>
+
+            <Button
+              onClick={() => processQueueMutation.mutate()}
+              disabled={processQueueMutation.isPending}
+              variant="secondary"
+              size="default"
+              className="shadow-sm"
+            >
+              <Server className={`h-4 w-4 mr-2 ${processQueueMutation.isPending ? 'animate-spin' : ''}`} />
+              {processQueueMutation.isPending ? 'Processing...' : 'Process Queue'}
             </Button>
           </div>
         </div>
