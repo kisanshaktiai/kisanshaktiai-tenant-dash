@@ -161,6 +161,7 @@ export class NDVILandService {
       .select(`
         land_id,
         mgrs_tile_id,
+        tile_id,
         lands!inner(id, name)
       `)
       .in('land_id', landIds);
@@ -175,8 +176,11 @@ export class NDVILandService {
     const tileGroups = new Map<string, TileLandGroup>();
     
     tileMappings?.forEach((mapping: any) => {
-      const tileId = mapping.mgrs_tile_id;
-      if (!tileId) return;
+      const tileId = mapping.tile_id; // Use short MGRS code like '43QCU'
+      if (!tileId || tileId.length < 5) {
+        console.warn(`⚠️ Invalid tile_id for land ${mapping.land_id}`);
+        return;
+      }
       
       if (!tileGroups.has(tileId)) {
         tileGroups.set(tileId, {
