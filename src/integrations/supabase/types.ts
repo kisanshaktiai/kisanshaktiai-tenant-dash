@@ -5961,58 +5961,58 @@ export type Database = {
       land_tile_mapping: {
         Row: {
           created_at: string | null
-          farmer_id: string | null
+          farmer_id: string
           id: string
           land_area_acres: number | null
           land_area_hectares: number | null
           land_bbox: Json
           land_centroid: Json | null
-          land_id: string | null
+          land_id: string
           last_ndvi_request_date: string | null
           last_ndvi_value: number | null
           mgrs_tile_id: string | null
           ndvi_cache_expiry: string | null
           needs_refresh: boolean | null
           request_priority: number | null
-          tenant_id: string | null
+          tenant_id: string
           tile_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          farmer_id?: string | null
+          farmer_id: string
           id?: string
           land_area_acres?: number | null
           land_area_hectares?: number | null
           land_bbox: Json
           land_centroid?: Json | null
-          land_id?: string | null
+          land_id: string
           last_ndvi_request_date?: string | null
           last_ndvi_value?: number | null
           mgrs_tile_id?: string | null
           ndvi_cache_expiry?: string | null
           needs_refresh?: boolean | null
           request_priority?: number | null
-          tenant_id?: string | null
+          tenant_id: string
           tile_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          farmer_id?: string | null
+          farmer_id?: string
           id?: string
           land_area_acres?: number | null
           land_area_hectares?: number | null
           land_bbox?: Json
           land_centroid?: Json | null
-          land_id?: string | null
+          land_id?: string
           last_ndvi_request_date?: string | null
           last_ndvi_value?: number | null
           mgrs_tile_id?: string | null
           ndvi_cache_expiry?: string | null
           needs_refresh?: boolean | null
           request_priority?: number | null
-          tenant_id?: string | null
+          tenant_id?: string
           tile_id?: string | null
           updated_at?: string | null
         }
@@ -6027,14 +6027,14 @@ export type Database = {
           {
             foreignKeyName: "land_tile_mapping_land_id_fkey"
             columns: ["land_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "land_agent_context"
             referencedColumns: ["land_id"]
           },
           {
             foreignKeyName: "land_tile_mapping_land_id_fkey"
             columns: ["land_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
