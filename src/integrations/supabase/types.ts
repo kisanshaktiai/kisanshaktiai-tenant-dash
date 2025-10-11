@@ -15114,6 +15114,10 @@ export type Database = {
         }
         Returns: Json
       }
+      assign_mgrs_tile_to_land: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       award_activity_points: {
         Args: {
           p_activity_type: string
