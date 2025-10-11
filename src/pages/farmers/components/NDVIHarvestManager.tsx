@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Satellite, Download, CheckCircle, AlertCircle, Loader2, MapPin } from 'lucide-react';
+import { Satellite, Download, CheckCircle, AlertCircle, Loader2, MapPin, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { NDVIQueueProcessorService } from '@/services/NDVIQueueProcessorService';
 
 interface LandData {
   id: string;
@@ -155,6 +156,53 @@ export const NDVIHarvestManager: React.FC = () => {
     enabled: !!currentTenant?.id,
     refetchInterval: isProcessing ? 5000 : false
   });
+
+  // Queue processor mutation
+  const processorMutation = useMutation({
+    mutationFn: async () => {
+      if (!currentTenant?.id) throw new Error('No tenant selected');
+      return NDVIQueueProcessorService.processQueue(currentTenant.id, 10);
+    },
+    onSuccess: (data) => {
+      console.log('✅ Processor results:', data);
+      toast.success(`Processed ${data.results.completed} requests successfully!`);
+      
+      if (data.results.failed > 0) {
+        toast.warning(`${data.results.failed} requests failed`);
+      }
+      
+      if (data.results.still_processing > 0) {
+        toast.info(`${data.results.still_processing} requests still processing`);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Queue processing error: ${error.message}`);
+    }
+  });
+
+  // Get queue status
+  const { data: queueStatus } = useQuery({
+    queryKey: ['ndvi-queue-status', currentTenant?.id],
+    queryFn: async () => {
+      if (!currentTenant?.id) return [];
+      return NDVIQueueProcessorService.getQueueStatus(currentTenant.id);
+    },
+    enabled: !!currentTenant?.id,
+    refetchInterval: 30000 // Auto-refresh every 30 seconds
+  });
+
+  // Auto-process queue when there are queued requests
+  useEffect(() => {
+    const queuedCount = queueStatus?.filter(q => q.status === 'queued').length || 0;
+    
+    if (queuedCount > 0 && !processorMutation.isPending) {
+      console.log(`🔄 Auto-processing ${queuedCount} queued requests...`);
+      processorMutation.mutate();
+    }
+  }, [queueStatus]);
 
   const handleSelectAll = () => {
     if (selectedLands.length === lands.length) {
@@ -312,7 +360,59 @@ export const NDVIHarvestManager: React.FC = () => {
               </>
             )}
           </Button>
+          
+          <Button
+            onClick={() => processorMutation.mutate()}
+            disabled={processorMutation.isPending || !queueStatus || queueStatus.length === 0}
+            variant="outline"
+            size="sm"
+          >
+            {processorMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Process Queue ({queueStatus?.filter(q => q.status === 'queued').length || 0})
+              </>
+            )}
+          </Button>
         </div>
+
+        {/* Queue Status */}
+        {queueStatus && queueStatus.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Queue Status</h4>
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
+                <div className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {queueStatus.filter(q => q.status === 'queued').length}
+                </div>
+                <div className="text-muted-foreground">Queued</div>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-950 p-2 rounded">
+                <div className="text-yellow-600 dark:text-yellow-400 font-semibold">
+                  {queueStatus.filter(q => q.status === 'processing').length}
+                </div>
+                <div className="text-muted-foreground">Processing</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
+                <div className="text-green-600 dark:text-green-400 font-semibold">
+                  {queueStatus.filter(q => q.status === 'completed').length}
+                </div>
+                <div className="text-muted-foreground">Completed</div>
+              </div>
+              <div className="bg-red-50 dark:bg-red-950 p-2 rounded">
+                <div className="text-red-600 dark:text-red-400 font-semibold">
+                  {queueStatus.filter(q => q.status === 'failed').length}
+                </div>
+                <div className="text-muted-foreground">Failed</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Info */}
         <div className="text-xs text-muted-foreground space-y-1">

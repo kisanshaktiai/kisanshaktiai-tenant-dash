@@ -51,21 +51,23 @@ serve(async (req) => {
       // Step 2: Process each queued request
       for (const queueItem of queuedRequests || []) {
         try {
-          // Validate queue item has required id field
-          if (!queueItem.id) {
-            console.error('❌ Skipping queue item with missing id:', queueItem)
+          // Extract Render API request_id from metadata
+          const renderRequestId = queueItem.metadata?.render_request_id
+          
+          if (!renderRequestId) {
+            console.error('❌ Skipping queue item with missing render_request_id:', queueItem)
             results.errors.push({
               queue_item_id: queueItem.id || 'unknown',
-              error: 'Missing request_id in queue item'
+              error: 'Missing render_request_id in metadata'
             })
             continue
           }
 
-          console.log(`🔍 Processing queue item with request_id: ${queueItem.id}`)
+          console.log(`🔍 Processing queue item ${queueItem.id} with Render request_id: ${renderRequestId}`)
 
-          // Check status from Render API using queueItem.id (which contains the Render API's request_id)
+          // Check status from Render API using renderRequestId
           const statusResponse = await fetch(
-            `${RENDER_API_BASE_URL}/requests/${queueItem.id}/status`,
+            `${RENDER_API_BASE_URL}/requests/${renderRequestId}/status`,
             {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' }
@@ -73,22 +75,23 @@ serve(async (req) => {
           )
 
           if (!statusResponse.ok) {
-            console.error(`❌ Failed to fetch status for request ${queueItem.id}`)
+            console.error(`❌ Failed to fetch status for request ${renderRequestId}`)
             results.errors.push({
-              request_id: queueItem.id,
+              render_request_id: renderRequestId,
+              queue_id: queueItem.id,
               error: `Status check failed: ${statusResponse.statusText}`
             })
             continue
           }
 
           const statusData = await statusResponse.json()
-          console.log(`📊 Request ${queueItem.id} status:`, statusData.status)
+          console.log(`📊 Render request ${renderRequestId} (queue ${queueItem.id}) status:`, statusData.status)
 
           // Update queue item based on status
           if (statusData.status === 'completed') {
             // Fetch the processed NDVI data
             const dataResponse = await fetch(
-              `${RENDER_API_BASE_URL}/requests/${queueItem.id}/data`,
+              `${RENDER_API_BASE_URL}/requests/${renderRequestId}/data`,
               {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
@@ -96,16 +99,17 @@ serve(async (req) => {
             )
 
             if (!dataResponse.ok) {
-              console.error(`❌ Failed to fetch data for request ${queueItem.id}`)
+              console.error(`❌ Failed to fetch data for Render request ${renderRequestId}`)
               results.errors.push({
-                request_id: queueItem.id,
+                render_request_id: renderRequestId,
+                queue_id: queueItem.id,
                 error: 'Data fetch failed'
               })
               continue
             }
 
             const ndviData = await dataResponse.json()
-            console.log(`✅ Retrieved NDVI data for request ${queueItem.id}:`, {
+            console.log(`✅ Retrieved NDVI data for Render request ${renderRequestId}:`, {
               lands_count: ndviData.lands?.length || 0,
               data_structure: Object.keys(ndviData)
             })
@@ -134,7 +138,8 @@ serve(async (req) => {
                 data_quality: landData.data_quality || 'good',
                 source: 'sentinel2',
                 processing_metadata: {
-                  request_id: queueItem.id,
+                  queue_id: queueItem.id,
+                  render_request_id: renderRequestId,
                   tile_id: queueItem.tile_id,
                   processed_at: new Date().toISOString()
                 }
@@ -147,7 +152,8 @@ serve(async (req) => {
               if (insertError) {
                 console.error(`❌ Failed to insert NDVI data for land ${landData.land_id}:`, insertError)
                 results.errors.push({
-                  request_id: queueItem.id,
+                  render_request_id: renderRequestId,
+                  queue_id: queueItem.id,
                   land_id: landData.land_id,
                   error: insertError.message
                 })
@@ -156,7 +162,7 @@ serve(async (req) => {
               }
             }
 
-            console.log(`✅ Inserted ${insertSuccessCount} NDVI records for request ${queueItem.id}`)
+            console.log(`✅ Inserted ${insertSuccessCount} NDVI records for Render request ${renderRequestId}`)
 
             // Update queue status to completed
             const { error: updateError } = await supabaseClient
@@ -204,9 +210,10 @@ serve(async (req) => {
           results.processed++
 
         } catch (error) {
-          console.error(`❌ Error processing request ${queueItem.id || 'unknown'}:`, error)
+          console.error(`❌ Error processing queue item ${queueItem?.id || 'unknown'}:`, error)
           results.errors.push({
-            request_id: queueItem.id || 'unknown',
+            queue_id: queueItem?.id || 'unknown',
+            render_request_id: queueItem?.metadata?.render_request_id || 'unknown',
             error: error instanceof Error ? error.message : 'Unknown error'
           })
         }
