@@ -83,6 +83,16 @@ export const navigationConfig: NavigationItem[] = [
     badge: 'New',
     isNew: true
   },
+  {
+    id: 'soil-analysis',
+    title: 'Soil Analysis',
+    href: '/app/soil-analysis',
+    icon: BarChart3,
+    description: 'AI-powered soil health intelligence',
+    category: 'management',
+    badge: 'New',
+    isNew: true
+  },
 
   // Analytics
   {

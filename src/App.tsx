@@ -29,6 +29,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
 import NDVIPage from '@/pages/NDVIPage';
+import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
 
 // Settings sub-pages
 import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
@@ -79,6 +80,7 @@ function App() {
                     <Route path="dashboard" element={<EnhancedDashboard />} />
                     <Route path="farmers" element={<FarmersPage />} />
                     <Route path="ndvi" element={<NDVIPage />} />
+                    <Route path="soil-analysis" element={<SoilAnalysisPage />} />
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="campaigns" element={<CampaignsPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
