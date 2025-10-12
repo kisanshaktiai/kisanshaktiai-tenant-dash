@@ -67,26 +67,16 @@ export const RenderServiceStatus: React.FC = () => {
 
     setIsTriggeringJobs(true);
     try {
-      const response = await renderNDVIService.triggerJobs({
-        limit: jobLimit,
-        use_queue: useQueue,
-        tenant_id: currentTenant.id,
-      });
+      const response = await renderNDVIService.triggerJobs(jobLimit);
 
       setLastJobResponse(response);
       
-      if (response.success) {
-        toast.success(
-          `Successfully triggered ${response.jobs_triggered} jobs`,
-          {
-            description: response.message
-          }
-        );
-      } else {
-        toast.error('Job trigger failed', {
-          description: response.message
-        });
-      }
+      toast.success(
+        `Worker started successfully`,
+        {
+          description: `Processing ${response.limit} jobs. Status: ${response.status}`
+        }
+      );
     } catch (error: any) {
       toast.error('Failed to trigger jobs', {
         description: error.message || 'Unknown error occurred'
@@ -175,27 +165,16 @@ export const RenderServiceStatus: React.FC = () => {
           </div>
 
           {healthStatus && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="p-3 border rounded-lg">
                 <div className="text-sm text-muted-foreground">Status</div>
                 <div className="text-lg font-semibold capitalize">{healthStatus.status}</div>
               </div>
               
-              {healthStatus.version && (
-                <div className="p-3 border rounded-lg">
-                  <div className="text-sm text-muted-foreground">Version</div>
-                  <div className="text-lg font-semibold">{healthStatus.version}</div>
-                </div>
-              )}
-              
-              {healthStatus.uptime !== undefined && (
-                <div className="p-3 border rounded-lg">
-                  <div className="text-sm text-muted-foreground">Uptime</div>
-                  <div className="text-lg font-semibold">
-                    {Math.floor(healthStatus.uptime / 3600)}h {Math.floor((healthStatus.uptime % 3600) / 60)}m
-                  </div>
-                </div>
-              )}
+              <div className="p-3 border rounded-lg">
+                <div className="text-sm text-muted-foreground">Timestamp</div>
+                <div className="text-lg font-semibold">{new Date(healthStatus.timestamp).toLocaleTimeString()}</div>
+              </div>
             </div>
           )}
 

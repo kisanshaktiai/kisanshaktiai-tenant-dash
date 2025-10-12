@@ -27,7 +27,7 @@ export const useNDVIApiMonitoring = () => {
     onSuccess: (data) => {
       toast({
         title: '✅ Request Created',
-        description: `Request ${data.request_id} created for ${data.lands_count} lands`,
+        description: `Request ${data.request_id} created for ${data.land_count} lands`,
       });
       queryClient.invalidateQueries({ queryKey: ['ndvi-api-stats'] });
     },
@@ -40,35 +40,20 @@ export const useNDVIApiMonitoring = () => {
     },
   });
 
-  // Get request status
-  const getRequestStatus = useMutation({
-    mutationFn: (requestId: string) => renderNDVIService.getRequestStatus(requestId),
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to get status',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Trigger jobs
+  // Trigger jobs (API v3.6: only limit parameter)
   const triggerJobs = useMutation({
-    mutationFn: (params: { limit?: number; use_queue?: boolean }) => 
-      renderNDVIService.triggerJobs({
-        ...params,
-        tenant_id: currentTenant?.id,
-      }),
+    mutationFn: (limit: number = 10) => 
+      renderNDVIService.triggerJobs(limit),
     onSuccess: (data) => {
       toast({
-        title: '✅ Jobs Triggered',
-        description: `${data.jobs_triggered} jobs started successfully`,
+        title: '✅ Worker Started',
+        description: `Processing ${data.limit} jobs. Status: ${data.status}`,
       });
       queryClient.invalidateQueries({ queryKey: ['ndvi-api-stats'] });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Job Trigger Failed',
+        title: 'Worker Failed',
         description: error.message,
         variant: 'destructive',
       });
@@ -83,9 +68,6 @@ export const useNDVIApiMonitoring = () => {
     isHealthy: healthData?.status === 'running' || healthData?.status === 'healthy',
     createRequest: createRequest.mutate,
     isCreatingRequest: createRequest.isPending,
-    getRequestStatus: getRequestStatus.mutate,
-    isGettingStatus: getRequestStatus.isPending,
-    requestStatusData: getRequestStatus.data,
     triggerJobs: triggerJobs.mutate,
     isTriggeringJobs: triggerJobs.isPending,
   };

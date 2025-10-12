@@ -1,6 +1,12 @@
 /**
- * Service for interacting with the NDVI Land API on Render
+ * Service for interacting with the NDVI Land API on Render (v3.6)
  * Base URL: https://ndvi-land-api.onrender.com
+ * 
+ * API v3.6 Changes:
+ * - Simplified POST /requests payload (only tenant_id, land_ids)
+ * - POST /run accepts only { limit } in body
+ * - Added GET /queue for queue status
+ * - Added GET /lands/{land_id}/ndvi for per-land data
  */
 
 const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
@@ -8,61 +14,80 @@ const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
 export interface HealthStatus {
   status: string;
   timestamp: string;
-  version?: string;
-  uptime?: number;
+  service?: string;
 }
 
-export interface JobRunResponse {
-  success: boolean;
-  jobs_triggered: number;
-  message: string;
-  job_ids?: string[];
-}
-
-export interface JobRunParams {
-  limit?: number;
-  use_queue?: boolean;
-  tenant_id?: string;
-  tile_ids?: string[];
-}
-
+// API v3.6: Simplified payload for POST /requests
 export interface NDVIRequestPayload {
-  land_ids?: string[];
-  farmer_id?: string;
-  priority?: number;
-  requested_date?: string;
+  tenant_id: string;
+  land_ids?: string[]; // Optional - API fetches all if omitted
 }
 
+// API v3.6: Response structure from POST /requests
 export interface NDVIRequestResponse {
   request_id: string;
+  tenant_id: string;
+  tile_id: string;
+  acquisition_date: string;
   status: string;
-  created_at: string;
-  lands_count: number;
+  land_count: number;
+  timestamp: string;
 }
 
-export interface RequestStatus {
-  request_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  progress: number;
-  total_lands: number;
-  processed_lands: number;
-  failed_lands: number;
-  created_at: string;
-  completed_at?: string;
-  error_message?: string;
+// API v3.6: Response from POST /run
+export interface JobRunResponse {
+  status: string; // "started"
+  limit: number;
+  timestamp: string;
 }
 
+// API v3.6: Response from GET /stats
 export interface StatsResponse {
+  queued: number;
+  processing: number;
+  completed: number;
+  failed: number;
   total_requests: number;
-  completed_requests: number;
-  failed_requests: number;
-  pending_requests: number;
-  total_lands_processed: number;
-  avg_processing_time_seconds: number;
-  success_rate: number;
-  last_24h_requests: number;
-  storage_usage_mb: number;
-  api_health: string;
+  timestamp: string;
+}
+
+// API v3.6: Response from GET /queue
+export interface QueueStatusResponse {
+  count: number;
+  requests: Array<{
+    id: string;
+    tenant_id: string;
+    tile_id: string;
+    status: string;
+    batch_size: number;
+    land_ids: string[];
+    created_at: string;
+    started_at?: string;
+    completed_at?: string;
+    processed_count?: number;
+  }>;
+  timestamp: string;
+}
+
+// API v3.6: Response from GET /lands/{land_id}/ndvi
+export interface LandNDVIResponse {
+  land_id: string;
+  count: number;
+  data: Array<{
+    id: string;
+    tenant_id: string;
+    land_id: string;
+    tile_id: string;
+    date: string;
+    ndvi_value: number;
+    ndvi_min: number;
+    ndvi_max: number;
+    ndvi_std: number;
+    coverage: number;
+    created_at: string;
+    metadata: any;
+  }>;
+  timestamp: string;
 }
 
 export class RenderNDVIService {
@@ -97,42 +122,92 @@ export class RenderNDVIService {
   }
 
   /**
-   * Trigger NDVI processing jobs
-   * POST /run?limit=10&use_queue=true
+   * Trigger NDVI processing worker
+   * POST /run with body: { limit }
+   * API v3.6: Only accepts limit parameter in body
    */
-  async triggerJobs(params: JobRunParams = {}): Promise<JobRunResponse> {
+  async triggerJobs(limit: number = 10): Promise<JobRunResponse> {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params.limit !== undefined) {
-        queryParams.append('limit', params.limit.toString());
-      }
-      
-      if (params.use_queue !== undefined) {
-        queryParams.append('use_queue', params.use_queue.toString());
-      }
-
-      const url = `${this.baseUrl}/run${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-
-      const response = await fetch(url, {
+      const response = await fetch(`${this.baseUrl}/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          tenant_id: params.tenant_id,
-          tile_ids: params.tile_ids,
-        }),
+        body: JSON.stringify({ limit }), // ONLY limit in body
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Job trigger failed: ${response.status}`);
+        throw new Error(errorData.detail || `Worker trigger failed: ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
       console.error('Job trigger error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get queue status for a tenant
+   * GET /queue?tenant_id={id}
+   * API v3.6: Returns queue summary
+   */
+  async getQueueStatus(tenantId?: string): Promise<QueueStatusResponse> {
+    try {
+      const url = tenantId 
+        ? `${this.baseUrl}/queue?tenant_id=${tenantId}`
+        : `${this.baseUrl}/queue`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Get queue failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Get queue status error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get NDVI data for a specific land
+   * GET /lands/{land_id}/ndvi?tenant_id={id}&limit={n}
+   * API v3.6: Returns historical NDVI data
+   */
+  async getLandNDVI(
+    landId: string, 
+    tenantId?: string, 
+    limit: number = 30
+  ): Promise<LandNDVIResponse> {
+    try {
+      const params = new URLSearchParams();
+      if (tenantId) params.append('tenant_id', tenantId);
+      params.append('limit', limit.toString());
+      
+      const url = `${this.baseUrl}/lands/${landId}/ndvi?${params.toString()}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Get land NDVI failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Get land NDVI error:', error);
       throw error;
     }
   }
@@ -175,29 +250,6 @@ export class RenderNDVIService {
     }
   }
 
-  /**
-   * Get status of a specific request
-   * GET /requests/{request_id}
-   */
-  async getRequestStatus(requestId: string): Promise<RequestStatus> {
-    try {
-      const response = await fetch(`${this.baseUrl}/requests/${requestId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Get status failed: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Get request status error:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get API statistics

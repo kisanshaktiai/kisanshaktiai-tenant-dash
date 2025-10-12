@@ -30,7 +30,7 @@ export default function NDVIPage() {
     refetch: refetchData,
   } = useNDVILandData();
 
-  // Mutation to trigger NDVI processing worker on Render
+  // Mutation to trigger NDVI processing worker on Render (API v3.6)
   const processQueueMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch('https://ndvi-land-api.onrender.com/run', {
@@ -38,38 +38,36 @@ export default function NDVIPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          limit: 10,
-          use_queue: true,
-        }),
+        body: JSON.stringify({ limit: 10 }), // API v3.6: ONLY limit
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to trigger worker: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to trigger worker: ${response.status}`);
       }
 
       return await response.json();
     },
     onSuccess: (data) => {
       toast({
-        title: "✅ NDVI Processing Started",
-        description: `${data.jobs_triggered || 0} job(s) triggered on Render worker`,
+        title: "✅ NDVI Worker Started",
+        description: `Processing up to ${data.limit} queued jobs. Status: ${data.status}`,
       });
 
-      // Auto-refresh queue status after a few seconds
+      // Auto-refresh queue status after 5 seconds
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
-      }, 3000);
+      }, 5000);
 
-      // Refetch NDVI data after processing completes (wait a bit longer)
+      // Refetch NDVI data after processing (wait 15s for worker)
       setTimeout(() => {
         refetchData();
-      }, 10000);
+      }, 15000);
     },
     onError: (error: Error) => {
       console.error('❌ Failed to trigger worker:', error);
       toast({
-        title: 'Processing Failed',
+        title: 'Worker Start Failed',
         description: error.message,
         variant: 'destructive',
       });

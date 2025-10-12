@@ -65,11 +65,12 @@ export const NDVIApiMonitoring: React.FC = () => {
     }
   };
 
-  // Prepare chart data
+  // Prepare chart data (API v3.6: simplified stats)
   const requestDistribution = stats ? [
-    { name: 'Completed', value: stats.completed_requests, color: COLORS.success },
-    { name: 'Failed', value: stats.failed_requests, color: COLORS.failed },
-    { name: 'Pending', value: stats.pending_requests, color: COLORS.pending },
+    { name: 'Completed', value: stats.completed, color: COLORS.success },
+    { name: 'Failed', value: stats.failed, color: COLORS.failed },
+    { name: 'Queued', value: stats.queued, color: COLORS.pending },
+    { name: 'Processing', value: stats.processing, color: COLORS.processing },
   ] : [];
 
   if (statsLoading || healthLoading) {
@@ -98,7 +99,7 @@ export const NDVIApiMonitoring: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold">NDVI Land Processor API</h3>
               <p className="text-sm text-muted-foreground">
-                https://ndvi-land-api.onrender.com • v{healthData?.version || '2.0.0'}
+                https://ndvi-land-api.onrender.com • API v3.6
               </p>
             </div>
           </div>
@@ -125,7 +126,8 @@ export const NDVIApiMonitoring: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Success Rate</p>
               <p className="text-3xl font-bold mt-2 text-green-500">
-                {stats?.success_rate ? `${(stats.success_rate * 100).toFixed(1)}%` : '0%'}
+                {stats?.completed && stats?.total_requests ? 
+                  `${((stats.completed / stats.total_requests) * 100).toFixed(1)}%` : '0%'}
               </p>
             </div>
             <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
@@ -135,8 +137,8 @@ export const NDVIApiMonitoring: React.FC = () => {
         <Card className="p-6 hover-scale transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Avg Processing Time</p>
-              <p className="text-3xl font-bold mt-2">{stats?.avg_processing_time_seconds || 0}s</p>
+              <p className="text-sm text-muted-foreground">Queue Status</p>
+              <p className="text-3xl font-bold mt-2">{(stats?.queued || 0) + (stats?.processing || 0)}</p>
             </div>
             <Clock className="w-10 h-10 text-blue-500 opacity-20" />
           </div>
@@ -145,8 +147,8 @@ export const NDVIApiMonitoring: React.FC = () => {
         <Card className="p-6 hover-scale transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Lands Processed</p>
-              <p className="text-3xl font-bold mt-2">{stats?.total_lands_processed || 0}</p>
+              <p className="text-sm text-muted-foreground">Failed Jobs</p>
+              <p className="text-3xl font-bold mt-2">{stats?.failed || 0}</p>
             </div>
             <Database className="w-10 h-10 text-purple-500 opacity-20" />
           </div>
@@ -217,16 +219,16 @@ export const NDVIApiMonitoring: React.FC = () => {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Zap className="w-5 h-5 text-primary" />
-              Last 24 Hours Activity
+              Current Activity
             </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Requests Processed</span>
-                <span className="text-2xl font-bold">{stats?.last_24h_requests || 0}</span>
+                <span className="text-muted-foreground">Active Jobs</span>
+                <span className="text-2xl font-bold">{(stats?.queued || 0) + (stats?.processing || 0)}</span>
               </div>
-              <Progress value={((stats?.last_24h_requests || 0) / Math.max(stats?.total_requests || 1, 1)) * 100} />
+              <Progress value={((((stats?.queued || 0) + (stats?.processing || 0)) / Math.max(stats?.total_requests || 1, 1)) * 100)} />
               <p className="text-sm text-muted-foreground">
-                {((stats?.last_24h_requests || 0) / Math.max(stats?.total_requests || 1, 1) * 100).toFixed(1)}% of total requests
+                {((((stats?.queued || 0) + (stats?.processing || 0)) / Math.max(stats?.total_requests || 1, 1) * 100)).toFixed(1)}% of total requests
               </p>
             </div>
           </Card>
@@ -239,37 +241,36 @@ export const NDVIApiMonitoring: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Completed</span>
-                  <Badge variant="default" className="bg-green-500">{stats?.completed_requests || 0}</Badge>
+                  <Badge variant="default" className="bg-green-500">{stats?.completed || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Failed</span>
-                  <Badge variant="destructive">{stats?.failed_requests || 0}</Badge>
+                  <Badge variant="destructive">{stats?.failed || 0}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Pending</span>
-                  <Badge variant="secondary">{stats?.pending_requests || 0}</Badge>
+                  <span className="text-muted-foreground">Queued</span>
+                  <Badge variant="secondary">{stats?.queued || 0}</Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Processing</span>
+                  <Badge variant="outline">{stats?.processing || 0}</Badge>
                 </div>
               </div>
             </Card>
 
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Average Metrics</h3>
+              <h3 className="text-lg font-semibold mb-4">Success Metrics</h3>
               <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Processing Time</span>
-                    <span className="text-sm font-medium">{stats?.avg_processing_time_seconds || 0}s</span>
-                  </div>
-                  <Progress value={Math.min(((stats?.avg_processing_time_seconds || 0) / 60) * 100, 100)} />
-                </div>
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Success Rate</span>
                     <span className="text-sm font-medium">
-                      {stats?.success_rate ? `${(stats.success_rate * 100).toFixed(1)}%` : '0%'}
+                      {stats?.completed && stats?.total_requests ? 
+                        `${((stats.completed / stats.total_requests) * 100).toFixed(1)}%` : '0%'}
                     </span>
                   </div>
-                  <Progress value={(stats?.success_rate || 0) * 100} />
+                  <Progress value={stats?.completed && stats?.total_requests ? 
+                    (stats.completed / stats.total_requests) * 100 : 0} />
                 </div>
               </div>
             </Card>
@@ -280,19 +281,14 @@ export const NDVIApiMonitoring: React.FC = () => {
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <HardDrive className="w-5 h-5 text-primary" />
-              B2 Cloud Storage Usage
+              API v3.6 Storage
             </h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Total Storage Used</span>
-                <span className="text-2xl font-bold">
-                  {((stats?.storage_usage_mb || 0) / 1024).toFixed(2)} GB
-                </span>
-              </div>
-              <Progress value={Math.min(((stats?.storage_usage_mb || 0) / (100 * 1024)) * 100, 100)} />
-              <p className="text-sm text-muted-foreground">
-                Satellite imagery and processed NDVI data from B2 cloud bucket
-              </p>
+              <Alert>
+                <AlertDescription>
+                  Storage metrics are managed by the backend API. NDVI data is stored in Backblaze B2 cloud storage.
+                </AlertDescription>
+              </Alert>
             </div>
           </Card>
         </TabsContent>

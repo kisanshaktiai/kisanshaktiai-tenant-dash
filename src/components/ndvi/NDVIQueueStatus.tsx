@@ -18,6 +18,34 @@ export function NDVIQueueStatus() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['ndvi-queue-status'],
     queryFn: async (): Promise<QueueStats> => {
+      // Try API endpoint first (API v3.6), fallback to Supabase
+      try {
+        const response = await fetch('https://ndvi-land-api.onrender.com/queue');
+        if (response.ok) {
+          const apiData = await response.json();
+          
+          // Parse API response to stats
+          const stats: QueueStats = {
+            queued: 0,
+            processing: 0,
+            completed: 0,
+            failed: 0,
+            total: apiData.count
+          };
+          
+          apiData.requests.forEach((req: any) => {
+            if (req.status in stats) {
+              stats[req.status as keyof QueueStats]++;
+            }
+          });
+          
+          return stats;
+        }
+      } catch (error) {
+        console.warn('API queue fetch failed, using Supabase fallback:', error);
+      }
+
+      // Fallback: Query Supabase directly
       const { data, error } = await supabase
         .from('ndvi_request_queue')
         .select('status');
@@ -41,6 +69,7 @@ export function NDVIQueueStatus() {
 
       return stats;
     },
+    refetchInterval: 15000, // Refresh every 15s to monitor progress
   });
 
   if (isLoading) {
