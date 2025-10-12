@@ -39,8 +39,6 @@ export interface SoilHealthData {
   test_report_url: string | null;
   fertility_class: string | null;
   note: string | null;
-  field_area_ha: number | null;
-  calculation_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -201,8 +199,6 @@ class SoilAnalysisService {
             test_report_url,
             fertility_class,
             note,
-            field_area_ha,
-            calculation_note,
             created_at,
             updated_at
           )
