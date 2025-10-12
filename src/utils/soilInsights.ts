@@ -6,6 +6,7 @@ export interface SoilInsight {
   icon: string;
   recommendations: string[];
   cropSuitability: string[];
+  crops_suitable?: string[];
 }
 
 /**

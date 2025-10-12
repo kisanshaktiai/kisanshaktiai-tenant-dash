@@ -54,21 +54,7 @@ export default function SoilAnalysisPage() {
     toast.info(`Starting batch update for ${landIds.length} lands...`);
     setBatchProgress({ current: 0, total: landIds.length });
 
-    batchUpdateSoilData(
-      {
-        landIds,
-        tenantId,
-        onProgress: (current, total) => {
-          setBatchProgress({ current, total });
-        },
-      },
-      {
-        onSettled: () => {
-          setBatchProgress(null);
-          refetchLands();
-        },
-      }
-    );
+    batchUpdateSoilData({ landIds, tenantId });
   };
 
   const progressPercentage = batchProgress
@@ -154,7 +140,7 @@ export default function SoilAnalysisPage() {
         </Card>
       )}
 
-      {/* Quick Stats */}
+      {/* Enhanced Quick Stats */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -163,70 +149,54 @@ export default function SoilAnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{landsWithSoil?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">Tracked lands</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">With Soil Data</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {landsWithSoil?.filter((land) => land.soil_health && land.soil_health.length > 0).length || 0}
-            </div>
             <p className="text-xs text-muted-foreground">
-              {landsWithSoil?.length
-                ? Math.round(
-                    ((landsWithSoil.filter((land) => land.soil_health && land.soil_health.length > 0).length || 0) /
-                      landsWithSoil.length) *
-                      100
-                  )
-                : 0}
-              % coverage
+              {landsWithSoil?.filter(l => l.soil_health?.[0]).length || 0} with data ({landsWithSoil?.length ? Math.round((landsWithSoil.filter(l => l.soil_health?.[0]).length / landsWithSoil.length) * 100) : 0}%)
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg pH Level</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Avg Nitrogen</CardTitle>
+            <Activity className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {landsWithSoil && landsWithSoil.length > 0
-                ? (
-                    landsWithSoil.reduce((sum, land) => {
-                      const pH = land.soil_health?.[0]?.ph_level ?? land.soil_ph ?? 0;
-                      return sum + pH;
-                    }, 0) / landsWithSoil.filter(land => land.soil_health?.[0]?.ph_level || land.soil_ph).length
-                  ).toFixed(2)
+              {landsWithSoil?.filter(l => l.soil_health?.[0]?.nitrogen_kg_per_ha).length > 0 
+                ? (landsWithSoil.reduce((sum, l) => sum + (l.soil_health?.[0]?.nitrogen_kg_per_ha || 0), 0) / landsWithSoil.filter(l => l.soil_health?.[0]?.nitrogen_kg_per_ha).length).toFixed(1)
                 : 'N/A'}
             </div>
-            <p className="text-xs text-muted-foreground">Across all lands</p>
+            <p className="text-xs text-muted-foreground">kg/ha • Target: &gt;280</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Organic Carbon</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Avg Phosphorus</CardTitle>
+            <Activity className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {landsWithSoil && landsWithSoil.length > 0
-                ? (
-                    landsWithSoil.reduce((sum, land) => {
-                      const oc = land.soil_health?.[0]?.organic_carbon ?? land.organic_carbon_percent ?? 0;
-                      return sum + oc;
-                    }, 0) / landsWithSoil.filter(land => land.soil_health?.[0]?.organic_carbon || land.organic_carbon_percent).length
-                  ).toFixed(2)
+              {landsWithSoil?.filter(l => l.soil_health?.[0]?.phosphorus_kg_per_ha).length > 0
+                ? (landsWithSoil.reduce((sum, l) => sum + (l.soil_health?.[0]?.phosphorus_kg_per_ha || 0), 0) / landsWithSoil.filter(l => l.soil_health?.[0]?.phosphorus_kg_per_ha).length).toFixed(1)
                 : 'N/A'}
-              %
             </div>
-            <p className="text-xs text-muted-foreground">Across all lands</p>
+            <p className="text-xs text-muted-foreground">kg/ha • Target: &gt;22</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Potassium</CardTitle>
+            <Activity className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {landsWithSoil?.filter(l => l.soil_health?.[0]?.potassium_kg_per_ha).length > 0
+                ? (landsWithSoil.reduce((sum, l) => sum + (l.soil_health?.[0]?.potassium_kg_per_ha || 0), 0) / landsWithSoil.filter(l => l.soil_health?.[0]?.potassium_kg_per_ha).length).toFixed(1)
+                : 'N/A'}
+            </div>
+            <p className="text-xs text-muted-foreground">kg/ha • Target: &gt;110</p>
           </CardContent>
         </Card>
       </div>

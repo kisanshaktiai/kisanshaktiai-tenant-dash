@@ -46,20 +46,22 @@ export function useSoilAnalysis() {
     mutationFn: async ({
       landIds,
       tenantId,
-      onProgress,
     }: {
       landIds: string[];
       tenantId: string;
-      onProgress?: (current: number, total: number) => void;
     }) => {
-      return soilAnalysisService.batchUpdateSoilData(landIds, tenantId, onProgress);
+      return soilAnalysisService.batchFetchAndSaveSoilData(landIds, tenantId);
     },
     onSuccess: (results, variables) => {
-      if (results.success > 0) {
-        toast.success(`✅ Updated ${results.success} lands successfully`);
+      const summary = results.summary || results;
+      if (summary.saved > 0) {
+        toast.success(`✅ Updated ${summary.saved} lands successfully`);
       }
-      if (results.failed > 0) {
-        toast.warning(`⚠️ Failed to update ${results.failed} lands`);
+      if (summary.skipped > 0) {
+        toast.info(`ℹ️ Skipped ${summary.skipped} lands (already processed)`);
+      }
+      if (summary.failed > 0) {
+        toast.warning(`⚠️ Failed to update ${summary.failed} lands`);
       }
       queryClient.invalidateQueries({ queryKey: ['lands-with-soil', variables.tenantId] });
     },

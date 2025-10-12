@@ -6,17 +6,41 @@ export interface SoilHealthData {
   id: string;
   land_id: string;
   tenant_id: string;
+  farmer_id: string | null;
   ph_level: number | null;
   organic_carbon: number | null;
   bulk_density: number | null;
   nitrogen_level: string | null;
   phosphorus_level: string | null;
   potassium_level: string | null;
+  // NPK per hectare
+  nitrogen_kg_per_ha: number | null;
+  phosphorus_kg_per_ha: number | null;
+  potassium_kg_per_ha: number | null;
+  // NPK total for field
+  nitrogen_total_kg: number | null;
+  phosphorus_total_kg: number | null;
+  potassium_total_kg: number | null;
+  // Texture components
+  clay_percent: number | null;
+  sand_percent: number | null;
+  silt_percent: number | null;
+  cec: number | null;
+  // Quality metrics
+  data_quality_flags: any | null;
+  data_quality_warnings: any | null;
+  data_completeness: number | null;
+  confidence_level: string | null;
+  // Additional
   soil_type: string | null;
   texture: string | null;
   source: string | null;
   test_date: string | null;
   test_report_url: string | null;
+  fertility_class: string | null;
+  note: string | null;
+  field_area_ha: number | null;
+  calculation_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +54,9 @@ export interface LandWithSoil {
   village: string | null;
   soil_ph: number | null;
   organic_carbon_percent: number | null;
+  nitrogen_kg_per_ha: number | null;
+  phosphorus_kg_per_ha: number | null;
+  potassium_kg_per_ha: number | null;
   last_soil_test_date: string | null;
   soil_health?: SoilHealthData[];
 }
@@ -65,17 +92,19 @@ class SoilAnalysisService {
   }
 
   /**
-   * Fetch and save soil data for a specific land
+   * Fetch and save soil data for a single land
+   * API expects: POST /soil/save?tenant_id=<UUID> with body {"land_ids": ["id1"]}
    */
   async fetchAndSaveSoilData(landId: string, tenantId: string): Promise<any> {
     try {
       const response = await fetch(
-        `${this.baseUrl}/soil/save?land_id=${landId}&tenant_id=${tenantId}`,
+        `${this.baseUrl}/soil/save?tenant_id=${tenantId}`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ land_ids: [landId] }),
         }
       );
 
@@ -87,6 +116,35 @@ class SoilAnalysisService {
       return await response.json();
     } catch (error) {
       console.error('Error fetching soil data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch fetch and save soil data for multiple lands
+   * API expects: POST /soil/save?tenant_id=<UUID> with body {"land_ids": ["id1", "id2", ...]}
+   */
+  async batchFetchAndSaveSoilData(landIds: string[], tenantId: string): Promise<any> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/soil/save?tenant_id=${tenantId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ land_ids: landIds }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to batch fetch soil data: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error batch fetching soil data:', error);
       throw error;
     }
   }
@@ -107,22 +165,44 @@ class SoilAnalysisService {
           village,
           soil_ph,
           organic_carbon_percent,
+          nitrogen_kg_per_ha,
+          phosphorus_kg_per_ha,
+          potassium_kg_per_ha,
           last_soil_test_date,
           soil_health (
             id,
             land_id,
             tenant_id,
+            farmer_id,
             ph_level,
             organic_carbon,
             bulk_density,
             nitrogen_level,
             phosphorus_level,
             potassium_level,
+            nitrogen_kg_per_ha,
+            phosphorus_kg_per_ha,
+            potassium_kg_per_ha,
+            nitrogen_total_kg,
+            phosphorus_total_kg,
+            potassium_total_kg,
+            clay_percent,
+            sand_percent,
+            silt_percent,
+            cec,
+            data_quality_flags,
+            data_quality_warnings,
+            data_completeness,
+            confidence_level,
             soil_type,
             texture,
             source,
             test_date,
             test_report_url,
+            fertility_class,
+            note,
+            field_area_ha,
+            calculation_note,
             created_at,
             updated_at
           )
@@ -158,36 +238,6 @@ class SoilAnalysisService {
       console.error('Error fetching soil health history:', error);
       throw error;
     }
-  }
-
-  /**
-   * Batch update soil data for multiple lands
-   */
-  async batchUpdateSoilData(
-    landIds: string[],
-    tenantId: string,
-    onProgress?: (current: number, total: number) => void
-  ): Promise<{ success: number; failed: number; errors: any[] }> {
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as any[],
-    };
-
-    for (let i = 0; i < landIds.length; i++) {
-      try {
-        await this.fetchAndSaveSoilData(landIds[i], tenantId);
-        results.success++;
-        if (onProgress) onProgress(i + 1, landIds.length);
-        // Add small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
-      } catch (error) {
-        results.failed++;
-        results.errors.push({ landId: landIds[i], error });
-      }
-    }
-
-    return results;
   }
 }
 
