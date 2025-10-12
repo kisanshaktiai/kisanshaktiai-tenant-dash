@@ -41,7 +41,6 @@ export function NDVIQueueStatus() {
 
       return stats;
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
   });
 
   if (isLoading) {

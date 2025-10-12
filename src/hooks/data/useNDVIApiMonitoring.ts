@@ -11,7 +11,6 @@ export const useNDVIApiMonitoring = () => {
   const { data: healthData, isLoading: healthLoading } = useQuery({
     queryKey: ['ndvi-api-health'],
     queryFn: () => renderNDVIService.checkHealth(),
-    refetchInterval: 30000, // Check every 30 seconds
     retry: 3,
   });
 
@@ -19,7 +18,6 @@ export const useNDVIApiMonitoring = () => {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['ndvi-api-stats'],
     queryFn: () => renderNDVIService.getStats(),
-    refetchInterval: 30000,
     retry: 2,
   });
 
