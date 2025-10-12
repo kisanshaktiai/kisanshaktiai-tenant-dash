@@ -8093,6 +8093,7 @@ export type Database = {
           cloud_coverage: number | null
           collection_id: string | null
           computed_at: string | null
+          coverage: number | null
           coverage_percentage: number | null
           created_at: string
           date: string
@@ -8104,6 +8105,9 @@ export type Database = {
           mean_ndvi: number | null
           metadata: Json | null
           min_ndvi: number | null
+          ndvi_max: number | null
+          ndvi_min: number | null
+          ndvi_std: number | null
           ndvi_value: number | null
           ndwi_value: number | null
           processing_level: string | null
@@ -8114,6 +8118,7 @@ export type Database = {
           tenant_id: string
           tile_id: string | null
           total_pixels: number | null
+          updated_at: string | null
           valid_pixels: number | null
         }
         Insert: {
@@ -8121,6 +8126,7 @@ export type Database = {
           cloud_coverage?: number | null
           collection_id?: string | null
           computed_at?: string | null
+          coverage?: number | null
           coverage_percentage?: number | null
           created_at?: string
           date: string
@@ -8132,6 +8138,9 @@ export type Database = {
           mean_ndvi?: number | null
           metadata?: Json | null
           min_ndvi?: number | null
+          ndvi_max?: number | null
+          ndvi_min?: number | null
+          ndvi_std?: number | null
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
@@ -8142,6 +8151,7 @@ export type Database = {
           tenant_id: string
           tile_id?: string | null
           total_pixels?: number | null
+          updated_at?: string | null
           valid_pixels?: number | null
         }
         Update: {
@@ -8149,6 +8159,7 @@ export type Database = {
           cloud_coverage?: number | null
           collection_id?: string | null
           computed_at?: string | null
+          coverage?: number | null
           coverage_percentage?: number | null
           created_at?: string
           date?: string
@@ -8160,6 +8171,9 @@ export type Database = {
           mean_ndvi?: number | null
           metadata?: Json | null
           min_ndvi?: number | null
+          ndvi_max?: number | null
+          ndvi_min?: number | null
+          ndvi_std?: number | null
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
@@ -8170,6 +8184,7 @@ export type Database = {
           tenant_id?: string
           tile_id?: string | null
           total_pixels?: number | null
+          updated_at?: string | null
           valid_pixels?: number | null
         }
         Relationships: [
@@ -8302,11 +8317,13 @@ export type Database = {
           error_details: Json | null
           error_message: string | null
           id: string
+          land_id: string | null
           metadata: Json | null
           processing_step: string
           satellite_tile_id: string | null
           started_at: string | null
           step_status: string
+          tenant_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -8315,11 +8332,13 @@ export type Database = {
           error_details?: Json | null
           error_message?: string | null
           id?: string
+          land_id?: string | null
           metadata?: Json | null
           processing_step: string
           satellite_tile_id?: string | null
           started_at?: string | null
           step_status: string
+          tenant_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -8328,13 +8347,29 @@ export type Database = {
           error_details?: Json | null
           error_message?: string | null
           id?: string
+          land_id?: string | null
           metadata?: Json | null
           processing_step?: string
           satellite_tile_id?: string | null
           started_at?: string | null
           step_status?: string
+          tenant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ndvi_processing_logs_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "ndvi_processing_logs_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "lands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ndvi_processing_logs_satellite_tile_id_fkey"
             columns: ["satellite_tile_id"]
@@ -8342,16 +8377,20 @@ export type Database = {
             referencedRelation: "satellite_tiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ndvi_processing_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ndvi_request_queue: {
         Row: {
           batch_size: number | null
-          cloud_coverage: number | null
           completed_at: string | null
           created_at: string | null
-          date_from: string
-          date_to: string
           error_message: string | null
           farmer_id: string | null
           id: string
@@ -8369,11 +8408,8 @@ export type Database = {
         }
         Insert: {
           batch_size?: number | null
-          cloud_coverage?: number | null
           completed_at?: string | null
           created_at?: string | null
-          date_from: string
-          date_to: string
           error_message?: string | null
           farmer_id?: string | null
           id?: string
@@ -8391,11 +8427,8 @@ export type Database = {
         }
         Update: {
           batch_size?: number | null
-          cloud_coverage?: number | null
           completed_at?: string | null
           created_at?: string | null
-          date_from?: string
-          date_to?: string
           error_message?: string | null
           farmer_id?: string | null
           id?: string
