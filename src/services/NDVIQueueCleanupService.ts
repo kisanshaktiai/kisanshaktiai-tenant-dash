@@ -43,7 +43,7 @@ export class NDVIQueueCleanupService {
           .from('ndvi_request_queue')
           .update({
             status: 'failed',
-            processed_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
             error_message: 'Invalid record: Missing render_request_id. This request was created incorrectly and cannot be processed.'
           })
           .eq('id', record.id);
