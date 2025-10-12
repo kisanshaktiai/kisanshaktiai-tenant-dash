@@ -321,22 +321,25 @@ export class NDVILandService {
         status: response.status
       });
 
-      // Step 4: Insert queue record in Supabase
-      const queueRecord = {
-        tenant_id: tenantId,
-        land_ids: landIds,
-        tile_id: response.tile_id,
-        status: 'queued' as const,
-        batch_size: landIds.length,
-        farmer_id: farmerId,
-        created_at: new Date().toISOString(),
-        metadata: {
-          render_request_id: response.request_id,
-          acquisition_date: response.acquisition_date,
-          land_count: response.land_count,
-          created_via: 'ndvi_service_v3.6'
-        }
-      };
+    // Step 4: Insert queue record in Supabase (for tracking only)
+    // Note: date_from/date_to are legacy fields - using today's date as placeholder
+    const today = new Date().toISOString().split('T')[0];
+    const queueRecord = {
+      tenant_id: tenantId,
+      land_ids: landIds,
+      tile_id: response.tile_id,
+      status: 'queued' as const,
+      batch_size: landIds.length,
+      farmer_id: farmerId,
+      date_from: today, // Legacy field - required by schema
+      date_to: today, // Legacy field - required by schema
+      metadata: {
+        render_request_id: response.request_id,
+        acquisition_date: response.acquisition_date,
+        land_count: response.land_count,
+        created_via: 'ndvi_service_v3.6'
+      }
+    };
 
       const { error: queueError } = await supabase
         .from('ndvi_request_queue')

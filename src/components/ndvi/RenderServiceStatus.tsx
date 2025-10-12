@@ -16,7 +16,7 @@ import {
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
-import { renderNDVIService, HealthStatus, JobRunResponse } from '@/services/RenderNDVIService';
+import { renderNDVIService, HealthStatus } from '@/services/RenderNDVIService';
 import { toast } from 'sonner';
 import { useAppSelector } from '@/store/hooks';
 
@@ -27,8 +27,7 @@ export const RenderServiceStatus: React.FC = () => {
   const [isCheckingHealth, setIsCheckingHealth] = useState(false);
   const [isTriggeringJobs, setIsTriggeringJobs] = useState(false);
   const [jobLimit, setJobLimit] = useState(10);
-  const [useQueue, setUseQueue] = useState(true);
-  const [lastJobResponse, setLastJobResponse] = useState<JobRunResponse | null>(null);
+  const [lastJobStatus, setLastJobStatus] = useState<string | null>(null);
 
   // Auto-check health on mount
   useEffect(() => {
@@ -69,7 +68,7 @@ export const RenderServiceStatus: React.FC = () => {
     try {
       const response = await renderNDVIService.triggerJobs(jobLimit);
 
-      setLastJobResponse(response);
+      setLastJobStatus(response.status);
       
       toast.success(
         `Worker started successfully`,
@@ -218,25 +217,6 @@ export const RenderServiceStatus: React.FC = () => {
                 Maximum number of jobs to trigger (1-100)
               </p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="useQueue">Processing Mode</Label>
-              <div className="flex items-center gap-2 h-10">
-                <input
-                  id="useQueue"
-                  type="checkbox"
-                  checked={useQueue}
-                  onChange={(e) => setUseQueue(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="useQueue" className="cursor-pointer">
-                  Use Queue System
-                </Label>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Queue jobs for distributed processing
-              </p>
-            </div>
           </div>
 
           <Button
@@ -258,29 +238,15 @@ export const RenderServiceStatus: React.FC = () => {
             )}
           </Button>
 
-          {lastJobResponse && (
-            <Alert className={lastJobResponse.success ? "border-success" : "border-destructive"}>
-              {lastJobResponse.success ? (
-                <CheckCircle2 className="h-4 w-4 text-success" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-destructive" />
-              )}
-              <AlertTitle>
-                {lastJobResponse.success ? 'Jobs Triggered Successfully' : 'Job Trigger Failed'}
-              </AlertTitle>
+          {lastJobStatus && (
+            <Alert className="border-success">
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              <AlertTitle>Worker Started Successfully</AlertTitle>
               <AlertDescription>
-                {lastJobResponse.message}
-                {lastJobResponse.jobs_triggered > 0 && (
-                  <div className="mt-2 font-semibold">
-                    {lastJobResponse.jobs_triggered} job(s) triggered
-                  </div>
-                )}
-                {lastJobResponse.job_ids && lastJobResponse.job_ids.length > 0 && (
-                  <div className="mt-2 text-xs">
-                    Job IDs: {lastJobResponse.job_ids.slice(0, 5).join(', ')}
-                    {lastJobResponse.job_ids.length > 5 && ` +${lastJobResponse.job_ids.length - 5} more`}
-                  </div>
-                )}
+                NDVI processing worker is now running. Status: {lastJobStatus}
+                <div className="mt-2 text-xs">
+                  Check the queue status below to monitor progress.
+                </div>
               </AlertDescription>
             </Alert>
           )}
