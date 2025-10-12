@@ -33,10 +33,28 @@ export const NDVILandDataTable: React.FC<NDVILandDataTableProps> = ({
   };
 
   const getHealthBadge = (ndvi: number) => {
-    if (ndvi >= 0.7) return <Badge className="bg-success">Excellent</Badge>;
-    if (ndvi >= 0.5) return <Badge className="bg-primary">Good</Badge>;
-    if (ndvi >= 0.3) return <Badge className="bg-warning">Moderate</Badge>;
-    return <Badge variant="destructive">Poor</Badge>;
+    // Green (healthy) if NDVI > 0.5
+    if (ndvi > 0.5) {
+      return (
+        <Badge className="bg-green-500 hover:bg-green-600 text-white">
+          🟢 Healthy
+        </Badge>
+      );
+    }
+    // Yellow (moderate) if 0.2-0.5
+    if (ndvi >= 0.2 && ndvi <= 0.5) {
+      return (
+        <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white">
+          🟡 Moderate
+        </Badge>
+      );
+    }
+    // Red (poor) if < 0.2
+    return (
+      <Badge className="bg-red-500 hover:bg-red-600 text-white">
+        🔴 Poor
+      </Badge>
+    );
   };
 
   if (isLoading) {

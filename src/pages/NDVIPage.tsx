@@ -14,10 +14,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { NDVIQueueCleanupService } from '@/services/NDVIQueueCleanupService';
 
 export default function NDVIPage() {
+  const queryClient = useQueryClient();
   const {
     cachedData,
     isLoading,
@@ -29,37 +30,44 @@ export default function NDVIPage() {
     refetch: refetchData,
   } = useNDVILandData();
 
-  // Mutation to process queued NDVI requests
+  // Mutation to trigger NDVI processing worker on Render
   const processQueueMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('ndvi-request-processor', {
-        body: { action: 'process_queue', limit: 10 }
+      const response = await fetch('https://ndvi-land-api.onrender.com/run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          limit: 10,
+          use_queue: true,
+        }),
       });
-      if (error) throw error;
-      return data;
+
+      if (!response.ok) {
+        throw new Error(`Failed to trigger worker: ${response.status}`);
+      }
+
+      return await response.json();
     },
     onSuccess: (data) => {
-      if (data?.results) {
-        const { completed, failed, still_processing } = data.results;
-        if (completed > 0) {
-          toast({
-            title: "✅ NDVI Data Processed",
-            description: `Successfully processed ${completed} request(s)`,
-          });
-          refetchData();
-        }
-        if (failed > 0) {
-          toast({
-            title: "⚠️ Some Requests Failed",
-            description: `${failed} request(s) failed to process`,
-            variant: "destructive",
-          });
-        }
-        console.log('🔄 Queue processing results:', data.results);
-      }
+      toast({
+        title: "✅ NDVI Processing Started",
+        description: `${data.jobs_triggered || 0} job(s) triggered on Render worker`,
+      });
+
+      // Auto-refresh queue status after a few seconds
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
+      }, 3000);
+
+      // Refetch NDVI data after processing completes (wait a bit longer)
+      setTimeout(() => {
+        refetchData();
+      }, 10000);
     },
     onError: (error: Error) => {
-      console.error('❌ Failed to process queue:', error);
+      console.error('❌ Failed to trigger worker:', error);
       toast({
         title: 'Processing Failed',
         description: error.message,
@@ -193,7 +201,7 @@ export default function NDVIPage() {
               className="shadow-sm"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Refreshing...' : 'Refresh NDVI'}
+              {isRefreshing ? 'Queueing...' : 'Queue NDVI Jobs'}
             </Button>
 
             <Button
@@ -213,9 +221,29 @@ export default function NDVIPage() {
         {isAutoFetching && (
           <Alert className="border-primary/20 bg-primary/5">
             <Satellite className="h-4 w-4 animate-pulse text-primary" />
-            <AlertTitle>Fetching NDVI Data</AlertTitle>
+            <AlertTitle>Queueing NDVI Requests</AlertTitle>
             <AlertDescription>
-              Checking for updates and fetching fresh satellite data where needed...
+              Submitting NDVI requests to the Render API for processing...
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isRefreshing && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <Server className="h-4 w-4 animate-pulse text-primary" />
+            <AlertTitle>Queueing NDVI Requests</AlertTitle>
+            <AlertDescription>
+              Submitting land parcels to NDVI processing queue on Render...
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {processQueueMutation.isPending && (
+          <Alert className="border-primary/20 bg-primary/5">
+            <Server className="h-4 w-4 animate-spin text-primary" />
+            <AlertTitle>Processing Queue</AlertTitle>
+            <AlertDescription>
+              Triggering NDVI worker on Render to process queued jobs...
             </AlertDescription>
           </Alert>
         )}
@@ -268,7 +296,7 @@ export default function NDVIPage() {
                 <AlertCircle className="h-4 w-4 text-purple-600" />
                 <AlertTitle>No NDVI Data Yet</AlertTitle>
                 <AlertDescription>
-                  Your lands are mapped to tiles, but no NDVI data has been processed yet. Click "Refresh NDVI" to fetch satellite data, then "Process Queue" to retrieve results.
+                  Your lands are mapped to tiles, but no NDVI data has been processed yet. Click "Queue NDVI Jobs" to submit requests to Render API, then "Process Queue" to trigger the worker and retrieve results.
                 </AlertDescription>
               </Alert>
             )}
