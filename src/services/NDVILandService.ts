@@ -337,9 +337,10 @@ export class NDVILandService {
       }
     };
 
+      // Type assertion: date_from/date_to removed from schema but types not regenerated yet
       const { error: queueError } = await supabase
         .from('ndvi_request_queue')
-        .insert([queueRecord]);
+        .insert([queueRecord as any]);
 
       if (queueError) {
         console.error('❌ Failed to insert queue record:', queueError);
