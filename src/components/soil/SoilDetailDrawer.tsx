@@ -92,7 +92,7 @@ export function SoilDetailDrawer({ land, isOpen, onClose }: SoilDetailDrawerProp
             🌾 {land.name}
           </SheetTitle>
           <SheetDescription>
-            Farmer: {land.farmer?.full_name} • Area: {land.area_acres} acres
+            Farmer ID: {land.farmer_id?.slice(0, 8)}... • Area: {land.area_acres} acres
             {land.village && ` • Village: ${land.village}`}
           </SheetDescription>
         </SheetHeader>

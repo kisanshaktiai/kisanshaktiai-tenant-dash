@@ -31,9 +31,6 @@ export interface LandWithSoil {
   soil_ph: number | null;
   organic_carbon_percent: number | null;
   last_soil_test_date: string | null;
-  farmer?: {
-    full_name: string;
-  };
   soil_health?: SoilHealthData[];
 }
 
@@ -111,9 +108,6 @@ class SoilAnalysisService {
           soil_ph,
           organic_carbon_percent,
           last_soil_test_date,
-          farmer:farmers (
-            full_name
-          ),
           soil_health (
             id,
             land_id,

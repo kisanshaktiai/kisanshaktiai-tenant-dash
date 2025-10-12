@@ -36,7 +36,7 @@ export function SoilOverviewTable({
     const searchLower = searchQuery.toLowerCase();
     return (
       land.name.toLowerCase().includes(searchLower) ||
-      land.farmer?.full_name?.toLowerCase().includes(searchLower) ||
+      land.farmer_id?.toLowerCase().includes(searchLower) ||
       land.village?.toLowerCase().includes(searchLower)
     );
   });
@@ -122,7 +122,7 @@ export function SoilOverviewTable({
                 onClick={() => handleSort('name')}
               >
                 <div className="flex items-center gap-2">
-                  ✅ Farmer Name
+                  ✅ Farmer ID
                   {sortField === 'name' && (sortDirection === 'asc' ? ' ↑' : ' ↓')}
                 </div>
               </TableHead>
@@ -177,8 +177,8 @@ export function SoilOverviewTable({
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => onLandClick(land)}
                   >
-                    <TableCell className="font-medium">
-                      {land.farmer?.full_name || 'N/A'}
+                    <TableCell className="font-medium text-xs">
+                      {land.farmer_id?.slice(0, 8) || 'N/A'}...
                     </TableCell>
                     <TableCell>{land.name}</TableCell>
                     <TableCell>{land.area_acres.toFixed(2)}</TableCell>
