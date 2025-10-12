@@ -322,8 +322,6 @@ export class NDVILandService {
       });
 
     // Step 4: Insert queue record in Supabase (for tracking only)
-    // Note: date_from/date_to are legacy fields - using today's date as placeholder
-    const today = new Date().toISOString().split('T')[0];
     const queueRecord = {
       tenant_id: tenantId,
       land_ids: landIds,
@@ -331,8 +329,6 @@ export class NDVILandService {
       status: 'queued' as const,
       batch_size: landIds.length,
       farmer_id: farmerId,
-      date_from: today,
-      date_to: today,
       metadata: {
         render_request_id: response.request_id,
         acquisition_date: response.acquisition_date,
