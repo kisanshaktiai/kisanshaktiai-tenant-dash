@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNDVIData } from '@/hooks/data/useNDVIData';
-import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from '@/hooks/use-toast';
+import { renderNDVIService } from '@/services/RenderNDVIService';
+import { ndviLandService } from '@/services/NDVILandService';
 
 interface FarmerNDVICardProps {
   farmerId: string;
@@ -41,28 +42,20 @@ export const FarmerNDVICard: React.FC<FarmerNDVICardProps> = ({
     
     setIsFetching(true);
     try {
-      const { error } = await supabase.functions.invoke('ndvi-harvest', {
-        body: {
-          action: 'trigger_harvest',
-          tenant_id: currentTenant.id,
-          farmer_ids: [farmerId],
-          source: 'MPC'
-        }
-      });
-
-      if (error) throw error;
+      // Queue NDVI requests via Render API
+      await ndviLandService.fetchNDVIForLands(currentTenant.id, farmerId, true);
       
       toast({
-        title: "NDVI Fetch Initiated",
-        description: `Fetching satellite data for ${farmerName}`,
+        title: "NDVI Jobs Queued",
+        description: `Queued satellite data requests for ${farmerName}. Click "Process Queue" on NDVI page to fetch data.`,
       });
       
-      // Refetch after a delay
-      setTimeout(() => refetch(), 3000);
-    } catch (error) {
+      // Refetch after processing delay
+      setTimeout(() => refetch(), 5000);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch NDVI data",
+        description: error.message || "Failed to queue NDVI requests",
         variant: "destructive"
       });
     } finally {

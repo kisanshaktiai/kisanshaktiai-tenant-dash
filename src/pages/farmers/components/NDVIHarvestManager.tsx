@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { NDVIQueueProcessorService } from '@/services/NDVIQueueProcessorService';
+import { renderNDVIService } from '@/services/RenderNDVIService';
+import { ndviLandService } from '@/services/NDVILandService';
 
 interface LandData {
   id: string;
@@ -48,161 +49,66 @@ export const NDVIHarvestManager: React.FC = () => {
     enabled: !!currentTenant?.id
   });
 
-  // Get harvest quota status
-  const { data: quota } = useQuery({
-    queryKey: ['harvest-quota', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) return null;
-      
-      const { data, error } = await supabase
-        .rpc('check_harvest_quota', { p_tenant_id: currentTenant.id });
-      
-      if (error) throw error;
-      return (data as unknown) as QuotaData | null;
-    },
+  // Get Render API statistics
+  const { data: apiStats } = useQuery({
+    queryKey: ['ndvi-api-stats'],
+    queryFn: () => renderNDVIService.getStats(),
     enabled: !!currentTenant?.id
   });
 
-  // Get tenant tiles for harvesting
-  const { data: tilesData } = useQuery({
-    queryKey: ['tenant-tiles', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) return null;
-      
-      const response = await supabase.functions.invoke('ndvi-harvest', {
-        body: {
-          action: 'get_tenant_tiles',
-          tenant_id: currentTenant.id
-        }
-      });
-      
-      if (response.error) throw response.error;
-      return response.data;
-    },
-    enabled: !!currentTenant?.id
-  });
-
-  // Trigger NDVI harvest for selected lands
+  // Trigger NDVI harvest for selected lands via Render API
   const harvestMutation = useMutation({
     mutationFn: async () => {
-      if (!currentTenant?.id || !tilesData?.tiles) {
-        throw new Error('Missing required data');
+      if (!currentTenant?.id) {
+        throw new Error('Missing tenant ID');
       }
 
-      // Get unique tile IDs that cover selected lands
-      const tileIds = [...new Set(tilesData.tiles.map((t: any) => t.tile_id))];
-      
-      // Step 1: Trigger satellite data harvest
-      const harvestResponse = await supabase.functions.invoke('ndvi-harvest', {
-        body: {
-          action: 'trigger_harvest',
-          tenant_id: currentTenant.id,
-          tile_ids: tileIds,
-          params: {
-            priority: 1,
-            requested_date: new Date().toISOString().split('T')[0]
-          }
-        }
-      });
+      // Queue NDVI requests for selected lands (or all if none selected)
+      const landIds = selectedLands.length > 0 ? selectedLands : undefined;
+      await ndviLandService.fetchNDVIForLands(currentTenant.id, undefined, true);
 
-      if (harvestResponse.error) throw harvestResponse.error;
-
-      // Step 2: Create land clipping jobs for each tile
-      for (const tileId of tileIds) {
-        const clippingResponse = await supabase.functions.invoke('land-clipper', {
-          body: {
-            action: 'create_clipping_jobs',
-            tenant_id: currentTenant.id,
-            land_ids: selectedLands.length > 0 ? selectedLands : undefined,
-            tile_id: tileId,
-            date: new Date().toISOString().split('T')[0]
-          }
-        });
-
-        if (clippingResponse.error) {
-          console.error('Clipping job creation failed:', clippingResponse.error);
-        }
-      }
-
-      return harvestResponse.data;
+      return { success: true, landIds };
     },
-    onSuccess: (data) => {
-      toast.success('NDVI harvest initiated successfully!');
-      queryClient.invalidateQueries({ queryKey: ['harvest-quota'] });
+    onSuccess: () => {
+      toast.success('NDVI requests queued successfully! Use "Process Queue" to fetch data.');
+      queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
       queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
       setSelectedLands([]);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to initiate NDVI harvest');
+      toast.error(error.message || 'Failed to queue NDVI requests');
     }
   });
 
-  // Check job status
-  const { data: jobStatus } = useQuery({
-    queryKey: ['harvest-status', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) return null;
-      
-      const response = await supabase.functions.invoke('ndvi-harvest', {
-        body: {
-          action: 'get_harvest_status',
-          tenant_id: currentTenant.id
-        }
-      });
-      
-      if (response.error) throw response.error;
-      return response.data;
-    },
-    enabled: !!currentTenant?.id,
-    refetchInterval: isProcessing ? 5000 : false
-  });
-
-  // Queue processor mutation
+  // Trigger Render API worker to process queue
   const processorMutation = useMutation({
     mutationFn: async () => {
-      if (!currentTenant?.id) throw new Error('No tenant selected');
-      return NDVIQueueProcessorService.processQueue(currentTenant.id, 10);
+      return renderNDVIService.triggerJobs(10);
     },
     onSuccess: (data) => {
-      console.log('✅ Processor results:', data);
-      toast.success(`Processed ${data.results.completed} requests successfully!`);
-      
-      if (data.results.failed > 0) {
-        toast.warning(`${data.results.failed} requests failed`);
-      }
-      
-      if (data.results.still_processing > 0) {
-        toast.info(`${data.results.still_processing} requests still processing`);
-      }
-      
+      toast.success(`Processing ${data.limit} queued jobs on Render API`);
       queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
+      
+      // Refetch data after processing delay
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
+      }, 15000);
     },
     onError: (error: any) => {
-      toast.error(`Queue processing error: ${error.message}`);
+      toast.error(`Failed to trigger worker: ${error.message}`);
     }
   });
 
-  // Get queue status
+  // Get queue status from Render API
   const { data: queueStatus } = useQuery({
     queryKey: ['ndvi-queue-status', currentTenant?.id],
     queryFn: async () => {
-      if (!currentTenant?.id) return [];
-      return NDVIQueueProcessorService.getQueueStatus(currentTenant.id);
+      if (!currentTenant?.id) return null;
+      return renderNDVIService.getQueueStatus(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
     refetchInterval: 30000 // Auto-refresh every 30 seconds
   });
-
-  // Auto-process queue when there are queued requests
-  useEffect(() => {
-    const queuedCount = queueStatus?.filter(q => q.status === 'queued').length || 0;
-    
-    if (queuedCount > 0 && !processorMutation.isPending) {
-      console.log(`🔄 Auto-processing ${queuedCount} queued requests...`);
-      processorMutation.mutate();
-    }
-  }, [queueStatus]);
 
   const handleSelectAll = () => {
     if (selectedLands.length === lands.length) {
@@ -218,10 +124,10 @@ export const NDVIHarvestManager: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (jobStatus?.summary && jobStatus.summary.pending === 0 && jobStatus.summary.running === 0) {
+    if (queueStatus && queueStatus.requests.filter(r => r.status === 'processing').length === 0) {
       setIsProcessing(false);
     }
-  }, [jobStatus]);
+  }, [queueStatus]);
 
   return (
     <Card>
@@ -233,53 +139,36 @@ export const NDVIHarvestManager: React.FC = () => {
               NDVI Data Harvesting
             </CardTitle>
             <CardDescription>
-              Fetch satellite imagery and calculate vegetation indices for your lands
+              Queue NDVI requests via Render API for satellite imagery processing
             </CardDescription>
           </div>
-          {quota && (
+          {apiStats && (
             <div className="text-right">
-              <div className="text-sm text-muted-foreground">Monthly Quota</div>
+              <div className="text-sm text-muted-foreground">API Status</div>
               <div className="font-semibold">
-                {quota.current_usage} / {quota.monthly_limit}
+                Queued: {apiStats.queued} | Processing: {apiStats.processing}
               </div>
-              {quota.can_harvest && (
-                <Badge variant="default" className="mt-1">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Available
-                </Badge>
-              )}
+              <Badge variant="default" className="mt-1">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                {apiStats.completed} Completed
+              </Badge>
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Quota Warning */}
-        {quota && !quota.can_harvest && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You've reached your monthly harvest limit. Quota resets on the first day of next month.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Job Status */}
-        {jobStatus?.summary && (jobStatus.summary.running > 0 || jobStatus.summary.pending > 0) && (
+        {/* Processing Status */}
+        {queueStatus && queueStatus.requests.filter(r => r.status === 'processing').length > 0 && (
           <div className="p-4 border rounded-lg space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Processing Jobs</span>
+              <span className="text-sm font-medium">Processing on Render API</span>
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
-            <Progress 
-              value={(jobStatus.summary.completed / jobStatus.summary.total_jobs) * 100} 
-            />
             <div className="flex gap-4 text-xs text-muted-foreground">
-              <span>Pending: {jobStatus.summary.pending}</span>
-              <span>Running: {jobStatus.summary.running}</span>
-              <span>Completed: {jobStatus.summary.completed}</span>
-              {jobStatus.summary.failed > 0 && (
-                <span className="text-destructive">Failed: {jobStatus.summary.failed}</span>
-              )}
+              <span>Total: {queueStatus.count}</span>
+              <span>Processing: {queueStatus.requests.filter(r => r.status === 'processing').length}</span>
+              <span>Completed: {queueStatus.requests.filter(r => r.status === 'completed').length}</span>
+              <span className="text-destructive">Failed: {queueStatus.requests.filter(r => r.status === 'failed').length}</span>
             </div>
           </div>
         )}
@@ -341,8 +230,7 @@ export const NDVIHarvestManager: React.FC = () => {
           <Button
             onClick={handleTriggerHarvest}
             disabled={
-              !quota?.can_harvest || 
-              (selectedLands.length === 0 && lands.length === 0) ||
+              lands.length === 0 ||
               harvestMutation.isPending ||
               isProcessing
             }
@@ -351,19 +239,19 @@ export const NDVIHarvestManager: React.FC = () => {
             {harvestMutation.isPending || isProcessing ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
+                Queueing...
               </>
             ) : (
               <>
                 <Download className="h-4 w-4 mr-2" />
-                Fetch NDVI Data {selectedLands.length > 0 && `(${selectedLands.length} lands)`}
+                Queue NDVI Requests {selectedLands.length > 0 && `(${selectedLands.length} lands)`}
               </>
             )}
           </Button>
           
           <Button
             onClick={() => processorMutation.mutate()}
-            disabled={processorMutation.isPending || !queueStatus || queueStatus.length === 0}
+            disabled={processorMutation.isPending || !queueStatus || queueStatus.count === 0}
             variant="outline"
             size="sm"
           >
@@ -375,38 +263,38 @@ export const NDVIHarvestManager: React.FC = () => {
             ) : (
               <>
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Process Queue ({queueStatus?.filter(q => q.status === 'queued').length || 0})
+                Process Queue ({queueStatus?.requests.filter(r => r.status === 'queued').length || 0})
               </>
             )}
           </Button>
         </div>
 
-        {/* Queue Status */}
-        {queueStatus && queueStatus.length > 0 && (
+        {/* Queue Status from Render API */}
+        {queueStatus && queueStatus.count > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Queue Status</h4>
+            <h4 className="text-sm font-medium">Render API Queue Status</h4>
             <div className="grid grid-cols-4 gap-2 text-xs">
               <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
                 <div className="text-blue-600 dark:text-blue-400 font-semibold">
-                  {queueStatus.filter(q => q.status === 'queued').length}
+                  {queueStatus.requests.filter(q => q.status === 'queued').length}
                 </div>
                 <div className="text-muted-foreground">Queued</div>
               </div>
               <div className="bg-yellow-50 dark:bg-yellow-950 p-2 rounded">
                 <div className="text-yellow-600 dark:text-yellow-400 font-semibold">
-                  {queueStatus.filter(q => q.status === 'processing').length}
+                  {queueStatus.requests.filter(q => q.status === 'processing').length}
                 </div>
                 <div className="text-muted-foreground">Processing</div>
               </div>
               <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
                 <div className="text-green-600 dark:text-green-400 font-semibold">
-                  {queueStatus.filter(q => q.status === 'completed').length}
+                  {queueStatus.requests.filter(q => q.status === 'completed').length}
                 </div>
                 <div className="text-muted-foreground">Completed</div>
               </div>
               <div className="bg-red-50 dark:bg-red-950 p-2 rounded">
                 <div className="text-red-600 dark:text-red-400 font-semibold">
-                  {queueStatus.filter(q => q.status === 'failed').length}
+                  {queueStatus.requests.filter(q => q.status === 'failed').length}
                 </div>
                 <div className="text-muted-foreground">Failed</div>
               </div>
@@ -416,9 +304,9 @@ export const NDVIHarvestManager: React.FC = () => {
 
         {/* Info */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>• NDVI data will be fetched from satellite imagery (Sentinel-2)</p>
-          <p>• Processing typically takes 5-10 minutes per land</p>
-          <p>• Data includes NDVI, EVI, NDWI, and SAVI indices</p>
+          <p>• NDVI requests are queued via Render API (https://ndvi-land-api.onrender.com)</p>
+          <p>• Click "Process Queue" to trigger the worker and fetch satellite data</p>
+          <p>• Data includes NDVI values with statistics for vegetation health</p>
         </div>
       </CardContent>
     </Card>

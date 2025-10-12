@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { NDVIGlobalDashboard } from '@/components/ndvi/NDVIGlobalDashboard';
 import { RenderServiceStatus } from '@/components/ndvi/RenderServiceStatus';
 import { NDVILandDataTable } from '@/components/ndvi/NDVILandDataTable';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
@@ -308,7 +307,7 @@ export default function NDVIPage() {
         <Card className="border-muted">
           <Tabs defaultValue="monitoring" className="w-full">
             <div className="border-b px-4 pt-4">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-1 bg-transparent p-0">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 h-auto gap-1 bg-transparent p-0">
                 <TabsTrigger 
                   value="monitoring" 
                   className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
@@ -333,14 +332,6 @@ export default function NDVIPage() {
                   <span className="hidden sm:inline">NDVI Data</span>
                   <span className="sm:hidden">Data</span>
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="dashboard" 
-                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                  <span className="sm:hidden">Stats</span>
-                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -361,11 +352,6 @@ export default function NDVIPage() {
                   data={cachedData} 
                   isLoading={isLoading || isAutoFetching} 
                 />
-              </TabsContent>
-
-              {/* Dashboard Tab */}
-              <TabsContent value="dashboard" className="space-y-4 mt-0">
-                <NDVIGlobalDashboard />
               </TabsContent>
             </div>
           </Tabs>
