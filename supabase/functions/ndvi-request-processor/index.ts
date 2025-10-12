@@ -55,7 +55,19 @@ serve(async (req) => {
           const renderRequestId = queueItem.metadata?.render_request_id
           
           if (!renderRequestId) {
-            console.error('❌ Skipping queue item with missing render_request_id:', queueItem)
+            console.error('❌ Queue item missing render_request_id, marking as failed:', queueItem.id)
+            
+            // Mark as failed instead of silently skipping
+            await supabaseClient
+              .from('ndvi_request_queue')
+              .update({
+                status: 'failed',
+                processed_at: new Date().toISOString(),
+                error_message: 'Missing render_request_id in metadata. This request cannot be processed.'
+              })
+              .eq('id', queueItem.id)
+            
+            results.failed++
             results.errors.push({
               queue_item_id: queueItem.id || 'unknown',
               error: 'Missing render_request_id in metadata'
@@ -76,6 +88,18 @@ serve(async (req) => {
 
           if (!statusResponse.ok) {
             console.error(`❌ Failed to fetch status for request ${renderRequestId}`)
+            
+            // Mark as failed if API is unreachable or returns error
+            await supabaseClient
+              .from('ndvi_request_queue')
+              .update({
+                status: 'failed',
+                processed_at: new Date().toISOString(),
+                error_message: `Status check failed: ${statusResponse.statusText}`
+              })
+              .eq('id', queueItem.id)
+            
+            results.failed++
             results.errors.push({
               render_request_id: renderRequestId,
               queue_id: queueItem.id,

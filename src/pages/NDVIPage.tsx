@@ -4,6 +4,7 @@ import { RenderServiceStatus } from '@/components/ndvi/RenderServiceStatus';
 import { NDVILandDataTable } from '@/components/ndvi/NDVILandDataTable';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
 import { NDVIDataVisualization } from '@/components/ndvi/NDVIDataVisualization';
+import { NDVIQueueStatus } from '@/components/ndvi/NDVIQueueStatus';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { NDVIQueueCleanupService } from '@/services/NDVIQueueCleanupService';
 
 export default function NDVIPage() {
   const {
@@ -115,9 +117,41 @@ export default function NDVIPage() {
     },
   });
 
+  // Check if lands exist and are mapped
+  const { data: diagnostics } = useQuery({
+    queryKey: ['ndvi-diagnostics'],
+    queryFn: async () => {
+      // Check for lands with boundaries
+      const { data: lands, error: landsError } = await supabase
+        .from('lands')
+        .select('id, name, boundary')
+        .eq('is_active', true)
+        .limit(1);
+
+      // Check for tile mappings
+      const { data: mappings, error: mappingsError } = await supabase
+        .from('land_tile_mapping')
+        .select('land_id, tile_id')
+        .limit(1);
+
+      return {
+        hasLands: (lands && lands.length > 0) || false,
+        hasLandsWithBoundaries: (lands && lands.length > 0 && lands[0].boundary) || false,
+        hasTileMappings: (mappings && mappings.length > 0) || false,
+      };
+    },
+  });
+
   // Auto-fetch NDVI data on page load (respects 7-day cache)
   useEffect(() => {
     autoFetch();
+    
+    // Clean up invalid queue records on initial load
+    NDVIQueueCleanupService.markInvalidRecordsAsFailed().then((result) => {
+      if (result.updated > 0) {
+        console.log(`🔧 Cleaned up ${result.updated} invalid queue records`);
+      }
+    });
   }, []);
 
   return (
@@ -196,16 +230,53 @@ export default function NDVIPage() {
           </Alert>
         )}
 
+        {/* Smart error/status messages based on actual system state */}
         {!isLoading && !isAutoFetching && !error && (!cachedData || cachedData.length === 0) && (
-          <Alert className="border-muted-foreground/20">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>No Land Data Available</AlertTitle>
-            <AlertDescription>
-              No land parcels found with boundary data. Please add land parcels with GPS coordinates 
-              or boundary polygons in the Farmers section, then click "Assign Tiles" to map them to MGRS tiles.
-            </AlertDescription>
-          </Alert>
+          <>
+            {!diagnostics?.hasLands && (
+              <Alert className="border-muted-foreground/20">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>No Lands Found</AlertTitle>
+                <AlertDescription>
+                  No land parcels exist in your system. Please go to the Farmers section and add land parcels with GPS coordinates or boundary polygons.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {diagnostics?.hasLands && !diagnostics?.hasLandsWithBoundaries && (
+              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle>Missing Boundary Data</AlertTitle>
+                <AlertDescription>
+                  Your land parcels exist but don't have boundary data (GPS coordinates or polygons). Please edit your lands to add location information.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {diagnostics?.hasLandsWithBoundaries && !diagnostics?.hasTileMappings && (
+              <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertTitle>Tiles Not Assigned</AlertTitle>
+                <AlertDescription>
+                  Your lands have boundaries but aren't mapped to satellite tiles yet. Click the "Assign Tiles" button above to map them automatically.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {diagnostics?.hasTileMappings && (
+              <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-950/20">
+                <AlertCircle className="h-4 w-4 text-purple-600" />
+                <AlertTitle>No NDVI Data Yet</AlertTitle>
+                <AlertDescription>
+                  Your lands are mapped to tiles, but no NDVI data has been processed yet. Click "Refresh NDVI" to fetch satellite data, then "Process Queue" to retrieve results.
+                </AlertDescription>
+              </Alert>
+            )}
+          </>
         )}
+
+        {/* Queue Status - Always show when not loading */}
+        {!isLoading && <NDVIQueueStatus />}
 
         {/* Main Content Tabs */}
         <Card className="border-muted">
