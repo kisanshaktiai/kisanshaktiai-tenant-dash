@@ -7,36 +7,65 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSoilAnalysis } from '@/hooks/data/useSoilAnalysis';
+import { useRealtimeSoilData } from '@/hooks/data/useRealtimeSoilData';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { SoilOverviewTable } from '@/components/soil/SoilOverviewTable';
 import { SoilDetailDrawer } from '@/components/soil/SoilDetailDrawer';
 import { EnhancedSoilAnalytics } from '@/components/soil/EnhancedSoilAnalytics';
 import { SoilDistributionInsights } from '@/components/soil/SoilDistributionInsights';
+import { FarmerSoilCard } from '@/components/soil/FarmerSoilCard';
+import { FarmerLandsDetail } from '@/components/soil/FarmerLandsDetail';
 import { LandWithSoil } from '@/services/SoilAnalysisService';
-import { Leaf, RefreshCw, AlertCircle, Activity, BarChart3, Table2, Loader2, Users, MapPin, TrendingUp, ShoppingCart } from 'lucide-react';
+import { Leaf, RefreshCw, AlertCircle, Activity, BarChart3, Table2, Loader2, Users, MapPin, TrendingUp, ShoppingCart, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 export default function SoilAnalysisPage() {
   const { getTenantId } = useTenantIsolation();
   const [selectedLand, setSelectedLand] = useState<LandWithSoil | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<string | null>(null);
 
   const {
     healthStatus,
     isApiConnected,
-    landsWithSoil,
-    isLoadingLands,
     updateSoilData,
     isUpdatingSoilData,
     batchUpdateSoilData,
     isBatchUpdating,
-    refetchLands,
   } = useSoilAnalysis();
+
+  // Real-time soil data
+  const { landsWithSoil: realtimeLands, isLoading: isLoadingRealtime } = useRealtimeSoilData();
+  const isLoadingLands = isLoadingRealtime;
+
+  // Group lands by farmer
+  const farmerGroups = useMemo(() => {
+    if (!realtimeLands || realtimeLands.length === 0) return [];
+
+    const grouped = realtimeLands.reduce((acc, land) => {
+      const farmerId = land.farmer_id;
+      if (!acc[farmerId] && land.farmer) {
+        acc[farmerId] = {
+          id: land.farmer.id,
+          full_name: land.farmer.full_name,
+          phone: land.farmer.phone,
+          lands: [],
+        };
+      }
+      if (acc[farmerId]) {
+        acc[farmerId].lands.push(land);
+      }
+      return acc;
+    }, {} as Record<string, any>);
+
+    return Object.values(grouped);
+  }, [realtimeLands]);
 
   // Calculate enhanced statistics
   const stats = useMemo(() => {
-    if (!landsWithSoil || landsWithSoil.length === 0) {
+    if (!realtimeLands || realtimeLands.length === 0) {
       return {
         totalLands: 0,
         totalFarmers: 0,
@@ -49,9 +78,9 @@ export default function SoilAnalysisPage() {
       };
     }
 
-    const uniqueFarmers = new Set(landsWithSoil.map(l => l.farmer_id)).size;
-    const totalArea = landsWithSoil.reduce((sum, land) => sum + land.area_acres, 0);
-    const landsWithSoilData = landsWithSoil.filter(l => l.soil_health && l.soil_health.length > 0);
+    const uniqueFarmers = new Set(realtimeLands.map(l => l.farmer_id)).size;
+    const totalArea = realtimeLands.reduce((sum, land) => sum + land.area_acres, 0);
+    const landsWithSoilData = realtimeLands.filter(l => l.soil_health && l.soil_health.length > 0);
 
     const npkValues = landsWithSoilData.reduce(
       (acc, land) => {
@@ -67,16 +96,16 @@ export default function SoilAnalysisPage() {
     const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
     return {
-      totalLands: landsWithSoil.length,
+      totalLands: realtimeLands.length,
       totalFarmers: uniqueFarmers,
       totalArea: totalArea,
       avgN: avg(npkValues.n),
       avgP: avg(npkValues.p),
       avgK: avg(npkValues.k),
       landsWithData: landsWithSoilData.length,
-      dataCompleteness: landsWithSoil.length > 0 ? (landsWithSoilData.length / landsWithSoil.length) * 100 : 0,
+      dataCompleteness: realtimeLands.length > 0 ? (landsWithSoilData.length / realtimeLands.length) * 100 : 0,
     };
-  }, [landsWithSoil]);
+  }, [realtimeLands]);
 
   const handleLandClick = (land: LandWithSoil) => {
     setSelectedLand(land);
@@ -88,12 +117,12 @@ export default function SoilAnalysisPage() {
   };
 
   const handleRefreshAll = async () => {
-    if (!landsWithSoil || landsWithSoil.length === 0) {
+    if (!realtimeLands || realtimeLands.length === 0) {
       toast.error('No lands available to update');
       return;
     }
 
-    const landIds = landsWithSoil.map((land) => land.id);
+    const landIds = realtimeLands.map((land) => land.id);
     const tenantId = getTenantId();
 
     toast.info(`Starting batch update for ${landIds.length} lands...`);
@@ -111,8 +140,7 @@ export default function SoilAnalysisPage() {
       {/* Header */}
       <PageHeader
         title="Soil Health Intelligence"
-        description="Comprehensive soil analysis with AI-powered insights for precision farming"
-        badge={{ text: 'Multi-Tenant', variant: 'secondary' }}
+        description="Real-time soil analysis with AI-powered insights for precision farming"
         actions={
           <div className="flex items-center gap-3">
             {/* API Status Indicator */}
@@ -137,7 +165,7 @@ export default function SoilAnalysisPage() {
             {/* Refresh All Button */}
             <Button
               onClick={handleRefreshAll}
-              disabled={isBatchUpdating || !isApiConnected || !landsWithSoil || landsWithSoil.length === 0}
+              disabled={isBatchUpdating || !isApiConnected || !realtimeLands || realtimeLands.length === 0}
               className="gap-2"
             >
               {isBatchUpdating ? (
@@ -248,11 +276,15 @@ export default function SoilAnalysisPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="analytics" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
-          <TabsTrigger value="analytics" className="gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Analytics
+      <Tabs defaultValue="tenant" className="space-y-6" onValueChange={() => setSelectedFarmer(null)}>
+        <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+          <TabsTrigger value="tenant" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            Tenant Overview
+          </TabsTrigger>
+          <TabsTrigger value="farmers" className="gap-2">
+            <Users className="h-4 w-4" />
+            Farmers
           </TabsTrigger>
           <TabsTrigger value="insights" className="gap-2">
             <ShoppingCart className="h-4 w-4" />
@@ -264,46 +296,9 @@ export default function SoilAnalysisPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
-          {isLoadingLands ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading land data...</p>
-              </CardContent>
-            </Card>
-          ) : !landsWithSoil || landsWithSoil.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <div className="flex justify-center">
-                    <div className="rounded-full bg-muted p-4">
-                      <MapPin className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-lg font-medium">No Lands Found</p>
-                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                      Add lands in the Farmers section to start tracking soil health and get AI-powered insights.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <SoilOverviewTable
-              lands={landsWithSoil}
-              onLandClick={handleLandClick}
-              onUpdateSoilData={handleUpdateSoilData}
-              isUpdating={isUpdatingSoilData}
-            />
-          )}
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics">
-          {!landsWithSoil || landsWithSoil.length === 0 ? (
+        {/* Tenant Overview Tab */}
+        <TabsContent value="tenant">
+          {!realtimeLands || realtimeLands.length === 0 ? (
             <Card>
               <CardContent className="py-12">
                 <div className="text-center space-y-4">
@@ -313,7 +308,7 @@ export default function SoilAnalysisPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-lg font-medium">No Analytics Available</p>
+                    <p className="text-lg font-medium">No Tenant Data Available</p>
                     <p className="text-sm text-muted-foreground max-w-md mx-auto">
                       Add soil data to see comprehensive analytics, trends, and actionable insights.
                     </p>
@@ -322,13 +317,62 @@ export default function SoilAnalysisPage() {
               </CardContent>
             </Card>
           ) : (
-            <EnhancedSoilAnalytics lands={landsWithSoil} />
+            <EnhancedSoilAnalytics lands={realtimeLands as any} />
+          )}
+        </TabsContent>
+
+        {/* Farmers Tab */}
+        <TabsContent value="farmers" className="space-y-4">
+          {selectedFarmer ? (
+            <FarmerLandsDetail
+              farmer={farmerGroups.find(f => f.id === selectedFarmer)!}
+              onBack={() => setSelectedFarmer(null)}
+            />
+          ) : (
+            <>
+              {isLoadingLands ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading farmer data...</p>
+                  </CardContent>
+                </Card>
+              ) : farmerGroups.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center space-y-4">
+                      <div className="flex justify-center">
+                        <div className="rounded-full bg-muted p-4">
+                          <Users className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-lg font-medium">No Farmers Found</p>
+                        <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                          Add farmers and their lands to start tracking soil health per farmer.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {farmerGroups.map((farmer) => (
+                    <FarmerSoilCard
+                      key={farmer.id}
+                      farmer={farmer}
+                      onClick={() => setSelectedFarmer(farmer.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
 
         {/* Market Insights Tab */}
         <TabsContent value="insights">
-          {!landsWithSoil || landsWithSoil.length === 0 ? (
+          {!realtimeLands || realtimeLands.length === 0 ? (
             <Card>
               <CardContent className="py-12">
                 <div className="text-center space-y-4">
@@ -358,9 +402,46 @@ export default function SoilAnalysisPage() {
                 </p>
               </CardHeader>
               <CardContent>
-                <SoilDistributionInsights lands={landsWithSoil} />
+                <SoilDistributionInsights lands={realtimeLands as any} />
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        {/* Overview Tab (Land Data) */}
+        <TabsContent value="overview" className="space-y-4">
+          {isLoadingLands ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading land data...</p>
+              </CardContent>
+            </Card>
+          ) : !realtimeLands || realtimeLands.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-muted p-4">
+                      <MapPin className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium">No Lands Found</p>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Add lands in the Farmers section to start tracking soil health and get AI-powered insights.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <SoilOverviewTable
+              lands={realtimeLands as any}
+              onLandClick={handleLandClick}
+              onUpdateSoilData={handleUpdateSoilData}
+              isUpdating={isUpdatingSoilData}
+            />
           )}
         </TabsContent>
       </Tabs>
