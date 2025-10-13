@@ -8,7 +8,7 @@ import { MapPin, Leaf, TrendingUp, TrendingDown, ChevronRight, Phone } from "luc
 interface FarmerSoilCardProps {
   farmer: {
     id: string;
-    farmer_name: string;
+    full_name: string;
     mobile_number: string | null;
     lands: LandWithSoilHealth[];
   };
@@ -59,11 +59,11 @@ export function FarmerSoilCard({ farmer, onClick }: FarmerSoilCardProps) {
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {farmer.farmer_name.charAt(0).toUpperCase()}
+                {farmer.full_name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-lg">{farmer.farmer_name}</CardTitle>
+              <CardTitle className="text-lg">{farmer.full_name}</CardTitle>
               {farmer.mobile_number && (
                 <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                   <Phone className="h-3 w-3" />

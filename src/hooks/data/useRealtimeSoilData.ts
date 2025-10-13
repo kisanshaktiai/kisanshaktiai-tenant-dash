@@ -35,8 +35,11 @@ export interface LandWithSoilHealth {
   soil_health: SoilHealthData[];
   farmer?: {
     id: string;
-    farmer_name: string;
+    user_id: string | null;
     mobile_number: string | null;
+    user_profile?: {
+      full_name: string | null;
+    };
   };
 }
 
@@ -83,8 +86,11 @@ export const useRealtimeSoilData = () => {
           ),
           farmer:farmers!inner (
             id,
-            farmer_name,
-            mobile_number
+            user_id,
+            mobile_number,
+            user_profile:user_profiles!inner (
+              full_name
+            )
           )
         `)
         .eq('tenant_id', currentTenant.id)
