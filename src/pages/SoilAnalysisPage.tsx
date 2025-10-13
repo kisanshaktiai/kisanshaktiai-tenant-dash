@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { useSoilAnalysis } from '@/hooks/data/useSoilAnalysis';
-import { useRealtimeSoilData } from '@/hooks/data/useRealtimeSoilData';
+import { useRealtimeSoilData, LandWithSoilHealth } from '@/hooks/data/useRealtimeSoilData';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
-import { SoilOverviewTable } from '@/components/soil/SoilOverviewTable';
 import { SoilDetailDrawer } from '@/components/soil/SoilDetailDrawer';
 import { EnhancedSoilAnalytics } from '@/components/soil/EnhancedSoilAnalytics';
 import { SoilDistributionInsights } from '@/components/soil/SoilDistributionInsights';
 import { FarmerSoilCard } from '@/components/soil/FarmerSoilCard';
 import { FarmerLandsDetail } from '@/components/soil/FarmerLandsDetail';
+import { EnhancedLandDataDashboard } from '@/components/soil/EnhancedLandDataDashboard';
 import { LandWithSoil } from '@/services/SoilAnalysisService';
 import { Leaf, RefreshCw, AlertCircle, Activity, BarChart3, Table2, Loader2, Users, MapPin, TrendingUp, ShoppingCart, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,7 +23,7 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 
 export default function SoilAnalysisPage() {
   const { getTenantId } = useTenantIsolation();
-  const [selectedLand, setSelectedLand] = useState<LandWithSoil | null>(null);
+  const [selectedLand, setSelectedLand] = useState<LandWithSoilHealth | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [selectedFarmer, setSelectedFarmer] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export default function SoilAnalysisPage() {
     };
   }, [realtimeLands]);
 
-  const handleLandClick = (land: LandWithSoil) => {
+  const handleViewLand = (land: LandWithSoilHealth) => {
     setSelectedLand(land);
     setIsDrawerOpen(true);
   };
@@ -436,22 +437,32 @@ export default function SoilAnalysisPage() {
               </CardContent>
             </Card>
           ) : (
-            <SoilOverviewTable
-              lands={realtimeLands as any}
-              onLandClick={handleLandClick}
-              onUpdateSoilData={handleUpdateSoilData}
-              isUpdating={isUpdatingSoilData}
-            />
+            <EnhancedLandDataDashboard onViewDetails={handleViewLand} />
           )}
         </TabsContent>
       </Tabs>
 
       {/* Soil Detail Drawer */}
-      <SoilDetailDrawer 
-        land={selectedLand} 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-      />
+      {selectedLand && (
+        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <DrawerContent className="max-h-[90vh]">
+            <DrawerHeader>
+              <DrawerTitle>{selectedLand.name} - Soil Details</DrawerTitle>
+            </DrawerHeader>
+            <div className="overflow-y-auto px-6 pb-6">
+              <FarmerLandsDetail
+                farmer={{
+                  id: selectedLand.farmer_id,
+                  full_name: selectedLand.farmer?.farmer_name || 'Unknown',
+                  mobile_number: selectedLand.farmer?.mobile_number,
+                  lands: [selectedLand],
+                }}
+                onBack={() => setIsDrawerOpen(false)}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </PageLayout>
   );
 }
