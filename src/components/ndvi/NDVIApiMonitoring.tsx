@@ -302,13 +302,16 @@ export const NDVIApiMonitoring: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
-            { method: 'GET', path: '/health', desc: 'Service health check' },
-            { method: 'POST', path: '/run', desc: 'Trigger satellite worker jobs' },
-            { method: 'POST', path: '/requests', desc: 'Create NDVI processing request' },
-            { method: 'GET', path: '/requests/{id}', desc: 'Get request status & progress' },
-            { method: 'GET', path: '/lands/{id}/ndvi', desc: 'Get land NDVI data from B2' },
-            { method: 'GET', path: '/farmers/{id}/ndvi', desc: 'Bulk farmer NDVI data' },
-            { method: 'GET', path: '/stats', desc: 'API usage statistics' },
+            { method: 'GET', path: '/api/v1/health', desc: 'Health check - verify API status' },
+            { method: 'POST', path: '/api/v1/ndvi/requests', desc: 'Create NDVI processing request' },
+            { method: 'GET', path: '/api/v1/ndvi/requests', desc: 'Get all NDVI requests list' },
+            { method: 'GET', path: '/api/v1/ndvi/requests/{id}', desc: 'Get specific request status' },
+            { method: 'GET', path: '/api/v1/ndvi/data', desc: 'Get NDVI data summary' },
+            { method: 'GET', path: '/api/v1/ndvi/data/{land_id}', desc: 'Get land NDVI history' },
+            { method: 'GET', path: '/api/v1/ndvi/thumbnail/{land_id}', desc: 'Get NDVI thumbnail image' },
+            { method: 'GET', path: '/api/v1/ndvi/stats/global', desc: 'Get global statistics' },
+            { method: 'GET', path: '/api/v1/ndvi/queue/status', desc: 'Check queue status' },
+            { method: 'POST', path: '/api/v1/ndvi/queue/retry/{id}', desc: 'Retry failed request' },
           ].map((endpoint, i) => (
             <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
               <Badge variant={endpoint.method === 'GET' ? 'default' : 'secondary'} className="min-w-[60px] justify-center">

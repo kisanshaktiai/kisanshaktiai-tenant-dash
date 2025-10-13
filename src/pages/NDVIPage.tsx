@@ -1,361 +1,182 @@
 import React, { useEffect } from 'react';
-import { RenderServiceStatus } from '@/components/ndvi/RenderServiceStatus';
-import { NDVILandDataTable } from '@/components/ndvi/NDVILandDataTable';
-import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
-import { NDVIDataVisualization } from '@/components/ndvi/NDVIDataVisualization';
-import { NDVIQueueStatus } from '@/components/ndvi/NDVIQueueStatus';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Satellite, TrendingUp, Database, AlertCircle, Server, RefreshCw, Activity, BarChart3, MapPin } from 'lucide-react';
-import { useNDVILandData } from '@/hooks/data/useNDVILandData';
+import { 
+  Satellite, 
+  TrendingUp, 
+  AlertCircle, 
+  RefreshCw, 
+  BarChart3, 
+  Sparkles,
+  Target,
+  LineChart,
+  Database
+} from 'lucide-react';
+import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { NDVIQueueCleanupService } from '@/services/NDVIQueueCleanupService';
+import { NDVIOverviewCards } from '@/components/ndvi/NDVIOverviewCards';
+import { NDVIInsightsPanel } from '@/components/ndvi/NDVIInsightsPanel';
+import { NDVIAnalyticsDashboard } from '@/components/ndvi/NDVIAnalyticsDashboard';
+import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
+import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
 
 export default function NDVIPage() {
-  const queryClient = useQueryClient();
   const {
-    cachedData,
-    isLoading,
-    autoFetch,
-    isAutoFetching,
-    manualRefresh,
-    isRefreshing,
-    error,
-    refetch: refetchData,
-  } = useNDVILandData();
+    healthData,
+    healthLoading,
+    globalStats,
+    statsLoading,
+    isHealthy,
+    refetchHealth,
+    refetchStats,
+  } = useNDVIApiMonitoring();
 
-  // Mutation to trigger NDVI processing worker on Render (API v3.6)
-  const processQueueMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('https://ndvi-land-api.onrender.com/run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ limit: 10 }), // API v3.6: ONLY limit
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to trigger worker: ${response.status}`);
-      }
-
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "✅ NDVI Worker Started",
-        description: `Processing up to ${data.limit} queued jobs. Status: ${data.status}`,
-      });
-
-      // Auto-refresh queue status after 5 seconds
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
-      }, 5000);
-
-      // Refetch NDVI data after processing (wait 15s for worker)
-      setTimeout(() => {
-        refetchData();
-      }, 15000);
-    },
-    onError: (error: Error) => {
-      console.error('❌ Failed to trigger worker:', error);
-      toast({
-        title: 'Worker Start Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  });
-
-  // Mutation to assign MGRS tiles to lands
-  const assignTilesMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc('assign_mgrs_tile_to_land');
-      if (error) throw error;
-      return data as { 
-        success: boolean; 
-        message: string; 
-        inserted: number; 
-        updated: number; 
-        skipped: number;
-        errors: number;
-        error_details: Array<{
-          land_id: string;
-          land_name: string;
-          reason?: string;
-          centroid?: string;
-          error_code?: string;
-          error_message?: string;
-        }>;
-      };
-    },
-    onSuccess: (result) => {
-      console.log('Tile assignment result:', result);
-      
-      if (result.error_details && result.error_details.length > 0) {
-        console.error('Tile assignment details:', result.error_details);
-        toast({
-          title: 'Tile Assignment Issues',
-          description: `${result.message}. Check console for detailed error information.`,
-          variant: result.errors > 0 ? 'destructive' : 'default',
-        });
-      } else {
-        toast({
-          title: 'Tile Assignment Complete',
-          description: result?.message || 'Successfully assigned MGRS tiles to lands',
-        });
-      }
-    },
-    onError: (error: Error) => {
-      console.error('Tile assignment error:', error);
-      toast({
-        title: 'Tile Assignment Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Check if lands exist and are mapped
-  const { data: diagnostics } = useQuery({
-    queryKey: ['ndvi-diagnostics'],
-    queryFn: async () => {
-      // Check for lands with boundaries
-      const { data: lands, error: landsError } = await supabase
-        .from('lands')
-        .select('id, name, boundary')
-        .eq('is_active', true)
-        .limit(1);
-
-      // Check for tile mappings
-      const { data: mappings, error: mappingsError } = await supabase
-        .from('land_tile_mapping')
-        .select('land_id, tile_id')
-        .limit(1);
-
-      return {
-        hasLands: (lands && lands.length > 0) || false,
-        hasLandsWithBoundaries: (lands && lands.length > 0 && lands[0].boundary) || false,
-        hasTileMappings: (mappings && mappings.length > 0) || false,
-      };
-    },
-  });
-
-  // Auto-fetch NDVI data on page load (respects 7-day cache)
-  useEffect(() => {
-    autoFetch();
-    
-    // Clean up invalid queue records on initial load
-    NDVIQueueCleanupService.markInvalidRecordsAsFailed().then((result) => {
-      if (result.updated > 0) {
-        console.log(`🔧 Cleaned up ${result.updated} invalid queue records`);
-      }
-    });
-  }, []);
+  // Manual refresh all data
+  const handleRefreshAll = () => {
+    refetchHealth();
+    refetchStats();
+  };
 
   return (
-    <PageLayout maxWidth="none" padding="md">
-      <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Satellite className="w-6 h-6 lg:w-8 lg:h-8 text-primary" />
-              </div>
-              <h1 className="text-2xl lg:text-4xl font-bold text-foreground">
-                NDVI Management Center
-              </h1>
-            </div>
-            <p className="text-sm lg:text-base text-muted-foreground">
-              Real-time satellite vegetation monitoring powered by NDVI Land Processor API
-            </p>
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={() => assignTilesMutation.mutate()}
-              disabled={assignTilesMutation.isPending}
-              variant="outline"
-              size="default"
-              className="shadow-sm"
-            >
-              <MapPin className={`h-4 w-4 mr-2 ${assignTilesMutation.isPending ? 'animate-pulse' : ''}`} />
-              {assignTilesMutation.isPending ? 'Assigning...' : 'Assign Tiles'}
-            </Button>
-            
-            <Button
-              onClick={() => manualRefresh()}
-              disabled={isRefreshing || isAutoFetching}
-              size="default"
-              className="shadow-sm"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Queueing...' : 'Queue NDVI Jobs'}
-            </Button>
+    <PageLayout maxWidth="none" padding="none">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        {/* Hero Header */}
+        <div className="relative overflow-hidden border-b bg-gradient-to-r from-primary/10 via-primary/5 to-background">
+          <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
+          <div className="relative px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                    <div className="relative p-3 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-lg">
+                      <Satellite className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Vegetation Intelligence Hub
+                    </h1>
+                    <p className="text-muted-foreground text-sm lg:text-base mt-1">
+                      Real-time satellite monitoring powered by advanced NDVI analytics
+                    </p>
+                  </div>
+                </div>
 
-            <Button
-              onClick={() => processQueueMutation.mutate()}
-              disabled={processQueueMutation.isPending}
-              variant="secondary"
-              size="default"
-              className="shadow-sm"
-            >
-              <Server className={`h-4 w-4 mr-2 ${processQueueMutation.isPending ? 'animate-spin' : ''}`} />
-              {processQueueMutation.isPending ? 'Processing...' : 'Process Queue'}
-            </Button>
+                {/* Status Indicator */}
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border ${
+                    isHealthy 
+                      ? 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                    <span className="text-sm font-medium">
+                      {healthLoading ? 'Checking...' : isHealthy ? 'System Operational' : 'System Offline'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleRefreshAll}
+                  size="lg"
+                  className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Data
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="backdrop-blur-sm border-primary/20"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Set Goals
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Status Alerts */}
-        {isAutoFetching && (
-          <Alert className="border-primary/20 bg-primary/5">
-            <Satellite className="h-4 w-4 animate-pulse text-primary" />
-            <AlertTitle>Queueing NDVI Requests</AlertTitle>
-            <AlertDescription>
-              Submitting NDVI requests to the Render API for processing...
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Main Content */}
+        <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+          {/* Overview Cards */}
+          <NDVIOverviewCards 
+            globalStats={globalStats}
+            isLoading={statsLoading}
+            isHealthy={isHealthy}
+          />
 
-        {isRefreshing && (
-          <Alert className="border-primary/20 bg-primary/5">
-            <Server className="h-4 w-4 animate-pulse text-primary" />
-            <AlertTitle>Queueing NDVI Requests</AlertTitle>
-            <AlertDescription>
-              Submitting land parcels to NDVI processing queue on Render...
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Insights Panel */}
+          <NDVIInsightsPanel globalStats={globalStats} />
 
-        {processQueueMutation.isPending && (
-          <Alert className="border-primary/20 bg-primary/5">
-            <Server className="h-4 w-4 animate-spin text-primary" />
-            <AlertTitle>Processing Queue</AlertTitle>
-            <AlertDescription>
-              Triggering NDVI worker on Render to process queued jobs...
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Main Analytics Tabs */}
+          <Card className="border-muted/50 shadow-xl overflow-hidden">
+            <Tabs defaultValue="analytics" className="w-full">
+              <div className="border-b bg-muted/20 px-6 pt-4">
+                <TabsList className="grid w-full max-w-2xl grid-cols-4 h-auto gap-2 bg-transparent p-0">
+                  <TabsTrigger 
+                    value="analytics" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">Analytics</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="performance" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="hidden sm:inline">Performance</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="trends" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <LineChart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Trends</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="system" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <Database className="w-4 h-4" />
+                    <span className="hidden sm:inline">System</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Unable to Fetch NDVI Data</AlertTitle>
-            <AlertDescription>
-              {error.message || 'An error occurred while fetching NDVI data. Please try again.'}
-            </AlertDescription>
-          </Alert>
-        )}
+              <div className="p-6">
+                <TabsContent value="analytics" className="mt-0 space-y-6">
+                  <NDVIAnalyticsDashboard globalStats={globalStats} />
+                </TabsContent>
 
-        {/* Smart error/status messages based on actual system state */}
-        {!isLoading && !isAutoFetching && !error && (!cachedData || cachedData.length === 0) && (
-          <>
-            {!diagnostics?.hasLands && (
-              <Alert className="border-muted-foreground/20">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>No Lands Found</AlertTitle>
-                <AlertDescription>
-                  No land parcels exist in your system. Please go to the Farmers section and add land parcels with GPS coordinates or boundary polygons.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {diagnostics?.hasLands && !diagnostics?.hasLandsWithBoundaries && (
-              <Alert className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20">
-                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                <AlertTitle>Missing Boundary Data</AlertTitle>
-                <AlertDescription>
-                  Your land parcels exist but don't have boundary data (GPS coordinates or polygons). Please edit your lands to add location information.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {diagnostics?.hasLandsWithBoundaries && !diagnostics?.hasTileMappings && (
-              <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-                <AlertCircle className="h-4 w-4 text-blue-600" />
-                <AlertTitle>Tiles Not Assigned</AlertTitle>
-                <AlertDescription>
-                  Your lands have boundaries but aren't mapped to satellite tiles yet. Click the "Assign Tiles" button above to map them automatically.
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            {diagnostics?.hasTileMappings && (
-              <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-950/20">
-                <AlertCircle className="h-4 w-4 text-purple-600" />
-                <AlertTitle>No NDVI Data Yet</AlertTitle>
-                <AlertDescription>
-                  Your lands are mapped to tiles, but no NDVI data has been processed yet. Click "Queue NDVI Jobs" to submit requests to Render API, then "Process Queue" to trigger the worker and retrieve results.
-                </AlertDescription>
-              </Alert>
-            )}
-          </>
-        )}
+                <TabsContent value="performance" className="mt-0 space-y-6">
+                  <NDVILandPerformance />
+                </TabsContent>
 
-        {/* Queue Status - Always show when not loading */}
-        {!isLoading && <NDVIQueueStatus />}
+                <TabsContent value="trends" className="mt-0 space-y-6">
+                  <div className="text-center py-12">
+                    <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Historical Trends</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Analyze vegetation health trends over time with advanced predictive analytics
+                    </p>
+                  </div>
+                </TabsContent>
 
-        {/* Main Content Tabs */}
-        <Card className="border-muted">
-          <Tabs defaultValue="monitoring" className="w-full">
-            <div className="border-b px-4 pt-4">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 h-auto gap-1 bg-transparent p-0">
-                <TabsTrigger 
-                  value="monitoring" 
-                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
-                >
-                  <Activity className="w-4 h-4" />
-                  <span className="hidden sm:inline">API Monitoring</span>
-                  <span className="sm:hidden">Monitor</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="visualization" 
-                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Visualization</span>
-                  <span className="sm:hidden">Charts</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="data" 
-                  className="flex items-center gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-md px-3 py-2"
-                >
-                  <Database className="w-4 h-4" />
-                  <span className="hidden sm:inline">NDVI Data</span>
-                  <span className="sm:hidden">Data</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <div className="p-4 lg:p-6">
-              {/* API Monitoring Tab */}
-              <TabsContent value="monitoring" className="space-y-4 mt-0">
-                <NDVIApiMonitoring />
-              </TabsContent>
-
-              {/* Data Visualization Tab */}
-              <TabsContent value="visualization" className="space-y-4 mt-0">
-                <NDVIDataVisualization data={cachedData || []} />
-              </TabsContent>
-
-              {/* NDVI Data Tab */}
-              <TabsContent value="data" className="space-y-4 mt-0">
-                <NDVILandDataTable 
-                  data={cachedData} 
-                  isLoading={isLoading || isAutoFetching} 
-                />
-              </TabsContent>
-            </div>
-          </Tabs>
-        </Card>
+                <TabsContent value="system" className="mt-0 space-y-6">
+                  <NDVIApiMonitoring />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </Card>
+        </div>
       </div>
     </PageLayout>
   );
