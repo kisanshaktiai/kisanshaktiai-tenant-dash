@@ -136,11 +136,11 @@ export class RenderNDVIService {
 
   /**
    * Check health status of the Render service
-   * GET /health
+   * GET /api/v1/health
    */
   async checkHealth(): Promise<HealthStatus> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -172,11 +172,11 @@ export class RenderNDVIService {
 
   /**
    * Create a new NDVI processing request
-   * POST /ndvi/requests
+   * POST /api/v1/ndvi/requests
    */
   async createRequest(payload: NDVIRequestPayload): Promise<NDVIRequestResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/requests`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ export class RenderNDVIService {
 
   /**
    * Get all NDVI requests
-   * GET /ndvi/requests?tenant_id={id}&status={status}&limit={n}
+   * GET /api/v1/ndvi/requests?tenant_id={id}&status={status}&limit={n}
    */
   async getRequests(
     tenantId?: string,
@@ -211,7 +211,7 @@ export class RenderNDVIService {
       if (status) params.append('status', status);
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/ndvi/requests?${params.toString()}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -231,11 +231,11 @@ export class RenderNDVIService {
 
   /**
    * Get specific NDVI request status
-   * GET /ndvi/requests/{request_id}
+   * GET /api/v1/ndvi/requests/{request_id}
    */
   async getRequestStatus(requestId: string): Promise<NDVIRequestDetailResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/requests/${requestId}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/${requestId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -255,14 +255,14 @@ export class RenderNDVIService {
 
   /**
    * Get NDVI data summary for all lands
-   * GET /ndvi/data?tenant_id={id}
+   * GET /api/v1/ndvi/data?tenant_id={id}
    */
   async getNDVIData(tenantId?: string): Promise<NDVIDataSummaryResponse> {
     try {
       const params = new URLSearchParams();
       if (tenantId) params.append('tenant_id', tenantId);
 
-      const response = await fetch(`${this.baseUrl}/ndvi/data?${params.toString()}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/data?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -282,7 +282,7 @@ export class RenderNDVIService {
 
   /**
    * Get NDVI data for a specific land
-   * GET /ndvi/data/{land_id}?limit={n}
+   * GET /api/v1/ndvi/data/{land_id}?limit={n}
    */
   async getLandNDVI(
     landId: string,
@@ -292,7 +292,7 @@ export class RenderNDVIService {
       const params = new URLSearchParams();
       params.append('limit', limit.toString());
 
-      const response = await fetch(`${this.baseUrl}/ndvi/data/${landId}?${params.toString()}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/data/${landId}?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -312,11 +312,11 @@ export class RenderNDVIService {
 
   /**
    * Get NDVI thumbnail image for a land
-   * GET /ndvi/thumbnail/{land_id}
+   * GET /api/v1/ndvi/thumbnail/{land_id}
    */
   async getLandThumbnail(landId: string): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/thumbnail/${landId}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/thumbnail/${landId}`, {
         method: 'GET',
       });
 
@@ -325,7 +325,7 @@ export class RenderNDVIService {
       }
 
       // Return the image URL
-      return `${this.baseUrl}/ndvi/thumbnail/${landId}`;
+      return `${this.baseUrl}/api/v1/ndvi/thumbnail/${landId}`;
     } catch (error) {
       console.error('Get thumbnail error:', error);
       throw error;
@@ -334,11 +334,11 @@ export class RenderNDVIService {
 
   /**
    * Get global NDVI statistics
-   * GET /ndvi/stats/global
+   * GET /api/v1/ndvi/stats/global
    */
   async getGlobalStats(): Promise<GlobalStatsResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/stats/global`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/stats/global`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -358,11 +358,11 @@ export class RenderNDVIService {
 
   /**
    * Get queue status
-   * GET /ndvi/queue/status
+   * GET /api/v1/ndvi/queue/status
    */
   async getQueueStatus(): Promise<QueueStatusResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/queue/status`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/queue/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -382,11 +382,11 @@ export class RenderNDVIService {
 
   /**
    * Retry a failed NDVI request
-   * POST /ndvi/queue/retry/{request_id}
+   * POST /api/v1/ndvi/queue/retry/{request_id}
    */
   async retryRequest(requestId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/ndvi/queue/retry/${requestId}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/queue/retry/${requestId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

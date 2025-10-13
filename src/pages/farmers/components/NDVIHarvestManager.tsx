@@ -53,7 +53,8 @@ export const NDVIHarvestManager: React.FC = () => {
   const { data: apiStats } = useQuery({
     queryKey: ['ndvi-global-stats'],
     queryFn: () => renderNDVIService.getGlobalStats(),
-    enabled: !!currentTenant?.id
+    enabled: !!currentTenant?.id,
+    staleTime: 60000,
   });
 
   // Trigger NDVI harvest for selected lands via Render API
@@ -85,7 +86,7 @@ export const NDVIHarvestManager: React.FC = () => {
     queryKey: ['ndvi-requests', currentTenant?.id],
     queryFn: () => renderNDVIService.getRequests(currentTenant?.id),
     enabled: !!currentTenant?.id,
-    refetchInterval: 30000
+    staleTime: 60000,
   });
 
   // Get queue status from Render API (new structure)
@@ -93,7 +94,7 @@ export const NDVIHarvestManager: React.FC = () => {
     queryKey: ['ndvi-queue-status'],
     queryFn: () => renderNDVIService.getQueueStatus(),
     enabled: !!currentTenant?.id,
-    refetchInterval: 30000 // Auto-refresh every 30 seconds
+    staleTime: 30000,
   });
 
   const handleSelectAll = () => {
