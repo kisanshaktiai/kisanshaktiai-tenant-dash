@@ -124,26 +124,57 @@ class SoilAnalysisService {
 
   /**
    * Fetch and save soil data for a single land
-   * Note: Requires land to have coordinates (latitude/longitude)
+   * Extracts coordinates from boundary_polygon
    */
   async fetchAndSaveSoilData(landId: string, tenantId: string): Promise<any> {
     try {
-      // Get land details
+      // Get land details with centroid from boundary_polygon
       const { data: land, error: landError } = await supabase
-        .from('lands')
-        .select('id, farmer_id, area_acres')
-        .eq('id', landId)
-        .eq('tenant_id', tenantId)
+        .rpc('get_land_centroid', { land_id_param: landId })
         .single();
 
       if (landError || !land) {
-        throw new Error('Land not found');
+        throw new Error('Land not found or no boundary polygon available');
       }
 
-      // For now, we'll need to add coordinate support to the lands table
-      // This is a placeholder that will be replaced once coordinates are added
-      throw new Error('Coordinates not available. Please add latitude/longitude to lands table first.');
+      const { latitude, longitude, farmer_id, area_acres } = land;
 
+      // Call soil API to get analysis
+      const soilResponse = await fetch(`${this.baseUrl}/soil?lat=${latitude}&lon=${longitude}&include_classifications=true`);
+      
+      if (!soilResponse.ok) {
+        throw new Error('Failed to fetch soil data from API');
+      }
+
+      const soilData = await soilResponse.json();
+
+      // Save to database
+      const saveResponse = await fetch(`${this.baseUrl}/soil/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          land_id: landId,
+          farmer_id: farmer_id,
+          latitude: latitude,
+          longitude: longitude,
+          field_area_ha: area_acres * 0.404686, // Convert acres to hectares
+          ph_level: soilData.data.ph_level,
+          organic_carbon: soilData.data.organic_carbon,
+          clay_percent: soilData.data.clay_percent,
+          sand_percent: soilData.data.sand_percent,
+          silt_percent: soilData.data.silt_percent,
+          nitrogen_kg_per_ha: null,
+          phosphorus_kg_per_ha: null,
+          potassium_kg_per_ha: null,
+        })
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save soil data');
+      }
+
+      return await saveResponse.json();
     } catch (error) {
       console.error('Error fetching soil data:', error);
       throw error;
