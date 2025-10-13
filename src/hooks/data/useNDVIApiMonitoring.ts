@@ -11,14 +11,40 @@ export const useNDVIApiMonitoring = () => {
   const { data: healthData, isLoading: healthLoading } = useQuery({
     queryKey: ['ndvi-api-health'],
     queryFn: () => renderNDVIService.checkHealth(),
+    refetchInterval: 30000, // Refetch every 30 seconds
     retry: 3,
   });
 
-  // API stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['ndvi-api-stats'],
-    queryFn: () => renderNDVIService.getStats(),
+  // Global stats
+  const { data: globalStats, isLoading: statsLoading } = useQuery({
+    queryKey: ['ndvi-global-stats'],
+    queryFn: () => renderNDVIService.getGlobalStats(),
+    refetchInterval: 15000, // Refetch every 15 seconds
     retry: 2,
+  });
+
+  // Queue status
+  const { data: queueStatus, isLoading: queueLoading } = useQuery({
+    queryKey: ['ndvi-queue-status'],
+    queryFn: () => renderNDVIService.getQueueStatus(),
+    refetchInterval: 10000, // Refetch every 10 seconds
+    retry: 2,
+  });
+
+  // NDVI requests list
+  const { data: requests, isLoading: requestsLoading } = useQuery({
+    queryKey: ['ndvi-requests', currentTenant?.id],
+    queryFn: () => renderNDVIService.getRequests(currentTenant?.id),
+    enabled: !!currentTenant?.id,
+    refetchInterval: 15000,
+  });
+
+  // NDVI data summary
+  const { data: dataSummary, isLoading: dataSummaryLoading } = useQuery({
+    queryKey: ['ndvi-data-summary', currentTenant?.id],
+    queryFn: () => renderNDVIService.getNDVIData(currentTenant?.id),
+    enabled: !!currentTenant?.id,
+    refetchInterval: 30000,
   });
 
   // Create NDVI request
@@ -27,9 +53,11 @@ export const useNDVIApiMonitoring = () => {
     onSuccess: (data) => {
       toast({
         title: '✅ Request Created',
-        description: `Request ${data.request_id} created for ${data.land_count} lands`,
+        description: `Request ${data.request_id} created successfully`,
       });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-api-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-global-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
     },
     onError: (error: Error) => {
       toast({
@@ -40,20 +68,20 @@ export const useNDVIApiMonitoring = () => {
     },
   });
 
-  // Trigger jobs (API v3.6: only limit parameter)
-  const triggerJobs = useMutation({
-    mutationFn: (limit: number = 10) => 
-      renderNDVIService.triggerJobs(limit),
+  // Retry failed request
+  const retryRequest = useMutation({
+    mutationFn: (requestId: string) => renderNDVIService.retryRequest(requestId),
     onSuccess: (data) => {
       toast({
-        title: '✅ Worker Started',
-        description: `Processing ${data.limit} jobs. Status: ${data.status}`,
+        title: '✅ Request Retried',
+        description: data.message,
       });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-api-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Worker Failed',
+        title: 'Retry Failed',
         description: error.message,
         variant: 'destructive',
       });
@@ -63,12 +91,18 @@ export const useNDVIApiMonitoring = () => {
   return {
     healthData,
     healthLoading,
-    stats,
+    globalStats,
     statsLoading,
-    isHealthy: healthData?.status === 'running' || healthData?.status === 'healthy',
+    queueStatus,
+    queueLoading,
+    requests,
+    requestsLoading,
+    dataSummary,
+    dataSummaryLoading,
+    isHealthy: healthData?.status === 'running' || healthData?.status === 'healthy' || healthData?.status === 'ok',
     createRequest: createRequest.mutate,
     isCreatingRequest: createRequest.isPending,
-    triggerJobs: triggerJobs.mutate,
-    isTriggeringJobs: triggerJobs.isPending,
+    retryRequest: retryRequest.mutate,
+    isRetryingRequest: retryRequest.isPending,
   };
 };
