@@ -360,9 +360,12 @@ export class RenderNDVIService {
    * Get queue status
    * GET /api/v1/ndvi/requests/queue (Correct endpoint)
    */
-  async getQueueStatus(): Promise<QueueStatusResponse> {
+  async getQueueStatus(tenantId: string): Promise<QueueStatusResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/queue`, {
+      const params = new URLSearchParams();
+      params.append('tenant_id', tenantId);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/queue?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

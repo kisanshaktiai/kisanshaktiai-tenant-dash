@@ -25,8 +25,9 @@ export const useNDVIApiMonitoring = () => {
 
   // Queue status - manual refresh only
   const { data: queueStatus, isLoading: queueLoading, refetch: refetchQueue } = useQuery({
-    queryKey: ['ndvi-queue-status'],
-    queryFn: () => renderNDVIService.getQueueStatus(),
+    queryKey: ['ndvi-queue-status', currentTenant?.id],
+    queryFn: () => renderNDVIService.getQueueStatus(currentTenant?.id || ''),
+    enabled: !!currentTenant?.id,
     retry: 2,
     staleTime: 30000,
   });

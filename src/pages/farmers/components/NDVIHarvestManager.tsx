@@ -91,8 +91,8 @@ export const NDVIHarvestManager: React.FC = () => {
 
   // Get queue status from Render API (new structure)
   const { data: queueStatus } = useQuery({
-    queryKey: ['ndvi-queue-status'],
-    queryFn: () => renderNDVIService.getQueueStatus(),
+    queryKey: ['ndvi-queue-status', currentTenant?.id],
+    queryFn: () => renderNDVIService.getQueueStatus(currentTenant?.id || ''),
     enabled: !!currentTenant?.id,
     staleTime: 30000,
   });
