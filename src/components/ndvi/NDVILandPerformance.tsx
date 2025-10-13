@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNDVILandData } from '@/hooks/data/useNDVILandData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,8 +21,15 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export const NDVILandPerformance: React.FC = () => {
-  const { cachedData, isLoading } = useNDVILandData();
+interface NDVILandPerformanceProps {
+  landData?: any[];
+  isLoading?: boolean;
+}
+
+export const NDVILandPerformance: React.FC<NDVILandPerformanceProps> = ({ 
+  landData = [],
+  isLoading = false
+}) => {
 
   const getNDVIStatus = (value: number) => {
     if (value > 0.7) return { label: 'Excellent', color: 'bg-green-500', icon: <TrendingUp className="w-3 h-3" /> };
@@ -42,7 +48,7 @@ export const NDVILandPerformance: React.FC = () => {
     );
   }
 
-  if (!cachedData || cachedData.length === 0) {
+  if (!landData || landData.length === 0) {
     return (
       <Card className="p-12 text-center">
         <MapPin className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
@@ -54,19 +60,8 @@ export const NDVILandPerformance: React.FC = () => {
     );
   }
 
-  // Group by land and get latest data
-  const landPerformance = cachedData.reduce((acc: any[], item: any) => {
-    const existing = acc.find(l => l.land_id === item.land_id);
-    if (!existing || new Date(item.date) > new Date(existing.date)) {
-      const index = acc.findIndex(l => l.land_id === item.land_id);
-      if (index >= 0) {
-        acc[index] = item;
-      } else {
-        acc.push(item);
-      }
-    }
-    return acc;
-  }, []).sort((a, b) => b.ndvi_value - a.ndvi_value);
+  // Data is already sorted by performance
+  const landPerformance = landData;
 
   return (
     <div className="space-y-6">

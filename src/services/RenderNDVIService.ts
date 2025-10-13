@@ -334,11 +334,11 @@ export class RenderNDVIService {
 
   /**
    * Get global NDVI statistics
-   * GET /api/v1/ndvi/stats/global
+   * GET /api/v1/ndvi/requests/stats (Correct endpoint)
    */
   async getGlobalStats(): Promise<GlobalStatsResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/stats/global`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/stats`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -358,11 +358,11 @@ export class RenderNDVIService {
 
   /**
    * Get queue status
-   * GET /api/v1/ndvi/queue/status
+   * GET /api/v1/ndvi/requests/queue (Correct endpoint)
    */
   async getQueueStatus(): Promise<QueueStatusResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/queue/status`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/queue`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

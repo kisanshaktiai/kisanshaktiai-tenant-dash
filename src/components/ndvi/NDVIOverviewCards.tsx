@@ -17,13 +17,25 @@ interface NDVIOverviewCardsProps {
   globalStats: any;
   isLoading: boolean;
   isHealthy: boolean;
+  realtimeStats?: {
+    total_lands: number;
+    average_ndvi: number;
+    max_ndvi: number;
+    coverage_km2: number;
+  };
 }
 
 export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
   globalStats,
   isLoading,
-  isHealthy
+  isHealthy,
+  realtimeStats
 }) => {
+  // Use real-time stats when available, fallback to API stats
+  const avgNDVI = realtimeStats?.average_ndvi || globalStats?.average_ndvi;
+  const maxNDVI = realtimeStats?.max_ndvi || globalStats?.max_ndvi;
+  const totalLands = realtimeStats?.total_lands || globalStats?.total_lands;
+  const coverage = realtimeStats?.coverage_km2 || globalStats?.total_coverage_km2;
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -39,8 +51,8 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
   const stats = [
     {
       title: 'Average NDVI',
-      value: globalStats?.average_ndvi?.toFixed(3) || 'N/A',
-      change: '+12.5%',
+      value: avgNDVI ? avgNDVI.toFixed(3) : 'N/A',
+      change: avgNDVI && avgNDVI > 0.6 ? 'Excellent' : avgNDVI && avgNDVI > 0.4 ? 'Good' : 'Monitor',
       trend: 'up',
       icon: Leaf,
       color: 'from-green-500 to-emerald-600',
@@ -49,7 +61,7 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
     },
     {
       title: 'Peak Health',
-      value: globalStats?.max_ndvi?.toFixed(3) || 'N/A',
+      value: maxNDVI ? maxNDVI.toFixed(3) : 'N/A',
       change: 'Excellent',
       trend: 'up',
       icon: TrendingUp,
@@ -59,10 +71,10 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
     },
     {
       title: 'Coverage Area',
-      value: globalStats?.total_coverage_km2 
-        ? `${globalStats.total_coverage_km2.toFixed(2)} km²` 
+      value: coverage 
+        ? `${coverage.toFixed(2)} km²` 
         : 'N/A',
-      change: `${globalStats?.total_lands || 0} lands`,
+      change: `${totalLands || 0} lands`,
       trend: 'neutral',
       icon: MapPin,
       color: 'from-purple-500 to-pink-600',

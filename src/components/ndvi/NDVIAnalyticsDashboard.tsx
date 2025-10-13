@@ -27,16 +27,27 @@ import {
 
 interface NDVIAnalyticsDashboardProps {
   globalStats: any;
+  ndviData?: any[];
 }
 
-export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({ globalStats }) => {
-  // Sample data for visualizations (replace with real data from API)
-  const healthDistribution = [
-    { name: 'Excellent', value: 35, color: '#10b981' },
-    { name: 'Good', value: 45, color: '#84cc16' },
-    { name: 'Moderate', value: 15, color: '#eab308' },
-    { name: 'Poor', value: 5, color: '#f97316' }
-  ];
+export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({ 
+  globalStats,
+  ndviData 
+}) => {
+  // Calculate health distribution from real data
+  const healthDistribution = ndviData
+    ? [
+        { name: 'Excellent', value: ndviData.filter((d) => d.ndvi_value > 0.7).length, color: '#10b981' },
+        { name: 'Good', value: ndviData.filter((d) => d.ndvi_value > 0.5 && d.ndvi_value <= 0.7).length, color: '#84cc16' },
+        { name: 'Moderate', value: ndviData.filter((d) => d.ndvi_value > 0.3 && d.ndvi_value <= 0.5).length, color: '#eab308' },
+        { name: 'Poor', value: ndviData.filter((d) => d.ndvi_value <= 0.3).length, color: '#f97316' },
+      ]
+    : [
+        { name: 'Excellent', value: 35, color: '#10b981' },
+        { name: 'Good', value: 45, color: '#84cc16' },
+        { name: 'Moderate', value: 15, color: '#eab308' },
+        { name: 'Poor', value: 5, color: '#f97316' }
+      ];
 
   const trendData = [
     { month: 'Jan', ndvi: 0.45, evi: 0.42 },

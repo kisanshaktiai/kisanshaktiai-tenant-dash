@@ -14,6 +14,7 @@ import {
   Database
 } from 'lucide-react';
 import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
+import { useRealTimeNDVIData, useNDVIQueueStatus } from '@/hooks/data/useRealTimeNDVIData';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { NDVIOverviewCards } from '@/components/ndvi/NDVIOverviewCards';
@@ -33,10 +34,22 @@ export default function NDVIPage() {
     refetchStats,
   } = useNDVIApiMonitoring();
 
+  // Real-time data from Supabase
+  const {
+    ndviData,
+    landData,
+    stats: realtimeStats,
+    isLoading: realtimeLoading,
+    refetch: refetchRealtime,
+  } = useRealTimeNDVIData();
+
+  const { queueStatus } = useNDVIQueueStatus();
+
   // Manual refresh all data
   const handleRefreshAll = () => {
     refetchHealth();
     refetchStats();
+    refetchRealtime();
   };
 
   return (
@@ -108,12 +121,13 @@ export default function NDVIPage() {
           {/* Overview Cards */}
           <NDVIOverviewCards 
             globalStats={globalStats}
-            isLoading={statsLoading}
+            isLoading={statsLoading || realtimeLoading}
             isHealthy={isHealthy}
+            realtimeStats={realtimeStats}
           />
 
           {/* Insights Panel */}
-          <NDVIInsightsPanel globalStats={globalStats} />
+          <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
 
           {/* Main Analytics Tabs */}
           <Card className="border-muted/50 shadow-xl overflow-hidden">
@@ -153,11 +167,14 @@ export default function NDVIPage() {
 
               <div className="p-6">
                 <TabsContent value="analytics" className="mt-0 space-y-6">
-                  <NDVIAnalyticsDashboard globalStats={globalStats} />
+                  <NDVIAnalyticsDashboard 
+                    globalStats={realtimeStats || globalStats}
+                    ndviData={ndviData}
+                  />
                 </TabsContent>
 
                 <TabsContent value="performance" className="mt-0 space-y-6">
-                  <NDVILandPerformance />
+                  <NDVILandPerformance landData={landData} isLoading={realtimeLoading} />
                 </TabsContent>
 
                 <TabsContent value="trends" className="mt-0 space-y-6">
