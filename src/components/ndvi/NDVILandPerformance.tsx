@@ -112,11 +112,11 @@ export const NDVILandPerformance: React.FC<NDVILandPerformanceProps> = ({
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-muted-foreground" />
-                      {land.lands?.name || 'Unknown'}
+                      {land.lands?.land_name || 'Unknown'}
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {land.lands?.farmers?.full_name || 'N/A'}
+                    {land.lands?.farmers?.user_profile?.full_name || 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export const NDVILandPerformance: React.FC<NDVILandPerformanceProps> = ({
               <Star className="w-5 h-5 text-green-500" />
               <h4 className="font-semibold">Top Performer</h4>
             </div>
-            <p className="text-2xl font-bold">{landPerformance[0]?.lands?.name || 'N/A'}</p>
+            <p className="text-2xl font-bold">{landPerformance[0]?.lands?.land_name || 'N/A'}</p>
             <p className="text-sm text-muted-foreground">
               NDVI: {landPerformance[0]?.ndvi_value.toFixed(3) || 'N/A'}
             </p>

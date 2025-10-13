@@ -52,11 +52,14 @@ export interface RealTimeNDVIData {
   updated_at?: string;
   lands: {
     id: string;
-    name: string;
+    land_name: string;
     farmer_id: string;
     farmers: {
       id: string;
-      full_name: string;
+      user_profile: {
+        id: string;
+        full_name: string;
+      } | null;
     } | null;
   } | null;
 }
@@ -90,9 +93,15 @@ export const useRealTimeNDVIData = () => {
           *,
           lands!inner(
             id,
-            name,
+            land_name,
             farmer_id,
-            farmers(id, full_name)
+            farmers!inner(
+              id,
+              user_profile!inner(
+                id,
+                full_name
+              )
+            )
           )
         `)
         .eq('tenant_id', currentTenant.id)
