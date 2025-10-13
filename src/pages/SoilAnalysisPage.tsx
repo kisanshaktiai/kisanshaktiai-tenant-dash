@@ -49,7 +49,7 @@ export default function SoilAnalysisPage() {
       if (!acc[farmerId] && land.farmer) {
         acc[farmerId] = {
           id: land.farmer.id,
-          full_name: land.farmer.user_profile?.full_name || 'Unknown Farmer',
+          full_name: land.farmer.farmer_name || 'Unknown Farmer',
           mobile_number: land.farmer.mobile_number,
           lands: [],
         };
