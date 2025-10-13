@@ -84,7 +84,7 @@ export function useSoilAnalysis() {
     // API health
     healthStatus,
     isCheckingHealth,
-    isApiConnected: healthStatus?.status === 'connected' || healthStatus?.status === 'online' || healthStatus?.status === 'healthy',
+    isApiConnected: healthStatus?.status === 'ok' || healthStatus?.status === 'connected' || healthStatus?.status === 'online' || healthStatus?.status === 'healthy',
 
     // Lands data
     landsWithSoil,
