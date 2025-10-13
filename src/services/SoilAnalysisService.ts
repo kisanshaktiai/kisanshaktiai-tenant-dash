@@ -124,27 +124,26 @@ class SoilAnalysisService {
 
   /**
    * Fetch and save soil data for a single land
-   * API expects: POST /soil/save?tenant_id=<UUID> with body {"land_ids": ["id1"]}
+   * Note: Requires land to have coordinates (latitude/longitude)
    */
   async fetchAndSaveSoilData(landId: string, tenantId: string): Promise<any> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/soil/save?tenant_id=${tenantId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ land_ids: [landId] }),
-        }
-      );
+      // Get land details
+      const { data: land, error: landError } = await supabase
+        .from('lands')
+        .select('id, farmer_id, area_acres')
+        .eq('id', landId)
+        .eq('tenant_id', tenantId)
+        .single();
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to fetch soil data: ${response.status}`);
+      if (landError || !land) {
+        throw new Error('Land not found');
       }
 
-      return await response.json();
+      // For now, we'll need to add coordinate support to the lands table
+      // This is a placeholder that will be replaced once coordinates are added
+      throw new Error('Coordinates not available. Please add latitude/longitude to lands table first.');
+
     } catch (error) {
       console.error('Error fetching soil data:', error);
       throw error;
@@ -153,27 +152,24 @@ class SoilAnalysisService {
 
   /**
    * Batch fetch and save soil data for multiple lands
-   * API expects: POST /soil/save?tenant_id=<UUID> with body {"land_ids": ["id1", "id2", ...]}
    */
   async batchFetchAndSaveSoilData(landIds: string[], tenantId: string): Promise<any> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/soil/save?tenant_id=${tenantId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ land_ids: landIds }),
-        }
+      const results = await Promise.allSettled(
+        landIds.map(landId => this.fetchAndSaveSoilData(landId, tenantId))
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to batch fetch soil data: ${response.status}`);
-      }
+      const summary = {
+        total: landIds.length,
+        saved: results.filter(r => r.status === 'fulfilled').length,
+        failed: results.filter(r => r.status === 'rejected').length,
+        skipped: 0,
+        errors: results
+          .filter(r => r.status === 'rejected')
+          .map((r: any) => r.reason?.message || 'Unknown error'),
+      };
 
-      return await response.json();
+      return { summary };
     } catch (error) {
       console.error('Error batch fetching soil data:', error);
       throw error;
