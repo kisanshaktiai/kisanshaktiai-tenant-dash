@@ -58,32 +58,9 @@ export const RenderServiceStatus: React.FC = () => {
     }
   };
 
+  // Note: The new API auto-processes requests, no manual trigger needed
   const triggerProcessingJobs = async () => {
-    if (!currentTenant?.id) {
-      toast.error('No tenant selected');
-      return;
-    }
-
-    setIsTriggeringJobs(true);
-    try {
-      const response = await renderNDVIService.triggerJobs(jobLimit);
-
-      setLastJobStatus(response.status);
-      
-      toast.success(
-        `Worker started successfully`,
-        {
-          description: `Processing ${response.limit} jobs. Status: ${response.status}`
-        }
-      );
-    } catch (error: any) {
-      toast.error('Failed to trigger jobs', {
-        description: error.message || 'Unknown error occurred'
-      });
-      console.error('Job trigger error:', error);
-    } finally {
-      setIsTriggeringJobs(false);
-    }
+    toast.info('Processing is automatic in the new API. Create requests via POST /ndvi/requests and they will be auto-processed.');
   };
 
   const getStatusBadge = () => {
@@ -219,24 +196,13 @@ export const RenderServiceStatus: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            onClick={triggerProcessingJobs}
-            disabled={!isHealthy || isTriggeringJobs}
-            className="w-full"
-            size="lg"
-          >
-            {isTriggeringJobs ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Triggering Jobs...
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Trigger Jobs (Limit: {jobLimit})
-              </>
-            )}
-          </Button>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Automatic Processing</AlertTitle>
+            <AlertDescription>
+              The new API automatically processes NDVI requests. Create requests via the NDVI page and they will be queued and processed automatically.
+            </AlertDescription>
+          </Alert>
 
           {lastJobStatus && (
             <Alert className="border-success">
@@ -275,7 +241,10 @@ export const RenderServiceStatus: React.FC = () => {
             <div className="w-32 text-muted-foreground">Endpoints:</div>
             <div className="space-y-1">
               <div>• GET /health - Health check</div>
-              <div>• POST /run - Trigger processing jobs</div>
+              <div>• POST /ndvi/requests - Create NDVI request</div>
+              <div>• GET /ndvi/requests - List all requests</div>
+              <div>• GET /ndvi/data - Get NDVI data</div>
+              <div>• GET /ndvi/stats/global - Global stats</div>
             </div>
           </div>
         </CardContent>

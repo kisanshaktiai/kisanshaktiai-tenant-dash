@@ -51,8 +51,8 @@ export const NDVIHarvestManager: React.FC = () => {
 
   // Get Render API statistics
   const { data: apiStats } = useQuery({
-    queryKey: ['ndvi-api-stats'],
-    queryFn: () => renderNDVIService.getStats(),
+    queryKey: ['ndvi-global-stats'],
+    queryFn: () => renderNDVIService.getGlobalStats(),
     enabled: !!currentTenant?.id
   });
 
@@ -80,32 +80,18 @@ export const NDVIHarvestManager: React.FC = () => {
     }
   });
 
-  // Trigger Render API worker to process queue
-  const processorMutation = useMutation({
-    mutationFn: async () => {
-      return renderNDVIService.triggerJobs(10);
-    },
-    onSuccess: (data) => {
-      toast.success(`Processing ${data.limit} queued jobs on Render API`);
-      queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
-      
-      // Refetch data after processing delay
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
-      }, 15000);
-    },
-    onError: (error: any) => {
-      toast.error(`Failed to trigger worker: ${error.message}`);
-    }
+  // Get all NDVI requests (replaces old queue status)
+  const { data: ndviRequests } = useQuery({
+    queryKey: ['ndvi-requests', currentTenant?.id],
+    queryFn: () => renderNDVIService.getRequests(currentTenant?.id),
+    enabled: !!currentTenant?.id,
+    refetchInterval: 30000
   });
 
-  // Get queue status from Render API
+  // Get queue status from Render API (new structure)
   const { data: queueStatus } = useQuery({
-    queryKey: ['ndvi-queue-status', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) return null;
-      return renderNDVIService.getQueueStatus(currentTenant.id);
-    },
+    queryKey: ['ndvi-queue-status'],
+    queryFn: () => renderNDVIService.getQueueStatus(),
     enabled: !!currentTenant?.id,
     refetchInterval: 30000 // Auto-refresh every 30 seconds
   });
@@ -124,10 +110,10 @@ export const NDVIHarvestManager: React.FC = () => {
   };
 
   React.useEffect(() => {
-    if (queueStatus && queueStatus.requests.filter(r => r.status === 'processing').length === 0) {
+    if (ndviRequests && ndviRequests.requests.filter(r => r.status === 'processing').length === 0) {
       setIsProcessing(false);
     }
-  }, [queueStatus]);
+  }, [ndviRequests]);
 
   return (
     <Card>
@@ -158,17 +144,17 @@ export const NDVIHarvestManager: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Processing Status */}
-        {queueStatus && queueStatus.requests.filter(r => r.status === 'processing').length > 0 && (
+        {ndviRequests && ndviRequests.requests.filter(r => r.status === 'processing').length > 0 && (
           <div className="p-4 border rounded-lg space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Processing on Render API</span>
               <Loader2 className="h-4 w-4 animate-spin" />
             </div>
             <div className="flex gap-4 text-xs text-muted-foreground">
-              <span>Total: {queueStatus.count}</span>
-              <span>Processing: {queueStatus.requests.filter(r => r.status === 'processing').length}</span>
-              <span>Completed: {queueStatus.requests.filter(r => r.status === 'completed').length}</span>
-              <span className="text-destructive">Failed: {queueStatus.requests.filter(r => r.status === 'failed').length}</span>
+              <span>Total: {ndviRequests.total}</span>
+              <span>Processing: {ndviRequests.requests.filter(r => r.status === 'processing').length}</span>
+              <span>Completed: {ndviRequests.requests.filter(r => r.status === 'completed').length}</span>
+              <span className="text-destructive">Failed: {ndviRequests.requests.filter(r => r.status === 'failed').length}</span>
             </div>
           </div>
         )}
@@ -249,54 +235,60 @@ export const NDVIHarvestManager: React.FC = () => {
             )}
           </Button>
           
-          <Button
-            onClick={() => processorMutation.mutate()}
-            disabled={processorMutation.isPending || !queueStatus || queueStatus.count === 0}
-            variant="outline"
-            size="sm"
-          >
-            {processorMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Process Queue ({queueStatus?.requests.filter(r => r.status === 'queued').length || 0})
-              </>
-            )}
-          </Button>
+          <div className="text-xs text-muted-foreground">
+            Processing is automatic. Requests are queued and processed by the API.
+          </div>
         </div>
 
         {/* Queue Status from Render API */}
-        {queueStatus && queueStatus.count > 0 && (
+        {ndviRequests && ndviRequests.total > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Render API Queue Status</h4>
+            <h4 className="text-sm font-medium">Render API Request Status</h4>
             <div className="grid grid-cols-4 gap-2 text-xs">
               <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded">
                 <div className="text-blue-600 dark:text-blue-400 font-semibold">
-                  {queueStatus.requests.filter(q => q.status === 'queued').length}
+                  {ndviRequests.requests.filter(q => q.status === 'queued').length}
                 </div>
                 <div className="text-muted-foreground">Queued</div>
               </div>
               <div className="bg-yellow-50 dark:bg-yellow-950 p-2 rounded">
                 <div className="text-yellow-600 dark:text-yellow-400 font-semibold">
-                  {queueStatus.requests.filter(q => q.status === 'processing').length}
+                  {ndviRequests.requests.filter(q => q.status === 'processing').length}
                 </div>
                 <div className="text-muted-foreground">Processing</div>
               </div>
               <div className="bg-green-50 dark:bg-green-950 p-2 rounded">
                 <div className="text-green-600 dark:text-green-400 font-semibold">
-                  {queueStatus.requests.filter(q => q.status === 'completed').length}
+                  {ndviRequests.requests.filter(q => q.status === 'completed').length}
                 </div>
                 <div className="text-muted-foreground">Completed</div>
               </div>
               <div className="bg-red-50 dark:bg-red-950 p-2 rounded">
                 <div className="text-red-600 dark:text-red-400 font-semibold">
-                  {queueStatus.requests.filter(q => q.status === 'failed').length}
+                  {ndviRequests.requests.filter(q => q.status === 'failed').length}
                 </div>
                 <div className="text-muted-foreground">Failed</div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Queue Metrics */}
+        {queueStatus && (
+          <div className="p-4 border rounded-lg space-y-2">
+            <h4 className="text-sm font-medium">Queue Metrics</h4>
+            <div className="grid grid-cols-3 gap-4 text-xs">
+              <div>
+                <div className="text-muted-foreground">Queue Length</div>
+                <div className="font-semibold">{queueStatus.queue_length}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Processing</div>
+                <div className="font-semibold">{queueStatus.processing_count}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Est. Wait</div>
+                <div className="font-semibold">{queueStatus.estimated_wait_time_minutes}m</div>
               </div>
             </div>
           </div>
@@ -304,8 +296,8 @@ export const NDVIHarvestManager: React.FC = () => {
 
         {/* Info */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>• NDVI requests are queued via Render API (https://ndvi-land-api.onrender.com)</p>
-          <p>• Click "Process Queue" to trigger the worker and fetch satellite data</p>
+          <p>• NDVI requests are created via Render API (https://ndvi-land-api.onrender.com)</p>
+          <p>• Requests are automatically queued and processed by the API</p>
           <p>• Data includes NDVI values with statistics for vegetation health</p>
         </div>
       </CardContent>
