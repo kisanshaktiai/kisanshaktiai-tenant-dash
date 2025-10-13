@@ -124,57 +124,24 @@ class SoilAnalysisService {
 
   /**
    * Fetch and save soil data for a single land
-   * Extracts coordinates from boundary_polygon
+   * Uses boundary_polygon_old from the API
    */
   async fetchAndSaveSoilData(landId: string, tenantId: string): Promise<any> {
     try {
-      // Get land details with centroid from boundary_polygon
-      const { data: land, error: landError } = await supabase
-        .rpc('get_land_centroid', { land_id_param: landId })
-        .single();
-
-      if (landError || !land) {
-        throw new Error('Land not found or no boundary polygon available');
-      }
-
-      const { latitude, longitude, farmer_id, area_acres } = land;
-
-      // Call soil API to get analysis
-      const soilResponse = await fetch(`${this.baseUrl}/soil?lat=${latitude}&lon=${longitude}&include_classifications=true`);
-      
-      if (!soilResponse.ok) {
-        throw new Error('Failed to fetch soil data from API');
-      }
-
-      const soilData = await soilResponse.json();
-
-      // Save to database
-      const saveResponse = await fetch(`${this.baseUrl}/soil/save`, {
+      const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${tenantId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenant_id: tenantId,
-          land_id: landId,
-          farmer_id: farmer_id,
-          latitude: latitude,
-          longitude: longitude,
-          field_area_ha: area_acres * 0.404686, // Convert acres to hectares
-          ph_level: soilData.data.ph_level,
-          organic_carbon: soilData.data.organic_carbon,
-          clay_percent: soilData.data.clay_percent,
-          sand_percent: soilData.data.sand_percent,
-          silt_percent: soilData.data.silt_percent,
-          nitrogen_kg_per_ha: null,
-          phosphorus_kg_per_ha: null,
-          potassium_kg_per_ha: null,
+          land_ids: [landId]
         })
       });
 
-      if (!saveResponse.ok) {
-        throw new Error('Failed to save soil data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch and save soil data');
       }
 
-      return await saveResponse.json();
+      return await response.json();
     } catch (error) {
       console.error('Error fetching soil data:', error);
       throw error;
@@ -186,21 +153,20 @@ class SoilAnalysisService {
    */
   async batchFetchAndSaveSoilData(landIds: string[], tenantId: string): Promise<any> {
     try {
-      const results = await Promise.allSettled(
-        landIds.map(landId => this.fetchAndSaveSoilData(landId, tenantId))
-      );
+      const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${tenantId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          land_ids: landIds
+        })
+      });
 
-      const summary = {
-        total: landIds.length,
-        saved: results.filter(r => r.status === 'fulfilled').length,
-        failed: results.filter(r => r.status === 'rejected').length,
-        skipped: 0,
-        errors: results
-          .filter(r => r.status === 'rejected')
-          .map((r: any) => r.reason?.message || 'Unknown error'),
-      };
+      if (!response.ok) {
+        throw new Error('Failed to batch fetch soil data');
+      }
 
-      return { summary };
+      return await response.json();
     } catch (error) {
       console.error('Error batch fetching soil data:', error);
       throw error;

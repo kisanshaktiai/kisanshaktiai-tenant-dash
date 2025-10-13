@@ -10,9 +10,10 @@ import { useSoilAnalysis } from '@/hooks/data/useSoilAnalysis';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { SoilOverviewTable } from '@/components/soil/SoilOverviewTable';
 import { SoilDetailDrawer } from '@/components/soil/SoilDetailDrawer';
-import { SoilAnalyticsDashboard } from '@/components/soil/SoilAnalyticsDashboard';
+import { EnhancedSoilAnalytics } from '@/components/soil/EnhancedSoilAnalytics';
+import { SoilDistributionInsights } from '@/components/soil/SoilDistributionInsights';
 import { LandWithSoil } from '@/services/SoilAnalysisService';
-import { Leaf, RefreshCw, AlertCircle, Activity, BarChart3, Table2, Loader2, Users, MapPin } from 'lucide-react';
+import { Leaf, RefreshCw, AlertCircle, Activity, BarChart3, Table2, Loader2, Users, MapPin, TrendingUp, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SoilAnalysisPage() {
@@ -247,15 +248,19 @@ export default function SoilAnalysisPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+      <Tabs defaultValue="analytics" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+          <TabsTrigger value="analytics" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="insights" className="gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Market Insights
+          </TabsTrigger>
           <TabsTrigger value="overview" className="gap-2">
             <Table2 className="h-4 w-4" />
-            Land Overview
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
+            Land Data
           </TabsTrigger>
         </TabsList>
 
@@ -317,7 +322,45 @@ export default function SoilAnalysisPage() {
               </CardContent>
             </Card>
           ) : (
-            <SoilAnalyticsDashboard lands={landsWithSoil} />
+            <EnhancedSoilAnalytics lands={landsWithSoil} />
+          )}
+        </TabsContent>
+
+        {/* Market Insights Tab */}
+        <TabsContent value="insights">
+          {!landsWithSoil || landsWithSoil.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center space-y-4">
+                  <div className="flex justify-center">
+                    <div className="rounded-full bg-muted p-4">
+                      <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-medium">No Market Insights Available</p>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Add soil data to see product distribution recommendations and market opportunities.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Product Distribution Strategy
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  AI-powered recommendations for fertilizer distribution based on regional soil health analysis
+                </p>
+              </CardHeader>
+              <CardContent>
+                <SoilDistributionInsights lands={landsWithSoil} />
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>
