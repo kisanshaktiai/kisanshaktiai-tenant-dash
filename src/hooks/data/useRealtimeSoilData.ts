@@ -7,6 +7,7 @@ export interface SoilHealthData {
   id: string;
   land_id: string;
   tenant_id: string;
+  farmer_id: string;
   test_date: string;
   ph_level: number | null;
   organic_carbon: number | null;
@@ -34,8 +35,8 @@ export interface LandWithSoilHealth {
   soil_health: SoilHealthData[];
   farmer?: {
     id: string;
-    full_name: string;
-    phone: string | null;
+    farmer_name: string;
+    mobile_number: string | null;
   };
 }
 
@@ -62,10 +63,11 @@ export const useRealtimeSoilData = () => {
           village,
           taluka,
           district,
-          soil_health!inner (
+          soil_health (
             id,
             land_id,
             tenant_id,
+            farmer_id,
             test_date,
             ph_level,
             organic_carbon,
@@ -81,8 +83,8 @@ export const useRealtimeSoilData = () => {
           ),
           farmer:farmers!inner (
             id,
-            full_name,
-            phone
+            farmer_name,
+            mobile_number
           )
         `)
         .eq('tenant_id', currentTenant.id)

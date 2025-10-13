@@ -9,8 +9,8 @@ import { format } from "date-fns";
 interface FarmerLandsDetailProps {
   farmer: {
     id: string;
-    full_name: string;
-    phone: string | null;
+    farmer_name: string;
+    mobile_number: string | null;
     lands: LandWithSoilHealth[];
   };
   onBack: () => void;
@@ -28,7 +28,7 @@ export function FarmerLandsDetail({ farmer, onBack }: FarmerLandsDetailProps) {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <CardTitle className="text-xl">{farmer.full_name}'s Lands</CardTitle>
+                <CardTitle className="text-xl">{farmer.farmer_name}'s Lands</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
                   {farmer.lands.length} lands • {farmer.lands.reduce((sum, l) => sum + l.area_acres, 0).toFixed(1)} acres total
                 </p>
