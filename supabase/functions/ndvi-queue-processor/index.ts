@@ -66,93 +66,44 @@ serve(async (req) => {
 
           console.log(`🔄 Processing queue item ${item.id} for ${item.land_ids?.length} lands`);
 
-          // Trigger the Python worker to process this specific queue item
-          // The worker should fetch this item from the queue, process NDVI, 
-          // and insert into ndvi_data and ndvi_micro_tiles
-          const workerResponse = await fetch(`${RENDER_WORKER_URL}/api/v1/ndvi/process-queue`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              queue_id: item.id,
-              tenant_id: item.tenant_id,
-              land_ids: item.land_ids,
-              tile_id: item.tile_id,
-            }),
-          });
+          // ARCHITECTURE CHANGE: Instead of calling Python API endpoint (which doesn't exist),
+          // we rely on the Render cron job to pick up items with status='processing'
+          // This edge function just orchestrates the status changes
+          
+          console.log(`✅ Queue item ${item.id} marked for processing by worker cron job`);
+          
+          // The Python worker cron job will:
+          // 1. Fetch items with status='processing'
+          // 2. Download NDVI data from B2
+          // 3. Process and insert into ndvi_data, ndvi_micro_tiles
+          // 4. Update status to 'completed'
+          
+          // For now, we just mark it as processing and let cron handle it
+          // Worker will pick it up within next cron cycle (every minute)
 
-          if (!workerResponse.ok) {
-            const errorText = await workerResponse.text();
-            throw new Error(`Worker failed (${workerResponse.status}): ${errorText}`);
-          }
-
-          const workerData = await workerResponse.json();
-          console.log(`✅ Worker response for ${item.id}:`, workerData);
-
-          // Check if worker actually processed the data
-          if (workerData.status !== 'success') {
-            throw new Error(`Worker processing failed: ${workerData.error || 'Unknown error'}`);
-          }
-
-          // Verify data was inserted by checking ndvi_data table
-          const { data: ndviData, error: checkError } = await supabase
-            .from('ndvi_data')
-            .select('id')
-            .in('land_id', item.land_ids)
-            .limit(1);
-
-          if (checkError) {
-            console.warn(`⚠️ Could not verify NDVI data insertion:`, checkError);
-          } else if (!ndviData || ndviData.length === 0) {
-            console.warn(`⚠️ No NDVI data found after processing`);
-          } else {
-            console.log(`✅ Verified NDVI data inserted for queue item ${item.id}`);
-          }
-
-          // Update lands to mark as tested
-          if (item.land_ids && item.land_ids.length > 0) {
-            await supabase
-              .from('lands')
-              .update({
-                ndvi_tested: true,
-                last_processed_at: new Date().toISOString(),
-              })
-              .in('id', item.land_ids);
-          }
-
-          // Mark as completed
+          // Note: Status is now 'processing' - cron job will complete it
+          // We return success immediately to prevent retry loops
           const duration = Date.now() - startTime;
-          await supabase
-            .from('ndvi_request_queue')
-            .update({
-              status: 'completed',
-              completed_at: new Date().toISOString(),
-              processed_count: workerData.processed_count || item.land_ids?.length || 0,
-              processing_duration_ms: duration,
-            })
-            .eq('id', item.id);
-
+          
           results.push({
             id: item.id,
             success: true,
-            processed: workerData.processed_count || item.land_ids?.length || 0,
+            processed: item.land_ids?.length || 0,
             duration_ms: duration,
+            message: 'Queued for worker processing',
           });
 
         } catch (error) {
-          console.error(`❌ Failed to process ${item.id}:`, error);
+          console.error(`❌ Failed to update ${item.id}:`, error);
 
           const duration = Date.now() - startTime;
-          const retryCount = (item.retry_count || 0) + 1;
-          const maxRetries = 3;
 
-          // Update with error
+          // Don't increase retry count for status update failures
+          // Just keep as queued so cron can pick it up
           await supabase
             .from('ndvi_request_queue')
             .update({
-              status: retryCount >= maxRetries ? 'failed' : 'queued',
-              retry_count: retryCount,
+              status: 'queued',
               last_error: error.message,
               processing_duration_ms: duration,
             })
@@ -162,7 +113,7 @@ serve(async (req) => {
             id: item.id,
             success: false,
             error: error.message,
-            retry_count: retryCount,
+            retry_count: item.retry_count || 0,
           });
         }
       }

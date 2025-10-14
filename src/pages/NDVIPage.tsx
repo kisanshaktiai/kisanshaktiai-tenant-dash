@@ -24,6 +24,7 @@ import { NDVIAnalyticsDashboard } from '@/components/ndvi/NDVIAnalyticsDashboard
 import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
 import { NDVIProcessingStatus } from '@/components/ndvi/NDVIProcessingStatus';
+import { NDVIDiagnosticsPanel } from '@/components/ndvi/NDVIDiagnosticsPanel';
 import { ndviLandService } from '@/services/NDVILandService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
@@ -105,7 +106,13 @@ export default function NDVIPage() {
         toast.warning(processResult.message || 'Some items failed to process');
       }
       
-      // Step 3: Verify data insertion
+      // Step 3: Verify data insertion (wait a bit for worker to process)
+      console.log('🔍 [STEP 3] Waiting for worker to process data...');
+      toast.info('Worker processing... (this may take 1-2 minutes)');
+      
+      // Give the Render cron job time to pick up and process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       console.log('🔍 [STEP 3] Verifying NDVI data insertion...');
       const { supabase } = await import('@/integrations/supabase/client');
       
@@ -121,6 +128,12 @@ export default function NDVIPage() {
       } else {
         console.log('📊 [STEP 3] Recent NDVI data:', ndviDataCheck);
         console.log(`✅ [STEP 3] Found ${ndviDataCheck?.length || 0} recent NDVI records`);
+        
+        if ((ndviDataCheck?.length || 0) > 0) {
+          toast.success(`✅ ${ndviDataCheck?.length} NDVI records found!`);
+        } else {
+          toast.warning('⚠️ No data yet - worker may still be processing. Check diagnostics panel.');
+        }
       }
       
       const { data: microTilesCheck, error: tilesError } = await supabase
@@ -257,6 +270,9 @@ export default function NDVIPage() {
 
           {/* Insights Panel */}
           <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
+
+          {/* Diagnostics Panel - Shows data verification */}
+          <NDVIDiagnosticsPanel />
 
           {/* Processing Status */}
           <NDVIProcessingStatus />
