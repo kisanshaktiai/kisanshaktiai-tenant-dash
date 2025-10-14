@@ -50,7 +50,7 @@ serve(async (req) => {
 
       const results = [];
 
-      // Step 2: Process each queue item
+      // Step 2: Process each queue item - trigger external Python worker
       for (const item of queuedItems) {
         const startTime = Date.now();
         
@@ -64,24 +64,51 @@ serve(async (req) => {
             })
             .eq('id', item.id);
 
-          // Trigger Render worker via API
-          const workerResponse = await fetch(`${RENDER_WORKER_URL}/api/v1/ndvi/lands/analyze?tenant_id=${item.tenant_id}`, {
+          console.log(`🔄 Processing queue item ${item.id} for ${item.land_ids?.length} lands`);
+
+          // Trigger the Python worker to process this specific queue item
+          // The worker should fetch this item from the queue, process NDVI, 
+          // and insert into ndvi_data and ndvi_micro_tiles
+          const workerResponse = await fetch(`${RENDER_WORKER_URL}/api/v1/ndvi/process-queue`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
+              queue_id: item.id,
+              tenant_id: item.tenant_id,
               land_ids: item.land_ids,
               tile_id: item.tile_id,
             }),
           });
 
           if (!workerResponse.ok) {
-            throw new Error(`Render worker failed: ${workerResponse.statusText}`);
+            const errorText = await workerResponse.text();
+            throw new Error(`Worker failed (${workerResponse.status}): ${errorText}`);
           }
 
           const workerData = await workerResponse.json();
-          console.log(`✅ Worker processed request ${item.id}:`, workerData);
+          console.log(`✅ Worker response for ${item.id}:`, workerData);
+
+          // Check if worker actually processed the data
+          if (workerData.status !== 'success') {
+            throw new Error(`Worker processing failed: ${workerData.error || 'Unknown error'}`);
+          }
+
+          // Verify data was inserted by checking ndvi_data table
+          const { data: ndviData, error: checkError } = await supabase
+            .from('ndvi_data')
+            .select('id')
+            .in('land_id', item.land_ids)
+            .limit(1);
+
+          if (checkError) {
+            console.warn(`⚠️ Could not verify NDVI data insertion:`, checkError);
+          } else if (!ndviData || ndviData.length === 0) {
+            console.warn(`⚠️ No NDVI data found after processing`);
+          } else {
+            console.log(`✅ Verified NDVI data inserted for queue item ${item.id}`);
+          }
 
           // Update lands to mark as tested
           if (item.land_ids && item.land_ids.length > 0) {
@@ -101,7 +128,7 @@ serve(async (req) => {
             .update({
               status: 'completed',
               completed_at: new Date().toISOString(),
-              processed_count: item.land_ids?.length || 0,
+              processed_count: workerData.processed_count || item.land_ids?.length || 0,
               processing_duration_ms: duration,
             })
             .eq('id', item.id);
@@ -109,7 +136,7 @@ serve(async (req) => {
           results.push({
             id: item.id,
             success: true,
-            processed: item.land_ids?.length || 0,
+            processed: workerData.processed_count || item.land_ids?.length || 0,
             duration_ms: duration,
           });
 
