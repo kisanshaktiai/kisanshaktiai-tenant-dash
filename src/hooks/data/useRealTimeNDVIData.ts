@@ -97,7 +97,7 @@ export const useRealTimeNDVIData = () => {
             farmer_id,
             farmers!inner(
               id,
-              user_profile!inner(
+              user_profile:user_profiles!inner(
                 id,
                 full_name
               )
