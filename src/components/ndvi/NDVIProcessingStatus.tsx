@@ -37,22 +37,22 @@ export const NDVIProcessingStatus: React.FC = () => {
 
     try {
       const data = await NDVIQueueProcessorService.getQueueStatus(currentTenant.id);
-      // Map the data to match QueueItem interface
+      // Map the data to match QueueItem interface with robust null handling
       const mappedData: QueueItem[] = (data || []).map((item: any) => ({
-        id: item.id,
-        tenant_id: item.tenant_id || currentTenant.id,
-        land_ids: item.land_ids || [],
-        tile_id: item.tile_id || '',
-        status: item.status || 'queued',
-        batch_size: item.batch_size || item.land_ids?.length || 0,
-        processed_count: item.processed_count || 0,
-        created_at: item.created_at,
-        started_at: item.started_at,
-        completed_at: item.completed_at,
-        retry_count: item.retry_count || 0,
-        last_error: item.last_error,
-        processing_duration_ms: item.processing_duration_ms,
-        metadata: item.metadata,
+        id: item.id ?? '',
+        tenant_id: item.tenant_id ?? currentTenant?.id ?? '',
+        land_ids: Array.isArray(item.land_ids) ? item.land_ids : [],
+        tile_id: item.tile_id ?? 'unknown',
+        status: item.status ?? 'queued',
+        batch_size: item.batch_size ?? item.land_ids?.length ?? 0,
+        processed_count: item.processed_count ?? 0,
+        created_at: item.created_at ?? item.requested_at ?? new Date().toISOString(),
+        started_at: item.started_at ?? undefined,
+        completed_at: item.completed_at ?? undefined,
+        retry_count: item.retry_count ?? 0,
+        last_error: item.last_error ?? undefined,
+        processing_duration_ms: item.processing_duration_ms ?? undefined,
+        metadata: item.metadata ?? {},
       }));
       setQueueItems(mappedData);
     } catch (error) {
