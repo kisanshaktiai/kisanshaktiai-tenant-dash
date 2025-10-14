@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
 import { useRealTimeNDVIData, useNDVIQueueStatus } from '@/hooks/data/useRealTimeNDVIData';
+import { useNDVIQueueAutoProcessor } from '@/hooks/data/useNDVIQueueAutoProcessor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { NDVIOverviewCards } from '@/components/ndvi/NDVIOverviewCards';
@@ -22,6 +23,7 @@ import { NDVIInsightsPanel } from '@/components/ndvi/NDVIInsightsPanel';
 import { NDVIAnalyticsDashboard } from '@/components/ndvi/NDVIAnalyticsDashboard';
 import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
+import { NDVIProcessingStatus } from '@/components/ndvi/NDVIProcessingStatus';
 import { ndviLandService } from '@/services/NDVILandService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
@@ -51,6 +53,9 @@ export default function NDVIPage() {
 
   const { queueStatus } = useNDVIQueueStatus();
 
+  // Auto-process queue when new items are added
+  useNDVIQueueAutoProcessor();
+
   // Create NDVI requests and refresh data
   const handleRefreshAll = async () => {
     if (!currentTenant?.id) {
@@ -60,23 +65,33 @@ export default function NDVIPage() {
 
     setIsCreatingRequests(true);
     try {
-      // First, queue NDVI requests for all lands with the tenant
+      // Step 1: Queue NDVI requests for all lands
       toast.info('Queueing NDVI requests...');
       await ndviLandService.fetchNDVIForLands(currentTenant.id, undefined, true);
       
-      toast.success('NDVI requests queued! Refreshing data...');
+      toast.success('Requests queued! Processing...');
       
-      // Then refresh all data
+      // Step 2: Trigger the queue processor to process queued items
+      const { NDVIQueueProcessorService } = await import('@/services/NDVIQueueProcessorService');
+      const result = await NDVIQueueProcessorService.processQueue(10);
+      
+      if (result.success) {
+        toast.success(`✅ Processed ${result.processed || 0} lands successfully`);
+      } else {
+        toast.warning(result.message || 'Some items failed to process');
+      }
+      
+      // Step 3: Refresh all data to show updated status
       await Promise.all([
         refetchHealth(),
         refetchStats(),
         refetchRealtime(),
       ]);
       
-      toast.success('Data refreshed successfully!');
+      toast.success('Data refreshed!');
     } catch (error: any) {
-      console.error('Error creating NDVI requests:', error);
-      toast.error(error.message || 'Failed to create NDVI requests');
+      console.error('Error in NDVI workflow:', error);
+      toast.error(error.message || 'Failed to process NDVI requests');
     } finally {
       setIsCreatingRequests(false);
     }
@@ -176,6 +191,9 @@ export default function NDVIPage() {
 
           {/* Insights Panel */}
           <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
+
+          {/* Processing Status */}
+          <NDVIProcessingStatus />
 
           {/* Main Analytics Tabs */}
           <Card className="border-muted/50 shadow-xl overflow-hidden">

@@ -27,33 +27,43 @@ export const useNDVILandData = (farmerId?: string) => {
   const autoFetch = useMutation({
     mutationFn: async () => {
       if (!currentTenant?.id) throw new Error('No tenant selected');
-      return await ndviLandService.fetchNDVIForLands(
+      
+      // Queue the requests
+      const queueResults = await ndviLandService.fetchNDVIForLands(
         currentTenant.id,
         farmerId,
         false // Don't force refresh on auto-fetch
       );
+      
+      // Trigger processing
+      const { NDVIQueueProcessorService } = await import('@/services/NDVIQueueProcessorService');
+      const processResult = await NDVIQueueProcessorService.processQueue(10);
+      
+      return { queueResults, processResult };
     },
-    onSuccess: (results: FetchNDVIResult[]) => {
-      const successCount = results.filter(r => r.success).length;
-      const cachedCount = results.filter(r => r.cached).length;
-      const failedCount = results.filter(r => !r.success).length;
+    onSuccess: ({ queueResults, processResult }) => {
+      const successCount = queueResults.filter(r => r.success).length;
+      const failedCount = queueResults.filter(r => !r.success).length;
 
-      if (failedCount > 0) {
-        const failedLands = results
+      if (processResult.success && processResult.processed && processResult.processed > 0) {
+        toast({
+          title: '✅ NDVI data processed successfully',
+          description: `Processed ${processResult.processed} land(s)`,
+        });
+        
+        queryClient.invalidateQueries({ 
+          queryKey: ['ndvi-land-data', currentTenant?.id, farmerId] 
+        });
+      } else if (failedCount > 0) {
+        const failedLands = queueResults
           .filter(r => !r.success)
           .map(r => r.land_name)
           .join(', ');
         
         toast({
-          title: 'Some lands failed to fetch NDVI data',
+          title: 'Some lands failed to process',
           description: `Failed lands: ${failedLands}`,
           variant: 'destructive',
-        });
-      }
-
-      if (successCount > 0) {
-        queryClient.invalidateQueries({ 
-          queryKey: ['ndvi-land-data', currentTenant?.id, farmerId] 
         });
       }
     },
@@ -70,22 +80,28 @@ export const useNDVILandData = (farmerId?: string) => {
   const manualRefresh = useMutation({
     mutationFn: async () => {
       if (!currentTenant?.id) throw new Error('No tenant selected');
-      return await ndviLandService.fetchNDVIForLands(
+      
+      // Queue the requests
+      const queueResults = await ndviLandService.fetchNDVIForLands(
         currentTenant.id,
         farmerId,
         true // Force refresh
       );
+      
+      // Trigger processing
+      const { NDVIQueueProcessorService } = await import('@/services/NDVIQueueProcessorService');
+      const processResult = await NDVIQueueProcessorService.processQueue(10);
+      
+      return { queueResults, processResult };
     },
-    onSuccess: (results: FetchNDVIResult[]) => {
-      const successCount = results.filter(r => r.success).length;
-      const failedCount = results.filter(r => !r.success).length;
+    onSuccess: ({ queueResults, processResult }) => {
+      const successCount = queueResults.filter(r => r.success).length;
+      const failedCount = queueResults.filter(r => !r.success).length;
 
-      if (successCount > 0) {
+      if (processResult.success && processResult.processed && processResult.processed > 0) {
         toast({
           title: '✅ NDVI data refreshed successfully',
-          description: `Successfully refreshed ${successCount} land(s)${
-            failedCount > 0 ? `, ${failedCount} failed` : ''
-          }`,
+          description: `Successfully processed ${processResult.processed} land(s)`,
         });
         
         queryClient.invalidateQueries({ 
@@ -94,7 +110,7 @@ export const useNDVILandData = (farmerId?: string) => {
       }
 
       if (failedCount > 0) {
-        const failedLands = results
+        const failedLands = queueResults
           .filter(r => !r.success)
           .map(r => `${r.land_name}: ${r.error}`)
           .join('\n');

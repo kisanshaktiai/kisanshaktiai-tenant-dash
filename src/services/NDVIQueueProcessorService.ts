@@ -2,32 +2,31 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface ProcessQueueResult {
   success: boolean;
-  results: {
-    processed: number;
-    completed: number;
-    failed: number;
-    still_processing: number;
-    errors: Array<{
-      queue_id?: string;
-      render_request_id?: string;
-      land_id?: string;
-      error: string;
-    }>;
-  };
+  message?: string;
+  total?: number;
+  processed?: number;
+  failed?: number;
+  results?: Array<{
+    id: string;
+    success: boolean;
+    processed?: number;
+    duration_ms?: number;
+    error?: string;
+    retry_count?: number;
+  }>;
 }
 
 export class NDVIQueueProcessorService {
   /**
-   * Trigger the NDVI request processor to check queue and fetch completed data
+   * Trigger the NDVI request processor edge function
    */
-  static async processQueue(tenantId: string, limit: number = 10): Promise<ProcessQueueResult> {
+  static async processQueue(limit: number = 10): Promise<ProcessQueueResult> {
     try {
-      console.log(`🔄 Triggering NDVI queue processor for tenant ${tenantId}`);
+      console.log(`🔄 Triggering NDVI queue processor (limit: ${limit})`);
 
-      const { data, error } = await supabase.functions.invoke('ndvi-request-processor', {
+      const { data, error } = await supabase.functions.invoke('ndvi-queue-processor', {
         body: {
           action: 'process_queue',
-          tenant_id: tenantId,
           limit
         }
       });
@@ -38,7 +37,7 @@ export class NDVIQueueProcessorService {
       }
 
       console.log('✅ Queue processor response:', data);
-      return data;
+      return data as ProcessQueueResult;
     } catch (error) {
       console.error('❌ Failed to process queue:', error);
       throw error;
@@ -51,7 +50,7 @@ export class NDVIQueueProcessorService {
   static async getQueueStatus(tenantId: string) {
     const { data, error } = await supabase
       .from('ndvi_request_queue')
-      .select('id, status, created_at, tile_id, land_ids, metadata')
+      .select('id, status, created_at, tile_id, land_ids, metadata, retry_count, last_error')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -81,5 +80,22 @@ export class NDVIQueueProcessorService {
     }
 
     return data;
+  }
+
+  /**
+   * Check processor health
+   */
+  static async checkHealth() {
+    try {
+      const { data, error } = await supabase.functions.invoke('ndvi-queue-processor', {
+        body: { action: 'health' }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Health check failed:', error);
+      return { success: false, status: 'unhealthy' };
+    }
   }
 }
