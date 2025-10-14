@@ -126,6 +126,23 @@ export default function NDVIPage() {
             realtimeStats={realtimeStats}
           />
 
+          {/* No Data Alert */}
+          {!realtimeLoading && (!ndviData || ndviData.length === 0) && (
+            <Alert className="border-primary/50 bg-primary/5">
+              <Satellite className="h-4 w-4" />
+              <AlertTitle>No NDVI Data Available</AlertTitle>
+              <AlertDescription>
+                To start monitoring vegetation health:
+                <ol className="list-decimal ml-5 mt-2 space-y-1">
+                  <li>Go to <strong>Farmers</strong> section and add your farmers</li>
+                  <li>Add land parcels with GPS coordinates for each farmer</li>
+                  <li>Request satellite NDVI data for the lands</li>
+                  <li>Return here to view real-time vegetation analytics</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Insights Panel */}
           <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
 

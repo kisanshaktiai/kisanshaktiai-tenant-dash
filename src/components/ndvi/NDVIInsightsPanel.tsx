@@ -17,10 +17,11 @@ interface NDVIInsightsPanelProps {
 }
 
 export const NDVIInsightsPanel: React.FC<NDVIInsightsPanelProps> = ({ globalStats }) => {
-  const avgNDVI = globalStats?.average_ndvi || 0;
+  const avgNDVI = globalStats?.average_ndvi;
+  const hasData = avgNDVI !== undefined && avgNDVI !== null;
   
   // Generate insights based on data
-  const insights = [
+  const insights = hasData ? [
     {
       type: avgNDVI > 0.6 ? 'success' : avgNDVI > 0.3 ? 'warning' : 'danger',
       title: avgNDVI > 0.6 
@@ -48,6 +49,28 @@ export const NDVIInsightsPanel: React.FC<NDVIInsightsPanelProps> = ({ globalStat
       title: 'AI-Powered Crop Monitoring',
       description: 'Upgrade to real-time alerts and predictive analytics. Get notified of issues before they become problems.',
       action: 'Upgrade Now',
+      icon: Sparkles
+    }
+  ] : [
+    {
+      type: 'info',
+      title: 'Start Monitoring Your Vegetation',
+      description: 'Add farmers and their land parcels to begin tracking vegetation health with satellite imagery.',
+      action: 'Go to Farmers',
+      icon: Target
+    },
+    {
+      type: 'info',
+      title: 'Precision Agriculture Solutions',
+      description: 'Once you have data, discover products and services to optimize your farming operations.',
+      action: 'Browse Products',
+      icon: TrendingUp
+    },
+    {
+      type: 'marketing',
+      title: 'AI-Powered Insights Coming',
+      description: 'Set up your lands to unlock real-time alerts, predictive analytics, and personalized recommendations.',
+      action: 'Learn More',
       icon: Sparkles
     }
   ];

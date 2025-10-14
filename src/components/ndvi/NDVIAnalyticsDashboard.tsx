@@ -35,7 +35,8 @@ export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({
   ndviData 
 }) => {
   // Calculate health distribution from real data
-  const healthDistribution = ndviData
+  const hasRealData = ndviData && ndviData.length > 0;
+  const healthDistribution = hasRealData
     ? [
         { name: 'Excellent', value: ndviData.filter((d) => d.ndvi_value > 0.7).length, color: '#10b981' },
         { name: 'Good', value: ndviData.filter((d) => d.ndvi_value > 0.5 && d.ndvi_value <= 0.7).length, color: '#84cc16' },
@@ -43,10 +44,7 @@ export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({
         { name: 'Poor', value: ndviData.filter((d) => d.ndvi_value <= 0.3).length, color: '#f97316' },
       ]
     : [
-        { name: 'Excellent', value: 35, color: '#10b981' },
-        { name: 'Good', value: 45, color: '#84cc16' },
-        { name: 'Moderate', value: 15, color: '#eab308' },
-        { name: 'Poor', value: 5, color: '#f97316' }
+        { name: 'No Data', value: 1, color: '#9ca3af' }
       ];
 
   const trendData = [
@@ -70,10 +68,10 @@ export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Farmers', value: '1,234', icon: Users, color: 'text-blue-500' },
-          { label: 'Healthy Lands', value: '892', icon: Leaf, color: 'text-green-500' },
-          { label: 'Growth Rate', value: '+18%', icon: TrendingUp, color: 'text-purple-500' },
-          { label: 'Top Performers', value: '156', icon: Award, color: 'text-yellow-500' }
+          { label: 'Total Lands', value: hasRealData ? ndviData.length.toString() : '0', icon: Users, color: 'text-blue-500' },
+          { label: 'Healthy Lands', value: hasRealData ? healthDistribution.filter(h => h.name === 'Excellent' || h.name === 'Good').reduce((sum, h) => sum + h.value, 0).toString() : '0', icon: Leaf, color: 'text-green-500' },
+          { label: 'Average NDVI', value: hasRealData ? (ndviData.reduce((sum, d) => sum + d.ndvi_value, 0) / ndviData.length).toFixed(3) : 'N/A', icon: TrendingUp, color: 'text-purple-500' },
+          { label: 'Data Points', value: hasRealData ? ndviData.length.toString() : '0', icon: Award, color: 'text-yellow-500' }
         ].map((metric, i) => {
           const Icon = metric.icon;
           return (
@@ -94,26 +92,39 @@ export const NDVIAnalyticsDashboard: React.FC<NDVIAnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Health Distribution */}
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Vegetation Health Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={healthDistribution}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {healthDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          <h3 className="text-lg font-semibold mb-4">
+            Vegetation Health Distribution
+            {hasRealData && <span className="text-sm font-normal text-muted-foreground ml-2">({ndviData.length} lands)</span>}
+          </h3>
+          {!hasRealData ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <Leaf className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p>No NDVI data available yet</p>
+                <p className="text-sm mt-2">Add lands and request satellite data to see health distribution</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={healthDistribution}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {healthDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </Card>
 
         {/* Regional Performance */}

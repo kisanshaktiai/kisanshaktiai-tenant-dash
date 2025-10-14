@@ -31,11 +31,13 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
   isHealthy,
   realtimeStats
 }) => {
-  // Use real-time stats when available, fallback to API stats
-  const avgNDVI = realtimeStats?.average_ndvi || globalStats?.average_ndvi;
-  const maxNDVI = realtimeStats?.max_ndvi || globalStats?.max_ndvi;
-  const totalLands = realtimeStats?.total_lands || globalStats?.total_lands;
-  const coverage = realtimeStats?.coverage_km2 || globalStats?.total_coverage_km2;
+  // Use real-time stats when available, fallback to API stats or show N/A
+  const avgNDVI = realtimeStats?.average_ndvi ?? globalStats?.average_ndvi;
+  const maxNDVI = realtimeStats?.max_ndvi ?? globalStats?.max_ndvi;
+  const totalLands = realtimeStats?.total_lands ?? globalStats?.total_lands ?? 0;
+  const coverage = realtimeStats?.coverage_km2 ?? globalStats?.total_coverage_km2;
+  
+  const hasData = realtimeStats || globalStats;
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -51,9 +53,9 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
   const stats = [
     {
       title: 'Average NDVI',
-      value: avgNDVI ? avgNDVI.toFixed(3) : 'N/A',
-      change: avgNDVI && avgNDVI > 0.6 ? 'Excellent' : avgNDVI && avgNDVI > 0.4 ? 'Good' : 'Monitor',
-      trend: 'up',
+      value: avgNDVI !== undefined && avgNDVI !== null ? avgNDVI.toFixed(3) : hasData ? '0.000' : 'No Data',
+      change: !hasData ? 'Awaiting data' : avgNDVI && avgNDVI > 0.6 ? 'Excellent' : avgNDVI && avgNDVI > 0.4 ? 'Good' : 'Monitor',
+      trend: hasData ? 'up' : 'neutral',
       icon: Leaf,
       color: 'from-green-500 to-emerald-600',
       bgColor: 'bg-green-500/10',
@@ -61,9 +63,9 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
     },
     {
       title: 'Peak Health',
-      value: maxNDVI ? maxNDVI.toFixed(3) : 'N/A',
-      change: 'Excellent',
-      trend: 'up',
+      value: maxNDVI !== undefined && maxNDVI !== null ? maxNDVI.toFixed(3) : hasData ? '0.000' : 'No Data',
+      change: !hasData ? 'Awaiting data' : 'Excellent',
+      trend: hasData ? 'up' : 'neutral',
       icon: TrendingUp,
       color: 'from-blue-500 to-cyan-600',
       bgColor: 'bg-blue-500/10',
@@ -71,10 +73,10 @@ export const NDVIOverviewCards: React.FC<NDVIOverviewCardsProps> = ({
     },
     {
       title: 'Coverage Area',
-      value: coverage 
+      value: coverage !== undefined && coverage !== null
         ? `${coverage.toFixed(2)} km²` 
-        : 'N/A',
-      change: `${totalLands || 0} lands`,
+        : hasData ? '0.00 km²' : 'No Data',
+      change: `${totalLands} land${totalLands !== 1 ? 's' : ''}`,
       trend: 'neutral',
       icon: MapPin,
       color: 'from-purple-500 to-pink-600',
