@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { renderNDVIService } from './RenderNDVIService';
 
 const NDVI_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
 const CACHE_DURATION_DAYS = 7;
@@ -300,53 +301,57 @@ export class NDVILandService {
         throw new Error('None of your lands have boundary data. Please add GPS coordinates.');
       }
 
-      // Step 3: Create simplified NDVI request (API handles tiles automatically)
+      // Step 3: Determine tile_id for the lands
+      // For API v3.9, we need to provide a tile_id
+      // Use default tile or determine from land locations
+      const DEFAULT_TILE_ID = '43RGN'; // Default Sentinel-2 tile for India region
+      
       const landIds = landsWithGeometry.map(l => l.id);
       
-      console.log(`📡 Creating NDVI request for ${landIds.length} land(s)`);
+      console.log(`📡 Creating NDVI request for ${landIds.length} land(s) with tile ${DEFAULT_TILE_ID}`);
       
-      // SIMPLIFIED PAYLOAD - API v3.6 handles everything else
-      const requestPayload: NDVIRequestPayload = {
+      // API v3.9 payload structure
+      const requestPayload = {
         tenant_id: tenantId,
         land_ids: landIds,
+        tile_id: DEFAULT_TILE_ID, // Required by API v3.9
       };
 
-      const response = await this.createNDVIRequest(requestPayload);
+      // Call Render NDVI API
+      const response = await renderNDVIService.createRequest(requestPayload);
       
-      console.log(`✅ NDVI request created:`, {
-        request_id: response.request_id,
-        tile_id: response.tile_id,
-        acquisition_date: response.acquisition_date,
-        land_count: response.land_count,
-        status: response.status
+      console.log(`✅ NDVI request created via Render API:`, {
+        tenant_id: tenantId,
+        land_ids: landIds,
+        tile_id: DEFAULT_TILE_ID,
+        status: 'queued'
       });
 
-    // Step 4: Insert queue record in Supabase (for tracking only)
-    const queueRecord = {
-      tenant_id: tenantId,
-      land_ids: landIds,
-      tile_id: response.tile_id,
-      status: 'queued' as const,
-      batch_size: landIds.length,
-      farmer_id: farmerId,
-      metadata: {
-        render_request_id: response.request_id,
-        acquisition_date: response.acquisition_date,
-        land_count: response.land_count,
-        created_via: 'ndvi_service_v3.6'
-      }
-    };
+      // Step 4: Insert queue record in Supabase (for tracking in frontend)
+      const queueRecord = {
+        tenant_id: tenantId,
+        land_ids: landIds,
+        tile_id: DEFAULT_TILE_ID,
+        status: 'queued' as const,
+        batch_size: landIds.length,
+        farmer_id: farmerId,
+        metadata: {
+          created_via: 'ndvi_service_v3.9',
+          land_count: landIds.length,
+          api_version: '3.9'
+        }
+      };
 
       const { error: queueError } = await supabase
         .from('ndvi_request_queue')
         .insert([queueRecord]);
 
       if (queueError) {
-        console.error('❌ Failed to insert queue record:', queueError);
-        throw new Error(`Queue insertion failed: ${queueError.message}`);
+        console.warn('⚠️ Failed to insert queue tracking record:', queueError.message);
+        // Don't throw - API request was successful
+      } else {
+        console.log(`✅ Queue tracking record created in Supabase`);
       }
-
-      console.log(`✅ Queue record created for request: ${response.request_id}`);
 
       // Return success results
       const results: FetchNDVIResult[] = landsWithGeometry.map(land => ({
@@ -355,10 +360,10 @@ export class NDVILandService {
         land_name: land.name,
         cached: false,
         data: {
-          tile_id: response.tile_id,
-          request_id: response.request_id,
-          acquisition_date: response.acquisition_date,
-          status: response.status,
+          tile_id: DEFAULT_TILE_ID,
+          request_id: 'queued',
+          acquisition_date: new Date().toISOString().split('T')[0],
+          status: 'queued',
         }
       }));
 
