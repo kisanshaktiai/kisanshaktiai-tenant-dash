@@ -50,18 +50,10 @@ export interface RealTimeNDVIData {
   savi_min?: number;
   savi_std?: number;
   updated_at?: string;
-  lands: {
-    id: string;
-    land_name: string;
-    farmer_id: string;
-    farmers: {
-      id: string;
-      user_profile: {
-        id: string;
-        full_name: string;
-      } | null;
-    } | null;
-  } | null;
+  land_name?: string;
+  farmer_id?: string;
+  farmer_code?: string;
+  farmer_full_name?: string;
 }
 
 export interface NDVIStats {
@@ -88,22 +80,8 @@ export const useRealTimeNDVIData = () => {
       if (!currentTenant?.id) return [];
 
       const { data, error } = await supabase
-        .from('ndvi_data')
-        .select(`
-          *,
-          lands!inner(
-            id,
-            land_name,
-            farmer_id,
-            farmers!inner(
-              id,
-              user_profile:user_profiles!inner(
-                id,
-                full_name
-              )
-            )
-          )
-        `)
+        .from('ndvi_full_view' as any)
+        .select('*')
         .eq('tenant_id', currentTenant.id)
         .order('date', { ascending: false })
         .limit(1000);
