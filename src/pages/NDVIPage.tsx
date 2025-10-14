@@ -22,8 +22,14 @@ import { NDVIInsightsPanel } from '@/components/ndvi/NDVIInsightsPanel';
 import { NDVIAnalyticsDashboard } from '@/components/ndvi/NDVIAnalyticsDashboard';
 import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
+import { ndviLandService } from '@/services/NDVILandService';
+import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
 
 export default function NDVIPage() {
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const [isCreatingRequests, setIsCreatingRequests] = React.useState(false);
+  
   const {
     healthData,
     healthLoading,
@@ -45,11 +51,35 @@ export default function NDVIPage() {
 
   const { queueStatus } = useNDVIQueueStatus();
 
-  // Manual refresh all data
-  const handleRefreshAll = () => {
-    refetchHealth();
-    refetchStats();
-    refetchRealtime();
+  // Create NDVI requests and refresh data
+  const handleRefreshAll = async () => {
+    if (!currentTenant?.id) {
+      toast.error('No tenant selected');
+      return;
+    }
+
+    setIsCreatingRequests(true);
+    try {
+      // First, queue NDVI requests for all lands with the tenant
+      toast.info('Queueing NDVI requests...');
+      await ndviLandService.fetchNDVIForLands(currentTenant.id, undefined, true);
+      
+      toast.success('NDVI requests queued! Refreshing data...');
+      
+      // Then refresh all data
+      await Promise.all([
+        refetchHealth(),
+        refetchStats(),
+        refetchRealtime(),
+      ]);
+      
+      toast.success('Data refreshed successfully!');
+    } catch (error: any) {
+      console.error('Error creating NDVI requests:', error);
+      toast.error(error.message || 'Failed to create NDVI requests');
+    } finally {
+      setIsCreatingRequests(false);
+    }
   };
 
   return (
@@ -97,11 +127,12 @@ export default function NDVIPage() {
               <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={handleRefreshAll}
+                  disabled={isCreatingRequests || !currentTenant?.id}
                   size="lg"
                   className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Data
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
+                  {isCreatingRequests ? 'Creating Requests...' : 'Queue NDVI & Refresh'}
                 </Button>
                 <Button
                   variant="outline"
