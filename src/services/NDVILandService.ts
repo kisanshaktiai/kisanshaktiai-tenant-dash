@@ -301,75 +301,86 @@ export class NDVILandService {
         throw new Error('None of your lands have boundary data. Please add GPS coordinates.');
       }
 
-      // Step 3: Determine tile_id for the lands
-      // For API v3.9, we need to provide a tile_id
-      // Use default tile or determine from land locations
-      const DEFAULT_TILE_ID = '43RGN'; // Default Sentinel-2 tile for India region
-      
+      // Step 3: Get tile mappings for lands
       const landIds = landsWithGeometry.map(l => l.id);
+      const tileGroups = await this.getTileMappingsForLands(landIds);
       
-      console.log(`📡 Creating NDVI request for ${landIds.length} land(s) with tile ${DEFAULT_TILE_ID}`);
-      
-      // API v3.9 payload structure
-      const requestPayload = {
-        tenant_id: tenantId,
-        land_ids: landIds,
-        tile_id: DEFAULT_TILE_ID, // Required by API v3.9
-      };
-
-      // Call Render NDVI API
-      const response = await renderNDVIService.createRequest(requestPayload);
-      
-      console.log(`✅ NDVI request created via Render API:`, {
-        tenant_id: tenantId,
-        land_ids: landIds,
-        tile_id: DEFAULT_TILE_ID,
-        status: 'queued'
-      });
-
-      // Step 4: Insert queue record in Supabase (for tracking in frontend)
-      const queueRecord = {
-        tenant_id: tenantId,
-        land_ids: landIds,
-        tile_id: DEFAULT_TILE_ID,
-        status: 'queued' as const,
-        batch_size: landIds.length,
-        farmer_id: farmerId,
-        metadata: {
-          created_via: 'ndvi_service_v3.9',
-          land_count: landIds.length,
-          api_version: '3.9'
-        }
-      };
-
-      const { error: queueError } = await supabase
-        .from('ndvi_request_queue')
-        .insert([queueRecord]);
-
-      if (queueError) {
-        console.warn('⚠️ Failed to insert queue tracking record:', queueError.message);
-        // Don't throw - API request was successful
-      } else {
-        console.log(`✅ Queue tracking record created in Supabase`);
+      if (tileGroups.size === 0) {
+        throw new Error('Unable to determine satellite tiles for lands. Please ensure land boundaries are properly mapped.');
       }
 
-      // Return success results
-      const results: FetchNDVIResult[] = landsWithGeometry.map(land => ({
-        success: true,
-        land_id: land.id,
-        land_name: land.name,
-        cached: false,
-        data: {
-          tile_id: DEFAULT_TILE_ID,
-          request_id: 'queued',
-          acquisition_date: new Date().toISOString().split('T')[0],
-          status: 'queued',
+      console.log(`📡 Found ${tileGroups.size} tile group(s) for ${landIds.length} land(s)`);
+
+      const allResults: FetchNDVIResult[] = [];
+
+      // Process each tile group separately
+      for (const [tileId, group] of tileGroups.entries()) {
+        console.log(`📡 Creating NDVI request for ${group.land_ids.length} land(s) with tile ${tileId}`);
+        
+        // API v3.9 payload structure
+        const requestPayload = {
+          tenant_id: tenantId,
+          land_ids: group.land_ids,
+          tile_id: tileId,
+        };
+
+        // Call Render NDVI API
+        const response = await renderNDVIService.createRequest(requestPayload);
+        
+        console.log(`✅ NDVI request created via Render API:`, {
+          tenant_id: tenantId,
+          land_ids: group.land_ids,
+          tile_id: tileId,
+          status: 'queued'
+        });
+
+        // Step 4: Insert queue record in Supabase (for tracking in frontend)
+        const queueRecord = {
+          tenant_id: tenantId,
+          land_ids: group.land_ids,
+          tile_id: tileId,
+          status: 'queued' as const,
+          batch_size: group.land_ids.length,
+          farmer_id: farmerId,
+          metadata: {
+            created_via: 'ndvi_service_v3.9',
+            land_count: group.land_ids.length,
+            api_version: '3.9',
+            land_names: group.land_names
+          }
+        };
+
+        const { error: queueError } = await supabase
+          .from('ndvi_request_queue')
+          .insert([queueRecord]);
+
+        if (queueError) {
+          console.warn('⚠️ Failed to insert queue tracking record:', queueError.message);
+          // Don't throw - API request was successful
+        } else {
+          console.log(`✅ Queue tracking record created in Supabase for tile ${tileId}`);
         }
-      }));
 
-      console.log(`📊 NDVI fetch summary: ${results.length} land(s) queued`);
+        // Add results for this tile group
+        const groupResults: FetchNDVIResult[] = group.land_ids.map((landId, idx) => ({
+          success: true,
+          land_id: landId,
+          land_name: group.land_names[idx],
+          cached: false,
+          data: {
+            tile_id: tileId,
+            request_id: 'queued',
+            acquisition_date: new Date().toISOString().split('T')[0],
+            status: 'queued',
+          }
+        }));
 
-      return results;
+        allResults.push(...groupResults);
+      }
+
+      console.log(`📊 NDVI fetch summary: ${allResults.length} land(s) queued across ${tileGroups.size} tile(s)`);
+
+      return allResults;
 
     } catch (error) {
       console.error('❌ Error in fetchNDVIForLands:', error);
