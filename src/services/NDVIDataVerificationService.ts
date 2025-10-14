@@ -152,23 +152,36 @@ export class NDVIDataVerificationService {
     try {
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
-      const { data, error } = await supabase
+      // Query for stuck items first
+      const { data: stuckItems } = await supabase
         .from('ndvi_request_queue')
-        .update({
-          status: 'queued',
-          retry_count: 0,
-          last_error: 'Reset from stuck processing state',
-        })
+        .select('id')
         .eq('tenant_id', tenantId)
         .eq('status', 'processing')
-        .lt('created_at', tenMinutesAgo)
-        .select('id');
+        .lt('started_at', tenMinutesAgo);
 
-      if (error) throw error;
+      if (!stuckItems || stuckItems.length === 0) {
+        console.log('📋 No stuck items found');
+        return 0;
+      }
 
-      const resetCount = data?.length || 0;
-      console.log(`🔄 Reset ${resetCount} stuck items to queued`);
-      return resetCount;
+      console.log(`🔄 Resetting ${stuckItems.length} stuck item(s)`);
+
+      // Reset each item individually
+      for (const item of stuckItems) {
+        await supabase
+          .from('ndvi_request_queue')
+          .update({
+            status: 'queued',
+            started_at: null,
+            retry_count: 0,
+            last_error: 'Reset from stuck processing state',
+          })
+          .eq('id', item.id);
+      }
+
+      console.log(`✅ Reset ${stuckItems.length} stuck items to queued`);
+      return stuckItems.length;
 
     } catch (error) {
       console.error('❌ Failed to reset stuck items:', error);

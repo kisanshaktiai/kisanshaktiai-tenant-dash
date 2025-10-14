@@ -86,10 +86,10 @@ export default function NDVIPage() {
         results: queueResults,
       });
       
-      toast.success('Requests queued! Processing...');
+      // Step 2: Trigger the queue processor (now calls Python API directly)
+      console.log('⚙️ [STEP 2] Calling Python API to process NDVI...');
+      toast.info('Processing NDVI data via Python API...');
       
-      // Step 2: Trigger the queue processor to process queued items
-      console.log('⚙️ [STEP 2] Triggering queue processor...');
       const { NDVIQueueProcessorService } = await import('@/services/NDVIQueueProcessorService');
       const processResult = await NDVIQueueProcessorService.processQueue(10);
       
@@ -100,77 +100,85 @@ export default function NDVIPage() {
         message: processResult.message,
       });
       
-      if (processResult.success) {
-        toast.success(`✅ Processed ${processResult.processed || 0} lands successfully`);
-      } else {
-        toast.warning(processResult.message || 'Some items failed to process');
-      }
-      
-      // Step 3: Verify data insertion (wait a bit for worker to process)
-      console.log('🔍 [STEP 3] Waiting for worker to process data...');
-      toast.info('Worker processing... (this may take 1-2 minutes)');
-      
-      // Give the Render cron job time to pick up and process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      console.log('🔍 [STEP 3] Verifying NDVI data insertion...');
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { data: ndviDataCheck, error: ndviError } = await supabase
-        .from('ndvi_data')
-        .select('id, land_id, date, ndvi_value, created_at')
-        .eq('tenant_id', currentTenant.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (ndviError) {
-        console.error('❌ [STEP 3] Error checking NDVI data:', ndviError);
-      } else {
+      // Check if processing was successful
+      if (processResult.success && processResult.processed > 0) {
+        toast.success(
+          `✅ Processing ${processResult.processed} NDVI request(s)... Check results in 30-60 seconds.`,
+          { duration: 6000 }
+        );
+
+        // Wait 5 seconds for Python API to process and insert data
+        console.log('⏳ [STEP 3] Waiting 5s for Python API to process...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Step 3: Verify data insertion
+        console.log('🔍 [STEP 3] Verifying NDVI data insertion...');
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        const { data: ndviDataCheck, error: ndviError } = await supabase
+          .from('ndvi_data')
+          .select('id, land_id, date, ndvi_value, created_at')
+          .eq('tenant_id', currentTenant.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
         console.log('📊 [STEP 3] Recent NDVI data:', ndviDataCheck);
         console.log(`✅ [STEP 3] Found ${ndviDataCheck?.length || 0} recent NDVI records`);
+
+        const { data: microTilesCheck } = await supabase
+          .from('ndvi_micro_tiles')
+          .select('id, land_id, acquisition_date, ndvi_mean')
+          .eq('tenant_id', currentTenant.id)
+          .order('created_at', { ascending: false })
+          .limit(10);
         
-        if ((ndviDataCheck?.length || 0) > 0) {
-          toast.success(`✅ ${ndviDataCheck?.length} NDVI records found!`);
-        } else {
-          toast.warning('⚠️ No data yet - worker may still be processing. Check diagnostics panel.');
-        }
-      }
-      
-      const { data: microTilesCheck, error: tilesError } = await supabase
-        .from('ndvi_micro_tiles')
-        .select('id, land_id, acquisition_date, ndvi_mean')
-        .eq('tenant_id', currentTenant.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (tilesError) {
-        console.error('❌ [STEP 3] Error checking micro tiles:', tilesError);
-      } else {
         console.log('🗺️ [STEP 3] Recent micro tiles:', microTilesCheck);
         console.log(`✅ [STEP 3] Found ${microTilesCheck?.length || 0} recent tile records`);
+
+        // Show data verification results
+        if ((ndviDataCheck?.length || 0) > 0) {
+          toast.success(
+            `✅ Data verified! ${ndviDataCheck?.length} NDVI records inserted successfully.`,
+            { duration: 4000 }
+          );
+        } else {
+          toast.warning(
+            'Processing in progress... Refresh page in 1-2 minutes to see results. Check diagnostics panel for status.',
+            { duration: 6000 }
+          );
+        }
+      } else if (processResult.failed > 0) {
+        toast.error(
+          `❌ ${processResult.failed} request(s) failed. Check diagnostics panel for details.`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.info(
+          'No new items to process. Queue is empty or already processing.',
+          { duration: 4000 }
+        );
       }
       
-      // Step 4: Refresh all data to show updated status
+      // Step 4: Refresh dashboard data
       console.log('🔄 [STEP 4] Refreshing dashboard data...');
-      await Promise.all([
-        refetchHealth(),
-        refetchStats(),
-        refetchRealtime(),
-      ]);
+      await refetchRealtime();
+      await refetchHealth();
+      await refetchStats();
       console.log('✅ [STEP 4] Dashboard data refreshed');
+
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`🎉 [COMPLETE] NDVI refresh completed in ${duration}s`);
       
-      const duration = Date.now() - startTime;
-      console.log(`🎉 [COMPLETE] NDVI refresh completed in ${(duration / 1000).toFixed(2)}s`);
-      toast.success('Data refreshed!');
+    } catch (error) {
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.error(`❌ [ERROR] NDVI refresh failed after ${duration}s:`, error);
       
-    } catch (error: any) {
-      const duration = Date.now() - startTime;
-      console.error('❌ [ERROR] NDVI workflow failed:', {
-        error: error.message,
-        stack: error.stack,
-        duration: `${(duration / 1000).toFixed(2)}s`,
-      });
-      toast.error(error.message || 'Failed to process NDVI requests');
+      // Show detailed error to user
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.error(
+        `Failed to process NDVI data: ${errorMessage}. Check console for details.`,
+        { duration: 6000 }
+      );
     } finally {
       setIsCreatingRequests(false);
     }

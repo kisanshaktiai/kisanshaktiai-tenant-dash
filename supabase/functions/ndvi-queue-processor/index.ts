@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const RENDER_WORKER_URL = Deno.env.get("RENDER_WORKER_URL") || "https://ndvi-land-api.onrender.com";
+const RENDER_API_URL = "https://ndvi-land-api.onrender.com";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -50,7 +50,7 @@ serve(async (req) => {
 
       const results = [];
 
-      // Step 2: Process each queue item - trigger external Python worker
+      // Step 2: Process each queue item by calling Python API
       for (const item of queuedItems) {
         const startTime = Date.now();
         
@@ -66,45 +66,67 @@ serve(async (req) => {
 
           console.log(`🔄 Processing queue item ${item.id} for ${item.land_ids?.length} lands`);
 
-          // ARCHITECTURE CHANGE: Instead of calling Python API endpoint (which doesn't exist),
-          // we rely on the Render cron job to pick up items with status='processing'
-          // This edge function just orchestrates the status changes
-          
-          console.log(`✅ Queue item ${item.id} marked for processing by worker cron job`);
-          
-          // The Python worker cron job will:
-          // 1. Fetch items with status='processing'
-          // 2. Download NDVI data from B2
-          // 3. Process and insert into ndvi_data, ndvi_micro_tiles
-          // 4. Update status to 'completed'
-          
-          // For now, we just mark it as processing and let cron handle it
-          // Worker will pick it up within next cron cycle (every minute)
+          // NEW ARCHITECTURE: Call Python API directly to process
+          const apiPayload = {
+            land_ids: item.land_ids || [],
+            tile_id: item.tile_id || '43RGN',
+          };
 
-          // Note: Status is now 'processing' - cron job will complete it
-          // We return success immediately to prevent retry loops
+          console.log(`📡 Calling Python API: POST /api/v1/ndvi/lands/analyze?tenant_id=${item.tenant_id}`);
+
+          const apiResponse = await fetch(
+            `${RENDER_API_URL}/api/v1/ndvi/lands/analyze?tenant_id=${item.tenant_id}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(apiPayload),
+            }
+          );
+
+          if (!apiResponse.ok) {
+            const errorText = await apiResponse.text();
+            throw new Error(`API call failed (${apiResponse.status}): ${errorText}`);
+          }
+
+          const apiResult = await apiResponse.json();
+          console.log(`✅ Python API response:`, apiResult);
+
+          // Mark as completed
           const duration = Date.now() - startTime;
-          
+          await supabase
+            .from('ndvi_request_queue')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              processing_duration_ms: duration,
+            })
+            .eq('id', item.id);
+
           results.push({
             id: item.id,
             success: true,
             processed: item.land_ids?.length || 0,
             duration_ms: duration,
-            message: 'Queued for worker processing',
+            message: 'Successfully processed',
+            api_response: apiResult,
           });
 
         } catch (error) {
-          console.error(`❌ Failed to update ${item.id}:`, error);
+          console.error(`❌ Failed to process ${item.id}:`, error);
 
           const duration = Date.now() - startTime;
+          const retryCount = (item.retry_count || 0) + 1;
+          const maxRetries = 3;
 
-          // Don't increase retry count for status update failures
-          // Just keep as queued so cron can pick it up
+          // Update with error info
           await supabase
             .from('ndvi_request_queue')
             .update({
-              status: 'queued',
-              last_error: error.message,
+              status: retryCount >= maxRetries ? 'failed' : 'queued',
+              last_error: `Worker failed (${error.message})`,
+              retry_count: retryCount,
               processing_duration_ms: duration,
             })
             .eq('id', item.id);
@@ -113,7 +135,7 @@ serve(async (req) => {
             id: item.id,
             success: false,
             error: error.message,
-            retry_count: item.retry_count || 0,
+            retry_count: retryCount,
           });
         }
       }
