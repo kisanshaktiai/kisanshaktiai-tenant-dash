@@ -8481,6 +8481,69 @@ export type Database = {
           },
         ]
       }
+      mgrs_tiles_backup: {
+        Row: {
+          agri_area_km2: number | null
+          country_id: string | null
+          created_at: string | null
+          district: string | null
+          district_id: string | null
+          geometry: unknown | null
+          id: string | null
+          is_agri: boolean | null
+          last_checked: string | null
+          last_land_check: string | null
+          state: string | null
+          state_id: string | null
+          taluka_id: string | null
+          tile_id: string | null
+          total_area_km2: number | null
+          total_lands_count: number | null
+          updated_at: string | null
+          village_id: string | null
+        }
+        Insert: {
+          agri_area_km2?: number | null
+          country_id?: string | null
+          created_at?: string | null
+          district?: string | null
+          district_id?: string | null
+          geometry?: unknown | null
+          id?: string | null
+          is_agri?: boolean | null
+          last_checked?: string | null
+          last_land_check?: string | null
+          state?: string | null
+          state_id?: string | null
+          taluka_id?: string | null
+          tile_id?: string | null
+          total_area_km2?: number | null
+          total_lands_count?: number | null
+          updated_at?: string | null
+          village_id?: string | null
+        }
+        Update: {
+          agri_area_km2?: number | null
+          country_id?: string | null
+          created_at?: string | null
+          district?: string | null
+          district_id?: string | null
+          geometry?: unknown | null
+          id?: string | null
+          is_agri?: boolean | null
+          last_checked?: string | null
+          last_land_check?: string | null
+          state?: string | null
+          state_id?: string | null
+          taluka_id?: string | null
+          tile_id?: string | null
+          total_area_km2?: number | null
+          total_lands_count?: number | null
+          updated_at?: string | null
+          village_id?: string | null
+        }
+        Relationships: []
+      }
       ndvi_data: {
         Row: {
           cloud_cover: number | null
