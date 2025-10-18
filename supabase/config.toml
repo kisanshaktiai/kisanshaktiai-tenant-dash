@@ -6,8 +6,5 @@ verify_jwt = true
 [functions.ndvi-harvest]
 verify_jwt = false
 
-[functions.ndvi-request-processor]
-verify_jwt = false
-
 [functions.ndvi-queue-processor]
 verify_jwt = false
