@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert'; // Alert component for notifications
@@ -14,10 +15,13 @@ import {
   AlertCircle,
   Zap,
   HardDrive,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import {
   BarChart,
   Bar,
@@ -45,10 +49,35 @@ export const NDVIApiMonitoring: React.FC = () => {
     healthLoading,
     globalStats,
     statsLoading,
-    isHealthy
+    isHealthy,
+    isWarming
   } = useNDVIApiMonitoring();
+  
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   const healthStatus = healthLoading ? 'checking' : (isHealthy ? 'healthy' : 'unhealthy');
+  
+  const syncTiles = async () => {
+    setIsSyncing(true);
+    try {
+      const { error } = await supabase.rpc('assign_mgrs_tile_to_land');
+      
+      if (error) throw error;
+      
+      toast({
+        title: '✅ Tile Sync Complete',
+        description: 'All land-to-tile mappings have been refreshed',
+      });
+    } catch (error: any) {
+      toast({
+        title: '❌ Sync Failed',
+        description: error.message || 'Failed to sync tile mappings',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const getStatusColor = () => {
     switch (healthStatus) {
@@ -73,9 +102,17 @@ export const NDVIApiMonitoring: React.FC = () => {
     { name: 'Processing', value: globalStats.processing, color: COLORS.processing },
   ] : [];
 
-  if (statsLoading || healthLoading) {
+  if (statsLoading || healthLoading || isWarming) {
     return (
       <div className="space-y-6">
+        {isWarming && (
+          <Alert className="border-blue-200 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              🛰️ Waking up satellite service... This may take 30-60 seconds on first load.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="p-6">
@@ -89,6 +126,20 @@ export const NDVIApiMonitoring: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Error Recovery Notice */}
+      {!isHealthy && (
+        <Alert className="border-orange-200 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-900">
+            <strong>Service Unavailable:</strong> The NDVI API is currently offline or warming up.
+            <br />
+            This is normal for free-tier services. Please wait 30-60 seconds and try again.
+            <br />
+            <strong>What you can do:</strong> Refresh this page in a minute, or contact support if the issue persists.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Service Status Banner */}
       <Card className="p-6 border-l-4" style={{ borderLeftColor: healthStatus === 'healthy' ? COLORS.success : COLORS.failed }}>
         <div className="flex items-center justify-between">
@@ -103,9 +154,20 @@ export const NDVIApiMonitoring: React.FC = () => {
               </p>
             </div>
           </div>
-          <Badge variant={healthStatus === 'healthy' ? 'default' : 'destructive'} className="text-base px-4 py-2">
-            {healthStatus === 'healthy' ? '● Online' : '○ Offline'}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={syncTiles}
+              disabled={isSyncing}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              Sync Tiles
+            </Button>
+            <Badge variant={healthStatus === 'healthy' ? 'default' : 'destructive'} className="text-base px-4 py-2">
+              {healthStatus === 'healthy' ? '● Online' : '○ Offline'}
+            </Badge>
+          </div>
         </div>
       </Card>
 

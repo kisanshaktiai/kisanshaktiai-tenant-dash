@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { renderNDVIService, NDVIRequestPayload } from '@/services/RenderNDVIService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from '@/hooks/use-toast';
@@ -6,6 +7,23 @@ import { toast } from '@/hooks/use-toast';
 export const useNDVIApiMonitoring = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
+  const [isWarming, setIsWarming] = useState(false);
+
+  // Warm up the API on mount
+  useEffect(() => {
+    const warmUpApi = async () => {
+      try {
+        setIsWarming(true);
+        await renderNDVIService.ping();
+        setIsWarming(false);
+      } catch (error) {
+        console.log('API warm-up in progress...');
+        setIsWarming(false);
+      }
+    };
+
+    warmUpApi();
+  }, []);
 
   // Health check - manual refresh only
   const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery({
@@ -101,6 +119,7 @@ export const useNDVIApiMonitoring = () => {
     dataSummary,
     dataSummaryLoading,
     isHealthy: healthData?.status === 'running' || healthData?.status === 'healthy' || healthData?.status === 'ok',
+    isWarming,
     createRequest: createRequest.mutate,
     isCreatingRequest: createRequest.isPending,
     retryRequest: retryRequest.mutate,

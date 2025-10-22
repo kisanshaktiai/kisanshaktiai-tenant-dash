@@ -136,11 +136,45 @@ export class RenderNDVIService {
   }
 
   /**
+   * Retry helper with exponential backoff for cold start handling
+   */
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 2000
+  ): Promise<T> {
+    let lastError: any;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        lastError = error;
+        
+        // Check if it's a network error (likely cold start)
+        const isColdStart = error.message?.includes('fetch') || 
+                           error.message?.includes('network') ||
+                           error.name === 'TypeError';
+        
+        if (isColdStart && attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          console.log(`🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms (service warming up)`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+
+  /**
    * Check health status of the Render service
    * GET /api/v1/health
    */
   async checkHealth(): Promise<HealthStatus> {
-    try {
+    return this.retryWithBackoff(async () => {
       const response = await fetch(`${this.baseUrl}/api/v1/health`, {
         method: 'GET',
         headers: {
@@ -153,10 +187,7 @@ export class RenderNDVIService {
       }
 
       return await response.json();
-    } catch (error) {
-      console.error('Health check error:', error);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -172,12 +203,11 @@ export class RenderNDVIService {
   }
 
   /**
-   * Create a new NDVI processing request
+   * Create a new NDVI processing request (with retry for cold starts)
    * POST /api/v1/ndvi/lands/analyze (API v3.9 correct endpoint)
    */
   async createRequest(payload: { tenant_id: string; land_ids: string[]; tile_id: string }): Promise<NDVIRequestResponse> {
-    try {
-      // API v3.9 expects tenant_id as query param, land_ids and tile_id in body
+    return this.retryWithBackoff(async () => {
       const params = new URLSearchParams();
       params.append('tenant_id', payload.tenant_id);
 
@@ -203,10 +233,7 @@ export class RenderNDVIService {
         return result.data || result;
       }
       return result;
-    } catch (error) {
-      console.error('Create request error:', error);
-      throw error;
-    }
+    });
   }
 
   /**

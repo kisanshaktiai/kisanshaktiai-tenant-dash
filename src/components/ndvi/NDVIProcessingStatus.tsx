@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Clock, CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, RefreshCw, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { NDVIQueueProcessorService } from '@/services/NDVIQueueProcessorService';
@@ -31,6 +31,7 @@ export const NDVIProcessingStatus: React.FC = () => {
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
 
   const fetchQueueStatus = async () => {
     if (!currentTenant?.id) return;
@@ -98,10 +99,18 @@ export const NDVIProcessingStatus: React.FC = () => {
           filter: `tenant_id=eq.${currentTenant.id}`,
         },
         () => {
+          setIsConnected(true);
           fetchQueueStatus();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsConnected(true);
+        } else if (status === 'CHANNEL_ERROR') {
+          setIsConnected(false);
+          console.error('Real-time connection error for NDVI queue');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -142,6 +151,18 @@ export const NDVIProcessingStatus: React.FC = () => {
             <CardTitle className="flex items-center gap-2">
               <Loader2 className="w-5 h-5" />
               Processing Queue Status
+              {!isConnected && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  <WifiOff className="w-3 h-3 mr-1" />
+                  Offline
+                </Badge>
+              )}
+              {isConnected && (
+                <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200">
+                  <Wifi className="w-3 h-3 mr-1" />
+                  Live
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>Real-time NDVI processing pipeline monitoring</CardDescription>
           </div>

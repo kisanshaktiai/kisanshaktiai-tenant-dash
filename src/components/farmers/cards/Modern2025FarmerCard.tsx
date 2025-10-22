@@ -182,6 +182,13 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
       >
         {/* Live Status Indicator */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          {/* Warning for lands without boundaries */}
+          {farmer.total_land_acres && farmer.total_land_acres > 0 && !farmer.lands?.some((l: any) => l.boundary) && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-yellow-50 text-yellow-800 border-yellow-300">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              No GPS Data
+            </Badge>
+          )}
           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-background/90">
             <Shield className="w-3 h-3 mr-1" />
             {currentTenant?.name || 'Tenant'}

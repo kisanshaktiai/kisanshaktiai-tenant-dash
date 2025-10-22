@@ -5,6 +5,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { renderNDVIService } from './RenderNDVIService';
+import { globalErrorHandler } from './GlobalErrorHandler';
 
 const NDVI_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
 const CACHE_DURATION_DAYS = 7;
@@ -165,9 +166,37 @@ export class NDVILandService {
   }
 
   /**
+   * Auto-sync tile mappings if empty
+   */
+  private async ensureTileMappings(landIds: string[]): Promise<void> {
+    try {
+      const { count } = await supabase
+        .from('land_tile_mapping')
+        .select('*', { count: 'exact', head: true })
+        .in('land_id', landIds);
+
+      if (!count || count === 0) {
+        console.log('🔄 Auto-syncing tile mappings...');
+        const { error } = await supabase.rpc('assign_mgrs_tile_to_land');
+        
+        if (error) {
+          console.warn('⚠️ Auto-sync failed:', error.message);
+        } else {
+          console.log('✅ Tile mappings auto-synced successfully');
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to check/sync tile mappings:', error);
+    }
+  }
+
+  /**
    * Get tile mappings for lands
    */
   private async getTileMappingsForLands(landIds: string[]): Promise<Map<string, TileLandGroup>> {
+    // Auto-sync if needed
+    await this.ensureTileMappings(landIds);
+
     const { data: tileMappings, error } = await supabase
       .from('land_tile_mapping')
       .select(`
@@ -296,9 +325,19 @@ export class NDVILandService {
 
       // Step 2: Filter lands with boundary data
       const landsWithGeometry = lands.filter(land => land.boundary);
+      const landsWithoutBoundary = lands.filter(land => !land.boundary);
+      
+      if (landsWithoutBoundary.length > 0) {
+        const landNames = landsWithoutBoundary.map(l => l.name).join(', ');
+        console.warn(`⚠️ ${landsWithoutBoundary.length} land(s) skipped (no boundary): ${landNames}`);
+      }
       
       if (landsWithGeometry.length === 0) {
-        throw new Error('None of your lands have boundary data. Please add GPS coordinates.');
+        throw new Error(
+          `❌ Cannot process NDVI: All ${lands.length} land(s) are missing GPS boundary data.\n\n` +
+          `Please add boundary coordinates for: ${lands.map(l => l.name).join(', ')}\n\n` +
+          `Tip: Edit each land in the Farmers section and draw boundaries on the map.`
+        );
       }
 
       // Step 3: Get tile mappings for lands
@@ -306,7 +345,24 @@ export class NDVILandService {
       const tileGroups = await this.getTileMappingsForLands(landIds);
       
       if (tileGroups.size === 0) {
-        throw new Error('Unable to determine satellite tiles for lands. Please ensure land boundaries are properly mapped.');
+        globalErrorHandler.handleError(
+          new Error('Tile mapping missing'),
+          { 
+            component: 'NDVILandService',
+            metadata: { 
+              action: 'fetchNDVIForLands',
+              landCount: landsWithGeometry.length 
+            }
+          },
+          { showToast: true, severity: 'high' }
+        );
+        throw new Error(
+          `❌ Cannot determine satellite tiles for your lands.\n\n` +
+          `This usually happens when:\n` +
+          `1. Land boundaries haven't been properly saved\n` +
+          `2. Tile database needs to be synced\n\n` +
+          `Solution: Contact support or try re-drawing land boundaries.`
+        );
       }
 
       console.log(`📡 Found ${tileGroups.size} tile group(s) for ${landIds.length} land(s)`);
@@ -382,8 +438,23 @@ export class NDVILandService {
 
       return allResults;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error in fetchNDVIForLands:', error);
+      
+      // Use global error handler for better error tracking
+      globalErrorHandler.handleError(
+        error,
+        {
+          component: 'NDVILandService',
+          metadata: { 
+            action: 'fetchNDVIForLands',
+            tenantId, 
+            farmerId 
+          }
+        },
+        { showToast: false, severity: 'high' }
+      );
+      
       throw error;
     }
   }

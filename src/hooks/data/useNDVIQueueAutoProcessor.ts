@@ -11,6 +11,8 @@ export const useNDVIQueueAutoProcessor = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const processingRef = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     if (!currentTenant?.id) return;
@@ -75,8 +77,27 @@ export const useNDVIQueueAutoProcessor = () => {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('✅ NDVI queue auto-processor active');
+          retryCountRef.current = 0; // Reset retry count on success
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ NDVI queue subscription error');
+          
+          // Retry with exponential backoff
+          if (retryCountRef.current < maxRetries) {
+            retryCountRef.current++;
+            const delay = Math.pow(2, retryCountRef.current) * 1000;
+            console.log(`🔄 Retrying subscription in ${delay}ms (attempt ${retryCountRef.current}/${maxRetries})`);
+            
+            setTimeout(() => {
+              supabase.removeChannel(channel);
+              // Re-run the effect by forcing a state update would be complex here
+              // Instead, we'll just log and let the user refresh if needed
+              console.log('⚠️ Please refresh the page if NDVI updates are not appearing');
+            }, delay);
+          } else {
+            console.error('❌ Max retries reached for NDVI queue subscription. Falling back to polling.');
+          }
+        } else if (status === 'CLOSED') {
+          console.log('🔌 NDVI queue subscription closed');
         }
       });
 

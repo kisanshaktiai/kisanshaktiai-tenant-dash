@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ndviLandService, FetchNDVIResult } from '@/services/NDVILandService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from '@/hooks/use-toast';
+import { useErrorHandler } from '@/hooks/core/useErrorHandler';
 
 export const useNDVILandData = (farmerId?: string) => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
+  const { handleError } = useErrorHandler({ component: 'useNDVILandData' });
 
   // Fetch cached NDVI data
   const {
@@ -68,9 +70,15 @@ export const useNDVILandData = (farmerId?: string) => {
       }
     },
     onError: (error: Error) => {
+      const errorMsg = handleError(
+        error,
+        'Failed to fetch NDVI data',
+        { metadata: { action: 'autoFetch', farmerId } }
+      );
+      
       toast({
-        title: 'Failed to fetch NDVI data',
-        description: error.message,
+        title: '❌ NDVI Fetch Failed',
+        description: errorMsg.message,
         variant: 'destructive',
       });
     },
@@ -123,9 +131,15 @@ export const useNDVILandData = (farmerId?: string) => {
       }
     },
     onError: (error: Error) => {
+      const errorMsg = handleError(
+        error,
+        'Failed to refresh NDVI data',
+        { metadata: { action: 'manualRefresh', farmerId } }
+      );
+      
       toast({
-        title: 'Failed to refresh NDVI data',
-        description: error.message,
+        title: '❌ NDVI Refresh Failed',
+        description: errorMsg.message,
         variant: 'destructive',
       });
     },
