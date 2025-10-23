@@ -5,17 +5,17 @@ import { CheckCircle, AlertTriangle, Info, Activity } from 'lucide-react';
 import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
 
 export const NDVIDiagnosticsPanel: React.FC = () => {
-  const { globalStats, dataSummary, requests } = useNDVIApiMonitoring();
+  const { globalStats, dataSummary } = useNDVIApiMonitoring();
 
-  // From API: dataSummary = {status, count, data: [...]}
-  // From API: globalStats = {status, stats: {total_requests, queued, processing, completed}}
+  // v4.1.0 API: dataSummary = {status, count, data: [...]}
+  // v4.1.0 API: globalStats = {status, tenant_id, stats: {total_requests, queued, processing, completed, failed}}
   const hasData = (dataSummary as any)?.count > 0;
   const stats = (globalStats as any)?.stats || {};
   const queuedCount = stats.queued || 0;
   const processingCount = stats.processing || 0;
   const completedCount = stats.completed || 0;
+  const failedCount = stats.failed || 0;
   const totalRequests = stats.total_requests || 0;
-  const failedCount = totalRequests - (queuedCount + processingCount + completedCount);
 
   return (
     <Card className="border-muted/50 shadow-lg">

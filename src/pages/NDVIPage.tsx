@@ -41,6 +41,8 @@ export default function NDVIPage() {
     isHealthy,
     refetchHealth,
     refetchStats,
+    refetchData,
+    dataSummary,
   } = useNDVIApiMonitoring();
 
   // Real-time data from Supabase
@@ -52,133 +54,24 @@ export default function NDVIPage() {
     refetch: refetchRealtime,
   } = useRealTimeNDVIData();
 
-  const { queueStatus } = useNDVIQueueStatus();
-
-  // Auto-process queue when new items are added
-  useNDVIQueueAutoProcessor();
-
-  // Create NDVI requests and refresh data with comprehensive debug logging
+  // Refresh data handler
   const handleRefreshAll = async () => {
     if (!currentTenant?.id) {
-      console.error('❌ No tenant selected');
       toast.error('No tenant selected');
       return;
     }
 
     setIsCreatingRequests(true);
-    const startTime = Date.now();
-    
     try {
-      console.log('🔄 [NDVI REFRESH] Starting NDVI workflow for tenant:', currentTenant.id);
-      
-      // Step 1: Queue NDVI requests for all lands
-      console.log('📝 [STEP 1] Queueing NDVI requests...');
-      toast.info('Queueing NDVI requests...');
-      
-      const queueResults = await ndviLandService.fetchNDVIForLands(
-        currentTenant.id, 
-        undefined, 
-        true
-      );
-      console.log('✅ [STEP 1] Queue results:', {
-        totalLands: queueResults?.length || 0,
-        successCount: queueResults?.filter(r => r.success).length || 0,
-        results: queueResults,
-      });
-      
-      // Step 2: Trigger the queue processor (now calls Python API directly)
-      console.log('⚙️ [STEP 2] Calling Python API to process NDVI...');
-      toast.info('Processing NDVI data via Python API...');
-      
-      const { NDVIQueueProcessorService } = await import('@/services/NDVIQueueProcessorService');
-      const processResult = await NDVIQueueProcessorService.processQueue(10);
-      
-      console.log('✅ [STEP 2] Process result:', {
-        success: processResult.success,
-        processed: processResult.processed,
-        failed: processResult.failed,
-        message: processResult.message,
-      });
-      
-      // Check if processing was successful
-      if (processResult.success && processResult.processed > 0) {
-        toast.success(
-          `✅ Processing ${processResult.processed} NDVI request(s)... Check results in 30-60 seconds.`,
-          { duration: 6000 }
-        );
-
-        // Wait 5 seconds for Python API to process and insert data
-        console.log('⏳ [STEP 3] Waiting 5s for Python API to process...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        // Step 3: Verify data insertion
-        console.log('🔍 [STEP 3] Verifying NDVI data insertion...');
-        const { supabase } = await import('@/integrations/supabase/client');
-        
-        const { data: ndviDataCheck, error: ndviError } = await supabase
-          .from('ndvi_data')
-          .select('id, land_id, date, ndvi_value, created_at')
-          .eq('tenant_id', currentTenant.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        console.log('📊 [STEP 3] Recent NDVI data:', ndviDataCheck);
-        console.log(`✅ [STEP 3] Found ${ndviDataCheck?.length || 0} recent NDVI records`);
-
-        const { data: microTilesCheck } = await supabase
-          .from('ndvi_micro_tiles')
-          .select('id, land_id, acquisition_date, ndvi_mean')
-          .eq('tenant_id', currentTenant.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        console.log('🗺️ [STEP 3] Recent micro tiles:', microTilesCheck);
-        console.log(`✅ [STEP 3] Found ${microTilesCheck?.length || 0} recent tile records`);
-
-        // Show data verification results
-        if ((ndviDataCheck?.length || 0) > 0) {
-          toast.success(
-            `✅ Data verified! ${ndviDataCheck?.length} NDVI records inserted successfully.`,
-            { duration: 4000 }
-          );
-        } else {
-          toast.warning(
-            'Processing in progress... Refresh page in 1-2 minutes to see results. Check diagnostics panel for status.',
-            { duration: 6000 }
-          );
-        }
-      } else if (processResult.failed > 0) {
-        toast.error(
-          `❌ ${processResult.failed} request(s) failed. Check diagnostics panel for details.`,
-          { duration: 6000 }
-        );
-      } else {
-        toast.info(
-          'No new items to process. Queue is empty or already processing.',
-          { duration: 4000 }
-        );
-      }
-      
-      // Step 4: Refresh dashboard data
-      console.log('🔄 [STEP 4] Refreshing dashboard data...');
-      await refetchRealtime();
-      await refetchHealth();
-      await refetchStats();
-      console.log('✅ [STEP 4] Dashboard data refreshed');
-
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log(`🎉 [COMPLETE] NDVI refresh completed in ${duration}s`);
-      
+      await Promise.all([
+        refetchHealth(),
+        refetchStats(),
+        refetchData(),
+        refetchRealtime(),
+      ]);
+      toast.success('Data refreshed successfully');
     } catch (error) {
-      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.error(`❌ [ERROR] NDVI refresh failed after ${duration}s:`, error);
-      
-      // Show detailed error to user
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast.error(
-        `Failed to process NDVI data: ${errorMessage}. Check console for details.`,
-        { duration: 6000 }
-      );
+      toast.error('Failed to refresh data');
     } finally {
       setIsCreatingRequests(false);
     }
@@ -234,7 +127,7 @@ export default function NDVIPage() {
                   className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
                 >
                   <RefreshCw className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
-                  {isCreatingRequests ? 'Creating Requests...' : 'Queue NDVI & Refresh'}
+                  {isCreatingRequests ? 'Refreshing...' : 'Refresh Data'}
                 </Button>
                 <Button
                   variant="outline"
