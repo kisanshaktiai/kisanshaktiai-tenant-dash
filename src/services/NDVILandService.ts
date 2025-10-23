@@ -16,6 +16,19 @@ export interface LandGeometry {
   geometry: any; // GeoJSON geometry
 }
 
+/**
+ * Helper function to get land geometry from either boundary column
+ */
+function getLandGeometry(land: any): any {
+  if (land.boundary) return land.boundary;
+  if (land.boundary_polygon_old) {
+    return typeof land.boundary_polygon_old === 'string' 
+      ? JSON.parse(land.boundary_polygon_old) 
+      : land.boundary_polygon_old;
+  }
+  return null;
+}
+
 export interface NDVIApiResponse {
   land_id: string;
   ndvi_value: number;
@@ -296,10 +309,10 @@ export class NDVILandService {
         force_refresh: forceRefresh
       });
 
-      // Step 1: Fetch active lands
+      // Step 1: Fetch active lands (check both boundary columns)
       let query = supabase
         .from('lands')
-        .select('id, name, tenant_id, farmer_id, boundary')
+        .select('id, name, tenant_id, farmer_id, boundary, boundary_polygon_old')
         .eq('tenant_id', tenantId)
         .eq('is_active', true);
 
@@ -323,13 +336,20 @@ export class NDVILandService {
 
       console.log(`✅ Found ${lands.length} land(s)`);
 
-      // Step 2: Filter lands with boundary data
-      const landsWithGeometry = lands.filter(land => land.boundary);
-      const landsWithoutBoundary = lands.filter(land => !land.boundary);
+      // Step 2: Filter lands with boundary data (check both columns)
+      const landsWithGeometry = lands.filter(land => {
+        const hasGeometry = getLandGeometry(land) !== null;
+        if (!hasGeometry) {
+          console.warn(`⚠️ Land ${land.name} skipped (no boundary data in either column)`);
+        }
+        return hasGeometry;
+      });
+      
+      const landsWithoutBoundary = lands.filter(land => getLandGeometry(land) === null);
       
       if (landsWithoutBoundary.length > 0) {
         const landNames = landsWithoutBoundary.map(l => l.name).join(', ');
-        console.warn(`⚠️ ${landsWithoutBoundary.length} land(s) skipped (no boundary): ${landNames}`);
+        console.warn(`⚠️ ${landsWithoutBoundary.length} land(s) skipped (no boundary data): ${landNames}`);
       }
       
       if (landsWithGeometry.length === 0) {
