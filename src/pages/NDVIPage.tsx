@@ -276,11 +276,11 @@ export default function NDVIPage() {
             </Alert>
           )}
 
+          {/* Diagnostics Panel - Queue Status from API */}
+          <NDVIDiagnosticsPanel />
+
           {/* Insights Panel */}
           <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
-
-          {/* Diagnostics Panel - Shows data verification */}
-          <NDVIDiagnosticsPanel />
 
           {/* Processing Status */}
           <NDVIProcessingStatus />

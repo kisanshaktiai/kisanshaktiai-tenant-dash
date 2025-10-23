@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   ArrowRight,
   Sparkles,
-  Target
+  Target,
+  Activity
 } from 'lucide-react';
 
 interface NDVIInsightsPanelProps {
@@ -27,51 +28,51 @@ export const NDVIInsightsPanel: React.FC<NDVIInsightsPanelProps> = ({ globalStat
       title: avgNDVI > 0.6 
         ? 'Excellent Vegetation Health' 
         : avgNDVI > 0.3 
-        ? 'Moderate Health - Room for Improvement'
-        : 'Action Required - Low Vegetation Health',
+        ? 'Moderate Health - Monitor Closely'
+        : 'Low Health - Action Needed',
       description: avgNDVI > 0.6
-        ? 'Your crops are showing optimal health. Continue current practices.'
+        ? 'Crops showing optimal health indicators. Maintain current practices.'
         : avgNDVI > 0.3
-        ? 'Consider optimizing irrigation and fertilization for better results.'
-        : 'Immediate intervention recommended to improve crop health.',
-      action: avgNDVI > 0.6 ? 'View Best Practices' : 'Get Recommendations',
+        ? 'Moderate vegetation index. Consider irrigation and soil analysis.'
+        : 'Low vegetation health detected. Review crop management immediately.',
+      action: avgNDVI > 0.6 ? 'View Trends' : 'Get Analysis',
       icon: avgNDVI > 0.6 ? CheckCircle2 : AlertCircle
     },
     {
       type: 'info',
-      title: 'Increase Yields by 25%',
-      description: 'Premium fertilizers and precision irrigation systems available. Data shows potential 25% yield increase.',
-      action: 'Shop Products',
+      title: 'Optimize Resource Usage',
+      description: 'Use NDVI data to make informed decisions about water, fertilizer, and pest management.',
+      action: 'View Analytics',
       icon: TrendingUp
     },
     {
-      type: 'marketing',
-      title: 'AI-Powered Crop Monitoring',
-      description: 'Upgrade to real-time alerts and predictive analytics. Get notified of issues before they become problems.',
-      action: 'Upgrade Now',
-      icon: Sparkles
+      type: 'info',
+      title: 'Track Historical Patterns',
+      description: 'Compare current health with past seasons to identify trends and make better planning decisions.',
+      action: 'View Trends',
+      icon: Target
     }
   ] : [
     {
       type: 'info',
-      title: 'Start Monitoring Your Vegetation',
-      description: 'Add farmers and their land parcels to begin tracking vegetation health with satellite imagery.',
+      title: 'Start Vegetation Monitoring',
+      description: 'Add farmers and land parcels to begin tracking vegetation health with satellite imagery.',
       action: 'Go to Farmers',
       icon: Target
     },
     {
       type: 'info',
-      title: 'Precision Agriculture Solutions',
-      description: 'Once you have data, discover products and services to optimize your farming operations.',
-      action: 'Browse Products',
-      icon: TrendingUp
-    },
-    {
-      type: 'marketing',
-      title: 'AI-Powered Insights Coming',
-      description: 'Set up your lands to unlock real-time alerts, predictive analytics, and personalized recommendations.',
+      title: 'Request NDVI Data',
+      description: 'Click "Queue NDVI & Refresh" to request the latest satellite data for your registered lands.',
       action: 'Learn More',
       icon: Sparkles
+    },
+    {
+      type: 'info',
+      title: 'View System Status',
+      description: 'Check the System tab to monitor API health and processing queue status.',
+      action: 'Check Status',
+      icon: Activity
     }
   ];
 
