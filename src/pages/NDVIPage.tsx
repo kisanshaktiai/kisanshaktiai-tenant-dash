@@ -61,16 +61,25 @@ export default function NDVIPage() {
       return;
     }
 
+    console.log('🔄 Refreshing NDVI data for tenant:', currentTenant.id);
     setIsCreatingRequests(true);
     try {
+      console.log('📡 Calling API endpoints:');
+      console.log('  - /api/v1/health');
+      console.log('  - /api/v1/ndvi/requests/stats?tenant_id=' + currentTenant.id);
+      console.log('  - /api/v1/ndvi/data?tenant_id=' + currentTenant.id + '&limit=1000');
+      
       await Promise.all([
         refetchHealth(),
         refetchStats(),
         refetchData(),
         refetchRealtime(),
       ]);
+      
+      console.log('✅ All API calls completed');
       toast.success('Data refreshed successfully');
     } catch (error) {
+      console.error('❌ Failed to refresh data:', error);
       toast.error('Failed to refresh data');
     } finally {
       setIsCreatingRequests(false);

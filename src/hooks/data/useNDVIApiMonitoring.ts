@@ -33,10 +33,16 @@ export const useNDVIApiMonitoring = () => {
     staleTime: 60000,
   });
 
-  // Stats - manual refresh only (v4.1.0)
+  // Stats - manual refresh only (v4.1.0) - ALWAYS pass tenant_id
   const { data: globalStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['ndvi-stats', currentTenant?.id],
-    queryFn: () => renderNDVIService.getStats(currentTenant?.id),
+    queryFn: async () => {
+      if (!currentTenant?.id) {
+        console.warn('No tenant ID available for stats fetch');
+        return null;
+      }
+      return renderNDVIService.getStats(currentTenant.id);
+    },
     enabled: !!currentTenant?.id,
     retry: 2,
     staleTime: 60000,
@@ -45,7 +51,13 @@ export const useNDVIApiMonitoring = () => {
   // NDVI data summary - manual refresh only (v4.1.0 - uses ndvi_micro_tiles)
   const { data: dataSummary, isLoading: dataSummaryLoading, refetch: refetchData } = useQuery({
     queryKey: ['ndvi-data-summary', currentTenant?.id],
-    queryFn: () => renderNDVIService.getNDVIData(currentTenant?.id || ''),
+    queryFn: async () => {
+      if (!currentTenant?.id) {
+        console.warn('No tenant ID available for data summary fetch');
+        return null;
+      }
+      return renderNDVIService.getNDVIData(currentTenant.id);
+    },
     enabled: !!currentTenant?.id,
     staleTime: 120000,
   });

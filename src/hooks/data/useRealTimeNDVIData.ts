@@ -67,27 +67,29 @@ export interface NDVIStats {
 }
 
 /**
- * Hook to fetch real-time NDVI data from Supabase
+ * Hook to fetch real-time NDVI data from API v4.1.0
  */
 export const useRealTimeNDVIData = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
 
-  // Fetch latest NDVI data for all lands
+  // Fetch latest NDVI data from API v4.1.0
   const { data: ndviData, isLoading, error, refetch } = useQuery({
     queryKey: ['ndvi-realtime-data', currentTenant?.id],
     queryFn: async (): Promise<RealTimeNDVIData[]> => {
       if (!currentTenant?.id) return [];
 
-      const { data, error } = await supabase
-        .from('ndvi_full_view' as any)
-        .select('*')
-        .eq('tenant_id', currentTenant.id)
-        .order('date', { ascending: false })
-        .limit(1000);
+      // Call API v4.1.0 endpoint
+      const response = await fetch(
+        `https://ndvi-land-api.onrender.com/api/v1/ndvi/data?tenant_id=${currentTenant.id}&limit=1000`
+      );
 
-      if (error) throw error;
-      return (data || []) as any[];
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return (result.data || []) as RealTimeNDVIData[];
     },
     enabled: !!currentTenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -107,7 +109,7 @@ export const useRealTimeNDVIData = () => {
       }
     : null;
 
-  // Real-time subscription to ndvi_data table
+  // Real-time subscription to ndvi_micro_tiles table (v4.1.0)
   useEffect(() => {
     if (!currentTenant?.id) return;
 
@@ -118,11 +120,11 @@ export const useRealTimeNDVIData = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'ndvi_data',
+          table: 'ndvi_micro_tiles',
           filter: `tenant_id=eq.${currentTenant.id}`,
         },
         (payload) => {
-          console.log('NDVI data changed:', payload);
+          console.log('NDVI micro tiles data changed:', payload);
           // Invalidate and refetch on any change
           queryClient.invalidateQueries({ queryKey: ['ndvi-realtime-data', currentTenant.id] });
         }
@@ -134,11 +136,14 @@ export const useRealTimeNDVIData = () => {
     };
   }, [currentTenant?.id, queryClient]);
 
-  // Get latest data grouped by land
+  // Get latest data grouped by land (using acquisition_date from v4.1.0)
   const landData = ndviData
     ? Object.values(
         ndviData.reduce((acc, item) => {
-          if (!acc[item.land_id] || new Date(item.date) > new Date(acc[item.land_id].date)) {
+          const dateField = item.date || (item as any).acquisition_date;
+          const existingDate = acc[item.land_id]?.date || (acc[item.land_id] as any)?.acquisition_date;
+          
+          if (!acc[item.land_id] || (dateField && existingDate && new Date(dateField) > new Date(existingDate))) {
             acc[item.land_id] = item;
           }
           return acc;
