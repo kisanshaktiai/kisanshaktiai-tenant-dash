@@ -73,26 +73,67 @@ export const useRealTimeNDVIData = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
 
-  // Fetch latest NDVI data from API v4.1.0
+  // Fetch latest NDVI data from API v4.1.0 with retry logic for cold starts
   const { data: ndviData, isLoading, error, refetch } = useQuery({
     queryKey: ['ndvi-realtime-data', currentTenant?.id],
     queryFn: async (): Promise<RealTimeNDVIData[]> => {
-      if (!currentTenant?.id) return [];
-
-      // Call API v4.1.0 endpoint
-      const response = await fetch(
-        `https://ndvi-land-api.onrender.com/api/v1/ndvi/data?tenant_id=${currentTenant.id}&limit=1000`
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+      if (!currentTenant?.id) {
+        console.warn('useRealTimeNDVIData: No tenant ID available');
+        return [];
       }
 
-      const result = await response.json();
-      return (result.data || []) as RealTimeNDVIData[];
+      const url = `https://ndvi-land-api.onrender.com/api/v1/ndvi/data?tenant_id=${currentTenant.id}&limit=1000`;
+      console.log('🔄 useRealTimeNDVIData: Fetching from API v4.1.0');
+      console.log('   URL:', url);
+      console.log('   tenant_id:', currentTenant.id);
+      
+      // Retry logic for cold start (Render free tier)
+      let lastError: any;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`API returned ${response.status}: ${errorText}`);
+          }
+
+          const result = await response.json();
+          
+          // v4.1.0 API response: { status: "success", count: N, data: [...] }
+          if (result.status === 'success' && Array.isArray(result.data)) {
+            console.log('✅ useRealTimeNDVIData: Fetched', result.data.length, 'records');
+            return result.data as RealTimeNDVIData[];
+          }
+
+          console.warn('useRealTimeNDVIData: Unexpected API response format', result);
+          return [];
+        } catch (error: any) {
+          lastError = error;
+          const isColdStart = error.message?.includes('fetch') || error.message?.includes('Failed to fetch');
+          
+          if (isColdStart && attempt < 2) {
+            const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+            console.log(`🔄 Retry attempt ${attempt + 1}/3 after ${delay}ms (API warming up)`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            console.error('❌ useRealTimeNDVIData: API call failed:', error);
+            throw error;
+          }
+        }
+      }
+      
+      throw lastError;
     },
     enabled: !!currentTenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1, // React Query will retry once more after our internal retries
+    retryDelay: 5000, // Wait 5s before React Query retry
   });
 
   // Calculate statistics from real-time data

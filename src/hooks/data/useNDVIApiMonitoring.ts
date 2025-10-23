@@ -38,13 +38,22 @@ export const useNDVIApiMonitoring = () => {
     queryKey: ['ndvi-stats', currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant?.id) {
-        console.warn('No tenant ID available for stats fetch');
+        console.warn('useNDVIApiMonitoring: No tenant ID available for stats fetch');
         return null;
       }
-      return renderNDVIService.getStats(currentTenant.id);
+      console.log('🔄 useNDVIApiMonitoring: Fetching stats for tenant:', currentTenant.id);
+      try {
+        const result = await renderNDVIService.getStats(currentTenant.id);
+        console.log('✅ useNDVIApiMonitoring: Stats fetched successfully', result);
+        return result;
+      } catch (error) {
+        console.error('❌ useNDVIApiMonitoring: Stats fetch failed:', error);
+        throw error;
+      }
     },
     enabled: !!currentTenant?.id,
-    retry: 2,
+    retry: 1,
+    retryDelay: 5000,
     staleTime: 60000,
   });
 
@@ -53,12 +62,22 @@ export const useNDVIApiMonitoring = () => {
     queryKey: ['ndvi-data-summary', currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant?.id) {
-        console.warn('No tenant ID available for data summary fetch');
+        console.warn('useNDVIApiMonitoring: No tenant ID available for data summary fetch');
         return null;
       }
-      return renderNDVIService.getNDVIData(currentTenant.id);
+      console.log('🔄 useNDVIApiMonitoring: Fetching data summary for tenant:', currentTenant.id);
+      try {
+        const result = await renderNDVIService.getNDVIData(currentTenant.id, undefined, 1000);
+        console.log('✅ useNDVIApiMonitoring: Data summary fetched successfully', result);
+        return result;
+      } catch (error) {
+        console.error('❌ useNDVIApiMonitoring: Data summary fetch failed:', error);
+        throw error;
+      }
     },
     enabled: !!currentTenant?.id,
+    retry: 1,
+    retryDelay: 5000,
     staleTime: 120000,
   });
 
