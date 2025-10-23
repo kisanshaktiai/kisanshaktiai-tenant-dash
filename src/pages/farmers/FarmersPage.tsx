@@ -18,7 +18,6 @@ import { AdvancedFilters } from './components/AdvancedFilters';
 import { FarmerAnalytics } from './components/FarmerAnalytics';
 import { CampaignCenter } from './components/CampaignCenter';
 import { IntegrationHub } from './components/IntegrationHub';
-import { NDVIHarvestManager } from './components/NDVIHarvestManager';
 import type { Farmer } from '@/services/FarmersService';
 
 export default function FarmersPage() {
@@ -157,7 +156,22 @@ export default function FarmersPage() {
         </TabsContent>
 
         <TabsContent value="ndvi">
-          <NDVIHarvestManager />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+                <Satellite className="h-16 w-16 text-muted-foreground" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">NDVI Monitoring</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Access the dedicated NDVI page for vegetation monitoring and satellite data analysis
+                  </p>
+                  <Button onClick={() => window.location.href = '/app/ndvi'}>
+                    Go to NDVI Page
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="bulk">
