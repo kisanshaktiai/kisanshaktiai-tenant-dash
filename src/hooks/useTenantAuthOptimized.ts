@@ -55,6 +55,7 @@ export const useTenantAuthOptimized = () => {
         console.log('useTenantAuthOptimized: User has no active tenants');
         dispatch(setUserTenants([]));
         dispatch(setCurrentTenant(null));
+        setIsInitialized(true);
         return;
       }
 

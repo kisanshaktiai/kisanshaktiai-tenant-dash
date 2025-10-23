@@ -397,7 +397,8 @@ const TopBar = memo(() => {
 });
 
 export const EnhancedTenantLayout: React.FC = () => {
-  const { currentTenant, loading } = useTenantContextOptimized();
+  const navigate = useNavigate();
+  const { currentTenant, loading, isInitialized } = useTenantContextOptimized();
   const [mounted, setMounted] = useState(false);
   const { isAuthenticated, isLoading } = useAuthGuard();
 
@@ -405,8 +406,16 @@ export const EnhancedTenantLayout: React.FC = () => {
     setMounted(true);
   }, []);
 
+  // Redirect to onboarding if user is authenticated but has no tenant
+  useEffect(() => {
+    if (isAuthenticated && isInitialized && !currentTenant && !loading) {
+      console.log('EnhancedTenantLayout: No tenant found, redirecting to onboarding');
+      navigate('/onboarding', { replace: true });
+    }
+  }, [isAuthenticated, isInitialized, currentTenant, loading, navigate]);
+
   // Show loading state while checking authentication
-  if (isLoading || !mounted || loading) {
+  if (isLoading || !mounted || loading || !isInitialized) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-4">
@@ -422,14 +431,9 @@ export const EnhancedTenantLayout: React.FC = () => {
     return null;
   }
 
+  // Will redirect to onboarding if no tenant (handled by useEffect above)
   if (!currentTenant) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground">No tenant context available</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
