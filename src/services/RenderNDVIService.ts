@@ -432,6 +432,107 @@ export class RenderNDVIService {
       throw error;
     }
   }
+
+  /**
+   * Create NDVI analysis request (v3.9 - matches Python API)
+   * POST /api/v1/ndvi/lands/analyze?tenant_id={id}
+   * Body: { land_ids: string[], tile_id: string }
+   */
+  async createAnalysisRequest(tenantId: string, landIds: string[], tileId: string): Promise<any> {
+    return this.retryWithBackoff(async () => {
+      if (!tenantId || !landIds?.length || !tileId) {
+        throw new Error('tenant_id, land_ids, and tile_id are required');
+      }
+
+      const url = `${this.baseUrl}/api/v1/ndvi/lands/analyze?tenant_id=${tenantId}`;
+      console.log(`📡 RenderNDVIService.createAnalysisRequest: POST ${url}`, { landIds, tileId });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          land_ids: landIds,
+          tile_id: tileId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Create analysis request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ RenderNDVIService.createAnalysisRequest: Request created`, result);
+      return result;
+    });
+  }
+
+  /**
+   * Get NDVI request queue (v3.9)
+   * GET /api/v1/ndvi/requests/queue?tenant_id={id}
+   */
+  async getRequestQueue(tenantId: string): Promise<any> {
+    try {
+      if (!tenantId) {
+        throw new Error('tenant_id is required');
+      }
+
+      const params = new URLSearchParams();
+      params.append('tenant_id', tenantId);
+
+      const url = `${this.baseUrl}/api/v1/ndvi/requests/queue?${params.toString()}`;
+      console.log(`📡 RenderNDVIService.getRequestQueue: GET ${url}`);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Get request queue failed: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ RenderNDVIService.getRequestQueue: Received ${result.queue?.length || 0} requests`);
+      return result;
+    } catch (error) {
+      console.error('Get request queue error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get queue status (v3.9)
+   * GET /api/v1/ndvi/queue/status
+   */
+  async getQueueStatus(): Promise<any> {
+    try {
+      const url = `${this.baseUrl}/api/v1/ndvi/queue/status`;
+      console.log(`📡 RenderNDVIService.getQueueStatus: GET ${url}`);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Get queue status failed: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ RenderNDVIService.getQueueStatus:`, result);
+      return result;
+    } catch (error) {
+      console.error('Get queue status error:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
