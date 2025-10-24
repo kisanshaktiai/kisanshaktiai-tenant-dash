@@ -115,7 +115,13 @@ export const useAutoNDVIAnalysis = () => {
           const result = await renderNDVIService.createAnalysisRequest(
             currentTenant.id,
             landIds,
-            tileId
+            tileId,
+            {
+              source: 'kisanshakti-dashboard',
+              requested_by: 'auto-analysis',
+              land_count: landIds.length,
+              timestamp: new Date().toISOString(),
+            }
           );
           results.push({ tileId, landIds: landIds.length, result });
         } catch (error) {

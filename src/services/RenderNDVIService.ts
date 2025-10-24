@@ -486,7 +486,8 @@ export class RenderNDVIService {
   async createAnalysisRequest(
     tenantId: string,
     landIds: string[],
-    tileId: string
+    tileId: string,
+    metadata?: Record<string, any>
   ): Promise<NDVIRequestResponse> {
     this.validateTenantId(tenantId);
     console.log(`🚀 [NDVI-${this.version}] Creating NDVI analysis request for ${landIds.length} lands (tile: ${tileId})`);
@@ -497,6 +498,12 @@ export class RenderNDVIService {
         body: JSON.stringify({
           land_ids: landIds,
           tile_id: tileId,
+          statistics_only: false,
+          priority: 5,
+          metadata: metadata || {
+            source: 'kisanshakti-dashboard',
+            requested_at: new Date().toISOString(),
+          },
         }),
       });
 
