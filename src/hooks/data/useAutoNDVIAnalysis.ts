@@ -98,18 +98,18 @@ export const useAutoNDVIAnalysis = () => {
 
   // Create NDVI requests automatically
   const createRequestMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ instant = false }: { instant?: boolean } = {}) => {
       if (!currentTenant?.id) throw new Error('No tenant ID available');
       if (landsNeedingUpdate.length === 0) throw new Error('No lands need updates');
 
-      console.log('🚀 Creating automatic NDVI requests for tenant:', currentTenant.id);
+      console.log(`🚀 Creating ${instant ? 'INSTANT' : 'automatic'} NDVI requests for tenant:`, currentTenant.id);
       console.log('📦 Lands grouped by tile:', landsByTile);
 
       const results = [];
 
       // Create one request per tile (batch processing)
       for (const [tileId, landIds] of Object.entries(landsByTile)) {
-        console.log(`📡 Creating request for tile ${tileId} with ${landIds.length} lands`);
+        console.log(`📡 Creating ${instant ? 'INSTANT' : ''} request for tile ${tileId} with ${landIds.length} lands`);
         
         try {
           const result = await renderNDVIService.createAnalysisRequest(
@@ -118,10 +118,11 @@ export const useAutoNDVIAnalysis = () => {
             tileId,
             {
               source: 'kisanshakti-dashboard',
-              requested_by: 'auto-analysis',
+              requested_by: instant ? 'instant-analysis' : 'auto-analysis',
               land_count: landIds.length,
               timestamp: new Date().toISOString(),
-            }
+            },
+            instant
           );
           results.push({ tileId, landIds: landIds.length, result });
         } catch (error) {
@@ -161,7 +162,7 @@ export const useAutoNDVIAnalysis = () => {
     landsCount: landsNeedingUpdate.length,
     landsByTile,
     isLoading,
-    createAutoRequest: createRequestMutation.mutate,
+    createAutoRequest: createRequestMutation,
     isCreating: createRequestMutation.isPending,
   };
 };

@@ -487,10 +487,11 @@ export class RenderNDVIService {
     tenantId: string,
     landIds: string[],
     tileId: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
+    instant: boolean = false
   ): Promise<NDVIRequestResponse> {
     this.validateTenantId(tenantId);
-    console.log(`🚀 [NDVI-${this.version}] Creating NDVI analysis request for ${landIds.length} lands (tile: ${tileId})`);
+    console.log(`🚀 [NDVI-${this.version}] Creating ${instant ? 'INSTANT' : ''} NDVI analysis request for ${landIds.length} lands (tile: ${tileId})`);
     try {
       const url = `${this.baseUrl}/ndvi/lands/analyze?tenant_id=${tenantId}`;
       const response = await this.fetchWithTimeout(url, {
@@ -498,6 +499,7 @@ export class RenderNDVIService {
         body: JSON.stringify({
           land_ids: landIds,
           tile_id: tileId,
+          instant: instant,
           statistics_only: false,
           priority: 5,
           metadata: metadata || {
@@ -505,7 +507,7 @@ export class RenderNDVIService {
             requested_at: new Date().toISOString(),
           },
         }),
-      });
+      }, instant ? 120000 : this.defaultTimeout); // 2 min timeout for instant processing
 
       if (!response.ok) {
         const errorText = await response.text();
