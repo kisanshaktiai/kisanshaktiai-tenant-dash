@@ -1,46 +1,39 @@
 /**
- * Service for interacting with the NDVI Land API on Render
- * Base URL: https://ndvi-land-api.onrender.com
+ * NDVI Land API Service (v4.0)
  * 
- * New API Endpoints:
- * - GET /health - Health check
- * - POST /ndvi/requests - Create NDVI request
- * - GET /ndvi/requests - List all requests
- * - GET /ndvi/requests/{id} - Get specific request
- * - GET /ndvi/data - Get all NDVI data
- * - GET /ndvi/data/{land_id} - Get land-specific data
- * - GET /ndvi/thumbnail/{land_id} - Get thumbnail image
- * - GET /ndvi/stats/global - Global statistics
- * - GET /ndvi/queue/status - Queue status
- * - POST /ndvi/queue/retry/{id} - Retry failed request
+ * Enterprise-grade SDK for the Render-hosted NDVI processing API.
+ * Provides robust multi-tenant operations with timeout handling, 
+ * structured errors, exponential retry, and cold-start resilience.
+ * 
+ * © KisanShaktiAI | 2025
  */
 
-const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
+// Base URL for the Render API (v4.0)
+const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com/api/v1';
 
 export interface HealthStatus {
   status: string;
   timestamp: string;
   service?: string;
+  version?: string;
 }
 
-// Simplified payload for POST /ndvi/lands/analyze (API v3.9)
 export interface NDVIRequestPayload {
   tenant_id: string;
   land_ids: string[];
-  tile_id: string; // Required by API v3.9
+  tile_id: string;
 }
 
-// Response structure from POST /ndvi/requests
 export interface NDVIRequestResponse {
-  request_id: string;
-  tenant_id: string;
-  land_ids: string[];
   status: string;
-  created_at: string;
   message?: string;
+  data?: any;
+  request_id?: string;
+  tenant_id?: string;
+  land_ids?: string[];
+  created_at?: string;
 }
 
-// Response from GET /ndvi/requests (list)
 export interface NDVIRequestListResponse {
   total: number;
   requests: Array<{
@@ -55,7 +48,6 @@ export interface NDVIRequestListResponse {
   }>;
 }
 
-// Response from GET /ndvi/requests/{id}
 export interface NDVIRequestDetailResponse {
   id: string;
   tenant_id: string;
@@ -70,51 +62,72 @@ export interface NDVIRequestDetailResponse {
   error_message?: string;
 }
 
-// Response from GET /ndvi/stats/global
 export interface GlobalStatsResponse {
-  total_requests: number;
-  queued: number;
-  processing: number;
-  completed: number;
-  failed: number;
-  total_lands_processed: number;
-  average_ndvi: number;
-  max_ndvi: number;
-  min_ndvi: number;
-  timestamp: string;
+  status?: string;
+  stats?: {
+    total_requests?: number;
+    queued?: number;
+    processing?: number;
+    completed?: number;
+    failed?: number;
+  };
+  total_requests?: number;
+  queued?: number;
+  processing?: number;
+  completed?: number;
+  failed?: number;
+  total_lands_processed?: number;
+  average_ndvi?: number;
+  max_ndvi?: number;
+  min_ndvi?: number;
+  timestamp?: string;
 }
 
-// Response from GET /ndvi/queue/status
 export interface QueueStatusResponse {
-  queue_length: number;
-  processing_count: number;
-  last_processed_at: string;
-  estimated_wait_time_minutes: number;
+  status?: string;
+  active_jobs?: number;
+  queue_length?: number;
+  processing_count?: number;
+  last_processed_at?: string;
+  estimated_wait_time_minutes?: number;
+  timestamp?: string;
 }
 
-// Response from GET /ndvi/data
 export interface NDVIDataSummaryResponse {
-  total_lands: number;
-  lands_with_data: number;
-  average_ndvi: number;
-  data: Array<{
+  status?: string;
+  count?: number;
+  total_lands?: number;
+  lands_with_data?: number;
+  average_ndvi?: number;
+  data?: Array<{
     land_id: string;
-    land_name: string;
-    latest_ndvi: number;
-    latest_date: string;
-    data_count: number;
+    tenant_id?: string;
+    tile_id?: string;
+    acquisition_date?: string;
+    date?: string;
+    ndvi_mean?: number;
+    ndvi_value?: number;
+    ndvi_min?: number;
+    ndvi_max?: number;
+    ndvi_std?: number;
+    coverage?: number;
+    image_url?: string;
+    created_at?: string;
+    land_name?: string;
+    latest_ndvi?: number;
+    latest_date?: string;
+    data_count?: number;
   }>;
 }
 
-// Response from GET /ndvi/data/{land_id}
 export interface LandNDVIResponse {
   land_id: string;
-  land_name: string;
-  count: number;
-  average_ndvi: number;
-  max_ndvi: number;
-  min_ndvi: number;
-  data: Array<{
+  land_name?: string;
+  count?: number;
+  average_ndvi?: number;
+  max_ndvi?: number;
+  min_ndvi?: number;
+  data?: Array<{
     id: string;
     date: string;
     ndvi_value: number;
@@ -122,336 +135,365 @@ export interface LandNDVIResponse {
     ndvi_max: number;
     ndvi_std: number;
     coverage: number;
-    confidence: number;
+    confidence?: number;
+    image_url?: string;
     created_at: string;
   }>;
-  timestamp: string;
+  timestamp?: string;
 }
 
+/**
+ * RenderNDVIService (v4.0)
+ * 
+ * Enterprise-grade service class for NDVI Land API interactions.
+ * Features: timeout handling, structured errors, exponential retry, 
+ * tenant validation, and cold-start resilience.
+ */
 export class RenderNDVIService {
   private baseUrl: string;
+  private version = 'v4.0';
+  private defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-NDVI-Client': 'KisanShaktiAI-Dashboard',
+  };
+  private defaultTimeout = 30000; // 30 seconds
 
   constructor(baseUrl: string = RENDER_API_BASE_URL) {
     this.baseUrl = baseUrl;
   }
 
   /**
-   * Retry helper with exponential backoff for cold start handling
+   * Fetch with timeout using AbortController
+   * @param url - Request URL
+   * @param options - Fetch options
+   * @param timeout - Timeout in milliseconds (default: 30s)
+   */
+  private async fetchWithTimeout(
+    url: string,
+    options: RequestInit = {},
+    timeout: number = this.defaultTimeout
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          ...this.defaultHeaders,
+          ...options.headers,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw this.handleError(0, url, 'Request timeout', { timeout, error });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Unified structured error handler
+   * @param status - HTTP status code
+   * @param url - Request URL
+   * @param message - Error message
+   * @param details - Additional error details
+   */
+  private handleError(status: number, url: string, message: string, details?: any): Error {
+    const error = new Error(message) as any;
+    error.status = status;
+    error.url = url;
+    error.details = details;
+    console.error(`❌ [NDVI-${this.version}] Error ${status}: ${message}`, { url, details });
+    return error;
+  }
+
+  /**
+   * Safely extract data from API response
+   * @param result - API response object
+   * @param defaultValue - Default value if extraction fails
+   */
+  private unwrap<T>(result: any, defaultValue: T): T {
+    if (result && result.status === 'success' && result.data !== undefined) {
+      return result.data as T;
+    }
+    return defaultValue;
+  }
+
+  /**
+   * Validate tenant_id parameter
+   * @param tenantId - Tenant identifier
+   */
+  private validateTenantId(tenantId: string | undefined): void {
+    if (!tenantId || tenantId.trim() === '') {
+      throw this.handleError(400, this.baseUrl, 'tenant_id is required', { tenantId });
+    }
+  }
+
+  /**
+   * Retry a function with exponential backoff
+   * Useful for handling cold starts on the Render service
    */
   private async retryWithBackoff<T>(
     fn: () => Promise<T>,
     maxRetries: number = 3,
     baseDelay: number = 2000
   ): Promise<T> {
-    let lastError: any;
-    
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+    for (let i = 0; i < maxRetries; i++) {
       try {
+        console.log(`🔄 [NDVI-${this.version}] Attempt ${i + 1}/${maxRetries}...`);
         return await fn();
-      } catch (error: any) {
-        lastError = error;
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
         
-        // Check if it's a network error (likely cold start)
-        const isColdStart = error.message?.includes('fetch') || 
-                           error.message?.includes('network') ||
-                           error.name === 'TypeError';
-        
-        if (isColdStart && attempt < maxRetries - 1) {
-          const delay = baseDelay * Math.pow(2, attempt);
-          console.log(`🔄 Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms (service warming up)`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        } else {
-          throw error;
-        }
+        const delay = baseDelay * Math.pow(2, i);
+        console.log(`⏳ [NDVI-${this.version}] Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
-    
-    throw lastError;
+    throw new Error('Max retries exceeded');
   }
 
   /**
-   * Check health status of the Render service
-   * GET /api/v1/health
+   * Warm up the NDVI API service (check if it's responsive)
+   */
+  async warm(): Promise<void> {
+    try {
+      const health = await this.checkHealth();
+      if (health.status === 'healthy') {
+        console.log(`🔥 [NDVI-${this.version}] API warmed up successfully`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ [NDVI-${this.version}] API cold, will retry lazily on next request`);
+    }
+  }
+
+  /**
+   * Check the health status of the NDVI API
    */
   async checkHealth(): Promise<HealthStatus> {
-    return this.retryWithBackoff(async () => {
-      const response = await fetch(`${this.baseUrl}/api/v1/health`, {
+    console.log(`🏥 [NDVI-${this.version}] Checking API health...`);
+    try {
+      const response = await this.fetchWithTimeout(`${this.baseUrl}/health`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        throw new Error(`Health check failed: ${response.status} ${response.statusText}`);
+        throw this.handleError(
+          response.status,
+          `${this.baseUrl}/health`,
+          `Health check failed: ${response.statusText}`,
+          { status: response.status }
+        );
       }
 
-      return await response.json();
-    });
+      const data = await response.json();
+      console.log(`✅ [NDVI-${this.version}] API is healthy:`, data);
+      return data;
+    } catch (error) {
+      console.error(`❌ [NDVI-${this.version}] Health check failed:`, error);
+      throw error;
+    }
   }
 
   /**
-   * Ping the service to check availability
+   * Quick ping to check if service is available
    */
   async ping(): Promise<boolean> {
     try {
+      console.log(`🏓 [NDVI-${this.version}] Pinging API...`);
       const health = await this.checkHealth();
-      return health.status === 'healthy' || health.status === 'ok' || health.status === 'running';
-    } catch (error) {
+      return health.status === 'healthy';
+    } catch {
       return false;
     }
   }
 
   /**
-   * Get NDVI data summary (v4.1.0 - unified ndvi_micro_tiles table)
-   * GET /api/v1/ndvi/data?tenant_id={id}&land_id={id}&limit={n}
+   * Get NDVI data with retry logic for cold starts
    */
-  async getNDVIData(tenantId: string, landId?: string, limit: number = 1000): Promise<NDVIDataSummaryResponse> {
+  async getNDVIData(
+    tenantId: string,
+    landId?: string,
+    limit: number = 100
+  ): Promise<NDVIDataSummaryResponse> {
+    this.validateTenantId(tenantId);
+
+    console.log(`📡 [NDVI-${this.version}] Fetching NDVI data for tenant: ${tenantId}${landId ? `, land: ${landId}` : ''}`);
+
     return this.retryWithBackoff(async () => {
-      if (!tenantId) {
-        throw new Error('tenant_id is required for getNDVIData');
+      const params = new URLSearchParams({
+        tenant_id: tenantId,
+        limit: limit.toString(),
+      });
+      
+      if (landId) {
+        params.append('land_id', landId);
       }
 
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
-      if (landId) params.append('land_id', landId);
-      params.append('limit', limit.toString());
-
-      const url = `${this.baseUrl}/api/v1/ndvi/data?${params.toString()}`;
-      console.log(`📡 RenderNDVIService.getNDVIData: GET ${url}`);
-
-      const response = await fetch(url, {
+      const url = `${this.baseUrl}/ndvi/data?${params}`;
+      console.log(`🌐 [NDVI-${this.version}] GET ${url}`);
+      
+      const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Get NDVI data failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch NDVI data: ${errorText}`,
+          { tenantId, landId, limit }
+        );
       }
 
       const result = await response.json();
-      console.log(`✅ RenderNDVIService.getNDVIData: Received ${result.data?.length || 0} records`);
-      
-      // v4.1.0 returns { status: "success", count: N, data: [...] }
-      if (result.status === 'success') {
-        return {
-          total_lands: result.count || 0,
-          lands_with_data: result.count || 0,
-          average_ndvi: 0,
-          data: result.data || [],
-        };
-      }
+      console.log(`✅ [NDVI-${this.version}] Fetched ${result.count || 0} NDVI records`);
       return result;
     });
   }
 
   /**
-   * Get latest NDVI for a specific land (v4.1.0)
-   * GET /api/v1/ndvi/data/{land_id}/latest?tenant_id={id}
+   * Get the latest NDVI data for a specific land
    */
   async getLatestNDVI(landId: string, tenantId: string): Promise<any> {
-    try {
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
+    this.validateTenantId(tenantId);
+    console.log(`📍 [NDVI-${this.version}] Fetching latest NDVI for land: ${landId}`);
+    const response = await this.getNDVIData(tenantId, landId, 1);
+    return this.unwrap(response, [])[0] || null;
+  }
 
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/data/${landId}/latest?${params.toString()}`, {
+  /**
+   * Get NDVI history for a specific land
+   */
+  async getNDVIHistory(landId: string, tenantId: string, limit: number = 30): Promise<any[]> {
+    this.validateTenantId(tenantId);
+    console.log(`📜 [NDVI-${this.version}] Fetching NDVI history for land: ${landId} (limit: ${limit})`);
+    const response = await this.getNDVIData(tenantId, landId, limit);
+    return this.unwrap(response, []);
+  }
+
+  /**
+   * Get detailed NDVI data for a specific land
+   */
+  async getLandNDVI(landId: string, limit: number = 10): Promise<LandNDVIResponse> {
+    console.log(`🗺️ [NDVI-${this.version}] Fetching detailed NDVI for land: ${landId}`);
+    try {
+      const url = `${this.baseUrl}/ndvi/land/${landId}?limit=${limit}`;
+      const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        throw new Error(`Get latest NDVI failed: ${response.status} ${response.statusText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch land NDVI`,
+          { landId, limit }
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Get latest NDVI error:', error);
+      console.error(`❌ [NDVI-${this.version}] Error fetching land NDVI:`, error);
       throw error;
     }
   }
 
   /**
-   * Get NDVI history for a specific land (v4.1.0)
-   * GET /api/v1/ndvi/data/{land_id}/history?tenant_id={id}&limit={n}
+   * Get NDVI thumbnail URL for a land
    */
-  async getNDVIHistory(landId: string, tenantId: string, limit: number = 30): Promise<any> {
+  async getLandThumbnail(landId: string): Promise<string | null> {
+    console.log(`🖼️ [NDVI-${this.version}] Fetching thumbnail for land: ${landId}`);
     try {
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
-      params.append('limit', limit.toString());
-
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/data/${landId}/history?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Get NDVI history failed: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Get NDVI history error:', error);
-      throw error;
-    }
-  }
-
-
-  /**
-   * Get NDVI data for a specific land
-   * GET /api/v1/ndvi/data/{land_id}?limit={n}
-   */
-  async getLandNDVI(
-    landId: string,
-    limit: number = 30
-  ): Promise<LandNDVIResponse> {
-    try {
-      const params = new URLSearchParams();
-      params.append('limit', limit.toString());
-
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/data/${landId}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Get land NDVI failed: ${response.status} ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Get land NDVI error:', error);
-      throw error;
+      const response = await this.getLandNDVI(landId, 1);
+      const data = this.unwrap(response, []);
+      return data[0]?.image_url || null;
+    } catch {
+      return null;
     }
   }
 
   /**
-   * Get NDVI thumbnail image for a land
-   * GET /api/v1/ndvi/thumbnail/{land_id}
-   */
-  async getLandThumbnail(landId: string): Promise<string> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/thumbnail/${landId}`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Get thumbnail failed: ${response.status} ${response.statusText}`);
-      }
-
-      // Return the image URL
-      return `${this.baseUrl}/api/v1/ndvi/thumbnail/${landId}`;
-    } catch (error) {
-      console.error('Get thumbnail error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get statistics (v4.1.0 - ALWAYS requires tenant_id)
-   * GET /api/v1/ndvi/requests/stats?tenant_id={id}
+   * Get global NDVI statistics for a tenant
    */
   async getStats(tenantId: string): Promise<GlobalStatsResponse> {
+    this.validateTenantId(tenantId);
+
+    console.log(`📊 [NDVI-${this.version}] Fetching global NDVI stats for tenant: ${tenantId}`);
+
     return this.retryWithBackoff(async () => {
-      if (!tenantId) {
-        throw new Error('tenant_id is required for getStats');
-      }
-
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
-
-      const url = `${this.baseUrl}/api/v1/ndvi/requests/stats?${params.toString()}`;
-      console.log(`📡 RenderNDVIService.getStats: GET ${url}`);
-
-      const response = await fetch(url, {
+      const url = `${this.baseUrl}/ndvi/stats/global?tenant_id=${tenantId}`;
+      console.log(`🌐 [NDVI-${this.version}] GET ${url}`);
+      
+      const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Get stats failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch stats: ${errorText}`,
+          { tenantId }
+        );
       }
 
       const result = await response.json();
-      console.log(`✅ RenderNDVIService.getStats: Received stats`, result);
-      
-      // v4.1.0 returns { status: "success", tenant_id: "...", stats: {...} }
-      if (result.status === 'success' && result.stats) {
-        return {
-          total_requests: result.stats.total_requests || 0,
-          queued: result.stats.queued || 0,
-          processing: result.stats.processing || 0,
-          completed: result.stats.completed || 0,
-          failed: result.stats.failed || 0,
-          total_lands_processed: 0,
-          average_ndvi: 0,
-          max_ndvi: 0,
-          min_ndvi: 0,
-          timestamp: new Date().toISOString(),
-        };
-      }
+      console.log(`✅ [NDVI-${this.version}] Fetched global stats successfully`);
       return result;
     });
   }
 
   /**
-   * Get diagnostic info for a specific land (v4.1.0)
-   * GET /api/v1/ndvi/diagnostics/land/{land_id}?tenant_id={id}
+   * Get diagnostics for a specific land
    */
   async getLandDiagnostics(landId: string, tenantId: string): Promise<any> {
+    this.validateTenantId(tenantId);
+    console.log(`🔬 [NDVI-${this.version}] Fetching diagnostics for land: ${landId}`);
     try {
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
-
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/diagnostics/land/${landId}?${params.toString()}`, {
+      const url = `${this.baseUrl}/ndvi/diagnostics/${landId}?tenant_id=${tenantId}`;
+      const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        throw new Error(`Get diagnostics failed: ${response.status} ${response.statusText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch diagnostics`,
+          { landId, tenantId }
+        );
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Get diagnostics error:', error);
+      console.error(`❌ [NDVI-${this.version}] Error fetching land diagnostics:`, error);
       throw error;
     }
   }
 
   /**
-   * Create NDVI analysis request (v3.9 - matches Python API)
-   * POST /api/v1/ndvi/lands/analyze?tenant_id={id}
-   * Body: { land_ids: string[], tile_id: string }
+   * Create a new NDVI analysis request
    */
-  async createAnalysisRequest(tenantId: string, landIds: string[], tileId: string): Promise<any> {
-    return this.retryWithBackoff(async () => {
-      if (!tenantId || !landIds?.length || !tileId) {
-        throw new Error('tenant_id, land_ids, and tile_id are required');
-      }
-
-      const url = `${this.baseUrl}/api/v1/ndvi/lands/analyze?tenant_id=${tenantId}`;
-      console.log(`📡 RenderNDVIService.createAnalysisRequest: POST ${url}`, { landIds, tileId });
-
-      const response = await fetch(url, {
+  async createAnalysisRequest(
+    tenantId: string,
+    landIds: string[],
+    tileId: string
+  ): Promise<NDVIRequestResponse> {
+    this.validateTenantId(tenantId);
+    console.log(`🚀 [NDVI-${this.version}] Creating NDVI analysis request for ${landIds.length} lands (tile: ${tileId})`);
+    try {
+      const url = `${this.baseUrl}/ndvi/lands/analyze?tenant_id=${tenantId}`;
+      const response = await this.fetchWithTimeout(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           land_ids: landIds,
           tile_id: tileId,
@@ -460,76 +502,78 @@ export class RenderNDVIService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Create analysis request failed: ${response.status} ${response.statusText} - ${errorText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to create NDVI request: ${errorText}`,
+          { tenantId, landIds, tileId }
+        );
       }
 
       const result = await response.json();
-      console.log(`✅ RenderNDVIService.createAnalysisRequest: Request created`, result);
-      return result;
-    });
-  }
-
-  /**
-   * Get NDVI request queue (v3.9)
-   * GET /api/v1/ndvi/requests/queue?tenant_id={id}
-   */
-  async getRequestQueue(tenantId: string): Promise<any> {
-    try {
-      if (!tenantId) {
-        throw new Error('tenant_id is required');
-      }
-
-      const params = new URLSearchParams();
-      params.append('tenant_id', tenantId);
-
-      const url = `${this.baseUrl}/api/v1/ndvi/requests/queue?${params.toString()}`;
-      console.log(`📡 RenderNDVIService.getRequestQueue: GET ${url}`);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Get request queue failed: ${response.status} ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log(`✅ RenderNDVIService.getRequestQueue: Received ${result.queue?.length || 0} requests`);
+      console.log(`✅ [NDVI-${this.version}] Analysis request created successfully`);
       return result;
     } catch (error) {
-      console.error('Get request queue error:', error);
+      console.error(`❌ [NDVI-${this.version}] Error creating NDVI analysis request:`, error);
       throw error;
     }
   }
 
   /**
-   * Get queue status (v3.9)
-   * GET /api/v1/ndvi/queue/status
+   * Get the NDVI request queue for a tenant
    */
-  async getQueueStatus(): Promise<any> {
+  async getRequestQueue(tenantId: string): Promise<any> {
+    this.validateTenantId(tenantId);
+    console.log(`📋 [NDVI-${this.version}] Fetching request queue for tenant: ${tenantId}`);
     try {
-      const url = `${this.baseUrl}/api/v1/ndvi/queue/status`;
-      console.log(`📡 RenderNDVIService.getQueueStatus: GET ${url}`);
-
-      const response = await fetch(url, {
+      const url = `${this.baseUrl}/ndvi/requests/queue?tenant_id=${tenantId}`;
+      const response = await this.fetchWithTimeout(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
-        throw new Error(`Get queue status failed: ${response.status} ${response.statusText}`);
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch request queue`,
+          { tenantId }
+        );
       }
 
       const result = await response.json();
-      console.log(`✅ RenderNDVIService.getQueueStatus:`, result);
+      console.log(`✅ [NDVI-${this.version}] Fetched ${result.count || 0} queue items`);
       return result;
     } catch (error) {
-      console.error('Get queue status error:', error);
+      console.error(`❌ [NDVI-${this.version}] Error fetching NDVI request queue:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the current queue status
+   */
+  async getQueueStatus(): Promise<QueueStatusResponse> {
+    console.log(`⚙️ [NDVI-${this.version}] Fetching queue status...`);
+    try {
+      const url = `${this.baseUrl}/ndvi/queue/status`;
+      const response = await this.fetchWithTimeout(url, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw this.handleError(
+          response.status,
+          url,
+          `Failed to fetch queue status`,
+          {}
+        );
+      }
+
+      const result = await response.json();
+      console.log(`✅ [NDVI-${this.version}] Queue status: ${result.active_jobs || 0} active jobs`);
+      return result;
+    } catch (error) {
+      console.error(`❌ [NDVI-${this.version}] Error fetching queue status:`, error);
       throw error;
     }
   }
