@@ -122,7 +122,7 @@ export const useTenantAuthOptimized = () => {
     console.log('useTenantAuthOptimized: Clearing tenant session');
     dispatch(clearTenantData());
     localStorage.removeItem('currentTenantId');
-    setIsInitialized(false);
+    // Don't reset isInitialized here - let the return statement logic handle it
     fetchingRef.current = false;
     
     // Clear any pending initialization
@@ -134,6 +134,10 @@ export const useTenantAuthOptimized = () => {
   // Initialize tenant data when user logs in
   useEffect(() => {
     if (!user) {
+      // When user logs out, clear session and mark as initialized
+      if (!isInitialized) {
+        setIsInitialized(true); // Mark as initialized when no user to prevent loading state
+      }
       clearTenantSession();
       return;
     }
@@ -216,12 +220,12 @@ export const useTenantAuthOptimized = () => {
   return {
     currentTenant,
     userTenants,
-    loading: loading || !isInitialized,
+    loading: user ? (loading || !isInitialized) : false, // Don't show loading when no user
     isMultiTenant: userTenants.length > 1,
     switchTenant,
     refreshTenantData: user ? () => fetchUserTenants(user.id) : async () => {},
     clearTenantSession,
-    isInitialized,
+    isInitialized: user ? isInitialized : true, // Consider initialized if no user
   };
 };
 
