@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { UserPlus, Mail, Clock, X, RotateCcw, Crown, Shield, Users, Eye } from 'lucide-react';
 import { userInvitationService, UserInvitationData } from '@/services/UserInvitationService';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,7 +27,7 @@ interface PendingInvitation {
 }
 
 export const UserInvitationsPage: React.FC = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const { hasPermission } = usePermissions();
   const { toast } = useToast();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);

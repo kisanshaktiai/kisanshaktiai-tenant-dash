@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +39,7 @@ interface TenantStats {
 }
 
 export const TenantDashboard: React.FC = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const { user } = useAppSelector((state) => state.auth);
   const [isLive] = useState(true);
 

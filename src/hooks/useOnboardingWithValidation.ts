@@ -2,12 +2,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
 import { onboardingValidationService } from '@/services/OnboardingValidationService';
-import { useTenantContext } from '@/contexts/TenantContext';
+import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useErrorHandler } from '@/hooks/core/useErrorHandler';
 import { globalErrorHandler } from '@/services/GlobalErrorHandler';
 
 export const useOnboardingWithValidation = () => {
-  const { currentTenant } = useTenantContext();
+  const { currentTenant } = useTenantContextOptimized();
   const queryClient = useQueryClient();
   const { handleError } = useErrorHandler({
     component: 'useOnboardingWithValidation'
