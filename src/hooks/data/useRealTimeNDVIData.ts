@@ -67,73 +67,30 @@ export interface NDVIStats {
 }
 
 /**
- * Hook to fetch real-time NDVI data from API v4.1.0
+ * Hook to fetch real-time NDVI data from Supabase
  */
 export const useRealTimeNDVIData = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
 
-  // Fetch latest NDVI data from API v4.1.0 with retry logic for cold starts
+  // Fetch latest NDVI data for all lands
   const { data: ndviData, isLoading, error, refetch } = useQuery({
     queryKey: ['ndvi-realtime-data', currentTenant?.id],
     queryFn: async (): Promise<RealTimeNDVIData[]> => {
-      if (!currentTenant?.id) {
-        console.warn('useRealTimeNDVIData: No tenant ID available');
-        return [];
-      }
+      if (!currentTenant?.id) return [];
 
-      const url = `https://ndvi-land-api.onrender.com/api/v1/ndvi/data?tenant_id=${currentTenant.id}&limit=1000`;
-      console.log('🔄 useRealTimeNDVIData: Fetching from API v4.1.0');
-      console.log('   URL:', url);
-      console.log('   tenant_id:', currentTenant.id);
-      
-      // Retry logic for cold start (Render free tier)
-      let lastError: any;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
+      const { data, error } = await supabase
+        .from('ndvi_full_view' as any)
+        .select('*')
+        .eq('tenant_id', currentTenant.id)
+        .order('date', { ascending: false })
+        .limit(1000);
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API returned ${response.status}: ${errorText}`);
-          }
-
-          const result = await response.json();
-          
-          // v4.1.0 API response: { status: "success", count: N, data: [...] }
-          if (result.status === 'success' && Array.isArray(result.data)) {
-            console.log('✅ useRealTimeNDVIData: Fetched', result.data.length, 'records');
-            return result.data as RealTimeNDVIData[];
-          }
-
-          console.warn('useRealTimeNDVIData: Unexpected API response format', result);
-          return [];
-        } catch (error: any) {
-          lastError = error;
-          const isColdStart = error.message?.includes('fetch') || error.message?.includes('Failed to fetch');
-          
-          if (isColdStart && attempt < 2) {
-            const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
-            console.log(`🔄 Retry attempt ${attempt + 1}/3 after ${delay}ms (API warming up)`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          } else {
-            console.error('❌ useRealTimeNDVIData: API call failed:', error);
-            throw error;
-          }
-        }
-      }
-      
-      throw lastError;
+      if (error) throw error;
+      return (data || []) as any[];
     },
     enabled: !!currentTenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 1, // React Query will retry once more after our internal retries
-    retryDelay: 5000, // Wait 5s before React Query retry
   });
 
   // Calculate statistics from real-time data
@@ -150,7 +107,7 @@ export const useRealTimeNDVIData = () => {
       }
     : null;
 
-  // Real-time subscription to ndvi_micro_tiles table (v4.1.0)
+  // Real-time subscription to ndvi_data table
   useEffect(() => {
     if (!currentTenant?.id) return;
 
@@ -161,11 +118,11 @@ export const useRealTimeNDVIData = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'ndvi_micro_tiles',
+          table: 'ndvi_data',
           filter: `tenant_id=eq.${currentTenant.id}`,
         },
         (payload) => {
-          console.log('NDVI micro tiles data changed:', payload);
+          console.log('NDVI data changed:', payload);
           // Invalidate and refetch on any change
           queryClient.invalidateQueries({ queryKey: ['ndvi-realtime-data', currentTenant.id] });
         }
@@ -177,14 +134,11 @@ export const useRealTimeNDVIData = () => {
     };
   }, [currentTenant?.id, queryClient]);
 
-  // Get latest data grouped by land (using acquisition_date from v4.1.0)
+  // Get latest data grouped by land
   const landData = ndviData
     ? Object.values(
         ndviData.reduce((acc, item) => {
-          const dateField = item.date || (item as any).acquisition_date;
-          const existingDate = acc[item.land_id]?.date || (acc[item.land_id] as any)?.acquisition_date;
-          
-          if (!acc[item.land_id] || (dateField && existingDate && new Date(dateField) > new Date(existingDate))) {
+          if (!acc[item.land_id] || new Date(item.date) > new Date(acc[item.land_id].date)) {
             acc[item.land_id] = item;
           }
           return acc;

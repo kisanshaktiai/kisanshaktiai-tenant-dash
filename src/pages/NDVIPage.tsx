@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { 
   Satellite, 
   TrendingUp, 
@@ -12,12 +11,11 @@ import {
   Sparkles,
   Target,
   LineChart,
-  Database,
-  Activity
+  Database
 } from 'lucide-react';
 import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
-import { useRealTimeNDVIData } from '@/hooks/data/useRealTimeNDVIData';
-import { useNDVIQueue } from '@/hooks/data/useNDVIQueue';
+import { useRealTimeNDVIData, useNDVIQueueStatus } from '@/hooks/data/useRealTimeNDVIData';
+import { useNDVIQueueAutoProcessor } from '@/hooks/data/useNDVIQueueAutoProcessor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { NDVIOverviewCards } from '@/components/ndvi/NDVIOverviewCards';
@@ -27,7 +25,7 @@ import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
 import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
 import { NDVIProcessingStatus } from '@/components/ndvi/NDVIProcessingStatus';
 import { NDVIDiagnosticsPanel } from '@/components/ndvi/NDVIDiagnosticsPanel';
-import { NDVIAnalysisButton } from '@/components/ndvi/NDVIAnalysisButton';
+import { ndviLandService } from '@/services/NDVILandService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 
@@ -56,13 +54,6 @@ export default function NDVIPage() {
     refetch: refetchRealtime,
   } = useRealTimeNDVIData();
 
-  // Queue management
-  const {
-    queueData,
-    queueCount,
-    activeJobs,
-  } = useNDVIQueue();
-
   // Refresh data handler
   const handleRefreshAll = async () => {
     if (!currentTenant?.id) {
@@ -70,25 +61,16 @@ export default function NDVIPage() {
       return;
     }
 
-    console.log('🔄 Refreshing NDVI data for tenant:', currentTenant.id);
     setIsCreatingRequests(true);
     try {
-      console.log('📡 Calling API endpoints:');
-      console.log('  - /api/v1/health');
-      console.log('  - /api/v1/ndvi/requests/stats?tenant_id=' + currentTenant.id);
-      console.log('  - /api/v1/ndvi/data?tenant_id=' + currentTenant.id + '&limit=1000');
-      
       await Promise.all([
         refetchHealth(),
         refetchStats(),
         refetchData(),
         refetchRealtime(),
       ]);
-      
-      console.log('✅ All API calls completed');
       toast.success('Data refreshed successfully');
     } catch (error) {
-      console.error('❌ Failed to refresh data:', error);
       toast.error('Failed to refresh data');
     } finally {
       setIsCreatingRequests(false);
@@ -138,7 +120,23 @@ export default function NDVIPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
-                <NDVIAnalysisButton />
+                <Button
+                  onClick={handleRefreshAll}
+                  disabled={isCreatingRequests || !currentTenant?.id}
+                  size="lg"
+                  className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
+                  {isCreatingRequests ? 'Refreshing...' : 'Refresh Data'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="backdrop-blur-sm border-primary/20"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  Set Goals
+                </Button>
               </div>
             </div>
           </div>
@@ -154,27 +152,6 @@ export default function NDVIPage() {
             realtimeStats={realtimeStats}
           />
 
-          {/* Queue Status Alert */}
-          {queueCount > 0 && (
-            <Alert className="border-blue-500/50 bg-blue-500/10">
-              <Activity className="h-4 w-4 text-blue-500" />
-              <AlertTitle className="text-blue-700 dark:text-blue-400">
-                Background Processing Active
-              </AlertTitle>
-              <AlertDescription className="text-blue-600 dark:text-blue-300 flex items-center gap-2">
-                <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">
-                  {queueCount} in queue
-                </Badge>
-                {activeJobs > 0 && (
-                  <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-300">
-                    {activeJobs} processing
-                  </Badge>
-                )}
-                <span className="text-sm">Data will automatically refresh when complete</span>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* No Data Alert */}
           {!realtimeLoading && (!ndviData || ndviData.length === 0) && (
             <Alert className="border-primary/50 bg-primary/5">
@@ -185,8 +162,7 @@ export default function NDVIPage() {
                 <ol className="list-decimal ml-5 mt-2 space-y-1">
                   <li>Go to <strong>Farmers</strong> section and add your farmers</li>
                   <li>Add land parcels with GPS coordinates for each farmer</li>
-                  <li>Click <strong>"🛰️ Analyze Vegetation Health"</strong> button above</li>
-                  <li>The system will automatically process all lands that need updates</li>
+                  <li>Request satellite NDVI data for the lands</li>
                   <li>Return here to view real-time vegetation analytics</li>
                 </ol>
               </AlertDescription>

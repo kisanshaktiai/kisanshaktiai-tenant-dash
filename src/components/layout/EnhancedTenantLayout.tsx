@@ -397,43 +397,21 @@ const TopBar = memo(() => {
 });
 
 export const EnhancedTenantLayout: React.FC = () => {
-  const navigate = useNavigate();
-  const { currentTenant, loading, isInitialized } = useTenantContextOptimized();
+  const { currentTenant, loading } = useTenantContextOptimized();
   const [mounted, setMounted] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { isAuthenticated, isLoading } = useAuthGuard();
 
   useEffect(() => {
     setMounted(true);
-    
-    // Set a timeout to detect if loading is stuck
-    const timeout = setTimeout(() => {
-      if (!isAuthenticated || !currentTenant) {
-        console.warn('EnhancedTenantLayout: Loading timeout - redirecting to auth');
-        setLoadingTimeout(true);
-        navigate('/auth', { replace: true });
-      }
-    }, 5000); // 5 second timeout
-
-    return () => clearTimeout(timeout);
   }, []);
 
-  // Redirect to onboarding if user is authenticated but has no tenant
-  useEffect(() => {
-    if (isAuthenticated && isInitialized && !currentTenant && !loading) {
-      console.log('EnhancedTenantLayout: No tenant found, redirecting to onboarding');
-      navigate('/onboarding', { replace: true });
-    }
-  }, [isAuthenticated, isInitialized, currentTenant, loading, navigate]);
-
-  // Show loading state while checking authentication (only if user is authenticated)
-  if ((isLoading || !mounted || (isAuthenticated && (loading || !isInitialized))) && !loadingTimeout) {
+  // Show loading state while checking authentication
+  if (isLoading || !mounted || loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading your workspace...</p>
-          <p className="text-xs text-muted-foreground mt-2">This should only take a moment</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -444,9 +422,14 @@ export const EnhancedTenantLayout: React.FC = () => {
     return null;
   }
 
-  // Will redirect to onboarding if no tenant (handled by useEffect above)
   if (!currentTenant) {
-    return null;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-muted-foreground">No tenant context available</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -33,51 +33,20 @@ export const useNDVIApiMonitoring = () => {
     staleTime: 60000,
   });
 
-  // Stats - manual refresh only (v4.1.0) - ALWAYS pass tenant_id
+  // Stats - manual refresh only (v4.1.0)
   const { data: globalStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
     queryKey: ['ndvi-stats', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) {
-        console.warn('useNDVIApiMonitoring: No tenant ID available for stats fetch');
-        return null;
-      }
-      console.log('🔄 useNDVIApiMonitoring: Fetching stats for tenant:', currentTenant.id);
-      try {
-        const result = await renderNDVIService.getStats(currentTenant.id);
-        console.log('✅ useNDVIApiMonitoring: Stats fetched successfully', result);
-        return result;
-      } catch (error) {
-        console.error('❌ useNDVIApiMonitoring: Stats fetch failed:', error);
-        throw error;
-      }
-    },
+    queryFn: () => renderNDVIService.getStats(currentTenant?.id),
     enabled: !!currentTenant?.id,
-    retry: 1,
-    retryDelay: 5000,
+    retry: 2,
     staleTime: 60000,
   });
 
   // NDVI data summary - manual refresh only (v4.1.0 - uses ndvi_micro_tiles)
   const { data: dataSummary, isLoading: dataSummaryLoading, refetch: refetchData } = useQuery({
     queryKey: ['ndvi-data-summary', currentTenant?.id],
-    queryFn: async () => {
-      if (!currentTenant?.id) {
-        console.warn('useNDVIApiMonitoring: No tenant ID available for data summary fetch');
-        return null;
-      }
-      console.log('🔄 useNDVIApiMonitoring: Fetching data summary for tenant:', currentTenant.id);
-      try {
-        const result = await renderNDVIService.getNDVIData(currentTenant.id, undefined, 1000);
-        console.log('✅ useNDVIApiMonitoring: Data summary fetched successfully', result);
-        return result;
-      } catch (error) {
-        console.error('❌ useNDVIApiMonitoring: Data summary fetch failed:', error);
-        throw error;
-      }
-    },
+    queryFn: () => renderNDVIService.getNDVIData(currentTenant?.id || ''),
     enabled: !!currentTenant?.id,
-    retry: 1,
-    retryDelay: 5000,
     staleTime: 120000,
   });
 

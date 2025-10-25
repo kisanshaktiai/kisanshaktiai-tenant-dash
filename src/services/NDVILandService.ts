@@ -391,10 +391,26 @@ export class NDVILandService {
 
       // Process each tile group separately
       for (const [tileId, group] of tileGroups.entries()) {
-        console.log(`📡 Processing ${group.land_ids.length} land(s) with tile ${tileId} (API v4.1.0)`);
+        console.log(`📡 Creating NDVI request for ${group.land_ids.length} land(s) with tile ${tileId}`);
         
-        // API v4.1.0: No queue creation endpoint - data is processed directly
-        // We only create a tracking record in Supabase for frontend monitoring
+        // API v3.9 payload structure
+        const requestPayload = {
+          tenant_id: tenantId,
+          land_ids: group.land_ids,
+          tile_id: tileId,
+        };
+
+        // Call Render NDVI API
+        const response = await renderNDVIService.createRequest(requestPayload);
+        
+        console.log(`✅ NDVI request created via Render API:`, {
+          tenant_id: tenantId,
+          land_ids: group.land_ids,
+          tile_id: tileId,
+          status: 'queued'
+        });
+
+        // Step 4: Insert queue record in Supabase (for tracking in frontend)
         const queueRecord = {
           tenant_id: tenantId,
           land_ids: group.land_ids,
@@ -403,9 +419,9 @@ export class NDVILandService {
           batch_size: group.land_ids.length,
           farmer_id: farmerId,
           metadata: {
-            created_via: 'ndvi_service_v4.1',
+            created_via: 'ndvi_service_v3.9',
             land_count: group.land_ids.length,
-            api_version: '4.1',
+            api_version: '3.9',
             land_names: group.land_names
           }
         };

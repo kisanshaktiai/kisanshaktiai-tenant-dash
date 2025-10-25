@@ -66,18 +66,16 @@ serve(async (req) => {
 
           console.log(`🔄 Processing queue item ${item.id} for ${item.land_ids?.length} lands`);
 
-          // Call Python API to process this specific queue item
+          // NEW ARCHITECTURE: Call Python API directly to process
           const apiPayload = {
-            queue_id: item.id,
-            tenant_id: item.tenant_id,
             land_ids: item.land_ids || [],
             tile_id: item.tile_id || '43RGN',
           };
 
-          console.log(`📡 Calling Python API: POST ${RENDER_API_URL}/api/v1/ndvi/process-queue`);
+          console.log(`📡 Calling Python API: POST /api/v1/ndvi/lands/analyze?tenant_id=${item.tenant_id}`);
 
           const apiResponse = await fetch(
-            `${RENDER_API_URL}/api/v1/ndvi/process-queue`,
+            `${RENDER_API_URL}/api/v1/ndvi/lands/analyze?tenant_id=${item.tenant_id}`,
             {
               method: 'POST',
               headers: {
@@ -95,25 +93,23 @@ serve(async (req) => {
           const apiResult = await apiResponse.json();
           console.log(`✅ Python API response:`, apiResult);
 
-          // Mark as completed (API response contains processed count)
+          // Mark as completed
           const duration = Date.now() - startTime;
           await supabase
             .from('ndvi_request_queue')
             .update({
-              status: apiResult.status === 'success' ? 'completed' : 'failed',
+              status: 'completed',
               completed_at: new Date().toISOString(),
               processing_duration_ms: duration,
-              processed_count: apiResult.processed_count || 0,
             })
             .eq('id', item.id);
 
           results.push({
             id: item.id,
-            success: apiResult.status === 'success',
-            processed: apiResult.processed_count || 0,
-            total: apiResult.total_lands || item.land_ids?.length || 0,
+            success: true,
+            processed: item.land_ids?.length || 0,
             duration_ms: duration,
-            message: apiResult.message || 'Successfully processed',
+            message: 'Successfully processed',
             api_response: apiResult,
           });
 
