@@ -96,20 +96,24 @@ export const useAutoNDVIAnalysis = () => {
     return acc;
   }, {} as Record<string, string[]>);
 
-  // Create NDVI requests automatically
+  // Create NDVI requests with intelligent instant/queue decision
   const createRequestMutation = useMutation({
-    mutationFn: async ({ instant = false }: { instant?: boolean } = {}) => {
+    mutationFn: async () => {
       if (!currentTenant?.id) throw new Error('No tenant ID available');
       if (landsNeedingUpdate.length === 0) throw new Error('No lands need updates');
 
-      console.log(`🚀 Creating ${instant ? 'INSTANT' : 'automatic'} NDVI requests for tenant:`, currentTenant.id);
+      // 🧠 Intelligent decision: instant for small batches (≤5 lands), queue for large batches
+      const useInstantProcessing = landsNeedingUpdate.length <= 5;
+
+      console.log(`🚀 Creating ${useInstantProcessing ? 'INSTANT' : 'QUEUED'} NDVI requests for tenant:`, currentTenant.id);
+      console.log(`📊 Total lands: ${landsNeedingUpdate.length}, Mode: ${useInstantProcessing ? '⚡ Instant' : '📋 Queued'}`);
       console.log('📦 Lands grouped by tile:', landsByTile);
 
       const results = [];
 
       // Create one request per tile (batch processing)
       for (const [tileId, landIds] of Object.entries(landsByTile)) {
-        console.log(`📡 Creating ${instant ? 'INSTANT' : ''} request for tile ${tileId} with ${landIds.length} lands`);
+        console.log(`📡 Creating ${useInstantProcessing ? '⚡ INSTANT' : '📋 QUEUED'} request for tile ${tileId} with ${landIds.length} lands`);
         
         try {
           const result = await renderNDVIService.createAnalysisRequest(
@@ -118,13 +122,14 @@ export const useAutoNDVIAnalysis = () => {
             tileId,
             {
               source: 'kisanshakti-dashboard',
-              requested_by: instant ? 'instant-analysis' : 'auto-analysis',
+              requested_by: useInstantProcessing ? 'instant-analysis' : 'auto-analysis',
               land_count: landIds.length,
+              processing_mode: useInstantProcessing ? 'instant' : 'queued',
               timestamp: new Date().toISOString(),
             },
-            instant
+            useInstantProcessing
           );
-          results.push({ tileId, landIds: landIds.length, result });
+          results.push({ tileId, landIds: landIds.length, result, instant: useInstantProcessing });
         } catch (error) {
           console.error(`❌ Failed to create request for tile ${tileId}:`, error);
           throw error;
@@ -132,25 +137,37 @@ export const useAutoNDVIAnalysis = () => {
       }
 
       console.log('✅ All requests created successfully:', results);
-      return results;
+      return { results, instant: useInstantProcessing };
     },
-    onSuccess: (results) => {
+    onSuccess: ({ results, instant }) => {
       const totalLands = Object.values(landsByTile).reduce((sum, ids) => sum + ids.length, 0);
       const totalTiles = Object.keys(landsByTile).length;
 
-      toast({
-        title: "NDVI Analysis Queued",
-        description: `${totalLands} land${totalLands !== 1 ? 's' : ''} queued across ${totalTiles} tile${totalTiles !== 1 ? 's' : ''} for analysis`,
-      });
+      if (instant) {
+        toast({
+          title: "⚡ NDVI Processed Instantly",
+          description: `${totalLands} land${totalLands !== 1 ? 's' : ''} processed successfully`,
+        });
+        
+        // Refresh all NDVI-related data after instant processing
+        queryClient.invalidateQueries({ queryKey: ['ndvi-data'] });
+        queryClient.invalidateQueries({ queryKey: ['ndvi-land-data'] });
+        queryClient.invalidateQueries({ queryKey: ['farmers'] });
+      } else {
+        toast({
+          title: "NDVI Analysis Queued",
+          description: `${totalLands} land${totalLands !== 1 ? 's' : ''} queued across ${totalTiles} tile${totalTiles !== 1 ? 's' : ''} for background processing`,
+        });
+      }
 
-      // Invalidate relevant queries
+      // Always invalidate queue and lands-needing-update
       queryClient.invalidateQueries({ queryKey: ['lands-needing-ndvi-update'] });
       queryClient.invalidateQueries({ queryKey: ['ndvi-request-queue'] });
       queryClient.invalidateQueries({ queryKey: ['ndvi-queue-status'] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to Queue Analysis",
+        title: "Failed to Analyze NDVI",
         description: error.message,
         variant: "destructive",
       });

@@ -51,33 +51,9 @@ export const useNDVIQueue = () => {
     },
   });
 
-  // Process queue (calls edge function)
-  const processQueueMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('ndvi-queue-processor', {
-        body: { action: 'process_queue', limit: 10 },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Queue Processing Started",
-        description: `Processing ${data?.total || 0} requests`,
-      });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-request-queue'] });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['ndvi-data-summary'] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to Process Queue",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Note: processQueue mutation removed - queue processing now handled automatically by:
+  // 1. API instant processing (for instant=true requests)
+  // 2. Render cron job (for queued items)
 
   return {
     // Queue data
@@ -90,11 +66,9 @@ export const useNDVIQueue = () => {
     queueLoading,
     statusLoading,
     isCreatingRequest: createRequestMutation.isPending,
-    isProcessingQueue: processQueueMutation.isPending,
     
     // Actions
     createRequest: createRequestMutation.mutate,
-    processQueue: processQueueMutation.mutate,
     refetchQueue,
   };
 };
