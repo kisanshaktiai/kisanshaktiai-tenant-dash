@@ -73,16 +73,38 @@ export default function NDVIPage() {
         if (pendingRequests.length > 0) {
           toast.info(`Processing ${pendingRequests.length} queued request(s)...`);
           
+          let successCount = 0;
+          let failCount = 0;
+          
           // Trigger instant processing for each queued request
           for (const req of pendingRequests) {
-            await ndviLandService.createInstantNDVIRequest(
-              currentTenant.id,
-              req.land_ids || [],
-              req.tile_id,
-              true // instant = true
-            );
+            try {
+              await ndviLandService.createInstantNDVIRequest(
+                currentTenant.id,
+                req.land_ids || [],
+                req.tile_id,
+                true // instant = true
+              );
+              successCount++;
+            } catch (err: any) {
+              failCount++;
+              console.error('Failed to process request:', req.id, err);
+            }
           }
+          
+          if (successCount > 0) {
+            toast.success(`Successfully processed ${successCount} request(s)`);
+          }
+          if (failCount > 0) {
+            toast.error(`Failed to process ${failCount} request(s). Check backend service status.`, {
+              description: 'The NDVI processing service may be experiencing issues.'
+            });
+          }
+        } else {
+          toast.info('No pending requests in queue');
         }
+      } else {
+        toast.info('Queue is empty');
       }
 
       // Refresh all data
@@ -93,10 +115,11 @@ export default function NDVIPage() {
         refetchRealtime(),
       ]);
       
-      toast.success('NDVI data fetched successfully');
     } catch (error: any) {
       console.error('Failed to get NDVI data:', error);
-      toast.error(error.message || 'Failed to get NDVI data');
+      toast.error('Failed to fetch NDVI queue', {
+        description: error.message || 'Please try again later'
+      });
     } finally {
       setIsCreatingRequests(false);
     }

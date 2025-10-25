@@ -422,15 +422,12 @@ export class RenderNDVIService {
   }
 
   /**
-   * Get statistics (v4.1.0 - optional tenant_id)
-   * GET /api/v1/ndvi/requests/stats?tenant_id={id}
+   * Get global statistics (v4.1.0)
+   * GET /api/v1/ndvi/stats/global
    */
   async getStats(tenantId?: string): Promise<GlobalStatsResponse> {
     try {
-      const params = new URLSearchParams();
-      if (tenantId) params.append('tenant_id', tenantId);
-
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/stats?${params.toString()}`, {
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/stats/global`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -442,10 +439,10 @@ export class RenderNDVIService {
       }
 
       const result = await response.json();
-      // v4.1.0 returns { status: "success", tenant_id: "...", stats: {...} }
+      // v4.1.0 returns { status: "success", stats: { completed, queued, processing, failed }, timestamp }
       if (result.status === 'success' && result.stats) {
         return {
-          total_requests: result.stats.total_requests || 0,
+          total_requests: (result.stats.completed || 0) + (result.stats.queued || 0) + (result.stats.processing || 0) + (result.stats.failed || 0),
           queued: result.stats.queued || 0,
           processing: result.stats.processing || 0,
           completed: result.stats.completed || 0,
@@ -454,7 +451,7 @@ export class RenderNDVIService {
           average_ndvi: 0,
           max_ndvi: 0,
           min_ndvi: 0,
-          timestamp: new Date().toISOString(),
+          timestamp: result.timestamp || new Date().toISOString(),
         };
       }
       return result;
