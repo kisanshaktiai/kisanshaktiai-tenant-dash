@@ -1,7 +1,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
-import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { useTenantContext } from '@/contexts/TenantContext';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { enhancedOnboardingService } from '@/services/EnhancedOnboardingService';
@@ -12,7 +12,7 @@ interface OnboardingGuardProps {
 
 export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading, isInitialized } = useTenantContextOptimized();
+  const { currentTenant, loading: tenantLoading, isInitialized } = useTenantContext();
   const [initializationComplete, setInitializationComplete] = useState(false);
 
   console.log('OnboardingGuard: Current state:', {
