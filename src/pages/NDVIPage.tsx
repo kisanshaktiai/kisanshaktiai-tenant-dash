@@ -139,6 +139,16 @@ export default function NDVIPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <NDVIAnalysisButton />
+                <Button
+                  onClick={handleRefreshAll}
+                  disabled={isCreatingRequests || !currentTenant?.id}
+                  size="lg"
+                  variant="outline"
+                  className="backdrop-blur-sm border-primary/20"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
+                  {isCreatingRequests ? 'Refreshing...' : 'Refresh Data'}
+                </Button>
               </div>
             </div>
           </div>
@@ -159,7 +169,7 @@ export default function NDVIPage() {
             <Alert className="border-blue-500/50 bg-blue-500/10">
               <Activity className="h-4 w-4 text-blue-500" />
               <AlertTitle className="text-blue-700 dark:text-blue-400">
-                Background Processing Active
+                NDVI Processing Queue Active
               </AlertTitle>
               <AlertDescription className="text-blue-600 dark:text-blue-300 flex items-center gap-2">
                 <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">
@@ -170,7 +180,6 @@ export default function NDVIPage() {
                     {activeJobs} processing
                   </Badge>
                 )}
-                <span className="text-sm">Data will automatically refresh when complete</span>
               </AlertDescription>
             </Alert>
           )}
@@ -185,8 +194,8 @@ export default function NDVIPage() {
                 <ol className="list-decimal ml-5 mt-2 space-y-1">
                   <li>Go to <strong>Farmers</strong> section and add your farmers</li>
                   <li>Add land parcels with GPS coordinates for each farmer</li>
-                  <li>Click <strong>"🛰️ Analyze Vegetation Health"</strong> button above</li>
-                  <li>The system will automatically process all lands that need updates</li>
+                  <li>Click <strong>"Request NDVI Analysis"</strong> button above to queue lands</li>
+                  <li>Click <strong>"Process Queue"</strong> to start satellite analysis</li>
                   <li>Return here to view real-time vegetation analytics</li>
                 </ol>
               </AlertDescription>
