@@ -63,20 +63,33 @@ export default function NDVIPage() {
 
     setIsCreatingRequests(true);
     try {
-      // First fetch queue to see pending requests
+      toast.info('Creating NDVI requests for your lands...');
+      
+      // Step 1: Create requests for all tenant lands
+      const results = await ndviLandService.fetchNDVIForLands(currentTenant.id, undefined, false);
+      
+      if (!results || results.length === 0) {
+        toast.error('No lands found to analyze. Please add land parcels in the Farmers section.');
+        return;
+      }
+      
+      toast.success(`Created NDVI requests for ${results.length} land(s)`);
+      
+      // Step 2: Fetch newly created queue entries
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief delay for DB sync
       const queueData = await ndviLandService.getQueueStatus(currentTenant.id);
       
       if (queueData && queueData.length > 0) {
-        // Process all queued requests with instant flag
         const pendingRequests = queueData.filter((req: any) => req.status === 'queued');
         
         if (pendingRequests.length > 0) {
-          toast.info(`Processing ${pendingRequests.length} queued request(s)...`);
+          toast.info(`Processing ${pendingRequests.length} queued request(s) instantly...`);
           
           let successCount = 0;
           let failCount = 0;
+          let errors: string[] = [];
           
-          // Trigger instant processing for each queued request
+          // Step 3: Trigger instant processing for each queued request
           for (const req of pendingRequests) {
             try {
               await ndviLandService.createInstantNDVIRequest(
@@ -88,6 +101,8 @@ export default function NDVIPage() {
               successCount++;
             } catch (err: any) {
               failCount++;
+              const errorMsg = err?.message || 'Unknown error';
+              errors.push(errorMsg);
               console.error('Failed to process request:', req.id, err);
             }
           }
@@ -96,18 +111,14 @@ export default function NDVIPage() {
             toast.success(`Successfully processed ${successCount} request(s)`);
           }
           if (failCount > 0) {
-            toast.error(`Failed to process ${failCount} request(s). Check backend service status.`, {
-              description: 'The NDVI processing service may be experiencing issues.'
+            toast.error(`Failed to process ${failCount} request(s)`, {
+              description: errors[0] || 'The NDVI processing service may be experiencing issues.'
             });
           }
-        } else {
-          toast.info('No pending requests in queue');
         }
-      } else {
-        toast.info('Queue is empty');
       }
 
-      // Refresh all data
+      // Step 4: Refresh all data
       await Promise.all([
         refetchHealth(),
         refetchStats(),
@@ -117,8 +128,8 @@ export default function NDVIPage() {
       
     } catch (error: any) {
       console.error('Failed to get NDVI data:', error);
-      toast.error('Failed to fetch NDVI queue', {
-        description: error.message || 'Please try again later'
+      toast.error('Failed to create NDVI requests', {
+        description: error.message || 'Please ensure you have lands with GPS boundaries added.'
       });
     } finally {
       setIsCreatingRequests(false);
