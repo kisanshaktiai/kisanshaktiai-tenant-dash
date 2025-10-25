@@ -54,8 +54,8 @@ export default function NDVIPage() {
     refetch: refetchRealtime,
   } = useRealTimeNDVIData();
 
-  // Refresh data handler
-  const handleRefreshAll = async () => {
+  // Get NDVI data with instant processing
+  const handleGetData = async () => {
     if (!currentTenant?.id) {
       toast.error('No tenant selected');
       return;
@@ -63,15 +63,40 @@ export default function NDVIPage() {
 
     setIsCreatingRequests(true);
     try {
+      // First fetch queue to see pending requests
+      const queueData = await ndviLandService.getQueueStatus(currentTenant.id);
+      
+      if (queueData && queueData.length > 0) {
+        // Process all queued requests with instant flag
+        const pendingRequests = queueData.filter((req: any) => req.status === 'queued');
+        
+        if (pendingRequests.length > 0) {
+          toast.info(`Processing ${pendingRequests.length} queued request(s)...`);
+          
+          // Trigger instant processing for each queued request
+          for (const req of pendingRequests) {
+            await ndviLandService.createInstantNDVIRequest(
+              currentTenant.id,
+              req.land_ids || [],
+              req.tile_id,
+              true // instant = true
+            );
+          }
+        }
+      }
+
+      // Refresh all data
       await Promise.all([
         refetchHealth(),
         refetchStats(),
         refetchData(),
         refetchRealtime(),
       ]);
-      toast.success('Data refreshed successfully');
-    } catch (error) {
-      toast.error('Failed to refresh data');
+      
+      toast.success('NDVI data fetched successfully');
+    } catch (error: any) {
+      console.error('Failed to get NDVI data:', error);
+      toast.error(error.message || 'Failed to get NDVI data');
     } finally {
       setIsCreatingRequests(false);
     }
@@ -121,21 +146,25 @@ export default function NDVIPage() {
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
                 <Button
-                  onClick={handleRefreshAll}
+                  onClick={handleGetData}
                   disabled={isCreatingRequests || !currentTenant?.id}
                   size="lg"
                   className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
-                  {isCreatingRequests ? 'Refreshing...' : 'Refresh Data'}
+                  <Satellite className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
+                  {isCreatingRequests ? 'Processing...' : 'Get NDVI Data'}
                 </Button>
                 <Button
+                  onClick={async () => {
+                    await Promise.all([refetchHealth(), refetchStats(), refetchRealtime()]);
+                    toast.success('Data refreshed');
+                  }}
                   variant="outline"
                   size="lg"
                   className="backdrop-blur-sm border-primary/20"
                 >
-                  <Target className="h-4 w-4 mr-2" />
-                  Set Goals
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh View
                 </Button>
               </div>
             </div>

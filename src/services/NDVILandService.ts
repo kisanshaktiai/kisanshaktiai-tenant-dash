@@ -179,6 +179,44 @@ export class NDVILandService {
   }
 
   /**
+   * Get NDVI request queue status (v4.1.0)
+   * GET /api/v1/ndvi/requests/queue?tenant_id={id}
+   */
+  async getQueueStatus(tenantId: string): Promise<any[]> {
+    try {
+      const response = await renderNDVIService.getQueue(tenantId);
+      return response.queue || [];
+    } catch (error) {
+      console.error('❌ Error getting queue status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create NDVI request with instant processing (v4.1.0)
+   * POST /api/v1/ndvi/lands/analyze
+   */
+  async createInstantNDVIRequest(
+    tenantId: string,
+    landIds: string[],
+    tileId: string,
+    instant: boolean = false
+  ): Promise<any> {
+    try {
+      const response = await renderNDVIService.createRequest({
+        tenant_id: tenantId,
+        land_ids: landIds,
+        tile_id: tileId,
+        instant,
+      });
+      return response;
+    } catch (error) {
+      console.error('❌ Error creating instant NDVI request:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Auto-sync tile mappings if empty
    */
   private async ensureTileMappings(landIds: string[]): Promise<void> {

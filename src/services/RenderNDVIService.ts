@@ -203,6 +203,78 @@ export class RenderNDVIService {
   }
 
   /**
+   * Create NDVI request with optional instant processing (v4.1.0)
+   * POST /api/v1/ndvi/lands/analyze
+   */
+  async createRequest(payload: {
+    tenant_id: string;
+    land_ids: string[];
+    tile_id: string;
+    instant?: boolean;
+    statistics_only?: boolean;
+    priority?: number;
+    farmer_id?: string;
+    metadata?: any;
+  }): Promise<any> {
+    try {
+      const params = new URLSearchParams();
+      params.append('tenant_id', payload.tenant_id);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/lands/analyze?${params.toString()}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          land_ids: payload.land_ids,
+          tile_id: payload.tile_id,
+          instant: payload.instant ?? false,
+          statistics_only: payload.statistics_only ?? false,
+          priority: payload.priority ?? 5,
+          farmer_id: payload.farmer_id,
+          metadata: payload.metadata,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Create NDVI request failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Create NDVI request error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get NDVI request queue (v4.1.0)
+   * GET /api/v1/ndvi/requests/queue?tenant_id={id}
+   */
+  async getQueue(tenantId: string): Promise<any> {
+    try {
+      const params = new URLSearchParams();
+      params.append('tenant_id', tenantId);
+
+      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/requests/queue?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Get queue failed: ${response.status} ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Get queue error:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get NDVI data summary (v4.1.0 - unified ndvi_micro_tiles table)
    * GET /api/v1/ndvi/data?tenant_id={id}&land_id={id}&limit={n}
    */
