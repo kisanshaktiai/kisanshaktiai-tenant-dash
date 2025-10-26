@@ -57,80 +57,69 @@ export default function NDVIPage() {
   // Get NDVI data with instant processing
   const handleGetData = async () => {
     if (!currentTenant?.id) {
-      toast.error('No tenant selected');
+      toast.error('No tenant context available');
       return;
     }
 
     setIsCreatingRequests(true);
     try {
-      toast.info('Creating NDVI requests for your lands...');
+      toast.info('🌱 Processing NDVI for your lands...');
       
-      // Step 1: Create requests for all tenant lands
-      const results = await ndviLandService.fetchNDVIForLands(currentTenant.id, undefined, false);
+      // Single API call with instant processing
+      const result = await ndviLandService.processLandsInstantly(currentTenant.id);
       
-      if (!results || results.length === 0) {
-        toast.error('No lands found to analyze. Please add land parcels in the Farmers section.');
-        return;
-      }
-      
-      toast.success(`Created NDVI requests for ${results.length} land(s)`);
-      
-      // Step 2: Fetch newly created queue entries
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Brief delay for DB sync
-      const queueData = await ndviLandService.getQueueStatus(currentTenant.id);
-      
-      if (queueData && queueData.length > 0) {
-        const pendingRequests = queueData.filter((req: any) => req.status === 'queued');
-        
-        if (pendingRequests.length > 0) {
-          toast.info(`Processing ${pendingRequests.length} queued request(s) instantly...`);
-          
-          let successCount = 0;
-          let failCount = 0;
-          let errors: string[] = [];
-          
-          // Step 3: Trigger instant processing for each queued request
-          for (const req of pendingRequests) {
-            try {
-              await ndviLandService.createInstantNDVIRequest(
-                currentTenant.id,
-                req.land_ids || [],
-                req.tile_id,
-                true // instant = true
-              );
-              successCount++;
-            } catch (err: any) {
-              failCount++;
-              const errorMsg = err?.message || 'Unknown error';
-              errors.push(errorMsg);
-              console.error('Failed to process request:', req.id, err);
-            }
+      if (result.success) {
+        // Show success message with details
+        toast.success(
+          `Successfully processed ${result.processed_count} land(s) across ${result.tile_groups} tile(s)`,
+          {
+            description: result.failed_count > 0 
+              ? `${result.failed_count} land(s) failed to process` 
+              : 'NDVI data and vegetation images are now available'
           }
-          
-          if (successCount > 0) {
-            toast.success(`Successfully processed ${successCount} request(s)`);
-          }
-          if (failCount > 0) {
-            toast.error(`Failed to process ${failCount} request(s)`, {
-              description: errors[0] || 'The NDVI processing service may be experiencing issues.'
-            });
-          }
+        );
+
+        // Show specific errors if any
+        if (result.errors.length > 0) {
+          console.error('Processing errors:', result.errors);
+          toast.error('Some lands failed to process', {
+            description: result.errors[0]
+          });
         }
+      } else {
+        throw new Error('NDVI processing failed for all lands');
       }
 
-      // Step 4: Refresh all data
+      // Refresh all data to show new NDVI images
       await Promise.all([
         refetchHealth(),
         refetchStats(),
-        refetchData(),
         refetchRealtime(),
       ]);
       
     } catch (error: any) {
-      console.error('Failed to get NDVI data:', error);
-      toast.error('Failed to create NDVI requests', {
-        description: error.message || 'Please ensure you have lands with GPS boundaries added.'
-      });
+      console.error('Failed to process NDVI:', error);
+      
+      // Better error messages based on error type
+      const errorMessage = error.message || 'Failed to process NDVI data';
+      
+      if (errorMessage.includes('missing GPS boundary')) {
+        toast.error('Missing Land Boundaries', {
+          description: 'Please add GPS boundaries for your lands in the Farmers section'
+        });
+      } else if (errorMessage.includes('satellite tiles')) {
+        toast.error('Tile Mapping Issue', {
+          description: 'Cannot determine satellite coverage. Please contact support.'
+        });
+      } else if (errorMessage.includes('No lands found')) {
+        toast.error('No Lands Available', {
+          description: 'Please add land parcels in the Farmers section first'
+        });
+      } else {
+        toast.error('NDVI Processing Failed', {
+          description: errorMessage
+        });
+      }
     } finally {
       setIsCreatingRequests(false);
     }

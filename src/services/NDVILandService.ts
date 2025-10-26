@@ -332,8 +332,123 @@ export class NDVILandService {
   }
 
   /**
+   * Process lands instantly using the Python API v4.1.0
+   * This is the main method to trigger NDVI processing with instant results
+   */
+  async processLandsInstantly(tenantId: string, farmerId?: string): Promise<{
+    success: boolean;
+    processed_count: number;
+    failed_count: number;
+    errors: string[];
+    tile_groups: number;
+  }> {
+    try {
+      console.log('🚀 Starting instant NDVI processing for tenant:', tenantId);
+
+      // Step 1: Fetch active lands with boundaries
+      let query = supabase
+        .from('lands')
+        .select('id, name, tenant_id, farmer_id, boundary, boundary_polygon_old')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true);
+
+      if (farmerId) {
+        query = query.eq('farmer_id', farmerId);
+      }
+
+      const { data: lands, error } = await query;
+
+      if (error) {
+        throw new Error(`Failed to fetch lands: ${error.message}`);
+      }
+
+      if (!lands || lands.length === 0) {
+        throw new Error('No lands found. Please add land parcels in the Farmers section.');
+      }
+
+      // Step 2: Filter lands with boundary data
+      const landsWithGeometry = lands.filter(land => getLandGeometry(land) !== null);
+      
+      if (landsWithGeometry.length === 0) {
+        throw new Error(
+          `All ${lands.length} land(s) are missing GPS boundary data. ` +
+          `Please add boundary coordinates in the Farmers section.`
+        );
+      }
+
+      console.log(`✅ Found ${landsWithGeometry.length} land(s) with boundaries`);
+
+      // Step 3: Get tile mappings
+      const landIds = landsWithGeometry.map(l => l.id);
+      const tileGroups = await this.getTileMappingsForLands(landIds);
+      
+      if (tileGroups.size === 0) {
+        throw new Error(
+          'Cannot determine satellite tiles for your lands. ' +
+          'Please contact support or try re-drawing land boundaries.'
+        );
+      }
+
+      console.log(`📡 Processing ${tileGroups.size} tile group(s) with instant processing`);
+
+      // Step 4: Process each tile group with instant=true
+      let totalProcessed = 0;
+      let totalFailed = 0;
+      const errors: string[] = [];
+
+      for (const [tileId, group] of tileGroups.entries()) {
+        try {
+          console.log(`⚡ Processing ${group.land_ids.length} land(s) in tile ${tileId}`);
+          
+          const response = await renderNDVIService.createRequest({
+            tenant_id: tenantId,
+            land_ids: group.land_ids,
+            tile_id: tileId,
+            instant: true, // 🔥 Enable instant processing
+            farmer_id: farmerId,
+            metadata: {
+              land_names: group.land_names,
+              api_version: '4.1.0',
+            }
+          });
+
+          if (response.status === 'success') {
+            const processedCount = response.instant_result?.processed_count || 0;
+            totalProcessed += processedCount;
+            
+            const failedLands = response.instant_result?.failed || [];
+            totalFailed += failedLands.length;
+            
+            if (failedLands.length > 0) {
+              errors.push(`Tile ${tileId}: Failed to process ${failedLands.length} land(s)`);
+            }
+            
+            console.log(`✅ Tile ${tileId}: ${processedCount} processed, ${failedLands.length} failed`);
+          }
+        } catch (err: any) {
+          console.error(`❌ Failed to process tile ${tileId}:`, err);
+          totalFailed += group.land_ids.length;
+          errors.push(`Tile ${tileId}: ${err.message || 'Processing failed'}`);
+        }
+      }
+
+      return {
+        success: totalProcessed > 0,
+        processed_count: totalProcessed,
+        failed_count: totalFailed,
+        errors,
+        tile_groups: tileGroups.size,
+      };
+
+    } catch (error: any) {
+      console.error('❌ Error in processLandsInstantly:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch NDVI data for all lands under a tenant and farmer
-   * API v3.6: Simplified - API handles tile selection automatically
+   * @deprecated Use processLandsInstantly() for instant processing
    */
   async fetchNDVIForLands(
     tenantId: string,
