@@ -412,6 +412,15 @@ export class NDVILandService {
             }
           });
 
+          // Check for failed status from API
+          if (response.status === 'failed' && response.instant_result?.error) {
+            const apiError = response.instant_result.error;
+            console.error(`❌ API Error for tile ${tileId}:`, apiError);
+            errors.push(`Tile ${tileId}: ${apiError}`);
+            totalFailed += group.land_ids.length;
+            continue;
+          }
+
           if (response.status === 'success') {
             const processedCount = response.instant_result?.processed_count || 0;
             totalProcessed += processedCount;
