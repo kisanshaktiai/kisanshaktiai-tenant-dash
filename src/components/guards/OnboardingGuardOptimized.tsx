@@ -84,10 +84,14 @@ export const OnboardingGuardOptimized: React.FC<OnboardingGuardOptimizedProps> =
     );
   }
 
-  // If no tenant available, redirect to tenant registration
+  // If no tenant available after initialization, show loading or redirect
   if (!currentTenant) {
-    console.warn('OnboardingGuardOptimized: User has no current tenant, redirecting to registration');
-    return <Navigate to="/register" replace />;
+    console.warn('OnboardingGuardOptimized: User has no current tenant');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // Show loading while onboarding data is being checked

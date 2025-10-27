@@ -450,10 +450,19 @@ export const EnhancedTenantLayout: React.FC = () => {
 
   // After initialization, check for tenant
   if (isInitialized && !currentTenant) {
-    // User has no tenants - redirect to registration
+    // User has no tenants - show error (OnboardingGuard will handle redirect)
     if (!userTenants || userTenants.length === 0) {
-      console.log('EnhancedTenantLayout: No tenants found, redirecting to registration');
-      return <Navigate to="/register" replace />;
+      console.log('EnhancedTenantLayout: No tenants found');
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">No organization found. Please complete setup.</p>
+            <Button onClick={() => window.location.href = '/onboarding'}>
+              Complete Setup
+            </Button>
+          </div>
+        </div>
+      );
     }
     
     // Has tenants but none selected - show error with retry
@@ -470,10 +479,10 @@ export const EnhancedTenantLayout: React.FC = () => {
     );
   }
 
-  // Loading timeout reached without tenant
+  // Loading timeout reached without tenant - redirect to onboarding
   if (loadingTimeout && !currentTenant) {
-    console.log('EnhancedTenantLayout: Loading timeout, redirecting to registration');
-    return <Navigate to="/register" replace />;
+    console.log('EnhancedTenantLayout: Loading timeout, redirecting to onboarding');
+    return <Navigate to="/onboarding" replace />;
   }
 
   return (

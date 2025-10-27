@@ -15,10 +15,10 @@ const TenantLoginPage = () => {
     return <Navigate to="/app/dashboard" replace />;
   }
 
-  // If user is logged in but no tenant, redirect to registration
+  // If user is logged in but no tenant yet, keep waiting for initialization
   if (user && !currentTenant && isInitialized) {
-    console.log('TenantLoginPage: User has no tenant, redirecting to registration');
-    return <Navigate to="/register" replace />;
+    console.log('TenantLoginPage: User authenticated, waiting for tenant data');
+    // Don't redirect yet, let the auth system handle tenant loading
   }
 
   const handleLoginSuccess = () => {

@@ -49,21 +49,21 @@ const Index = () => {
 
   // After timeout or initialization, check tenant status
   if (tenantInitialized || checkTimeout) {
-    // User has no tenants - redirect to registration
-    if (!userTenants || userTenants.length === 0) {
-      console.log('Index: No tenants found, redirecting to registration');
-      return <Navigate to="/register" replace />;
-    }
-
     // Has tenants and current tenant is set - go to dashboard
     if (currentTenant) {
       return <Navigate to="/app/dashboard" replace />;
     }
 
-    // Has tenants but no current tenant set - refresh and redirect
-    if (userTenants.length > 0 && !currentTenant && !tenantLoading) {
+    // Has tenants but no current tenant set - let dashboard handle it
+    if (userTenants && userTenants.length > 0 && !currentTenant) {
       console.log('Index: Tenants exist but none selected, redirecting to dashboard');
       return <Navigate to="/app/dashboard" replace />;
+    }
+
+    // User has no tenants - redirect to onboarding to complete setup
+    if (!userTenants || userTenants.length === 0) {
+      console.log('Index: No tenants found, redirecting to onboarding');
+      return <Navigate to="/onboarding" replace />;
     }
   }
 
