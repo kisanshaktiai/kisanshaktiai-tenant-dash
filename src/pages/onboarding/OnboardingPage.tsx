@@ -109,27 +109,6 @@ const OnboardingPage = () => {
   // Check if we should show bypass options instead of loading/error states
   const shouldShowBypass = user && currentTenant && !tenantLoading && !onboardingLoading && (!onboardingData || onboardingError);
 
-  // Initialize onboarding workflow when tenant is available
-  useEffect(() => {
-    if (currentTenant?.id && !tenantLoading && !onboardingLoading && !onboardingData && !shouldShowBypass) {
-      console.log('OnboardingPage: Auto-initializing onboarding for tenant:', currentTenant.id);
-      
-      initializeOnboarding(currentTenant.id)
-        .then((result) => {
-          console.log('OnboardingPage: Auto-initialization result:', result);
-          if (result) {
-            // Trigger a refetch of onboarding data
-            setTimeout(() => {
-              refetch();
-            }, 1000);
-          }
-        })
-        .catch((error) => {
-          console.error('OnboardingPage: Auto-initialization failed:', error);
-        });
-    }
-  }, [currentTenant?.id, tenantLoading, onboardingLoading, onboardingData, initializeOnboarding, refetch, shouldShowBypass]);
-
   if (!user) {
     console.log('OnboardingPage: No user, showing skeleton');
     return (

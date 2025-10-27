@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,8 @@ import {
   Globe,
   Activity,
   Settings,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/AuthService';
@@ -397,16 +398,29 @@ const TopBar = memo(() => {
 });
 
 export const EnhancedTenantLayout: React.FC = () => {
-  const { currentTenant, loading } = useTenantContextOptimized();
+  const { currentTenant, loading, userTenants, isInitialized } = useTenantContextOptimized();
   const [mounted, setMounted] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const { isAuthenticated, isLoading } = useAuthGuard();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Show loading state while checking authentication
-  if (isLoading || !mounted || loading) {
+  // Set a timeout for loading to prevent infinite loading
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+    setLoadingTimeout(false);
+  }, [loading]);
+
+  // Show loading state while checking authentication (with timeout)
+  if (isLoading || !mounted) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center gap-4">
@@ -422,14 +436,44 @@ export const EnhancedTenantLayout: React.FC = () => {
     return null;
   }
 
-  if (!currentTenant) {
+  // Show loading while tenant data is being fetched (with timeout)
+  if (loading && !loadingTimeout) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <p className="text-muted-foreground">No tenant context available</p>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading tenant data...</p>
         </div>
       </div>
     );
+  }
+
+  // After initialization, check for tenant
+  if (isInitialized && !currentTenant) {
+    // User has no tenants - redirect to registration
+    if (!userTenants || userTenants.length === 0) {
+      console.log('EnhancedTenantLayout: No tenants found, redirecting to registration');
+      return <Navigate to="/register" replace />;
+    }
+    
+    // Has tenants but none selected - show error with retry
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Unable to load tenant. Please try again.</p>
+          <Button onClick={() => window.location.reload()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading timeout reached without tenant
+  if (loadingTimeout && !currentTenant) {
+    console.log('EnhancedTenantLayout: Loading timeout, redirecting to registration');
+    return <Navigate to="/register" replace />;
   }
 
   return (

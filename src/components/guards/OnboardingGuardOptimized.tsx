@@ -84,10 +84,10 @@ export const OnboardingGuardOptimized: React.FC<OnboardingGuardOptimizedProps> =
     );
   }
 
-  // If no tenant available, redirect to tenant selection or registration
+  // If no tenant available, redirect to tenant registration
   if (!currentTenant) {
-    console.warn('OnboardingGuardOptimized: User has no current tenant, redirecting to setup');
-    return <Navigate to="/tenant-setup" replace />;
+    console.warn('OnboardingGuardOptimized: User has no current tenant, redirecting to registration');
+    return <Navigate to="/register" replace />;
   }
 
   // Show loading while onboarding data is being checked

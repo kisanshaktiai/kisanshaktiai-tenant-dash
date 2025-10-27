@@ -145,10 +145,9 @@ export const useTenantAuthOptimized = () => {
         return;
       }
 
-      // Debounce initialization to prevent rapid calls
-      initializationTimeoutRef.current = setTimeout(() => {
-        fetchUserTenants(user.id);
-      }, 100);
+      // Fetch tenant data immediately (removed debounce)
+      console.log('useTenantAuthOptimized: Initializing tenant data for user:', user.id);
+      fetchUserTenants(user.id);
     }
 
     return () => {

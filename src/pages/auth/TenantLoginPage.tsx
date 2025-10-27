@@ -15,9 +15,10 @@ const TenantLoginPage = () => {
     return <Navigate to="/app/dashboard" replace />;
   }
 
-  // If user is logged in but no tenant, redirect to onboarding
+  // If user is logged in but no tenant, redirect to registration
   if (user && !currentTenant && isInitialized) {
-    return <Navigate to="/onboarding" replace />;
+    console.log('TenantLoginPage: User has no tenant, redirecting to registration');
+    return <Navigate to="/register" replace />;
   }
 
   const handleLoginSuccess = () => {

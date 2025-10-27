@@ -44,8 +44,13 @@ export const TenantLoginForm: React.FC<TenantLoginFormProps> = ({ onSuccess }) =
         throw new Error(signInError.message);
       }
 
+      console.log('TenantLoginForm: Login successful, refreshing tenant data');
+      
       // Refresh tenant data after successful login
       await refreshTenantData();
+      
+      // Small delay to ensure tenant data is loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
         title: 'Login successful',
