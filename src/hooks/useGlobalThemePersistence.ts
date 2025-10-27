@@ -6,9 +6,16 @@ import { appearanceSettingsService } from '@/services/AppearanceSettingsService'
 export const useGlobalThemePersistence = () => {
   const { settings } = useAppearanceSettings();
 
-  // Apply theme colors whenever settings change
+  // Apply theme colors whenever settings change (throttled)
   useEffect(() => {
-    if (settings) {
+    if (!settings) return;
+    
+    const lastAppliedKey = 'global-theme-applied';
+    const lastAppliedTime = sessionStorage.getItem(lastAppliedKey);
+    const now = Date.now();
+    
+    // Only apply if not applied in the last 2 seconds (prevent rapid re-applications)
+    if (!lastAppliedTime || (now - parseInt(lastAppliedTime)) > 2000) {
       console.log('Applying theme from global persistence:', settings);
       
       // Always apply theme colors when settings are available
@@ -16,8 +23,9 @@ export const useGlobalThemePersistence = () => {
       
       // Store in sessionStorage for immediate application on page load
       sessionStorage.setItem('current-theme-settings', JSON.stringify(settings));
+      sessionStorage.setItem(lastAppliedKey, now.toString());
     }
-  }, [settings]);
+  }, [settings?.id]); // Only depend on settings ID to prevent loops
 
   // Apply stored theme immediately on mount (before settings load)
   useEffect(() => {

@@ -121,65 +121,102 @@ const WhiteLabelConfigPage = () => {
 
   // Initialize local config from settings - only run when settings change
   useEffect(() => {
-    if (settings) {
-      // Handle mobile_theme - check if it has nested structure from DB
-      let processedMobileTheme = localConfig.mobile_theme;
+    if (!settings) return;
+    
+    // Handle mobile_theme - check if it has nested structure from DB
+    const defaultMobileTheme = {
+      primary_color: '142 76% 36%',
+      secondary_color: '155 76% 36%',
+      accent_color: '220 14% 46%',
+      background_color: '0 0% 100%',
+      surface_color: '0 0% 100%',
+      text_color: '224 71% 4%',
+      border_color: '0 0% 94%',
+      success_color: '142 76% 36%',
+      warning_color: '45 93% 47%',
+      error_color: '0 84% 60%',
+      info_color: '199 89% 48%',
+      primary_variant: '142 76% 30%',
+      secondary_variant: '155 76% 30%',
+      tertiary_color: '280 50% 50%',
+      on_surface_color: '224 71% 4%'
+    };
+    
+    let processedMobileTheme = defaultMobileTheme;
+    
+    if (settings.mobile_theme) {
+      const mobileThemeData = settings.mobile_theme as any;
       
-      if (settings.mobile_theme) {
-        const mobileThemeData = settings.mobile_theme as any;
-        
-        // Check if it's already in the nested Modern2025Theme format
-        if (mobileThemeData.core && mobileThemeData.neutral && 
-            mobileThemeData.status && mobileThemeData.support) {
-          // Use the nested structure directly, preserving all properties
-          processedMobileTheme = mobileThemeData;
-        } else if (mobileThemeData.primary_color || mobileThemeData.secondary_color) {
-          // It's in flat format, use the flat properties
-          processedMobileTheme = {
-            primary_color: mobileThemeData.primary_color || localConfig.mobile_theme.primary_color,
-            secondary_color: mobileThemeData.secondary_color || localConfig.mobile_theme.secondary_color,
-            accent_color: mobileThemeData.accent_color || localConfig.mobile_theme.accent_color,
-            background_color: mobileThemeData.background_color || localConfig.mobile_theme.background_color,
-            surface_color: mobileThemeData.surface_color || localConfig.mobile_theme.surface_color,
-            text_color: mobileThemeData.text_color || localConfig.mobile_theme.text_color,
-            border_color: mobileThemeData.border_color || localConfig.mobile_theme.border_color,
-            success_color: mobileThemeData.success_color || localConfig.mobile_theme.success_color,
-            warning_color: mobileThemeData.warning_color || localConfig.mobile_theme.warning_color,
-            error_color: mobileThemeData.error_color || localConfig.mobile_theme.error_color,
-            info_color: mobileThemeData.info_color || localConfig.mobile_theme.info_color,
-            primary_variant: mobileThemeData.primary_variant || localConfig.mobile_theme.primary_variant,
-            secondary_variant: mobileThemeData.secondary_variant || localConfig.mobile_theme.secondary_variant,
-            tertiary_color: mobileThemeData.tertiary_color || localConfig.mobile_theme.tertiary_color,
-            on_surface_color: mobileThemeData.on_surface_color || localConfig.mobile_theme.on_surface_color,
-            // Include nested structure if present
-            ...mobileThemeData
-          };
-        }
+      // Check if it's already in the nested Modern2025Theme format
+      if (mobileThemeData.core && mobileThemeData.neutral && 
+          mobileThemeData.status && mobileThemeData.support) {
+        // Use the nested structure directly, preserving all properties
+        processedMobileTheme = mobileThemeData;
+      } else if (mobileThemeData.primary_color || mobileThemeData.secondary_color) {
+        // It's in flat format, merge with defaults
+        processedMobileTheme = {
+          ...defaultMobileTheme,
+          ...mobileThemeData
+        };
       }
-      
-      setLocalConfig(prev => ({
-        ...prev,
-        app_name: settings.app_name || prev.app_name,
-        app_logo_url: settings.app_logo_url || prev.app_logo_url,
-        app_icon_url: settings.app_icon_url || prev.app_icon_url,
-        app_splash_screen_url: settings.app_splash_screen_url || prev.app_splash_screen_url,
-        primary_color: settings.primary_color || prev.primary_color,
-        secondary_color: settings.secondary_color || prev.secondary_color,
-        accent_color: settings.accent_color || prev.accent_color,
-        background_color: settings.background_color || prev.background_color,
-        text_color: settings.text_color || prev.text_color,
-        success_color: settings.success_color || prev.success_color,
-        warning_color: settings.warning_color || prev.warning_color,
-        error_color: settings.error_color || prev.error_color,
-        info_color: settings.info_color || prev.info_color,
-        bundle_identifier: settings.bundle_identifier || prev.bundle_identifier,
-        mobile_theme: processedMobileTheme,
-        // Spread other config properties
-        ...(settings.pwa_config || {}),
-        ...(settings.mobile_ui_config || {})
-      }));
     }
-  }, [settings]); // Fixed: Only depend on settings to prevent re-render loop
+    
+    setLocalConfig({
+      app_name: settings.app_name || '',
+      tag_line: '',
+      company_name: '',
+      app_logo_url: settings.app_logo_url || '',
+      app_icon_url: settings.app_icon_url || '',
+      app_splash_screen_url: settings.app_splash_screen_url || '',
+      primary_color: settings.primary_color || '#10b981',
+      secondary_color: settings.secondary_color || '#8b5cf6',
+      accent_color: settings.accent_color || '#3b82f6',
+      background_color: settings.background_color || '#ffffff',
+      text_color: settings.text_color || '#1f2937',
+      success_color: settings.success_color || '#10b981',
+      warning_color: settings.warning_color || '#f59e0b',
+      error_color: settings.error_color || '#ef4444',
+      info_color: settings.info_color || '#3b82f6',
+      mobile_theme: processedMobileTheme,
+      custom_domain: '',
+      subdomain: '',
+      enable_ssl: true,
+      bundle_identifier: settings.bundle_identifier || '',
+      app_version: '1.0.0',
+      build_number: '1',
+      min_ios_version: 'iOS 13.0',
+      min_android_version: 'Android 8.0 (API 26)',
+      supported_languages: 'en, hi, mr, gu, ta, te',
+      pwa_enabled: true,
+      pwa_name: '',
+      pwa_short_name: '',
+      pwa_display_mode: 'standalone',
+      pwa_orientation: 'portrait',
+      offline_support: true,
+      install_prompt_text: 'Install our app for a better experience!',
+      cache_strategy: 'network-first',
+      help_center_url: '',
+      documentation_url: '',
+      getting_started_guide: '',
+      email_templates: {
+        welcome: { enabled: true, category: 'onboarding' },
+        notification: { enabled: true, category: 'notifications' },
+        invoice: { enabled: true, category: 'billing' },
+        password_reset: { enabled: true, category: 'authentication' }
+      },
+      custom_css: '',
+      enable_custom_css: false,
+      font_family: 'Inter',
+      animations_enabled: true,
+      enable_pwa: true,
+      enable_private_store: false,
+      deep_links_enabled: true,
+      auto_updates_enabled: true,
+      download_manifest_url: '',
+      ...(settings.pwa_config || {}),
+      ...(settings.mobile_ui_config || {})
+    });
+  }, [settings]); // Only depend on settings, NOT localConfig
 
   const handleFieldChange = (field: string, value: any) => {
     setLocalConfig(prev => ({

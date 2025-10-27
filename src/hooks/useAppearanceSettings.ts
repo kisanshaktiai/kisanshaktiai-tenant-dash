@@ -55,16 +55,24 @@ export const useAppearanceSettings = () => {
     }
   });
 
-  // Apply theme colors when settings are first loaded
+  // Apply theme colors when settings are first loaded (only once per tenant)
   useEffect(() => {
-    if (settings && currentTenant?.id) {
+    if (!settings || !currentTenant?.id) return;
+    
+    const lastAppliedKey = `theme-applied-${currentTenant.id}`;
+    const lastAppliedTime = sessionStorage.getItem(lastAppliedKey);
+    const now = Date.now();
+    
+    // Only apply if not applied in the last 5 seconds (prevent rapid re-applications)
+    if (!lastAppliedTime || (now - parseInt(lastAppliedTime)) > 5000) {
       console.log('Settings loaded, applying theme colors:', settings);
       appearanceSettingsService.applyThemeColors(settings);
       
       // Update sessionStorage
       sessionStorage.setItem('current-theme-settings', JSON.stringify(settings));
+      sessionStorage.setItem(lastAppliedKey, now.toString());
     }
-  }, [settings, currentTenant?.id]);
+  }, [settings?.id, currentTenant?.id]); // Only re-apply when settings ID or tenant changes
 
   return {
     settings,
