@@ -2658,6 +2658,27 @@ export type Database = {
             foreignKeyName: "copernicus_api_calls_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "copernicus_api_calls_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "copernicus_api_calls_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "copernicus_api_calls_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -2806,6 +2827,27 @@ export type Database = {
             foreignKeyName: "crop_health_assessments_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "crop_health_assessments_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "crop_health_assessments_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "crop_health_assessments_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -2873,6 +2915,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "crop_history_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "crop_history_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "crop_history_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -2958,6 +3021,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "crop_schedules_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "crop_schedules_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "crop_schedules_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -6056,6 +6140,27 @@ export type Database = {
             foreignKeyName: "land_activities_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "land_activities_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "land_activities_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "land_activities_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -6213,6 +6318,27 @@ export type Database = {
             foreignKeyName: "land_tile_mapping_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: true
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "land_tile_mapping_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: true
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "land_tile_mapping_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: true
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "land_tile_mapping_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: true
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -6238,6 +6364,7 @@ export type Database = {
           area_guntas: number | null
           area_sqft: number | null
           boundary: unknown
+          boundary_geom: unknown
           boundary_method: string | null
           boundary_polygon_old: Json | null
           center_lat: number | null
@@ -6273,6 +6400,7 @@ export type Database = {
           location_context: Json | null
           location_coords: Json | null
           marketplace_enabled: boolean | null
+          mgrs_tile_id: string | null
           name: string
           ndvi_tested: boolean | null
           ndvi_thumbnail_url: string | null
@@ -6295,6 +6423,8 @@ export type Database = {
           taluka: string | null
           taluka_id: string | null
           tenant_id: string
+          tile_id: string | null
+          tile_ids: string[] | null
           updated_at: string
           village: string | null
           village_id: string | null
@@ -6305,6 +6435,7 @@ export type Database = {
           area_guntas?: number | null
           area_sqft?: number | null
           boundary?: unknown
+          boundary_geom?: unknown
           boundary_method?: string | null
           boundary_polygon_old?: Json | null
           center_lat?: number | null
@@ -6340,6 +6471,7 @@ export type Database = {
           location_context?: Json | null
           location_coords?: Json | null
           marketplace_enabled?: boolean | null
+          mgrs_tile_id?: string | null
           name: string
           ndvi_tested?: boolean | null
           ndvi_thumbnail_url?: string | null
@@ -6362,6 +6494,8 @@ export type Database = {
           taluka?: string | null
           taluka_id?: string | null
           tenant_id: string
+          tile_id?: string | null
+          tile_ids?: string[] | null
           updated_at?: string
           village?: string | null
           village_id?: string | null
@@ -6372,6 +6506,7 @@ export type Database = {
           area_guntas?: number | null
           area_sqft?: number | null
           boundary?: unknown
+          boundary_geom?: unknown
           boundary_method?: string | null
           boundary_polygon_old?: Json | null
           center_lat?: number | null
@@ -6407,6 +6542,7 @@ export type Database = {
           location_context?: Json | null
           location_coords?: Json | null
           marketplace_enabled?: boolean | null
+          mgrs_tile_id?: string | null
           name?: string
           ndvi_tested?: boolean | null
           ndvi_thumbnail_url?: string | null
@@ -6429,6 +6565,8 @@ export type Database = {
           taluka?: string | null
           taluka_id?: string | null
           tenant_id?: string
+          tile_id?: string | null
+          tile_ids?: string[] | null
           updated_at?: string
           village?: string | null
           village_id?: string | null
@@ -6483,6 +6621,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ndvi_full_view"
             referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "lands_mgrs_tile_id_fkey"
+            columns: ["mgrs_tile_id"]
+            isOneToOne: false
+            referencedRelation: "mgrs_tiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "lands_previous_crop_id_fkey"
@@ -7563,6 +7708,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "marketplace_products_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -8696,6 +8862,27 @@ export type Database = {
             foreignKeyName: "ndvi_data_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -8794,6 +8981,27 @@ export type Database = {
             foreignKeyName: "ndvi_micro_tiles_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "ndvi_micro_tiles_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "ndvi_micro_tiles_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "ndvi_micro_tiles_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -8864,6 +9072,27 @@ export type Database = {
             foreignKeyName: "ndvi_processing_logs_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "ndvi_processing_logs_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "ndvi_processing_logs_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "ndvi_processing_logs_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -8889,6 +9118,7 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           error_message: string | null
+          failed_count: number | null
           farmer_id: string | null
           id: string
           land_ids: string[]
@@ -8912,6 +9142,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           error_message?: string | null
+          failed_count?: number | null
           farmer_id?: string | null
           id?: string
           land_ids: string[]
@@ -8935,6 +9166,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           error_message?: string | null
+          failed_count?: number | null
           farmer_id?: string | null
           id?: string
           land_ids?: string[]
@@ -10378,6 +10610,27 @@ export type Database = {
             foreignKeyName: "prescription_maps_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "prescription_maps_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "prescription_maps_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "prescription_maps_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -11185,6 +11438,27 @@ export type Database = {
             foreignKeyName: "satellite_alerts_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "satellite_alerts_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "satellite_alerts_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "satellite_alerts_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -11314,6 +11588,27 @@ export type Database = {
             foreignKeyName: "satellite_imagery_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "satellite_imagery_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "satellite_imagery_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "satellite_imagery_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -11375,6 +11670,7 @@ export type Database = {
           actual_download_status: string | null
           api_source: string | null
           bbox: Json | null
+          bbox_geom: unknown
           cloud_cover: number | null
           collection: string
           country_id: string | null
@@ -11413,6 +11709,7 @@ export type Database = {
           actual_download_status?: string | null
           api_source?: string | null
           bbox?: Json | null
+          bbox_geom?: unknown
           cloud_cover?: number | null
           collection?: string
           country_id?: string | null
@@ -11451,6 +11748,7 @@ export type Database = {
           actual_download_status?: string | null
           api_source?: string | null
           bbox?: Json | null
+          bbox_geom?: unknown
           cloud_cover?: number | null
           collection?: string
           country_id?: string | null
@@ -12072,6 +12370,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "soil_health_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "soil_health_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "soil_health_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -14524,6 +14843,27 @@ export type Database = {
             foreignKeyName: "weather_activity_recommendations_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "weather_activity_recommendations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "weather_activity_recommendations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "weather_activity_recommendations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -14625,6 +14965,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "weather_aggregates_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "weather_aggregates_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "weather_aggregates_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -15064,6 +15425,27 @@ export type Database = {
             foreignKeyName: "fk_weather_land"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -15086,6 +15468,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -15664,6 +16067,33 @@ export type Database = {
           },
         ]
       }
+      land_boundary_overlaps: {
+        Row: {
+          land_a_area_sqm: number | null
+          land_a_id: string | null
+          land_a_name: string | null
+          land_b_area_sqm: number | null
+          land_b_id: string | null
+          land_b_name: string | null
+          overlap_area_sqm: number | null
+          overlap_percent_of_a: number | null
+          tenant_id: string | null
+        }
+        Relationships: []
+      }
+      land_tile_coverage: {
+        Row: {
+          acquisition_date: string | null
+          cloud_cover: number | null
+          coverage_percent: number | null
+          land_id: string | null
+          land_name: string | null
+          ndvi_status: string | null
+          tenant_id: string | null
+          tile_id: string | null
+        }
+        Relationships: []
+      }
       ndvi_coverage_stats: {
         Row: {
           lands_with_ndvi: number | null
@@ -15732,6 +16162,27 @@ export type Database = {
             foreignKeyName: "ndvi_data_land_id_fkey"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "ndvi_data_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -15780,6 +16231,27 @@ export type Database = {
             foreignKeyName: "fk_weather_land"
             columns: ["land_id"]
             isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "fk_weather_land"
+            columns: ["land_id"]
+            isOneToOne: false
             referencedRelation: "lands"
             referencedColumns: ["id"]
           },
@@ -15802,6 +16274,27 @@ export type Database = {
             columns: ["land_id"]
             isOneToOne: false
             referencedRelation: "land_agent_context"
+            referencedColumns: ["land_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_a_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_boundary_overlaps"
+            referencedColumns: ["land_b_id"]
+          },
+          {
+            foreignKeyName: "weather_observations_land_id_fkey"
+            columns: ["land_id"]
+            isOneToOne: false
+            referencedRelation: "land_tile_coverage"
             referencedColumns: ["land_id"]
           },
           {
@@ -16124,6 +16617,14 @@ export type Database = {
         }
         Returns: Json
       }
+      detect_land_overlaps: {
+        Args: { p_tenant: string }
+        Returns: {
+          land_a: string
+          land_b: string
+          overlap_area_m2: number
+        }[]
+      }
       disable_expired_tenant_features: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
@@ -16188,6 +16689,17 @@ export type Database = {
         Returns: {
           geometry: unknown
           id: string
+          tile_id: string
+        }[]
+      }
+      find_tiles_for_land: {
+        Args: { p_land_id: string }
+        Returns: {
+          acquisition_date: string
+          cloud_cover: number
+          land_coverage_sqm: number
+          overlap_percent: number
+          tile_area_sqm: number
           tile_id: string
         }[]
       }
@@ -16316,6 +16828,7 @@ export type Database = {
               actual_download_status: string | null
               api_source: string | null
               bbox: Json | null
+              bbox_geom: unknown
               cloud_cover: number | null
               collection: string
               country_id: string | null
@@ -16456,6 +16969,17 @@ export type Database = {
         Returns: {
           land_count: number
           tile_id: string
+        }[]
+      }
+      get_tiles_covering_lands: {
+        Args: never
+        Returns: {
+          geojson_geometry: Json
+          geometry: unknown
+          id: string
+          is_agri: boolean
+          tile_id: string
+          total_lands_count: number
         }[]
       }
       get_tiles_for_processing:
