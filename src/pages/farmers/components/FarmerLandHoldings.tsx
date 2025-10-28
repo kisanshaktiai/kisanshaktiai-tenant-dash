@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Ruler, Droplets, Sprout, Calendar, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { MapPin, Ruler, Droplets, Sprout, Calendar, AlertCircle, Wifi, WifiOff, Plus } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { format } from 'date-fns';
+import { AddLandModal } from '@/components/farmers/forms/AddLandModal';
 
 interface FarmerLandHoldingsProps {
   farmerId: string;
@@ -40,6 +42,7 @@ export const FarmerLandHoldings: React.FC<FarmerLandHoldingsProps> = ({ farmerId
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const queryClient = useQueryClient();
   const [isRealtime, setIsRealtime] = useState(false);
+  const [isAddLandOpen, setIsAddLandOpen] = useState(false);
 
   // Fetch lands with tenant isolation
   const { data: lands, isLoading, error, refetch } = useQuery({
@@ -146,14 +149,24 @@ export const FarmerLandHoldings: React.FC<FarmerLandHoldingsProps> = ({ farmerId
             </div>
           )}
         </div>
-        <div className="flex gap-4 text-sm">
-          <Badge variant="outline">Total: {totalArea.toFixed(2)} acres</Badge>
-          <Badge variant="outline" className="text-blue-600">
-            Irrigated: {irrigatedArea.toFixed(2)} acres
-          </Badge>
-          <Badge variant="outline" className="text-green-600">
-            {uniqueCrops.size} crops
-          </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-4 text-sm">
+            <Badge variant="outline">Total: {totalArea.toFixed(2)} acres</Badge>
+            <Badge variant="outline" className="text-blue-600">
+              Irrigated: {irrigatedArea.toFixed(2)} acres
+            </Badge>
+            <Badge variant="outline" className="text-green-600">
+              {uniqueCrops.size} crops
+            </Badge>
+          </div>
+          <Button 
+            size="sm" 
+            onClick={() => setIsAddLandOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Land
+          </Button>
         </div>
       </div>
 
@@ -261,11 +274,29 @@ export const FarmerLandHoldings: React.FC<FarmerLandHoldingsProps> = ({ farmerId
             <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">No land holdings recorded for this farmer</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Land holdings will appear here once added
+              Click "Add Land" to create a new land parcel
             </p>
+            <Button 
+              onClick={() => setIsAddLandOpen(true)}
+              className="mt-4 gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Land Parcel
+            </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Add Land Modal */}
+      <AddLandModal
+        isOpen={isAddLandOpen}
+        onClose={() => setIsAddLandOpen(false)}
+        farmerId={farmerId}
+        onSuccess={() => {
+          refetch();
+          setIsAddLandOpen(false);
+        }}
+      />
     </div>
   );
 };
