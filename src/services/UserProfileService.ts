@@ -58,7 +58,7 @@ class UserProfileService extends BaseApiService {
           role,
           is_primary,
           is_active,
-          tenants:tenant_id (
+          tenants!user_tenants_tenant_id_fkey (
             name,
             logo_url
           )
