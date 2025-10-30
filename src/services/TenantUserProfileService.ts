@@ -48,7 +48,7 @@ class TenantUserProfileService extends BaseApiService {
           designation,
           employee_id,
           is_active,
-          tenants:tenant_id (
+          tenants!user_tenants_tenant_id_fkey (
             id,
             name,
             type,
@@ -202,7 +202,7 @@ class TenantUserProfileService extends BaseApiService {
           department,
           designation,
           joined_at,
-          tenants:tenant_id (
+          tenants!user_tenants_tenant_id_fkey (
             id,
             name,
             type,
