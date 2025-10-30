@@ -97,7 +97,49 @@ export const useTenantRealtime = () => {
           }
         );
 
-      const channels = [farmersChannel, dealersChannel, productsChannel];
+      // Lands channel
+      const landsChannel = supabase
+        .channel(`tenant_lands_${currentTenant.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'lands',
+            filter: `tenant_id=eq.${currentTenant.id}`,
+          },
+          (payload) => {
+            console.log('Lands real-time update:', payload);
+            setLastUpdate(new Date());
+            
+            queryClient.invalidateQueries({ 
+              queryKey: ['enhanced-dashboard', currentTenant.id]
+            });
+          }
+        );
+
+      // Campaigns channel
+      const campaignsChannel = supabase
+        .channel(`tenant_campaigns_${currentTenant.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'campaigns',
+            filter: `tenant_id=eq.${currentTenant.id}`,
+          },
+          (payload) => {
+            console.log('Campaigns real-time update:', payload);
+            setLastUpdate(new Date());
+            
+            queryClient.invalidateQueries({ 
+              queryKey: ['enhanced-dashboard', currentTenant.id]
+            });
+          }
+        );
+
+      const channels = [farmersChannel, dealersChannel, productsChannel, landsChannel, campaignsChannel];
       
       // Subscribe to channels
       channels.forEach((channel) => {
