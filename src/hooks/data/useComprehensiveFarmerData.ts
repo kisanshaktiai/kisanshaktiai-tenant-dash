@@ -10,11 +10,26 @@ export const useComprehensiveFarmerData = (farmerId: string) => {
 
   return useQuery({
     queryKey: ['comprehensive-farmer', currentTenant?.id, farmerId],
-    queryFn: () => {
+    queryFn: async () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
       }
-      return enhancedFarmerDataService.getComprehensiveFarmerData(currentTenant.id, farmerId);
+      const farmerData = await enhancedFarmerDataService.getComprehensiveFarmerData(currentTenant.id, farmerId);
+      
+      // Fetch user profile data for additional info
+      try {
+        const { data: profileData } = await enhancedFarmerDataService.getUserProfile(farmerId);
+        if (profileData) {
+          return {
+            ...farmerData,
+            userProfile: profileData
+          };
+        }
+      } catch (error) {
+        console.log('User profile not found, using farmer data only');
+      }
+      
+      return farmerData;
     },
     enabled: !!currentTenant && !!farmerId,
     staleTime: isConnected ? 30000 : 5 * 60 * 1000, // 30s if realtime, 5min otherwise

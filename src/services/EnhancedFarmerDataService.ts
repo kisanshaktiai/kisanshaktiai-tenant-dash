@@ -793,6 +793,26 @@ class EnhancedFarmerDataService extends BaseApiService {
       throw this.handleError(error);
     }
   }
+
+  async getUserProfile(farmerId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', farmerId)
+        .single();
+
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] User profile not found:', error);
+        return { data: null };
+      }
+
+      return { data };
+    } catch (error) {
+      console.error('[EnhancedFarmerDataService] Error fetching user profile:', error);
+      return { data: null };
+    }
+  }
 }
 
 export const enhancedFarmerDataService = new EnhancedFarmerDataService();

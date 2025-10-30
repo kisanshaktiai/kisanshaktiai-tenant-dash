@@ -6,20 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
-  User, MapPin, Phone, Calendar, Droplets, Leaf, CircleDot, Cloud, TrendingUp, 
-  Activity, AlertTriangle, ChartBar, Tractor, Warehouse, Timer, Target, DollarSign, 
-  Zap, MessageSquare, Mail, Package, Users, BarChart3, Sprout, TreePine, 
-  FileText, Tag, CheckCircle2, XCircle, Clock, Hash, Ruler, Thermometer,
-  Settings, History, TrendingDown, Minus, Wheat
+  User, MapPin, Phone, Calendar, Droplets, Leaf, CircleDot, TrendingUp, 
+  Activity, AlertTriangle, Tractor, Warehouse, Timer, Target,
+  MessageSquare, Mail, Package, BarChart3, Sprout, TreePine, 
+  FileText, Tag, CheckCircle2, Clock, Hash, Ruler, Wheat, Download, Share2
 } from 'lucide-react';
 import { useComprehensiveFarmerData } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { AnalyticsDashboardTab } from '../analytics/AnalyticsDashboardTab';
 
 interface ComprehensiveFarmerDetailModalProps {
   farmer: ComprehensiveFarmerData;
@@ -36,6 +35,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
   const [soilData, setSoilData] = useState<any[]>([]);
   const [ndviData, setNdviData] = useState<any[]>([]);
   const [farmerName, setFarmerName] = useState<string>('');
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const farmerData = comprehensiveData || farmer;
 
@@ -44,18 +44,36 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
     if (!farmer?.id) return;
 
     const fetchAdditionalData = async () => {
-      // Fetch farmer name
-      const { data: farmerRecord } = await supabase
-        .from('farmers')
-        .select('farmer_name, farmer_code')
-        .eq('id', farmer.id)
-        .single();
+      // Fetch user profile and farmer name with priority
+      const [farmerResult, profileResult] = await Promise.all([
+        supabase
+          .from('farmers')
+          .select('farmer_name, farmer_code')
+          .eq('id', farmer.id)
+          .single(),
+        supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', farmer.id)
+          .single()
+      ]);
       
-      if (farmerRecord) {
-        setFarmerName(farmerRecord.farmer_name || farmerRecord.farmer_code || 'Farmer');
+      // Priority: display_name > full_name > farmer_name > farmer_code
+      let displayName = farmerResult.data?.farmer_code || 'Farmer';
+      if (profileResult.data) {
+        setUserProfile(profileResult.data);
+        displayName = profileResult.data.display_name || 
+                     profileResult.data.full_name || 
+                     farmerResult.data?.farmer_name || 
+                     farmerResult.data?.farmer_code || 
+                     'Farmer';
+      } else if (farmerResult.data?.farmer_name) {
+        displayName = farmerResult.data.farmer_name;
       }
+      
+      setFarmerName(displayName);
 
-      // Fetch soil data from lands
+      // Fetch lands and related data
       const { data: lands } = await supabase
         .from('lands')
         .select('*')
@@ -64,7 +82,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
       if (lands) {
         const landIds = lands.map(l => l.id);
         
-        // Fetch soil analysis data (table might not exist)
+        // Fetch soil analysis data
         try {
           const { data: soil } = await supabase
             .from('soil_health' as any)
@@ -83,8 +101,8 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
           .from('ndvi_data')
           .select('*')
           .in('land_id', landIds)
-          .order('capture_date', { ascending: false })
-          .limit(10);
+          .order('capture_date', { ascending: false})
+          .limit(30);
         
         if (ndvi) setNdviData(ndvi);
       }
@@ -98,62 +116,139 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
   const getRiskColor = (level?: string) => {
     const riskLevel = level?.toLowerCase() || 'low';
     switch(riskLevel) {
-      case 'high': return 'bg-red-500 text-white';
-      case 'medium': return 'bg-yellow-500 text-white';
-      default: return 'bg-green-500 text-white';
+      case 'high': return 'bg-destructive text-destructive-foreground';
+      case 'medium': return 'bg-warning text-warning-foreground';
+      default: return 'bg-success text-success-foreground';
     }
   };
 
   const getHealthColor = (value: number) => {
-    if (value >= 80) return 'text-green-600';
-    if (value >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getTrendIcon = (trend?: string) => {
-    if (trend === 'up') return <TrendingUp className="w-3 h-3 text-green-600" />;
-    if (trend === 'down') return <TrendingDown className="w-3 h-3 text-red-600" />;
-    return <Minus className="w-3 h-3 text-gray-400" />;
+    if (value >= 80) return 'text-success';
+    if (value >= 60) return 'text-warning';
+    return 'text-destructive';
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[95vh] p-0">
-        <DialogHeader className="p-6 pb-4">
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 border-2 border-primary">
-                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${farmerName}`} />
-                <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-lg font-bold">
-                  {farmerName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold">{farmerName}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
-                    <Hash className="w-3 h-3 mr-1" />
-                    {farmerData.farmer_code}
-                  </Badge>
-                  {farmerData.is_verified && (
-                    <Badge className="bg-green-500 text-white text-xs">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Verified
+      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-background">
+        {/* Hero Header Section */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b border-border/50">
+          <div className="absolute inset-0 bg-grid-white/10" />
+          <div className="relative p-6 pb-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20 border-4 border-background shadow-xl ring-2 ring-primary/20">
+                  <AvatarImage src={userProfile?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${farmerName}`} />
+                  <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-2xl font-bold">
+                    {farmerName.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">{farmerName}</h2>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs bg-background/50 backdrop-blur-sm">
+                      <Hash className="w-3 h-3 mr-1" />
+                      {farmerData.farmer_code}
                     </Badge>
-                  )}
-                  <Badge className={cn("text-xs", getRiskColor(farmerData.metrics?.riskLevel))}>
-                    {farmerData.metrics?.riskLevel || 'Low'} Risk
-                  </Badge>
+                    {farmerData.is_verified && (
+                      <Badge className="bg-success text-success-foreground text-xs">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Verified
+                      </Badge>
+                    )}
+                    <Badge className={cn("text-xs", getRiskColor(farmerData.metrics?.riskLevel))}>
+                      {farmerData.metrics?.riskLevel || 'Low'} Risk
+                    </Badge>
+                    {userProfile?.bio && (
+                      <p className="text-sm text-muted-foreground ml-2">{userProfile.bio}</p>
+                    )}
+                  </div>
                 </div>
               </div>
+              
+              {/* Quick Action Buttons */}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Phone className="w-4 h-4" />
+                  Call
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Message
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
             </div>
-          </DialogTitle>
-        </DialogHeader>
 
-        <ScrollArea className="h-[calc(95vh-100px)]">
+            {/* Mini KPI Cards in Header */}
+            <div className="grid grid-cols-4 gap-3 mt-6">
+              <Card className="backdrop-blur-sm bg-background/50 border-border/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Total Land</p>
+                      <p className="text-xl font-bold">{farmerData.total_land_acres?.toFixed(1) || 0} ac</p>
+                    </div>
+                    <Ruler className="w-6 h-6 text-success opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-sm bg-background/50 border-border/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Engagement</p>
+                      <p className={cn("text-xl font-bold", getHealthColor(farmerData.metrics?.engagementScore || 0))}>
+                        {farmerData.metrics?.engagementScore?.toFixed(0) || 0}%
+                      </p>
+                    </div>
+                    <Activity className="w-6 h-6 text-primary opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-sm bg-background/50 border-border/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Health Score</p>
+                      <p className={cn("text-xl font-bold", getHealthColor(farmerData.metrics?.healthScore || 0))}>
+                        {farmerData.metrics?.healthScore?.toFixed(0) || 0}%
+                      </p>
+                    </div>
+                    <Target className="w-6 h-6 text-warning opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="backdrop-blur-sm bg-background/50 border-border/50">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Experience</p>
+                      <p className="text-xl font-bold">{farmerData.farming_experience_years || 0} yrs</p>
+                    </div>
+                    <Timer className="w-6 h-6 text-info opacity-50" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        <ScrollArea className="h-[calc(95vh-240px)]">
           <div className="px-6 pb-6">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
+            <Tabs defaultValue="analytics" className="w-full">
+              <TabsList className="grid w-full grid-cols-8 bg-muted/50">
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="lands">Lands</TabsTrigger>
                 <TabsTrigger value="crops">Crops</TabsTrigger>
@@ -163,23 +258,20 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 <TabsTrigger value="communications">Communications</TabsTrigger>
               </TabsList>
 
+              {/* New Analytics Dashboard Tab */}
+              <TabsContent value="analytics">
+                <AnalyticsDashboardTab 
+                  farmerData={farmerData} 
+                  ndviData={ndviData}
+                  soilData={soilData.length > 0 ? soilData[0] : null}
+                  engagementScore={farmerData.metrics?.engagementScore || 0}
+                />
+              </TabsContent>
+
               <TabsContent value="overview" className="space-y-4 mt-4">
                 {/* Quick Stats */}
                 <div className="grid grid-cols-4 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Total Land</p>
-                          <p className="text-2xl font-bold">{farmerData.total_land_acres?.toFixed(1) || 0}</p>
-                          <p className="text-xs text-muted-foreground">acres</p>
-                        </div>
-                        <Ruler className="w-8 h-8 text-green-500 opacity-20" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
+                  <Card className="border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
@@ -187,35 +279,46 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                           <p className="text-2xl font-bold">{farmerData.lands?.length || 0}</p>
                           <p className="text-xs text-muted-foreground">plots</p>
                         </div>
-                        <MapPin className="w-8 h-8 text-blue-500 opacity-20" />
+                        <MapPin className="w-8 h-8 text-primary opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-muted-foreground">Engagement</p>
-                          <p className={cn("text-2xl font-bold", getHealthColor(farmerData.metrics?.engagementScore || 0))}>
-                            {farmerData.metrics?.engagementScore?.toFixed(0) || 0}%
-                          </p>
-                          <p className="text-xs text-muted-foreground">{farmerData.total_app_opens || 0} opens</p>
+                          <p className="text-xs text-muted-foreground">App Opens</p>
+                          <p className="text-2xl font-bold">{farmerData.total_app_opens || 0}</p>
+                          <p className="text-xs text-muted-foreground">total</p>
                         </div>
-                        <Activity className="w-8 h-8 text-purple-500 opacity-20" />
+                        <Activity className="w-8 h-8 text-success opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="border-border/50">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-muted-foreground">Experience</p>
-                          <p className="text-2xl font-bold">{farmerData.farming_experience_years || 0}</p>
-                          <p className="text-xs text-muted-foreground">years</p>
+                          <p className="text-xs text-muted-foreground">Communications</p>
+                          <p className="text-2xl font-bold">{farmerData.communicationHistory?.length || 0}</p>
+                          <p className="text-xs text-muted-foreground">messages</p>
                         </div>
-                        <Timer className="w-8 h-8 text-orange-500 opacity-20" />
+                        <MessageSquare className="w-8 h-8 text-info opacity-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-border/50">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Crop Diversity</p>
+                          <p className="text-2xl font-bold">{farmerData.metrics?.cropDiversityIndex || 0}</p>
+                          <p className="text-xs text-muted-foreground">types</p>
+                        </div>
+                        <Wheat className="w-8 h-8 text-warning opacity-20" />
                       </div>
                     </CardContent>
                   </Card>
@@ -223,7 +326,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
 
                 {/* Contact & Location Info */}
                 <div className="grid grid-cols-2 gap-4">
-                  <Card>
+                  <Card className="border-border/50">
                     <CardHeader>
                       <CardTitle className="text-sm">Contact Information</CardTitle>
                     </CardHeader>
@@ -250,7 +353,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="border-border/50">
                     <CardHeader>
                       <CardTitle className="text-sm">Farm Assets</CardTitle>
                     </CardHeader>
@@ -287,7 +390,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 </div>
 
                 {/* Primary Crops */}
-                <Card>
+                <Card className="border-border/50">
                   <CardHeader>
                     <CardTitle className="text-sm flex items-center gap-2">
                       <Sprout className="w-4 h-4" />
@@ -297,7 +400,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {farmerData.primary_crops?.map((crop, idx) => (
-                        <Badge key={idx} variant="outline" className="px-3 py-1">
+                        <Badge key={idx} variant="outline" className="px-3 py-1 bg-success/10 text-success border-success/30">
                           <Leaf className="w-3 h-3 mr-1" />
                           {crop}
                         </Badge>
@@ -310,7 +413,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 {(farmerData.tags?.length > 0 || farmerData.notes?.length > 0) && (
                   <div className="grid grid-cols-2 gap-4">
                     {farmerData.tags?.length > 0 && (
-                      <Card>
+                      <Card className="border-border/50">
                         <CardHeader>
                           <CardTitle className="text-sm flex items-center gap-2">
                             <Tag className="w-4 h-4" />
@@ -330,7 +433,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                     )}
 
                     {farmerData.notes?.length > 0 && (
-                      <Card>
+                      <Card className="border-border/50">
                         <CardHeader>
                           <CardTitle className="text-sm flex items-center gap-2">
                             <FileText className="w-4 h-4" />
