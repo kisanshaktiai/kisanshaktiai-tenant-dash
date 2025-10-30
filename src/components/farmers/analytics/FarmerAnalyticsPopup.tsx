@@ -36,6 +36,9 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
     return null;
   }
 
+  // Use farmer_name if available, fallback to farmer_code
+  const displayName = (farmerData as any)?.farmer_name || farmer.farmer_code || 'Farmer';
+
   const getRiskBadge = (level: string) => {
     const colors = {
       low: 'bg-green-500 text-white',
@@ -61,7 +64,7 @@ export const FarmerAnalyticsPopup: React.FC<FarmerAnalyticsPopupProps> = ({
                 <User className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">{farmer.farmer_code}</h2>
+                <h2 className="text-xl font-bold">{displayName}</h2>
                 <p className="text-sm text-muted-foreground">Real-time Analytics</p>
               </div>
             </div>

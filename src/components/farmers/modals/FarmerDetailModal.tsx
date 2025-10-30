@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useNDVIData, useNDVITimeSeries } from '@/hooks/data/useNDVIData';
 import { VegetationTrendsModal } from '../VegetationTrendsModal';
+import { ComprehensiveFarmerDetailModal } from './ComprehensiveFarmerDetailModal';
 
 interface FarmerDetailModalProps {
   isOpen: boolean;
@@ -26,6 +27,25 @@ interface FarmerDetailModalProps {
 }
 
 export const FarmerDetailModal: React.FC<FarmerDetailModalProps> = ({
+  isOpen,
+  onClose,
+  farmer,
+  realtimeData
+}) => {
+  // Use comprehensive modal for better analytics
+  if (!farmer) return null;
+  
+  return (
+    <ComprehensiveFarmerDetailModal
+      farmer={farmer}
+      isOpen={isOpen}
+      onClose={onClose}
+    />
+  );
+};
+
+// Original implementation below (keeping for reference)
+const OriginalFarmerDetailModal: React.FC<FarmerDetailModalProps> = ({
   isOpen,
   onClose,
   farmer,

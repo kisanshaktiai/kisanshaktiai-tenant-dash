@@ -67,8 +67,8 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
 
         if (data && !error) {
           setRealtimeData(data);
-          // Use farmer_code since name field doesn't exist
-          setFarmerName(data.farmer_code || 'Farmer');
+          // Show farmer_name if available, fallback to farmer_code
+          setFarmerName(data.farmer_name || data.farmer_code || 'Farmer');
           
           // Check if user is online (last login within 5 minutes)
           if (data.last_login_at) {
@@ -104,7 +104,8 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           console.log('Farmer update:', payload);
           if (payload.new) {
             setRealtimeData(payload.new);
-            setFarmerName((payload.new as any).farmer_code || 'Farmer');
+            // Show farmer_name if available, fallback to farmer_code
+            setFarmerName((payload.new as any).farmer_name || (payload.new as any).farmer_code || 'Farmer');
             
             // Update online status
             const data = payload.new as any;
@@ -178,7 +179,7 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
           isSelected && "ring-2 ring-primary shadow-xl border-primary/50",
           "h-auto" // Dynamic height instead of fixed
         )}
-        onClick={() => onSelect?.(farmer)}
+        onClick={() => setShowDetailModal(true)}
       >
         {/* Live Status Indicator */}
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
@@ -423,6 +424,16 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
         farmerId={farmer.id}
         farmerName={farmerName || farmer.farmer_code}
       />
+      
+      {/* Comprehensive Farmer Detail Modal */}
+      {showDetailModal && (
+        <FarmerDetailModal
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          farmer={farmer}
+          realtimeData={realtimeData}
+        />
+      )}
     </TooltipProvider>
   );
 };
