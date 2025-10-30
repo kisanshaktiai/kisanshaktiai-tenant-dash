@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -16,8 +17,9 @@ import { DataImportStep } from './steps/DataImportStep';
 import { TeamInvitesStep } from './steps/TeamInvitesStep';
 import { OnboardingSummaryStep } from './steps/OnboardingSummaryStep';
 import { tenantProfileService } from '@/services/TenantProfileService';
-import { onboardingService } from '@/services/OnboardingService';
 import { toast } from 'sonner';
+import type { OnboardingStep } from '@/services/EnhancedOnboardingService';
+import { calculateWorkflowProgress } from '@/utils/onboardingDataMapper';
 
 const stepComponents = {
   'Business Verification': BusinessVerificationStep,
@@ -25,7 +27,7 @@ const stepComponents = {
   'Branding Configuration': BrandingConfigurationStep,
   'Feature Selection': FeatureSelectionStep,
   'Data Import': DataImportStep,
-  'Team Invites': TeamInvitesStep,
+  'Team Setup': TeamInvitesStep,
   'Summary': OnboardingSummaryStep,
 };
 
@@ -73,24 +75,28 @@ export const TenantOnboardingFlow: React.FC = () => {
   const workflow = onboardingData?.workflow;
   const currentStep = steps[currentStepIndex];
 
-  // Add summary step if not present
+  // Add summary step if not present and we have real steps
   const allSteps = [...steps];
   if (allSteps.length > 0 && !allSteps.find(s => s.step_name === 'Summary')) {
-    allSteps.push({
+    const summaryStep: OnboardingStep = {
       id: 'summary',
       workflow_id: workflow?.id || '',
-      step_number: allSteps.length + 1,
+      step_order: allSteps.length + 1,
       step_name: 'Summary',
-      step_description: 'Review and complete your setup',
+      step_type: 'summary',
+      step_config: {},
+      step_data: {},
       step_status: 'pending' as const,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      step_number: allSteps.length + 1,
+      step_description: 'Review and complete your setup',
       is_required: true,
       estimated_time_minutes: 5,
-      step_data: {},
-      started_at: null,
-      completed_at: null,
-      created_at: '',
-      updated_at: ''
-    });
+      started_at: null
+    };
+    allSteps.push(summaryStep);
   }
 
   // Preload next step component
@@ -137,7 +143,6 @@ export const TenantOnboardingFlow: React.FC = () => {
       // Handle Summary step differently - complete the workflow
       if (currentStep.step_name === 'Summary' && workflow) {
         await completeWorkflowMutation.mutateAsync(workflow.id);
-        // Refetch onboarding data to reflect completion
         await refetch();
         return;
       }
@@ -177,7 +182,7 @@ export const TenantOnboardingFlow: React.FC = () => {
           }
           break;
 
-        case 'Team Invites':
+        case 'Team Setup':
           if (stepData?.invites?.length > 0) {
             await tenantProfileService.inviteTeamMembers(currentTenant.id, stepData.invites);
           }
@@ -208,7 +213,7 @@ export const TenantOnboardingFlow: React.FC = () => {
   };
 
   const progress = allSteps.length > 0 
-    ? Math.round((allSteps.filter(s => s.step_status === 'completed').length / allSteps.length) * 100)
+    ? calculateWorkflowProgress(allSteps)
     : 0;
 
   if (isLoading) {

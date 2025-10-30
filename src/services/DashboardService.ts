@@ -1,165 +1,200 @@
 
-import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DashboardStats {
-  totalFarmers: number;
-  activeLands: number;
-  totalProducts: number;
-  pendingIssues: number;
-  growthRate: number;
-  recentActivity: ActivityItem[];
-  upcomingTasks: TaskItem[];
-  // Additional properties for UI compatibility
-  total_farmers?: number;
-  active_farmers?: number;
-  new_farmers_this_week?: number;
-  total_dealers?: number;
-  active_dealers?: number;
-  average_dealer_performance?: number;
-  product_categories?: number;
-  out_of_stock_products?: number;
-  total_revenue?: number;
-  growth_percentage?: number;
-  customer_satisfaction?: number;
+  farmers: {
+    total: number;
+    active: number;
+    new_this_week: number;
+    recent: Array<{
+      id: string;
+      name: string;
+      created_at: string;
+    }>;
+  };
+  campaigns: {
+    active: number;
+    total: number;
+  };
+  products: {
+    total: number;
+    categories: number;
+    out_of_stock: number;
+  };
+  dealers: {
+    total: number;
+    active: number;
+  };
 }
 
-export interface ActivityItem {
-  id: string;
-  type: string;
-  message: string;
-  time: string;
-  icon: string;
-}
+// Default empty stats to prevent undefined errors
+const getDefaultStats = (): DashboardStats => ({
+  farmers: { total: 0, active: 0, new_this_week: 0, recent: [] },
+  campaigns: { active: 0, total: 0 },
+  products: { total: 0, categories: 0, out_of_stock: 0 },
+  dealers: { total: 0, active: 0 }
+});
 
-export interface TaskItem {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  priority: 'high' | 'medium' | 'low';
-}
-
-class DashboardService extends BaseApiService {
+class DashboardService {
   async getDashboardStats(tenantId: string): Promise<DashboardStats> {
+    if (!tenantId) {
+      console.warn('DashboardService: No tenantId provided, returning default stats');
+      return getDefaultStats();
+    }
+
     try {
-      // Fetch farmers count
-      const { count: farmersCount } = await supabase
-        .from('farmers')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId);
+      console.log('DashboardService: Fetching dashboard stats for tenant:', tenantId);
 
-      // Fetch lands count
-      const { count: landsCount } = await supabase
-        .from('lands')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true);
+      // Use Promise.allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled([
+        this.getFarmersCount(tenantId),
+        this.getProductsCount(tenantId),
+        this.getDealersCount(tenantId),
+        this.getCampaignsCount(tenantId)
+      ]);
 
-      // Fetch products count
-      const { count: productsCount } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .eq('is_active', true);
+      // Extract results with fallbacks
+      const farmers = results[0].status === 'fulfilled' ? results[0].value : [];
+      const products = results[1].status === 'fulfilled' ? results[1].value : [];
+      const dealers = results[2].status === 'fulfilled' ? results[2].value : [];
+      const campaigns = results[3].status === 'fulfilled' ? results[3].value : [];
 
-      // Fetch dealers for pending issues calculation
-      const { count: dealersCount } = await supabase
-        .from('dealers')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .eq('verification_status', 'pending');
-
-      // Calculate growth rate (last 30 days vs previous 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const { count: recentFarmers } = await supabase
-        .from('farmers')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .gte('created_at', thirtyDaysAgo.toISOString());
-
-      const growthRate = farmersCount ? (recentFarmers || 0) / farmersCount * 100 : 0;
-
-      // Fetch recent farmers for activity
-      const { data: recentFarmersData } = await supabase
-        .from('farmers')
-        .select('id, created_at')
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Create activity items
-      const recentActivity: ActivityItem[] = (recentFarmersData || []).map((farmer) => ({
-        id: farmer.id,
-        type: 'farmer_registration',
-        message: `New farmer registered`,
-        time: this.getRelativeTime(farmer.created_at),
-        icon: 'Users'
-      }));
-
-      // Create sample upcoming tasks based on data
-      const upcomingTasks: TaskItem[] = [
-        {
-          id: '1',
-          title: 'Farmer Verification Review',
-          description: `Review ${farmersCount ? Math.floor(farmersCount * 0.1) : 0} farmer verifications`,
-          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          priority: 'high'
-        },
-        {
-          id: '2',
-          title: 'Product Catalog Update',
-          description: `Update ${productsCount || 0} products with new pricing`,
-          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          priority: 'medium'
-        },
-        {
-          id: '3',
-          title: 'Dealer Onboarding',
-          description: `Complete onboarding for ${dealersCount || 0} pending dealers`,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          priority: 'low'
+      // Log any failures
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const names = ['farmers', 'products', 'dealers', 'campaigns'];
+          console.error(`DashboardService: Failed to fetch ${names[index]}:`, result.reason);
         }
-      ];
+      });
 
-      return {
-        totalFarmers: farmersCount || 0,
-        activeLands: landsCount || 0,
-        totalProducts: productsCount || 0,
-        pendingIssues: dealersCount || 0,
-        growthRate: Math.round(growthRate),
-        recentActivity,
-        upcomingTasks,
-        // Additional properties for UI compatibility
-        total_farmers: farmersCount || 0,
-        active_farmers: Math.floor((farmersCount || 0) * 0.8),
-        new_farmers_this_week: recentFarmers || 0,
-        total_dealers: Math.floor((farmersCount || 0) * 0.1),
-        active_dealers: Math.floor((farmersCount || 0) * 0.08),
-        average_dealer_performance: 92,
-        product_categories: 12,
-        out_of_stock_products: 3,
-        total_revenue: 2540000,
-        growth_percentage: Math.round(growthRate),
-        customer_satisfaction: 94
+      // Calculate metrics safely
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      
+      const newFarmersThisWeek = farmers.filter(f => 
+        f.created_at && new Date(f.created_at) >= oneWeekAgo
+      ).length;
+
+      const dashboardData: DashboardStats = {
+        farmers: {
+          total: farmers.length,
+          active: farmers.length,
+          new_this_week: newFarmersThisWeek,
+          recent: farmers.slice(0, 5).map(farmer => ({
+            id: farmer.id,
+            name: farmer.farmer_code || 'Unknown Farmer',
+            created_at: farmer.created_at
+          }))
+        },
+        campaigns: {
+          active: campaigns.filter(c => c.status === 'active').length,
+          total: campaigns.length
+        },
+        products: {
+          total: products.length,
+          categories: [...new Set(products.map(p => p.name?.split(' ')[0]).filter(Boolean))].length,
+          out_of_stock: 0
+        },
+        dealers: {
+          total: dealers.length,
+          active: dealers.length
+        }
       };
+
+      console.log('DashboardService: Successfully calculated stats:', dashboardData);
+      return dashboardData;
     } catch (error) {
-      throw new Error(`Failed to fetch dashboard stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('DashboardService: Critical error fetching dashboard stats:', error);
+      return getDefaultStats();
     }
   }
 
-  private getRelativeTime(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
-    if (diffInHours < 1) return 'Just now';
-    if (diffInHours < 24) return `${diffInHours} hours ago`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} days ago`;
+  private async getFarmersCount(tenantId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('farmers')
+        .select('id, farmer_code, created_at')
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        console.error('DashboardService: Error fetching farmers:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch farmers:', error);
+      return [];
+    }
+  }
+
+  private async getCampaignsCount(tenantId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('campaigns')
+        .select('id, status')
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        console.error('DashboardService: Error fetching campaigns:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch campaigns:', error);
+      return [];
+    }
+  }
+
+  private async getProductsCount(tenantId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        console.error('DashboardService: Error fetching products:', error);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch products:', error);
+      return [];
+    }
+  }
+
+  private async getDealersCount(tenantId: string) {
+    try {
+      // Try multiple column names since dealers table structure may vary
+      const { data, error } = await supabase
+        .from('dealers')
+        .select('id, dealer_name, business_name, created_at')
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        // Fallback to simpler query if columns don't exist
+        console.warn('DashboardService: Trying fallback dealer query:', error);
+        const fallback = await supabase
+          .from('dealers')
+          .select('id')
+          .eq('tenant_id', tenantId);
+        
+        if (fallback.error) {
+          console.error('DashboardService: Error fetching dealers:', fallback.error);
+          throw fallback.error;
+        }
+        
+        return fallback.data || [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('DashboardService: Failed to fetch dealers:', error);
+      return [];
+    }
   }
 }
 

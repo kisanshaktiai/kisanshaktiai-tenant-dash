@@ -20,6 +20,31 @@ export interface Product {
   unit_type: string;
   created_at: string;
   tenant_id: string;
+  // Agricultural specific fields
+  product_type: 'fertilizer' | 'pesticide' | 'medicine' | 'seed' | 'equipment' | 'general';
+  is_organic: boolean;
+  active_ingredients: string[];
+  dosage_instructions?: string;
+  application_method?: string;
+  safety_precautions?: string;
+  target_pests: string[];
+  target_diseases: string[];
+  suitable_crops: string[];
+  nutrient_composition: Record<string, any>;
+  ph_range?: string;
+  solubility?: string;
+  waiting_period_days?: number;
+  shelf_life_months?: number;
+  storage_conditions?: string;
+  manufacturer?: string;
+  batch_number?: string;
+  manufacturing_date?: string;
+  expiry_date?: string;
+  certification_details: Record<string, any>;
+  minimum_stock_level: number;
+  reorder_point: number;
+  last_restocked_at?: string;
+  stock_movement_history: any[];
 }
 
 export interface ProductsListOptions {

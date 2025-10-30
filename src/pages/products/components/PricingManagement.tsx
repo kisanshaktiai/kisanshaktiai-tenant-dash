@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,69 +21,55 @@ import {
   Users, 
   Calendar,
   Target,
-  Percent
+  Percent,
+  Package,
+  Edit,
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
-
-// Subscription plan pricing information
-const SUBSCRIPTION_PLANS = {
-  kisan: {
-    name: 'Kisan (Basic)',
-    description: 'Essential farming tools for small farmers',
-    monthly: 99,
-    quarterly: 267.30,
-    annually: 950.40,
-    features: [
-      'AI Chat (100 queries/month)',
-      'Real-time weather forecast',
-      'Soil reports (2 per month)',
-      'Basic AI crop recommendations',
-      'Up to 3 land plots'
-    ]
-  },
-  shakti: {
-    name: 'Shakti (Growth)',
-    description: 'Complete farming solution for growing operations',
-    monthly: 199,
-    quarterly: 537.30,
-    annually: 1910.40,
-    features: [
-      'AI Chat (500 queries/month)',
-      'Satellite NDVI analysis',
-      'Marketplace access',
-      'Unlimited soil reports',
-      'Up to 10 land plots'
-    ]
-  },
-  ai: {
-    name: 'AI (Premium)',
-    description: 'Enterprise-grade farming intelligence',
-    monthly: 299,
-    quarterly: 807.30,
-    annually: 2870.40,
-    features: [
-      'Unlimited AI Chat',
-      'Daily satellite imagery',
-      'IoT sensor integration',
-      'API access',
-      'Unlimited land plots'
-    ]
-  }
-};
+import { toast } from 'sonner';
+import { useAppSelector } from '@/store/hooks';
 
 export default function PricingManagement() {
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<string>('');
+  const [editingTier, setEditingTier] = useState<any>(null);
 
-  const { data: products } = useQuery({
-    queryKey: ['products-pricing'],
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['products-pricing', currentTenant?.id],
     queryFn: async () => {
+      if (!currentTenant) return [];
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price_per_unit, bulk_pricing, dealer_locations, discount_percentage')
+        .select('*')
+        .eq('tenant_id', currentTenant.id)
         .eq('is_active', true);
       if (error) throw error;
       return data;
     },
+    enabled: !!currentTenant
   });
+
+  const updatePricingMutation = useMutation({
+    mutationFn: async (updates: any) => {
+      const { error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', selectedProduct);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Pricing updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['products-pricing'] });
+    },
+    onError: (error) => {
+      toast.error('Failed to update pricing');
+      console.error(error);
+    }
+  });
+
+  const selectedProductData = products?.find(p => p.id === selectedProduct);
 
   return (
     <div className="space-y-6">
@@ -92,27 +77,27 @@ export default function PricingManagement() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Pricing Management
+            Product Pricing Management
           </CardTitle>
           <CardDescription>
-            Configure dynamic pricing rules, bulk pricing, and subscription plans
+            Configure dynamic pricing rules, bulk discounts, and dealer-specific pricing for agricultural products
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="subscription" className="space-y-6">
+      <Tabs defaultValue="product" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="subscription" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Subscription Plans
+          <TabsTrigger value="product" className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Product Pricing
           </TabsTrigger>
           <TabsTrigger value="dynamic" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
-            Dynamic Pricing
+            Dynamic Rules
           </TabsTrigger>
           <TabsTrigger value="bulk" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
-            Bulk Pricing
+            Bulk Discounts
           </TabsTrigger>
           <TabsTrigger value="dealer" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -120,159 +105,16 @@ export default function PricingManagement() {
           </TabsTrigger>
           <TabsTrigger value="seasonal" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            Seasonal Pricing
+            Seasonal Offers
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="subscription" className="space-y-6">
+        <TabsContent value="product" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Subscription Plans</CardTitle>
+              <CardTitle>Product Base Pricing</CardTitle>
               <CardDescription>
-                Manage the three-tier subscription system for farmers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {Object.entries(SUBSCRIPTION_PLANS).map(([planKey, plan]) => (
-                  <Card key={planKey} className={planKey === 'shakti' ? 'border-primary' : ''}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{plan.name}</CardTitle>
-                        {planKey === 'shakti' && (
-                          <Badge variant="default">Popular</Badge>
-                        )}
-                      </div>
-                      <CardDescription>{plan.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-bold">₹{plan.monthly}</span>
-                            <span className="text-sm text-muted-foreground">/month</span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            <div>Quarterly: ₹{plan.quarterly} (10% off)</div>
-                            <div>Annually: ₹{plan.annually} (20% off)</div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <h4 className="font-medium text-sm">Key Features:</h4>
-                          <ul className="space-y-1">
-                            {plan.features.slice(0, 3).map((feature, index) => (
-                              <li key={index} className="text-sm text-muted-foreground flex items-center gap-2">
-                                <div className="w-1 h-1 bg-primary rounded-full" />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
-                          {plan.features.length > 3 && (
-                            <div className="text-sm text-muted-foreground">
-                              +{plan.features.length - 3} more features
-                            </div>
-                          )}
-                        </div>
-                        
-                        <Button variant="outline" size="sm" className="w-full">
-                          Edit Plan
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="dynamic" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dynamic Pricing Rules</CardTitle>
-              <CardDescription>
-                Set automated pricing rules based on market conditions, demand, and inventory levels
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Inventory-Based Pricing</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Low Stock (&lt; 10 units)</span>
-                      <Badge variant="destructive">+15%</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Medium Stock (10-50 units)</span>
-                      <Badge variant="secondary">Base Price</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">High Stock (&gt; 50 units)</span>
-                      <Badge variant="outline">-5%</Badge>
-                    </div>
-                  </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Demand-Based Pricing</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">High Demand</span>
-                        <Badge variant="default">+10%</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Normal Demand</span>
-                        <Badge variant="secondary">Base Price</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Low Demand</span>
-                        <Badge variant="outline">-10%</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Competitor Pricing</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Above Market</span>
-                        <Badge variant="destructive">-5%</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">At Market</span>
-                        <Badge variant="secondary">Base Price</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Below Market</span>
-                        <Badge variant="default">+3%</Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="bulk" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Pricing Tiers</CardTitle>
-              <CardDescription>
-                Configure volume-based discounts for different quantity thresholds
+                Set and manage base prices for all agricultural products
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -288,55 +130,275 @@ export default function PricingManagement() {
                       <option value="">Select a product</option>
                       {products?.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.name}
+                          {product.name} - {product.product_type}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {selectedProduct && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Quantity Range</TableHead>
-                        <TableHead>Base Price</TableHead>
-                        <TableHead>Discount %</TableHead>
-                        <TableHead>Final Price</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>1 - 9 units</TableCell>
-                        <TableCell>₹100.00</TableCell>
-                        <TableCell>0%</TableCell>
-                        <TableCell>₹100.00</TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>10 - 49 units</TableCell>
-                        <TableCell>₹100.00</TableCell>
-                        <TableCell>5%</TableCell>
-                        <TableCell>₹95.00</TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>50+ units</TableCell>
-                        <TableCell>₹100.00</TableCell>
-                        <TableCell>10%</TableCell>
-                        <TableCell>₹90.00</TableCell>
-                        <TableCell>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                {selectedProductData && (
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Current Price</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="text-2xl font-bold">
+                            ₹{selectedProductData.price_per_unit}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            per {selectedProductData.unit_type}
+                          </div>
+                          <Badge variant={selectedProductData.is_organic ? "secondary" : "outline"}>
+                            {selectedProductData.is_organic ? 'Organic' : 'Non-Organic'}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Stock Status</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="text-2xl font-bold">
+                            {selectedProductData.stock_quantity}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            units available
+                          </div>
+                          {selectedProductData.stock_quantity <= selectedProductData.reorder_point && (
+                            <Badge variant="destructive">Low Stock</Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Price Update</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Input
+                            type="number"
+                            placeholder="New price"
+                            className="w-full"
+                          />
+                          <Button size="sm" className="w-full">
+                            Update Price
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="dynamic" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dynamic Pricing Rules</CardTitle>
+              <CardDescription>
+                Automated pricing adjustments based on inventory, demand, and market conditions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">
+                      Inventory-Based Adjustments
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Critical Stock (&lt;10%)</span>
+                        <Badge variant="destructive">+20%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Low Stock (10-25%)</span>
+                        <Badge>+10%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Normal Stock (25-75%)</span>
+                        <Badge variant="secondary">Base Price</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Excess Stock (&gt;75%)</span>
+                        <Badge variant="outline">-10%</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">
+                      Demand-Based Pricing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Peak Season</span>
+                        <Badge>+15%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">High Demand</span>
+                        <Badge>+8%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Normal Demand</span>
+                        <Badge variant="secondary">Base Price</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Low Demand</span>
+                        <Badge variant="outline">-15%</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">
+                      Expiry-Based Discounts
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Fresh (&gt;6 months)</span>
+                        <Badge variant="secondary">Base Price</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">3-6 months</span>
+                        <Badge variant="outline">-5%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">1-3 months</span>
+                        <Badge>-15%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">&lt;1 month</span>
+                        <Badge variant="destructive">-30%</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bulk" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bulk Purchase Discounts</CardTitle>
+              <CardDescription>
+                Volume-based pricing tiers for bulk purchases of agricultural products
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Select Product Category</Label>
+                    <select
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                    >
+                      <option value="">All Categories</option>
+                      <option value="fertilizer">Fertilizers</option>
+                      <option value="pesticide">Pesticides</option>
+                      <option value="medicine">Medicines</option>
+                      <option value="seed">Seeds</option>
+                    </select>
+                  </div>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Quantity Range</TableHead>
+                      <TableHead>Product Type</TableHead>
+                      <TableHead>Discount %</TableHead>
+                      <TableHead>Min Order Value</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>10-49 units</TableCell>
+                      <TableCell>All Fertilizers</TableCell>
+                      <TableCell>5%</TableCell>
+                      <TableCell>₹5,000</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>50-99 units</TableCell>
+                      <TableCell>All Fertilizers</TableCell>
+                      <TableCell>10%</TableCell>
+                      <TableCell>₹20,000</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>100+ units</TableCell>
+                      <TableCell>All Fertilizers</TableCell>
+                      <TableCell>15%</TableCell>
+                      <TableCell>₹50,000</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>25-49 kg</TableCell>
+                      <TableCell>Seeds</TableCell>
+                      <TableCell>8%</TableCell>
+                      <TableCell>₹10,000</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+
+                <Button className="w-full md:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Bulk Pricing Tier
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -347,30 +409,35 @@ export default function PricingManagement() {
             <CardHeader>
               <CardTitle>Dealer-Specific Pricing</CardTitle>
               <CardDescription>
-                Configure special pricing for different dealer tiers and regions
+                Special pricing structures for authorized dealers and distributors
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Premium Dealers</CardTitle>
+                    <CardTitle className="text-lg">Platinum Dealers</CardTitle>
+                    <CardDescription>Top-tier partners with highest volume</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Base Discount</span>
-                        <Badge variant="default">15%</Badge>
+                        <Badge>18%</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Volume Bonus</span>
-                        <Badge variant="secondary">+5%</Badge>
+                        <Badge variant="secondary">+7%</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Payment Terms</span>
-                        <span className="text-sm">30 days</span>
+                        <span className="text-sm">45 days</span>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Min Order</span>
+                        <span className="text-sm">₹1,00,000</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full mt-4">
                         Configure Rules
                       </Button>
                     </div>
@@ -379,13 +446,44 @@ export default function PricingManagement() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Standard Dealers</CardTitle>
+                    <CardTitle className="text-lg">Gold Dealers</CardTitle>
+                    <CardDescription>Established partners with consistent orders</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Base Discount</span>
-                        <Badge variant="secondary">10%</Badge>
+                        <Badge variant="secondary">12%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Volume Bonus</span>
+                        <Badge variant="outline">+4%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Payment Terms</span>
+                        <span className="text-sm">30 days</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Min Order</span>
+                        <span className="text-sm">₹50,000</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full mt-4">
+                        Configure Rules
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Silver Dealers</CardTitle>
+                    <CardDescription>New partners building their network</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Base Discount</span>
+                        <Badge variant="outline">8%</Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Volume Bonus</span>
@@ -395,7 +493,41 @@ export default function PricingManagement() {
                         <span className="text-sm">Payment Terms</span>
                         <span className="text-sm">15 days</span>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Min Order</span>
+                        <span className="text-sm">₹25,000</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full mt-4">
+                        Configure Rules
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Direct Farmers</CardTitle>
+                    <CardDescription>Farmers purchasing directly</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Base Discount</span>
+                        <Badge variant="outline">3%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Bulk Discount</span>
+                        <Badge variant="outline">+2%</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Payment Terms</span>
+                        <span className="text-sm">Immediate</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Min Order</span>
+                        <span className="text-sm">₹5,000</span>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full mt-4">
                         Configure Rules
                       </Button>
                     </div>
@@ -409,85 +541,125 @@ export default function PricingManagement() {
         <TabsContent value="seasonal" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Seasonal Pricing</CardTitle>
+              <CardTitle>Seasonal Pricing & Offers</CardTitle>
               <CardDescription>
-                Configure time-based pricing for seasonal products and promotions
+                Time-based pricing adjustments for agricultural seasons and festivals
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Season/Period</Label>
                     <select className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm">
-                      <option>Monsoon Season (June - September)</option>
-                      <option>Winter Season (October - February)</option>
-                      <option>Summer Season (March - May)</option>
-                      <option>Festival Period</option>
+                      <option>Kharif Season (June - October)</option>
+                      <option>Rabi Season (October - March)</option>
+                      <option>Zaid Season (April - June)</option>
+                      <option>Monsoon Special</option>
+                      <option>Harvest Festival</option>
                       <option>Custom Period</option>
                     </select>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Start Date</Label>
-                      <Input type="date" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>End Date</Label>
-                      <Input type="date" />
-                    </div>
-                  </div>
-
                   <div className="space-y-2">
-                    <Label>Price Adjustment</Label>
-                    <div className="flex items-center gap-2">
-                      <Input type="number" placeholder="0" className="w-20" />
-                      <select className="px-3 py-2 border border-input bg-background rounded-md text-sm">
-                        <option value="percent">%</option>
-                        <option value="fixed">₹</option>
-                      </select>
-                      <select className="px-3 py-2 border border-input bg-background rounded-md text-sm">
-                        <option value="increase">Increase</option>
-                        <option value="decrease">Decrease</option>
-                      </select>
-                    </div>
+                    <Label>Product Category</Label>
+                    <select className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm">
+                      <option>All Products</option>
+                      <option>Fertilizers</option>
+                      <option>Seeds</option>
+                      <option>Pesticides</option>
+                      <option>Equipment</option>
+                    </select>
                   </div>
-
-                  <Button className="w-full">Create Seasonal Rule</Button>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-medium">Active Seasonal Rules</h3>
-                  <div className="space-y-3">
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">Monsoon Fertilizer Boost</span>
-                          <Badge variant="default">Active</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>Period: June 1 - September 30</p>
-                          <p>Adjustment: +15% price increase</p>
-                          <p>Products: Fertilizers, Pesticides</p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Season/Event</TableHead>
+                      <TableHead>Products</TableHead>
+                      <TableHead>Discount</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">Kharif Pre-Season</TableCell>
+                      <TableCell>Seeds, Fertilizers</TableCell>
+                      <TableCell>
+                        <Badge>15% OFF</Badge>
+                      </TableCell>
+                      <TableCell>May 15 - June 15</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Monsoon Special</TableCell>
+                      <TableCell>All Pesticides</TableCell>
+                      <TableCell>
+                        <Badge>20% OFF</Badge>
+                      </TableCell>
+                      <TableCell>July 1 - Aug 31</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Upcoming</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Harvest Festival</TableCell>
+                      <TableCell>All Products</TableCell>
+                      <TableCell>
+                        <Badge>10% OFF</Badge>
+                      </TableCell>
+                      <TableCell>Oct 10 - Oct 20</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Scheduled</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Year-End Clearance</TableCell>
+                      <TableCell>Selected Items</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">30% OFF</Badge>
+                      </TableCell>
+                      <TableCell>Dec 20 - Dec 31</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Draft</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
 
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">Off-Season Discount</span>
-                          <Badge variant="secondary">Scheduled</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>Period: November 1 - February 28</p>
-                          <p>Adjustment: -10% price decrease</p>
-                          <p>Products: Seeds, Tools</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+                <div className="flex gap-2">
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Seasonal Offer
+                  </Button>
+                  <Button variant="outline">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    View Calendar
+                  </Button>
                 </div>
               </div>
             </CardContent>

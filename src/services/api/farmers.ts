@@ -20,6 +20,8 @@ export interface CreateFarmerData {
   hasTractor: boolean;
   primaryCrops: string[];
   notes: string;
+  pin?: string;
+  languagePreference?: string;
 }
 
 export interface FarmerCreateResult {

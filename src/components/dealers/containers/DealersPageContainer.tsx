@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useRealTimeDealersQuery } from '@/hooks/data/useRealTimeDealersQuery';
-import { DealersPagePresentation } from '../presentation/DealersPagePresentation';
+import { EnhancedDealersPresentation } from '../presentation/EnhancedDealersPresentation';
 
 export const DealersPageContainer: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,7 +26,7 @@ export const DealersPageContainer: React.FC = () => {
   };
 
   return (
-    <DealersPagePresentation
+    <EnhancedDealersPresentation
       dealers={dealers}
       totalCount={totalCount}
       isLoading={isLoading}

@@ -1,8 +1,10 @@
 
+
 import React, { useState } from 'react';
 import { CreateFarmerForm } from '../presentation/CreateFarmerForm';
-import { useFarmerManagementNew } from '@/hooks/business/useFarmerManagementNew';
-import { useFarmerValidation, type FarmerFormData } from '@/hooks/business/useFarmerValidation';
+import { useFarmerManagement } from '@/hooks/useFarmerManagement';
+import { FarmerFormData } from '@/hooks/business/useFarmerValidation';
+import { DEFAULT_LOCALE } from '@/lib/i18n';
 
 interface CreateFarmerContainerProps {
   isOpen: boolean;
@@ -13,9 +15,13 @@ interface CreateFarmerContainerProps {
 const initialFormData: FarmerFormData = {
   fullName: '',
   phone: '',
+  pin: '',
+  confirmPin: '',
   email: '',
   dateOfBirth: '',
   gender: '',
+  languagePreference: DEFAULT_LOCALE,
+  country: 'india',
   village: '',
   taluka: '',
   district: '',
@@ -36,43 +42,37 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<FarmerFormData>(initialFormData);
-  const { createFarmer, isCreating } = useFarmerManagementNew();
-  const { errors, validateForm, clearErrors } = useFarmerValidation();
+  const { createFarmer, loading, error } = useFarmerManagement();
 
   const handleFormChange = (field: keyof FarmerFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData({ ...formData, [field]: value });
   };
 
-  const handleSubmit = async (data: FarmerFormData) => {
-    const validationErrors = validateForm(data);
-    if (Object.values(validationErrors).some(error => error)) {
-      return;
-    }
-
-    const result = await createFarmer(data);
-    if (result?.success) {
-      setFormData(initialFormData);
-      clearErrors();
-      onSuccess?.();
-      onClose();
+  const handleSubmit = async () => {
+    try {
+      const result = await createFarmer(formData);
+      if (result.success) {
+        onSuccess?.();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to create farmer:", error);
     }
   };
 
-  const handleClose = () => {
-    setFormData(initialFormData);
-    clearErrors();
-    onClose();
-  };
+  // Convert single error string to ValidationErrors format expected by CreateFarmerForm
+  const errors = error ? { general: error } : {};
 
   return (
     <CreateFarmerForm
       isOpen={isOpen}
+      onClose={onClose}
       formData={formData}
       errors={errors}
-      isSubmitting={isCreating}
+      isSubmitting={loading}
       onFormChange={handleFormChange}
       onSubmit={handleSubmit}
-      onClose={handleClose}
     />
   );
 };
+

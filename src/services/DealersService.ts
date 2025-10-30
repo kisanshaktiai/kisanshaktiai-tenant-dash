@@ -1,6 +1,7 @@
 
 import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from './api/CorsApiClient';
 
 export interface DealersListOptions {
   search?: string;
@@ -16,23 +17,128 @@ export interface Dealer {
   tenant_id: string;
   dealer_code: string;
   business_name: string;
+  legal_name?: string;
   contact_person: string;
+  designation?: string;
   phone: string;
+  alternate_phone?: string;
   email: string;
-  is_active: boolean;
+  alternate_email?: string;
+  website?: string;
+  
+  // Address information
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  gps_location?: any;
+  
+  // Business information
+  gst_number?: string;
+  pan_number?: string;
+  business_type?: string;
+  establishment_year?: number;
+  employee_count?: number;
+  
+  // Territory and coverage
+  territory_id?: string;
+  assigned_zones?: string[];
+  coverage_area_km?: number;
+  service_villages?: string[];
+  
+  // Performance metrics
+  performance_score?: number;
+  sales_target?: number;
+  sales_achieved?: number;
+  customer_rating?: number;
+  total_farmers_served?: number;
+  
+  // Commission and financials
+  commission_rate?: number;
+  outstanding_amount?: number;
+  credit_limit?: number;
+  payment_terms?: string;
+  
+  // Verification and compliance
   verification_status: string;
+  kyc_documents?: any;
+  verified_at?: string;
+  verified_by?: string;
+  agreement_signed?: boolean;
+  agreement_date?: string;
+  
+  // Activity tracking
+  last_order_date?: string;
+  total_orders?: number;
+  last_activity_at?: string;
+  engagement_score?: number;
+  
+  // Status and metadata
+  status?: string;
+  onboarding_status?: string;
+  onboarding_completed_at?: string;
+  tags?: string[];
+  notes?: string;
+  metadata?: any;
+  
+  is_active: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: string;
 }
 
 export interface CreateDealerData {
   tenant_id: string;
   dealer_code: string;
   business_name: string;
+  legal_name?: string;
   contact_person: string;
+  designation?: string;
   phone: string;
+  alternate_phone?: string;
   email: string;
+  alternate_email?: string;
+  website?: string;
+  
+  // Address information (separate fields that will be combined)
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  gps_location?: any;
+  
+  // Business information
+  gst_number?: string;
+  pan_number?: string;
+  business_type?: string;
+  establishment_year?: number;
+  employee_count?: number;
+  
+  // Territory and coverage
+  territory_id?: string;
+  assigned_zones?: string[];
+  coverage_area_km?: number;
+  service_villages?: string[];
+  
+  // Commission and financials
+  commission_rate?: number;
+  credit_limit?: number;
+  payment_terms?: string;
+  
+  // Verification and compliance
   verification_status?: string;
+  kyc_documents?: any;
+  agreement_signed?: boolean;
+  agreement_date?: string;
+  
+  // Status
+  status?: string;
+  tags?: string[];
+  notes?: string;
   is_active?: boolean;
 }
 
@@ -109,24 +215,40 @@ class DealersService extends BaseApiService {
 
   async createDealer(dealerData: CreateDealerData): Promise<Dealer> {
     try {
-      const { data, error } = await supabase
-        .from('dealers')
-        .insert({
-          ...dealerData,
-          id: crypto.randomUUID(),
-          verification_status: dealerData.verification_status || 'pending',
-          is_active: dealerData.is_active ?? true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Use the new dealers-api edge function if available
+      const useEdgeFunction = true; // Feature flag - can be configured
+      
+      if (useEdgeFunction) {
+        const response = await apiClient.post<Dealer>('/dealers-api', dealerData, {
+          tenantId: dealerData.tenant_id,
+        });
+        
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        
+        return response.data!;
+      } else {
+        // Fallback to direct database access
+        const { data, error } = await supabase
+          .from('dealers')
+          .insert({
+            ...dealerData,
+            id: crypto.randomUUID(),
+            verification_status: dealerData.verification_status || 'pending',
+            is_active: dealerData.is_active ?? true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        return data;
       }
-
-      return data;
     } catch (error) {
       throw new Error(`Failed to create dealer: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

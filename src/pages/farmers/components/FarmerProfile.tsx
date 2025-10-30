@@ -1,305 +1,238 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { 
-  X, MapPin, Phone, Mail, Calendar, Edit, 
-  MessageSquare, Sprout, TrendingUp, History,
-  Package, Users, FileText, AlertTriangle
+  User, MapPin, Calendar, Phone, Mail, Tag, 
+  Activity, TrendingUp, MessageSquare, X, 
+  Edit, Eye, Download, Clock, AlertCircle
 } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { useRealtimeFarmerNotes } from '@/hooks/data/useRealtimeFarmerNotes';
+import { useRealtimeFarmerEngagement } from '@/hooks/data/useRealtimeFarmerEngagement';
+import { useAddFarmerNoteMutation } from '@/hooks/data/useEnhancedFarmerQuery';
+import { FarmerCommunicationHistory } from './FarmerCommunicationHistory';
+import { FarmerLandHoldings } from './FarmerLandHoldings';
+import { FarmerCropHistory } from './FarmerCropHistory';
+import { FarmerInteractionTimeline } from './FarmerInteractionTimeline';
+import { FarmerNotesSection } from './FarmerNotesSection';
+import type { Farmer } from '@/services/FarmersService';
 
 interface FarmerProfileProps {
-  farmer: any;
+  farmer: Farmer;
   onClose: () => void;
 }
 
-export const FarmerProfile = ({ farmer, onClose }: FarmerProfileProps) => {
+export const FarmerProfile: React.FC<FarmerProfileProps> = ({ farmer, onClose }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  const { data: notes = [] } = useRealtimeFarmerNotes(farmer.id);
+  const { data: engagement } = useRealtimeFarmerEngagement(farmer.id);
+  
+  const engagementData = engagement?.[0];
 
-  // Sample detailed farmer data
-  const farmerDetails = {
-    ...farmer,
-    joinDate: '2023-03-15',
-    lastLogin: '2024-01-15 10:30 AM',
-    totalOrders: 23,
-    totalSpent: 45600,
-    lands: [
-      { id: '1', name: 'Main Field', size: 3.2, crop: 'Wheat', status: 'Harvested' },
-      { id: '2', name: 'Back Field', size: 2.0, crop: 'Rice', status: 'Growing' }
-    ],
-    recentActivity: [
-      { date: '2024-01-15', activity: 'Viewed crop advisory', type: 'app_usage' },
-      { date: '2024-01-14', activity: 'Ordered fertilizer', type: 'purchase' },
-      { date: '2024-01-13', activity: 'Attended webinar', type: 'engagement' }
-    ],
-    communications: [
-      { date: '2024-01-12', type: 'SMS', message: 'Weather alert sent', status: 'delivered' },
-      { date: '2024-01-10', type: 'Call', message: 'Follow-up call completed', status: 'completed' },
-      { date: '2024-01-08', type: 'Email', message: 'Newsletter sent', status: 'opened' }
-    ]
+  const getEngagementColor = (level: string) => {
+    switch (level) {
+      case 'high': return 'bg-green-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getChurnRiskColor = (score: number) => {
+    if (score < 30) return 'text-green-600';
+    if (score < 70) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
   return (
-    <Sheet open={true} onOpenChange={onClose}>
-      <SheetContent className="w-full max-w-4xl overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={farmer.avatar} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                {farmer.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <SheetTitle className="text-2xl">{farmer.name}</SheetTitle>
-              <SheetDescription className="flex items-center gap-4 mt-1">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {farmer.village}, {farmer.district}, {farmer.state}
-                </span>
-                <Badge variant={farmer.status === 'active' ? 'default' : 'destructive'}>
-                  {farmer.status}
-                </Badge>
-              </SheetDescription>
-            </div>
-          </div>
-        </SheetHeader>
-
-        <div className="mt-6 space-y-6">
-          {/* Quick Actions */}
-          <div className="flex gap-2 flex-wrap">
-            <Button size="sm">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Send Message
-            </Button>
-            <Button size="sm" variant="outline">
-              <Phone className="h-4 w-4 mr-2" />
-              Call
-            </Button>
-            <Button size="sm" variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Profile
-            </Button>
-            <Button size="sm" variant="outline">
-              <Package className="h-4 w-4 mr-2" />
-              Create Order
-            </Button>
-          </div>
-
-          {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="lands">Lands</TabsTrigger>
-              <TabsTrigger value="orders">Orders</TabsTrigger>
-              <TabsTrigger value="engagement">Engagement</TabsTrigger>
-              <TabsTrigger value="communications">Communications</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Personal Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{farmer.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{farmer.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Joined: {farmerDetails.joinDate}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      <span>Last active: {farmerDetails.lastLogin}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Farming Profile</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Sprout className="h-4 w-4 text-muted-foreground" />
-                      <span>Total Land: {farmer.landSize} acres</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <span>Primary Crops: {farmer.crops.join(', ')}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                      <span>Engagement Score: {farmer.engagementScore}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                      <span>Churn Risk: </span>
-                      <Badge variant={farmer.churnRisk === 'low' ? 'default' : 
-                                    farmer.churnRisk === 'medium' ? 'secondary' : 'destructive'}>
-                        {farmer.churnRisk}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <User className="w-8 h-8 text-blue-600" />
               </div>
+              <div>
+                <h2 className="text-2xl font-bold">{farmer.farmer_code}</h2>
+                <p className="text-gray-600">
+                  {farmer.farming_experience_years} years experience • {farmer.total_land_acres} acres
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant={farmer.is_verified ? 'default' : 'secondary'}>
+                    {farmer.is_verified ? 'Verified' : 'Unverified'}
+                  </Badge>
+                  {engagementData && (
+                    <Badge 
+                      variant="outline" 
+                      className={`${getEngagementColor(engagementData.engagement_level)} text-white`}
+                    >
+                      {engagementData.engagement_level} Engagement
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Key Statistics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {farmerDetails.totalOrders}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Orders</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        ₹{farmerDetails.totalSpent.toLocaleString()}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Total Spent</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {farmerDetails.lands.length}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Land Parcels</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {farmer.engagementScore}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">Engagement</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="px-6 pt-4">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="lands">Land Holdings</TabsTrigger>
+                <TabsTrigger value="crops">Crop History</TabsTrigger>
+                <TabsTrigger value="communications">Communications</TabsTrigger>
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="notes">Notes & Tags</TabsTrigger>
+              </TabsList>
+            </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {farmerDetails.recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{activity.activity}</p>
-                          <p className="text-xs text-muted-foreground">{activity.date}</p>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {activity.type}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="lands" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Land Holdings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {farmerDetails.lands.map((land) => (
-                      <div key={land.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex-1 overflow-auto p-6">
+              <TabsContent value="overview" className="space-y-6">
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-blue-500" />
                         <div>
-                          <h4 className="font-medium">{land.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {land.size} acres • {land.crop}
+                          <p className="text-sm text-gray-600">Activity Score</p>
+                          <p className="text-2xl font-bold">{engagementData?.activity_score || 0}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-green-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">App Opens</p>
+                          <p className="text-2xl font-bold">{farmer.total_app_opens}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-purple-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Communications</p>
+                          <p className="text-2xl font-bold">{engagementData?.communication_responses || 0}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-orange-500" />
+                        <div>
+                          <p className="text-sm text-gray-600">Churn Risk</p>
+                          <p className={`text-2xl font-bold ${getChurnRiskColor(engagementData?.churn_risk_score || 0)}`}>
+                            {engagementData?.churn_risk_score || 0}%
                           </p>
                         </div>
-                        <Badge variant={land.status === 'Growing' ? 'default' : 'secondary'}>
-                          {land.status}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Farmer Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Farming Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Experience:</span>
+                        <span className="font-medium">{farmer.farming_experience_years} years</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Land:</span>
+                        <span className="font-medium">{farmer.total_land_acres} acres</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Farm Type:</span>
+                        <span className="font-medium">{farmer.farm_type}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Irrigation:</span>
+                        <Badge variant={farmer.has_irrigation ? 'default' : 'secondary'}>
+                          {farmer.has_irrigation ? 'Available' : 'Not Available'}
                         </Badge>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="orders" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Order History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Order history will be displayed here...
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="engagement" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Engagement Metrics</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Engagement analytics will be displayed here...
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="communications" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Communication History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {farmerDetails.communications.map((comm, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{comm.message}</p>
-                          <p className="text-sm text-muted-foreground">{comm.date}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{comm.type}</Badge>
-                          <Badge variant={comm.status === 'delivered' || comm.status === 'completed' || comm.status === 'opened' ? 'default' : 'secondary'}>
-                            {comm.status}
-                          </Badge>
-                        </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Storage:</span>
+                        <Badge variant={farmer.has_storage ? 'default' : 'secondary'}>
+                          {farmer.has_storage ? 'Yes' : 'No'}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tractor:</span>
+                        <Badge variant={farmer.has_tractor ? 'default' : 'secondary'}>
+                          {farmer.has_tractor ? 'Yes' : 'No'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Primary Crops</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {farmer.primary_crops?.map((crop, index) => (
+                          <Badge key={index} variant="outline">
+                            {crop}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="lands">
+                <FarmerLandHoldings farmerId={farmer.id} />
+              </TabsContent>
+
+              <TabsContent value="crops">
+                <FarmerCropHistory farmerId={farmer.id} />
+              </TabsContent>
+
+              <TabsContent value="communications">
+                <FarmerCommunicationHistory farmerId={farmer.id} />
+              </TabsContent>
+
+              <TabsContent value="timeline">
+                <FarmerInteractionTimeline farmerId={farmer.id} />
+              </TabsContent>
+
+              <TabsContent value="notes">
+                <FarmerNotesSection farmerId={farmer.id} />
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 };

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setSubscriptionPlans, setLoading, setError } from '@/store/slices/tenantSlice';
 import { tenantDataService } from '@/services/TenantDataService';
+import { onboardingValidationService } from '@/services/OnboardingValidationService';
 
 export const useTenantData = () => {
   const dispatch = useAppDispatch();
@@ -22,20 +23,20 @@ export const useTenantData = () => {
         dispatch(setLoading(true));
         dispatch(setError(null));
         
-        console.log('Fetching tenant data for user:', user.id);
+        console.log('useTenantData: Fetching tenant data for user:', user.id);
         
-        // SECURITY FIX: Ensure tenant data is properly scoped to authenticated user
+        // ENHANCED: Use explicit foreign key relationships to avoid ambiguity
         const { data: userTenantsData, error: userTenantsError } = await supabase
           .from('user_tenants')
           .select(`
             *,
-            tenant:tenants!inner(
+            tenants!user_tenants_tenant_id_fkey(
               *,
-              branding:tenant_branding(*),
-              features:tenant_features(*),
-              subscription:tenant_subscriptions(
+              tenant_branding:tenant_branding!tenant_branding_tenant_id_fkey(*),
+              tenant_features:tenant_features!tenant_features_tenant_id_fkey(*),
+              tenant_subscriptions:tenant_subscriptions!tenant_subscriptions_tenant_id_fkey(
                 *,
-                plan:subscription_plans(*)
+                subscription_plans(*)
               )
             )
           `)
@@ -43,28 +44,38 @@ export const useTenantData = () => {
           .eq('is_active', true);
 
         if (userTenantsError) {
-          console.error('Error fetching user tenants:', userTenantsError);
+          console.error('useTenantData: Error fetching user tenants:', userTenantsError);
           dispatch(setError(userTenantsError.message));
           throw userTenantsError;
         }
 
-        console.log('Fetched user tenants:', userTenantsData);
+        console.log('useTenantData: Fetched user tenants:', userTenantsData);
 
         // Transform the data to match our interfaces
-        const transformedUserTenants = (userTenantsData || []).map(userTenant => ({
-          ...userTenant,
-          tenant: userTenant.tenant ? {
-            ...userTenant.tenant,
-            // Handle status mapping
-            status: mapTenantStatus(userTenant.tenant.status),
-            subscription_plan: mapSubscriptionPlan(userTenant.tenant.subscription_plan),
-            branding: Array.isArray(userTenant.tenant.branding) ? userTenant.tenant.branding[0] : userTenant.tenant.branding,
-            features: Array.isArray(userTenant.tenant.features) ? userTenant.tenant.features[0] : userTenant.tenant.features,
-            subscription: userTenant.tenant.subscription ? processSubscription(
-              Array.isArray(userTenant.tenant.subscription) ? userTenant.tenant.subscription[0] : userTenant.tenant.subscription
-            ) : null,
-          } : undefined
-        }));
+        const transformedUserTenants = (userTenantsData || []).map(userTenant => {
+          const tenant = userTenant.tenants;
+          if (!tenant || typeof tenant !== 'object') {
+            return {
+              ...userTenant,
+              tenant: null
+            };
+          }
+
+          return {
+            ...userTenant,
+            tenant: {
+              ...tenant,
+              // Handle status mapping
+              status: mapTenantStatus(tenant.status || 'pending'),
+              subscription_plan: mapSubscriptionPlan(tenant.subscription_plan || 'kisan'),
+              branding: Array.isArray(tenant.tenant_branding) ? tenant.tenant_branding[0] : tenant.tenant_branding,
+              features: Array.isArray(tenant.tenant_features) ? tenant.tenant_features[0] : tenant.tenant_features,
+              subscription: tenant.tenant_subscriptions ? processSubscription(
+                Array.isArray(tenant.tenant_subscriptions) ? tenant.tenant_subscriptions[0] : tenant.tenant_subscriptions
+              ) : null,
+            }
+          };
+        });
 
         dispatch(setUserTenants(transformedUserTenants));
 
@@ -72,12 +83,20 @@ export const useTenantData = () => {
         if (!currentTenant && transformedUserTenants && transformedUserTenants.length > 0) {
           const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
           if (primaryTenant?.tenant) {
-            console.log('Setting current tenant:', primaryTenant.tenant);
+            console.log('useTenantData: Setting current tenant:', primaryTenant.tenant);
             dispatch(setCurrentTenant(primaryTenant.tenant));
+            
+            // ENHANCED: Validate onboarding data for the current tenant
+            try {
+              await onboardingValidationService.validateAndRepairOnboarding(primaryTenant.tenant.id);
+            } catch (validationError) {
+              console.warn('useTenantData: Onboarding validation warning:', validationError);
+              // Don't fail the entire flow for validation issues
+            }
           }
         }
       } catch (error) {
-        console.error('Error fetching tenant data:', error);
+        console.error('useTenantData: Error fetching tenant data:', error);
         dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
       } finally {
         dispatch(setLoading(false));
@@ -165,14 +184,14 @@ export const useTenantData = () => {
 
     // Set up real-time subscription for tenant changes with proper tenant isolation
     const channel = supabase
-      .channel(`tenant_changes_${user.id}`) // SECURITY FIX: User-specific channel
+      .channel(`tenant_changes_${user.id}`) // User-specific channel
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_tenants',
-          filter: `user_id=eq.${user.id}`, // SECURITY FIX: Filter by user_id
+          filter: `user_id=eq.${user.id}`, // Filter by user_id
         },
         () => {
           console.log('Real-time tenant data change detected');
@@ -231,35 +250,25 @@ export const useTenantData = () => {
 // Helper functions
 const mapTenantStatus = (status: string): 'pending' | 'active' | 'suspended' | 'cancelled' | 'trial' => {
   switch (status) {
-    case 'pending':
-      return 'pending';
-    case 'active':
-      return 'active';
-    case 'suspended':
-      return 'suspended';
+    case 'pending': return 'pending';
+    case 'active': return 'active';
+    case 'suspended': return 'suspended';
     case 'cancelled':
-    case 'canceled':
-      return 'cancelled';
-    case 'trial':
-      return 'trial';
-    default:
-      return 'pending';
+    case 'canceled': return 'cancelled';
+    case 'trial': return 'trial';
+    default: return 'pending';
   }
 };
 
 const mapSubscriptionPlan = (plan: string): 'kisan' | 'shakti' | 'ai' => {
   switch (plan) {
     case 'starter':
-    case 'basic':
-      return 'kisan';
+    case 'basic': return 'kisan';
     case 'professional':
-    case 'growth':
-      return 'shakti';
+    case 'growth': return 'shakti';
     case 'enterprise':
-    case 'custom':
-      return 'ai';
-    default:
-      return 'kisan';
+    case 'custom': return 'ai';
+    default: return 'kisan';
   }
 };
 
@@ -274,16 +283,11 @@ const processSubscription = (subscription: any) => {
 
 const mapSubscriptionStatus = (status: string): 'trial' | 'active' | 'canceled' | 'past_due' => {
   switch (status) {
-    case 'trial':
-      return 'trial';
-    case 'active':
-      return 'active';
+    case 'trial': return 'trial';
+    case 'active': return 'active';
     case 'canceled':
-    case 'cancelled':
-      return 'canceled';
-    case 'past_due':
-      return 'past_due';
-    default:
-      return 'trial';
+    case 'cancelled': return 'canceled';
+    case 'past_due': return 'past_due';
+    default: return 'trial';
   }
 };

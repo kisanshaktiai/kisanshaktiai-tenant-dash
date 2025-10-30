@@ -14,37 +14,38 @@ export interface FarmersListOptions {
 export interface Farmer {
   id: string;
   tenant_id: string;
-  farmer_code: string;
-  farming_experience_years: number;
-  total_land_acres: number;
-  primary_crops: string[];
-  farm_type: string;
-  has_irrigation: boolean;
-  has_storage: boolean;
-  has_tractor: boolean;
+  farmer_code: string | null;
+  farmer_name: string | null;
+  mobile_number: string | null;
+  location: string | null;
+  farming_experience_years: number | null;
+  total_land_acres: number | null;
+  primary_crops: string[] | null;
+  farm_type: string | null;
+  has_irrigation: boolean | null;
+  has_storage: boolean | null;
+  has_tractor: boolean | null;
   irrigation_type: string | null;
-  is_verified: boolean;
-  total_app_opens: number;
-  total_queries: number;
-  created_at: string;
-  updated_at: string;
+  is_verified: boolean | null;
+  is_active: boolean | null;
+  total_app_opens: number | null;
+  total_queries: number | null;
+  annual_income_range: string | null;
+  language_preference: string | null;
+  last_app_open: string | null;
+  last_login_at: string | null;
+  app_install_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  metadata: any | null;
 }
 
 export interface CreateFarmerData {
   tenant_id: string;
-  farmer_code: string;
-  farming_experience_years: number;
-  total_land_acres: number;
-  primary_crops: string[];
-  farm_type: string;
-  has_irrigation: boolean;
-  has_storage: boolean;
-  has_tractor: boolean;
-  irrigation_type: string | null;
-  is_verified: boolean;
-}
-
-export interface UpdateFarmerData {
+  farmer_code?: string;
+  farmer_name?: string;
+  mobile_number?: string;
+  location?: string;
   farming_experience_years?: number;
   total_land_acres?: number;
   primary_crops?: string[];
@@ -54,6 +55,25 @@ export interface UpdateFarmerData {
   has_tractor?: boolean;
   irrigation_type?: string | null;
   is_verified?: boolean;
+  annual_income_range?: string;
+  language_preference?: string;
+}
+
+export interface UpdateFarmerData {
+  farmer_name?: string;
+  mobile_number?: string;
+  location?: string;
+  farming_experience_years?: number;
+  total_land_acres?: number;
+  primary_crops?: string[];
+  farm_type?: string;
+  has_irrigation?: boolean;
+  has_storage?: boolean;
+  has_tractor?: boolean;
+  irrigation_type?: string | null;
+  is_verified?: boolean;
+  annual_income_range?: string;
+  language_preference?: string;
 }
 
 export interface FarmersListResponse {
@@ -73,7 +93,7 @@ class FarmersService extends BaseApiService {
         .eq('tenant_id', tenantId);
 
       if (options.search) {
-        query = query.or(`farmer_code.ilike.%${options.search}%,primary_crops.cs.{${options.search}}`);
+        query = query.or(`farmer_code.ilike.%${options.search}%,farmer_name.ilike.%${options.search}%,mobile_number.ilike.%${options.search}%,location.ilike.%${options.search}%`);
       }
 
       if (options.limit) {

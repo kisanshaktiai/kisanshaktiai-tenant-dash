@@ -52,7 +52,7 @@ export const useOnboardingAutoProgress = (steps: any[], workflowId?: string) => 
           );
           break;
 
-        case 'Team Invites':
+        case 'Team Setup':
           // Mark as complete if user has sent invites or skipped
           shouldMarkComplete = !!(
             step.step_data?.invitesSent ||

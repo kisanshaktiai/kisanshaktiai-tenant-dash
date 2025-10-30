@@ -1,128 +1,126 @@
 
 import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from '@/components/ui/sonner';
-import { ErrorBoundary } from 'react-error-boundary';
-import ErrorFallback from '@/components/ErrorFallback';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ThemeInitializer } from '@/components/layout/ThemeInitializer';
 import { IntlProvider } from '@/components/providers/IntlProvider';
-import { useAuth } from '@/hooks/useAuth';
-import { OnboardingGuard } from '@/components/guards/OnboardingGuard';
-import { EnhancedDashboardLayout } from '@/components/layout/EnhancedDashboardLayout';
+import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
+import { Toaster } from '@/components/ui/sonner';
+import { fontService } from '@/services/FontService';
 
-// Pages
+// Initialize font service on app startup
+fontService.initializeFont();
+
+// Import layout
+import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
+
+// Import pages
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
-import Dashboard from '@/pages/Dashboard';
-import FarmersPage from '@/pages/farmers/FarmersPage';
-import DealersPage from '@/pages/dealers/DealersPage';
-import ProductsPage from '@/pages/products/ProductsPage';
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage';
+import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
+import FarmersPage from '@/pages/FarmersPage';
+import ProductsPage from '@/pages/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import DealersPage from '@/pages/DealersPage';
 import SettingsPage from '@/pages/SettingsPage';
-import IntegrationsPage from '@/pages/integrations/IntegrationsPage';
-import SubscriptionPage from '@/pages/subscription/SubscriptionPage';
-import OnboardingPage from '@/pages/onboarding/OnboardingPage';
+import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
-import LoginPage from '@/pages/auth/LoginPage';
-import RegisterPage from '@/pages/auth/RegisterPage';
-import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
+import NDVIPage from '@/pages/NDVIPage';
+import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
+
+// Settings sub-pages
+import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
+import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
+import AppearancePage from '@/pages/settings/AppearancePage';
+import WhiteLabelConfigPageOptimized from '@/pages/settings/WhiteLabelConfigPageOptimized';
+import NotificationPage from '@/pages/NotificationPage';
+import SecurityPage from '@/pages/SecurityPage';
+import DataPrivacyPage from '@/pages/DataPrivacyPage';
+import ApiKeysPage from '@/pages/ApiKeysPage';
+import LocalizationPage from '@/pages/LocalizationPage';
+
+// Auth pages
+import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
+import OnboardingPage from '@/pages/OnboardingPage';
 import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import PasswordSetupPage from '@/pages/invitation/PasswordSetupPage';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: (failureCount, error) => {
-        if (error instanceof Error && error.message.includes('401')) {
-          return false;
-        }
-        return failureCount < 3;
-      },
-    },
-  },
-});
-
-interface RequireAuthProps {
-  children: React.ReactNode;
-}
-
-const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
-  const { user, loading, initialized } = useAuth();
-
-  // Show loading while auth is initializing
-  if (!initialized || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Redirect to login if not authenticated
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
+import SetupPasswordPage from '@/pages/SetupPasswordPage';
+import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
 
 function App() {
+
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <Provider store={store}>
-        <QueryClientProvider client={queryClient}>
-          <IntlProvider>
+    <Provider store={store}>
+      <ThemeProvider defaultTheme="system" storageKey="tenant-ui-theme">
+        <ThemeInitializer />
+        <IntlProvider>
+          <TenantProviderOptimized>
             <Router>
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/setup-password" element={<PasswordSetupPage />} />
-
-                {/* Protected routes - wrapped with RequireAuth first, then OnboardingGuard */}
-                <Route path="/dashboard" element={
-                  <RequireAuth>
-                    <OnboardingGuard>
-                      <EnhancedDashboardLayout />
-                    </OnboardingGuard>
-                  </RequireAuth>
-                }>
-                  <Route index element={<Dashboard />} />
-                  <Route path="farmers" element={<FarmersPage />} />
-                  <Route path="dealers" element={<DealersPage />} />
-                  <Route path="products" element={<ProductsPage />} />
-                  <Route path="analytics" element={<AnalyticsPage />} />
-                  <Route path="campaigns" element={<CampaignsPage />} />
-                  <Route path="integrations" element={<IntegrationsPage />} />
-                  <Route path="subscription" element={<SubscriptionPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                </Route>
-
-                {/* Onboarding route - only requires authentication, not onboarding completion */}
-                <Route path="/onboarding" element={
-                  <RequireAuth>
-                    <OnboardingPage />
-                  </RequireAuth>
-                } />
-
-                {/* Catch all route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <div className="min-h-screen bg-background">
+                <Routes>
+                  {/* Root redirect */}
+                  <Route path="/" element={<Index />} />
+                  
+                  {/* Auth routes - outside layout */}
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/login" element={<Navigate to="/auth" replace />} />
+                  <Route path="/register" element={<TenantRegistrationPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/setup-password" element={<SetupPasswordPage />} />
+                  <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+                  
+                  {/* Onboarding - outside layout */}
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  
+                  {/* Main app routes with layout */}
+                  <Route path="/app" element={<EnhancedTenantLayout />}>
+                    <Route index element={<Navigate to="/app/dashboard" replace />} />
+                    <Route path="dashboard" element={<EnhancedDashboard />} />
+                    <Route path="farmers" element={<FarmersPage />} />
+                    <Route path="ndvi" element={<NDVIPage />} />
+                    <Route path="soil-analysis" element={<SoilAnalysisPage />} />
+                    <Route path="products" element={<ProductsPage />} />
+                    <Route path="campaigns" element={<CampaignsPage />} />
+                    <Route path="analytics" element={<AnalyticsPage />} />
+                    <Route path="dealers" element={<DealersPage />} />
+                    <Route path="profile" element={<ProfilePage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="settings/organization" element={<EnhancedOrganizationPage />} />
+                    <Route path="settings/users" element={<EnhancedUsersPage />} />
+                    <Route path="settings/appearance" element={<AppearancePage />} />
+                    <Route path="settings/white-label" element={<WhiteLabelConfigPageOptimized />} />
+                    <Route path="settings/notifications" element={<NotificationPage />} />
+                    <Route path="settings/security" element={<SecurityPage />} />
+                    <Route path="settings/data-privacy" element={<DataPrivacyPage />} />
+                    <Route path="settings/api-keys" element={<ApiKeysPage />} />
+                    <Route path="settings/localization" element={<LocalizationPage />} />
+                  </Route>
+                  
+                  {/* Legacy redirects */}
+                  <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="/farmers" element={<Navigate to="/app/farmers" replace />} />
+                  <Route path="/products" element={<Navigate to="/app/products" replace />} />
+                  <Route path="/campaigns" element={<Navigate to="/app/campaigns" replace />} />
+                  <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
+                  <Route path="/dealers" element={<Navigate to="/app/dealers" replace />} />
+                  <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
+                  <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+                  <Route path="/settings/organization" element={<Navigate to="/app/settings/organization" replace />} />
+                  <Route path="/settings/users" element={<Navigate to="/app/settings/users" replace />} />
+                  <Route path="/settings/appearance" element={<Navigate to="/app/settings/appearance" replace />} />
+                  
+                  {/* Catch all route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
               <Toaster />
             </Router>
-          </IntlProvider>
-        </QueryClientProvider>
-      </Provider>
-    </ErrorBoundary>
+          </TenantProviderOptimized>
+        </IntlProvider>
+      </ThemeProvider>
+    </Provider>
   );
 }
 

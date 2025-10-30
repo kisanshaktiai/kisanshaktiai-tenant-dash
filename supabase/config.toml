@@ -1,1 +1,10 @@
 project_id = "qfklkkzxemsbeniyugiz"
+
+[functions.dealers-api]
+verify_jwt = true
+
+[functions.ndvi-harvest]
+verify_jwt = false
+
+[functions.ndvi-queue-processor]
+verify_jwt = false

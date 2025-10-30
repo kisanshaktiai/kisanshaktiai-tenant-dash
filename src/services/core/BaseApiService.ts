@@ -2,8 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { PostgrestError } from '@supabase/supabase-js';
 
-export interface ApiError {
-  message: string;
+export interface ApiError extends Error {
   code?: string;
   details?: any;
   statusCode?: number;
@@ -25,38 +24,49 @@ export interface FilterOptions {
 }
 
 export abstract class BaseApiService {
-  protected handleError(error: PostgrestError | Error): ApiError {
-    if ('code' in error && 'message' in error) {
+  protected handleError(error: PostgrestError | Error | unknown): ApiError {
+    if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
       // PostgrestError
-      return {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        statusCode: 400,
-      };
+      const pgError = error as PostgrestError;
+      const apiError = new Error(pgError.message) as ApiError;
+      apiError.code = pgError.code;
+      apiError.details = pgError.details;
+      apiError.statusCode = 400;
+      return apiError;
     }
     
-    // Generic Error
-    return {
-      message: error.message || 'An unexpected error occurred',
-      statusCode: 500,
-    };
+    if (error instanceof Error) {
+      const apiError = new Error(error.message) as ApiError;
+      apiError.statusCode = 500;
+      return apiError;
+    }
+    
+    const apiError = new Error('An unexpected error occurred') as ApiError;
+    apiError.statusCode = 500;
+    return apiError;
   }
 
   protected async executeQuery<T>(
     queryFn: () => Promise<{ data: T | null; error: PostgrestError | null }>
   ): Promise<T> {
-    const { data, error } = await queryFn();
-    
-    if (error) {
+    try {
+      const { data, error } = await queryFn();
+      
+      if (error) {
+        throw this.handleError(error);
+      }
+      
+      if (data === null) {
+        throw new Error('No data returned from query');
+      }
+      
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
       throw this.handleError(error);
     }
-    
-    if (data === null) {
-      throw new Error('No data returned from query');
-    }
-    
-    return data;
   }
 
   protected buildFilters(query: any, filters: FilterOptions) {

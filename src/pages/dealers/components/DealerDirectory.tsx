@@ -1,205 +1,149 @@
-import { useState } from 'react';
+
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Search, Filter, Download, MoreHorizontal, MapPin, 
-  Phone, Mail, Edit, Eye, MessageSquare, Users, Building
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Store, MapPin, Phone, Mail, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Checkbox } from '@/components/ui/checkbox';
 
 interface DealerDirectoryProps {
-  dealers: any[];
-  loading: boolean;
+  searchTerm: string;
 }
 
-export const DealerDirectory = ({ dealers, loading }: DealerDirectoryProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDealers, setSelectedDealers] = useState<string[]>([]);
-
-  // Sample data when no real data
-  const sampleDealers = [
+export default function DealerDirectory({ searchTerm }: DealerDirectoryProps) {
+  // Mock dealer data - this should come from your API
+  const dealers = [
     {
       id: '1',
-      business_name: 'Green Valley Seeds',
-      contact_person: 'Rajesh Kumar',
-      phone: '+91 9876543210',
-      email: 'rajesh@greenvalley.com',
-      business_address: { city: 'Sonipat', state: 'Haryana' },
-      dealer_code: 'GVS001',
-      registration_status: 'approved',
-      is_active: true,
-      performance_rating: 4.5,
-      territory_ids: ['t1', 't2']
+      name: 'Agri Solutions Ltd',
+      location: 'Mumbai, Maharashtra',
+      phone: '+91 98765 43210',
+      email: 'contact@agrisolutions.com',
+      status: 'active',
+      territory: 'West Zone',
+      performance: 'excellent'
     },
     {
       id: '2',
-      business_name: 'Krishi Kendra',
-      contact_person: 'Priya Sharma',
-      phone: '+91 9876543211',
-      email: 'priya@krishikendra.com',
-      business_address: { city: 'Karnal', state: 'Haryana' },
-      dealer_code: 'KK002',
-      registration_status: 'pending',
-      is_active: true,
-      performance_rating: 4.2,
-      territory_ids: ['t3']
+      name: 'Farm Tech Distributors',
+      location: 'Delhi, NCR',
+      phone: '+91 87654 32109',
+      email: 'info@farmtech.com',
+      status: 'active',
+      territory: 'North Zone',
+      performance: 'good'
     }
-  ];
-
-  const displayDealers = dealers.length > 0 ? dealers : sampleDealers;
-
-  const filteredDealers = displayDealers.filter(dealer =>
-    dealer.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dealer.contact_person.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    dealer.phone.includes(searchQuery)
+  ].filter(dealer => 
+    dealer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    dealer.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'default';
-      case 'pending': return 'secondary';
-      case 'rejected': return 'destructive';
-      default: return 'secondary';
-    }
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      active: 'default',
+      inactive: 'secondary',
+      pending: 'outline'
+    } as const;
+    
+    return (
+      <Badge variant={variants[status as keyof typeof variants] || 'default'}>
+        {status.toUpperCase()}
+      </Badge>
+    );
   };
 
-  if (loading) {
+  const getPerformanceBadge = (performance: string) => {
+    const variants = {
+      excellent: 'default',
+      good: 'secondary',
+      average: 'outline',
+      poor: 'destructive'
+    } as const;
+    
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center">Loading dealers...</div>
-        </CardContent>
-      </Card>
+      <Badge variant={variants[performance as keyof typeof variants] || 'outline'}>
+        {performance.toUpperCase()}
+      </Badge>
     );
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Search */}
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Search Dealers
+            <Store className="h-5 w-5" />
+            Dealer Directory ({dealers.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            placeholder="Search dealers by name, contact person, or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Dealer List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Dealers ({filteredDealers.length})
-            </CardTitle>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredDealers.map((dealer) => (
-              <div
-                key={dealer.id}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {dealer.business_name.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold truncate">{dealer.business_name}</h3>
-                    <Badge variant={getStatusColor(dealer.registration_status)}>
-                      {dealer.registration_status}
-                    </Badge>
-                    {dealer.is_active && (
-                      <Badge variant="outline" className="text-xs">
-                        Active
-                      </Badge>
-                    )}
+          <div className="grid gap-4">
+            {dealers.map((dealer) => (
+              <Card key={dealer.id} className="p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <Store className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{dealer.name}</h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {dealer.location}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-4 w-4" />
+                            {dealer.phone}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mt-3">
+                      {getStatusBadge(dealer.status)}
+                      {getPerformanceBadge(dealer.performance)}
+                      <span className="text-sm text-muted-foreground">
+                        Territory: {dealer.territory}
+                      </span>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {dealer.phone}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {dealer.business_address?.city}, {dealer.business_address?.state}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Building className="h-3 w-3" />
-                      {dealer.dealer_code}
-                    </span>
-                  </div>
-                  
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    Contact: {dealer.contact_person}
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>View Profile</DropdownMenuItem>
+                      <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                      <DropdownMenuItem>Assign Territory</DropdownMenuItem>
+                      <DropdownMenuItem>Contact Dealer</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    Rating: {dealer.performance_rating || 'N/A'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {dealer.territory_ids?.length || 0} territories
-                  </div>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Send Message
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call Dealer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              </Card>
             ))}
           </div>
+          
+          {dealers.length === 0 && (
+            <div className="text-center py-12">
+              <Store className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No dealers found</h3>
+              <p className="text-muted-foreground">
+                {searchTerm ? `No dealers match "${searchTerm}"` : 'No dealers have been added yet.'}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
   );
-};
+}

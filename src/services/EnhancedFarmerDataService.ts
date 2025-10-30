@@ -1,0 +1,818 @@
+
+import { supabase } from '@/integrations/supabase/client';
+import { BaseApiService } from './core/BaseApiService';
+
+export interface ComprehensiveFarmerData {
+  // Basic farmer info
+  id: string;
+  farmer_code: string;
+  mobile_number?: string;
+  farming_experience_years: number;
+  total_land_acres: number;
+  primary_crops: string[];
+  farm_type: string;
+  has_irrigation: boolean;
+  has_storage: boolean;
+  has_tractor: boolean;
+  is_verified: boolean;
+  total_app_opens: number;
+  language_preference: string;
+  metadata: any;
+  created_at: string;
+  
+  // Aggregated data
+  tags: FarmerTag[];
+  notes: FarmerNote[];
+  segments: string[];
+  lands: FarmerLand[];
+  cropHistory: CropHistoryItem[];
+  healthAssessments: HealthAssessment[];
+  communicationHistory: CommunicationItem[];
+  
+  // Calculated metrics
+  metrics: {
+    totalLandArea: number;
+    cropDiversityIndex: number;
+    engagementScore: number;
+    healthScore: number;
+    lastActivityDate: string;
+    revenueScore: number;
+    riskLevel: 'low' | 'medium' | 'high';
+  };
+  
+  // Live status
+  liveStatus: {
+    isOnline: boolean;
+    lastSeen: string;
+    currentActivity: string;
+  };
+}
+
+export interface FarmerTag {
+  id: string;
+  tag_name: string;
+  tag_color?: string;
+  created_at: string;
+}
+
+export interface FarmerNote {
+  id: string;
+  note_content: string;
+  is_important: boolean;
+  is_private: boolean;
+  created_by: string;
+  created_at: string;
+}
+
+export interface FarmerLand {
+  id: string;
+  area_acres: number;
+  soil_type?: string;
+  location?: any;
+  irrigation_type?: string;
+  crops?: string[];
+}
+
+export interface CropHistoryItem {
+  id: string;
+  crop_name: string;
+  variety?: string;
+  season?: string;
+  yield_kg_per_acre?: number;
+  planting_date?: string;
+  harvest_date?: string;
+  status: string;
+}
+
+export interface HealthAssessment {
+  id: string;
+  assessment_date: string;
+  overall_health_score?: number;
+  ndvi_avg?: number;
+  alert_level: string;
+  growth_stage?: string;
+}
+
+export interface CommunicationItem {
+  id: string;
+  communication_type: string;
+  channel: string;
+  status: string;
+  sent_at: string;
+  delivered_at?: string;
+  read_at?: string;
+}
+
+export interface FarmerMetrics {
+  totalFarmers: number;
+  activeFarmers: number;
+  averageEngagement: number;
+  topCrops: { crop: string; count: number }[];
+  riskDistribution: { low: number; medium: number; high: number };
+}
+
+export interface PaginatedFarmersResult {
+  data: ComprehensiveFarmerData[];
+  count: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+class EnhancedFarmerDataService extends BaseApiService {
+  async getComprehensiveFarmerData(tenantId: string, farmerId: string): Promise<ComprehensiveFarmerData> {
+    try {
+      console.log('[EnhancedFarmerDataService] Fetching comprehensive data for farmer:', farmerId);
+      
+      // Get basic farmer data
+      const { data: farmerData, error: farmerError } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('id', farmerId)
+        .single();
+
+      if (farmerError) throw farmerError;
+      
+      console.log('[EnhancedFarmerDataService] Farmer base data:', {
+        id: farmerData.id,
+        farmer_code: farmerData.farmer_code,
+        total_land_acres: farmerData.total_land_acres,
+        total_app_opens: farmerData.total_app_opens,
+        is_verified: farmerData.is_verified,
+        last_login_at: farmerData.last_login_at
+      });
+
+      // Get all related data in parallel
+      const [
+        tagsResult,
+        notesResult,
+        segmentsResult,
+        landsResult,
+        cropHistoryResult,
+        healthAssessmentsResult
+      ] = await Promise.all([
+        this.getFarmerTags(tenantId, farmerId),
+        this.getFarmerNotes(tenantId, farmerId),
+        this.getFarmerSegments(tenantId, farmerId),
+        this.getFarmerLands(tenantId, farmerId),
+        this.getFarmerCropHistory(tenantId, farmerId),
+        this.getFarmerHealthAssessments(tenantId, farmerId)
+      ]);
+      
+      
+      console.log('[EnhancedFarmerDataService] Related data fetched:', {
+        landsCount: landsResult.length,
+        cropHistoryCount: cropHistoryResult.length,
+        healthAssessmentsCount: healthAssessmentsResult.length,
+        tagsCount: tagsResult.length,
+        notesCount: notesResult.length,
+        totalLandAcres: landsResult.reduce((sum, land) => sum + land.area_acres, 0)
+      });
+      
+      // Get real communication history if available
+      const communicationResult = await this.getFarmerCommunications(tenantId, farmerId);
+
+      // Calculate metrics
+      const metrics = this.calculateFarmerMetrics(farmerData, {
+        lands: landsResult,
+        cropHistory: cropHistoryResult,
+        healthAssessments: healthAssessmentsResult,
+        communications: communicationResult
+      });
+
+      // Calculate live status from real last login data
+      const lastLoginTime = farmerData.last_login_at ? new Date(farmerData.last_login_at).getTime() : 0;
+      const currentTime = Date.now();
+      const minutesSinceLastLogin = Math.floor((currentTime - lastLoginTime) / (1000 * 60));
+      
+      const liveStatus = {
+        isOnline: minutesSinceLastLogin <= 5, // Online if active in last 5 minutes
+        lastSeen: farmerData.last_login_at || farmerData.updated_at || farmerData.created_at,
+        currentActivity: minutesSinceLastLogin <= 5 ? 'Active' : null
+      };
+
+      // Transform the farmer data to match our interface
+      const comprehensiveData: ComprehensiveFarmerData = {
+        id: farmerData.id,
+        farmer_code: farmerData.farmer_code,
+        mobile_number: farmerData.mobile_number,
+        farming_experience_years: farmerData.farming_experience_years || 0,
+        // Use calculated total from actual lands data instead of stored value
+        total_land_acres: metrics.totalLandArea || farmerData.total_land_acres || 0,
+        primary_crops: farmerData.primary_crops || [],
+        farm_type: farmerData.farm_type || 'small',
+        has_irrigation: farmerData.has_irrigation || false,
+        has_storage: farmerData.has_storage || false,
+        has_tractor: farmerData.has_tractor || false,
+        is_verified: farmerData.is_verified || false,
+        total_app_opens: farmerData.total_app_opens || 0,
+        language_preference: farmerData.language_preference || 'en',
+        metadata: farmerData.metadata || {},
+        created_at: farmerData.created_at,
+        tags: tagsResult,
+        notes: notesResult,
+        segments: segmentsResult,
+        lands: landsResult,
+        cropHistory: cropHistoryResult,
+        healthAssessments: healthAssessmentsResult,
+        communicationHistory: communicationResult,
+        metrics,
+        liveStatus
+      };
+
+      return comprehensiveData;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getFarmerTags(tenantId: string, farmerId?: string): Promise<FarmerTag[]> {
+    try {
+      // First try with tenant_id
+      let query = supabase
+        .from('farmer_tags')
+        .select('*');
+      
+      if (farmerId) {
+        query = query.eq('farmer_id', farmerId);
+      }
+      query = query.eq('tenant_id', tenantId);
+      
+      let { data, error } = await query;
+      
+      // If error or no data, try without tenant_id
+      if (error || !data || data.length === 0) {
+        console.log('[EnhancedFarmerDataService] Trying farmer_tags without tenant_id filter');
+        const fallback = await supabase
+          .from('farmer_tags')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        if (!fallback.error && fallback.data) {
+          data = fallback.data;
+          error = null;
+        }
+      }
+      
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] farmer_tags table may not exist:', error);
+        return [];
+      }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} tags for farmer ${farmerId}`);
+      
+      return (data || []).map((tag: any) => ({
+        id: tag.id,
+        tag_name: tag.tag_name || tag.name || 'Tag',
+        tag_color: tag.tag_color || tag.color,
+        created_at: tag.created_at
+      }));
+    } catch (error) {
+      console.error('[EnhancedFarmerDataService] Error fetching farmer tags:', error);
+      return [];
+    }
+  }
+
+  async getFarmerNotes(tenantId: string, farmerId: string): Promise<FarmerNote[]> {
+    try {
+      // First try with tenant_id
+      let { data, error } = await supabase
+        .from('farmer_notes')
+        .select('*')
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+      
+      // If error or no data, try without tenant_id filter
+      if (error || !data || data.length === 0) {
+        console.log('[EnhancedFarmerDataService] Trying farmer_notes without tenant_id filter');
+        const fallback = await supabase
+          .from('farmer_notes')
+          .select('*')
+          .eq('farmer_id', farmerId)
+          .order('created_at', { ascending: false });
+        
+        if (!fallback.error && fallback.data) {
+          data = fallback.data;
+          error = null;
+        }
+      }
+      
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] farmer_notes table may not exist:', error);
+        return [];
+      }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} notes for farmer ${farmerId}`);
+      
+      return (data || []).map((note: any) => ({
+        id: note.id,
+        note_content: note.note_content || note.content || '',
+        is_important: note.is_important || false,
+        is_private: note.is_private || false,
+        created_by: note.created_by,
+        created_at: note.created_at
+      }));
+    } catch (error) {
+      console.error('[EnhancedFarmerDataService] Error fetching farmer notes:', error);
+      return [];
+    }
+  }
+
+  async getFarmerSegments(tenantId: string, farmerId: string): Promise<string[]> {
+    try {
+      // Query without chaining to avoid deep type instantiation
+      const query = supabase.from('farmer_segments');
+      const result = await query.select('segment_name');
+      
+      if ('error' in result && result.error) {
+        console.warn('farmer_segments table may not exist:', result.error);
+        return [];
+      }
+      
+      const data = result.data;
+      if (!data) return [];
+      
+      return data
+        .filter((seg: any) => seg.tenant_id === tenantId && seg.farmer_id === farmerId)
+        .map((seg: any) => seg.segment_name || '');
+    } catch (error) {
+      console.error('Error fetching farmer segments:', error);
+      return [];
+    }
+  }
+  
+  async getFarmerCommunications(tenantId: string, farmerId: string): Promise<CommunicationItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('farmer_communications')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId)
+        .order('sent_at', { ascending: false })
+        .limit(20);
+      
+      if (error) {
+        console.warn('farmer_communications table may not exist:', error);
+        return [];
+      }
+      
+      return (data || []).map((comm: any) => ({
+        id: comm.id,
+        communication_type: comm.communication_type || comm.type || 'message',
+        channel: comm.channel || 'app',
+        status: comm.status || 'sent',
+        sent_at: comm.sent_at || comm.created_at,
+        delivered_at: comm.delivered_at,
+        read_at: comm.read_at
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer communications:', error);
+      return [];
+    }
+  }
+
+  async getFarmerLands(tenantId: string, farmerId: string): Promise<FarmerLand[]> {
+    try {
+      // First try with tenant_id filter
+      let { data, error } = await supabase
+        .from('lands')
+        .select('*')
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId);
+
+      // If no data found, try without tenant_id (lands might not have tenant_id column)
+      if ((!data || data.length === 0) && !error) {
+        const result = await supabase
+          .from('lands')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        data = result.data;
+        error = result.error;
+      }
+
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] Error fetching lands:', error);
+        // Try one more time with just farmer_id
+        const fallbackResult = await supabase
+          .from('lands')
+          .select('*')
+          .eq('farmer_id', farmerId);
+        
+        if (fallbackResult.error) {
+          console.error('[EnhancedFarmerDataService] Failed to fetch lands:', fallbackResult.error);
+          return [];
+        }
+        data = fallbackResult.data;
+      }
+      
+      console.log(`[EnhancedFarmerDataService] Found ${data?.length || 0} lands for farmer ${farmerId}`);
+      
+      // Map the actual database columns to our interface
+      return (data || []).map((land: any) => ({
+        id: land.id,
+        area_acres: parseFloat(land.area_acres) || parseFloat(land.area) || 0,
+        soil_type: land.soil_type || land.land_type || 'unknown',
+        location: land.center_point_old || land.boundary || null,
+        irrigation_type: land.water_source || land.irrigation_type || 'unknown',
+        crops: land.current_crop ? [land.current_crop] : []
+      }));
+    } catch (error) {
+      console.error('Error fetching farmer lands:', error);
+      return [];
+    }
+  }
+
+  async getFarmerCropHistory(tenantId: string, farmerId: string): Promise<CropHistoryItem[]> {
+    try {
+      // First get lands for this farmer - try with tenant_id first
+      let { data: lands, error } = await supabase
+        .from('lands')
+        .select('id')
+        .eq('farmer_id', farmerId)
+        .eq('tenant_id', tenantId);
+
+      // If no lands found with tenant_id, try without it
+      if ((!lands || lands.length === 0) && !error) {
+        const fallback = await supabase
+          .from('lands')
+          .select('id')
+          .eq('farmer_id', farmerId);
+        
+        if (!fallback.error) {
+          lands = fallback.data;
+        }
+      }
+
+      if (!lands || lands.length === 0) return [];
+
+      const landIds = lands.map(l => l.id);
+      
+      // Try to get crop history with tenant_id first
+      const { data, error: cropError } = await supabase
+        .from('crop_history')
+        .select('*')
+        .in('land_id', landIds)
+        .eq('tenant_id', tenantId)
+        .order('planting_date', { ascending: false })
+        .limit(20);
+      
+      if (cropError || !data || data.length === 0) {
+        // Fallback without tenant_id
+        const fallbackResult = await supabase
+          .from('crop_history')
+          .select('*')
+          .in('land_id', landIds)
+          .order('planting_date', { ascending: false })
+          .limit(20);
+        
+        if (!fallbackResult.error && fallbackResult.data) {
+          return (fallbackResult.data || []).map((crop: any) => ({
+            id: crop.id,
+            crop_name: crop.crop_name || 'Unknown',
+            variety: crop.variety,
+            season: crop.season,
+            yield_kg_per_acre: crop.yield_kg_per_acre,
+            planting_date: crop.planting_date,
+            harvest_date: crop.harvest_date,
+            status: crop.status || 'ongoing'
+          }));
+        }
+      }
+
+      return (data || []).map((crop: any) => ({
+        id: crop.id,
+        crop_name: crop.crop_name || 'Unknown',
+        variety: crop.variety,
+        season: crop.season,
+        yield_kg_per_acre: crop.yield_kg_per_acre,
+        planting_date: crop.planting_date,
+        harvest_date: crop.harvest_date,
+        status: crop.status || 'active'
+      }));
+    } catch (error) {
+      console.error('Error fetching crop history:', error);
+      return [];
+    }
+  }
+
+  async getFarmerHealthAssessments(tenantId: string, farmerId: string): Promise<HealthAssessment[]> {
+    try {
+      // First get lands for this farmer
+      const { data: lands } = await supabase
+        .from('lands')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('farmer_id', farmerId);
+
+      if (!lands || lands.length === 0) return [];
+
+      const landIds = lands.map(l => l.id);
+      const { data, error } = await supabase
+        .from('crop_health_assessments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('land_id', landIds)
+        .order('assessment_date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return (data || []).map((assessment: any) => ({
+        id: assessment.id,
+        assessment_date: assessment.assessment_date,
+        overall_health_score: assessment.overall_health_score,
+        ndvi_avg: assessment.ndvi_avg,
+        alert_level: assessment.alert_level || 'normal',
+        growth_stage: assessment.growth_stage
+      }));
+    } catch (error) {
+      console.error('Error fetching health assessments:', error);
+      return [];
+    }
+  }
+
+  private calculateFarmerMetrics(farmer: any, relatedData: any) {
+    const { lands, cropHistory, healthAssessments, communications } = relatedData;
+
+    // Calculate total land area from actual lands data
+    const totalLandArea = lands.reduce((sum: number, land: any) => sum + (land.area_acres || 0), 0);
+    
+    // Get unique crops from multiple sources
+    const cropsFromLands = lands.flatMap((land: any) => land.crops || []);
+    const cropsFromHistory = cropHistory.map((ch: any) => ch.crop_name).filter(Boolean);
+    const cropsFromFarmer = farmer.primary_crops || [];
+    const allCrops = [...cropsFromLands, ...cropsFromHistory, ...cropsFromFarmer];
+    const uniqueCrops = [...new Set(allCrops.filter(Boolean))];
+    const cropDiversityIndex = uniqueCrops.length;
+
+    // Calculate engagement score from actual data
+    const appOpens = farmer.total_app_opens || 0;
+    const commCount = communications.length;
+    const daysSinceLastLogin = farmer.last_login_at 
+      ? Math.floor((Date.now() - new Date(farmer.last_login_at).getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+    
+    // Weighted engagement score calculation from real data
+    let engagementScore = 0;
+    
+    // Recency scoring (0-40 points)
+    if (daysSinceLastLogin <= 1) engagementScore += 40;
+    else if (daysSinceLastLogin <= 7) engagementScore += 30;
+    else if (daysSinceLastLogin <= 30) engagementScore += 15;
+    else if (daysSinceLastLogin <= 90) engagementScore += 5;
+    
+    // App usage scoring (0-40 points) 
+    if (appOpens >= 100) engagementScore += 40;
+    else if (appOpens >= 50) engagementScore += 30;
+    else if (appOpens >= 20) engagementScore += 20;
+    else if (appOpens >= 5) engagementScore += 10;
+    else if (appOpens > 0) engagementScore += 5;
+    
+    // Communication scoring (0-20 points)
+    if (commCount >= 10) engagementScore += 20;
+    else if (commCount >= 5) engagementScore += 15;
+    else if (commCount >= 2) engagementScore += 10;
+    else if (commCount > 0) engagementScore += 5;
+
+    // Calculate health score from actual assessments
+    const recentHealthScores = healthAssessments
+      .filter((ha: any) => ha.overall_health_score != null)
+      .slice(0, 5)
+      .map((ha: any) => ha.overall_health_score);
+    
+    const healthScore = recentHealthScores.length > 0 
+      ? Math.round(recentHealthScores.reduce((sum: number, score: number) => sum + score, 0) / recentHealthScores.length)
+      : 75; // Default to 75 if no data
+
+    // Calculate last activity date from real data
+    const lastActivityDate = farmer.last_login_at || communications[0]?.sent_at || farmer.updated_at || farmer.created_at;
+
+    // Calculate revenue score based on real factors
+    const avgYield = cropHistory.length > 0
+      ? cropHistory.reduce((sum: number, crop: any) => sum + (crop.yield_kg_per_acre || 0), 0) / cropHistory.length
+      : 0;
+    
+    // More balanced revenue score calculation
+    let revenueScore = 0;
+    
+    // Land size contribution (0-40 points)
+    if (totalLandArea >= 10) revenueScore += 40;
+    else if (totalLandArea >= 5) revenueScore += 30;
+    else if (totalLandArea >= 2) revenueScore += 20;
+    else if (totalLandArea > 0) revenueScore += 10;
+    
+    // Crop diversity contribution (0-30 points)  
+    if (cropDiversityIndex >= 5) revenueScore += 30;
+    else if (cropDiversityIndex >= 3) revenueScore += 20;
+    else if (cropDiversityIndex >= 2) revenueScore += 10;
+    else if (cropDiversityIndex > 0) revenueScore += 5;
+    
+    // Yield contribution (0-30 points)
+    if (avgYield >= 1000) revenueScore += 30;
+    else if (avgYield >= 500) revenueScore += 20;
+    else if (avgYield >= 200) revenueScore += 10;
+    else if (avgYield > 0) revenueScore += 5;
+
+    // Determine risk level from actual data
+    let riskLevel: 'low' | 'medium' | 'high' = 'low';
+    
+    // Check multiple risk factors
+    const riskFactors = {
+      lowEngagement: engagementScore < 30,
+      poorHealth: healthScore < 50 && healthScore > 0,
+      inactive: daysSinceLastLogin > 60,
+      noLands: totalLandArea === 0,
+      lowDiversity: cropDiversityIndex < 2,
+      lowAppUsage: appOpens < 5
+    };
+    
+    const riskCount = Object.values(riskFactors).filter(v => v).length;
+    
+    if (riskCount >= 3) {
+      riskLevel = 'high';
+    } else if (riskCount >= 1) {
+      riskLevel = 'medium';
+    }
+
+    console.log('[EnhancedFarmerDataService] Calculated metrics:', {
+      farmerId: farmer.id,
+      totalLandArea,
+      cropDiversityIndex,
+      engagementScore,
+      healthScore,
+      revenueScore,
+      riskLevel,
+      factors: {
+        appOpens,
+        commCount,
+        daysSinceLastLogin,
+        uniqueCrops,
+        avgYield
+      }
+    });
+
+    return {
+      totalLandArea,
+      cropDiversityIndex,
+      engagementScore: Math.round(engagementScore),
+      healthScore,
+      lastActivityDate,
+      revenueScore: Math.round(revenueScore),
+      riskLevel
+    };
+  }
+
+  async getFarmersWithPagination(tenantId: string, options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    filters?: Record<string, any>;
+  } = {}): Promise<PaginatedFarmersResult> {
+    const { page = 1, limit = 20, search, sortBy = 'created_at', sortOrder = 'desc', filters = {} } = options;
+    
+    try {
+      // Build query with explicit typing to avoid deep instantiation
+      let baseQuery = supabase.from('farmers');
+      
+      const { data: farmersData, error, count } = await baseQuery
+        .select('*', { count: 'exact' })
+        .eq('tenant_id', tenantId)
+        .range((page - 1) * limit, page * limit - 1)
+        .order(sortBy, { ascending: sortOrder === 'asc' });
+
+      if (error) throw error;
+
+      // Create simplified transformation to avoid type complexity
+      const transformedData: ComprehensiveFarmerData[] = [];
+      
+      if (farmersData) {
+        for (const farmer of farmersData) {
+          const transformed: ComprehensiveFarmerData = {
+            id: farmer.id || '',
+            farmer_code: farmer.farmer_code || '',
+            mobile_number: farmer.mobile_number || undefined,
+            farming_experience_years: farmer.farming_experience_years || 0,
+            total_land_acres: farmer.total_land_acres || 0,
+            primary_crops: farmer.primary_crops || [],
+            farm_type: farmer.farm_type || 'small',
+            has_irrigation: farmer.has_irrigation || false,
+            has_storage: farmer.has_storage || false,
+            has_tractor: farmer.has_tractor || false,
+            is_verified: farmer.is_verified || false,
+            total_app_opens: farmer.total_app_opens || 0,
+            language_preference: farmer.language_preference || 'en',
+            metadata: farmer.metadata || {},
+            created_at: farmer.created_at || '',
+            tags: [],
+            notes: [],
+            segments: [],
+            lands: [],
+            cropHistory: [],
+            healthAssessments: [],
+            communicationHistory: [],
+            metrics: {
+              totalLandArea: farmer.total_land_acres || 0,
+              cropDiversityIndex: (farmer.primary_crops || []).length,
+              engagementScore: (farmer as any).engagement_score || Math.min(100, (farmer.total_app_opens || 0) * 2),
+              healthScore: (farmer as any).health_score || 75,
+              lastActivityDate: (farmer as any).last_activity_date || farmer.last_login_at || farmer.updated_at || farmer.created_at || '',
+              revenueScore: (farmer as any).revenue_score || Math.min(100, (farmer.total_land_acres || 0) * 10),
+              riskLevel: (farmer as any).risk_level || ((farmer.total_app_opens || 0) < 10 ? 'high' : 'low') as 'low' | 'medium' | 'high'
+            },
+            liveStatus: {
+              isOnline: (farmer as any).is_online || false,
+              lastSeen: farmer.last_login_at || farmer.last_app_open || farmer.updated_at || new Date().toISOString(),
+              currentActivity: (farmer as any).current_activity || 'Offline'
+            }
+          };
+          transformedData.push(transformed);
+        }
+      }
+
+      return {
+        data: transformedData,
+        count: count || 0,
+        page,
+        limit,
+        totalPages: Math.ceil((count || 0) / limit)
+      };
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getFarmerMetrics(tenantId: string): Promise<FarmerMetrics> {
+    try {
+      const [farmersResult, cropStatsResult] = await Promise.all([
+        supabase
+          .from('farmers')
+          .select('id, total_app_opens, created_at')
+          .eq('tenant_id', tenantId),
+        supabase
+          .from('crop_history')
+          .select('crop_name, tenant_id')
+          .eq('tenant_id', tenantId)
+      ]);
+
+      const totalFarmers = farmersResult.data?.length || 0;
+      const activeFarmers = farmersResult.data?.filter(f => f.total_app_opens > 0).length || 0;
+      const averageEngagement = totalFarmers > 0 
+        ? (farmersResult.data?.reduce((sum, f) => sum + f.total_app_opens, 0) || 0) / totalFarmers 
+        : 0;
+
+      // Calculate top crops
+      const cropCounts: Record<string, number> = {};
+      cropStatsResult.data?.forEach(crop => {
+        cropCounts[crop.crop_name] = (cropCounts[crop.crop_name] || 0) + 1;
+      });
+
+      const topCrops = Object.entries(cropCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5)
+        .map(([crop, count]) => ({ crop, count }));
+
+      // Simulate risk distribution (in real implementation, calculate from actual data)
+      const riskDistribution = {
+        low: Math.floor(totalFarmers * 0.6),
+        medium: Math.floor(totalFarmers * 0.3),
+        high: Math.floor(totalFarmers * 0.1)
+      };
+
+      return {
+        totalFarmers,
+        activeFarmers,
+        averageEngagement,
+        topCrops,
+        riskDistribution
+      };
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getUserProfile(farmerId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', farmerId)
+        .single();
+
+      if (error) {
+        console.warn('[EnhancedFarmerDataService] User profile not found:', error);
+        return { data: null };
+      }
+
+      return { data };
+    } catch (error) {
+      console.error('[EnhancedFarmerDataService] Error fetching user profile:', error);
+      return { data: null };
+    }
+  }
+}
+
+export const enhancedFarmerDataService = new EnhancedFarmerDataService();

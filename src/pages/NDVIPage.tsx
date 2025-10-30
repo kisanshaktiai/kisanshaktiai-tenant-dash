@@ -1,0 +1,301 @@
+import React, { useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Satellite, 
+  TrendingUp, 
+  AlertCircle, 
+  RefreshCw, 
+  BarChart3, 
+  Sparkles,
+  Target,
+  LineChart,
+  Database
+} from 'lucide-react';
+import { useNDVIApiMonitoring } from '@/hooks/data/useNDVIApiMonitoring';
+import { useRealTimeNDVIData, useNDVIQueueStatus } from '@/hooks/data/useRealTimeNDVIData';
+import { useNDVIQueueAutoProcessor } from '@/hooks/data/useNDVIQueueAutoProcessor';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { NDVIOverviewCards } from '@/components/ndvi/NDVIOverviewCards';
+import { NDVIInsightsPanel } from '@/components/ndvi/NDVIInsightsPanel';
+import { NDVIAnalyticsDashboard } from '@/components/ndvi/NDVIAnalyticsDashboard';
+import { NDVILandPerformance } from '@/components/ndvi/NDVILandPerformance';
+import { NDVIApiMonitoring } from '@/components/ndvi/NDVIApiMonitoring';
+import { NDVIProcessingStatus } from '@/components/ndvi/NDVIProcessingStatus';
+import { NDVIDiagnosticsPanel } from '@/components/ndvi/NDVIDiagnosticsPanel';
+import { ndviLandService } from '@/services/NDVILandService';
+import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
+
+export default function NDVIPage() {
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const [isCreatingRequests, setIsCreatingRequests] = React.useState(false);
+  
+  const {
+    healthData,
+    healthLoading,
+    globalStats,
+    statsLoading,
+    isHealthy,
+    refetchHealth,
+    refetchStats,
+    refetchData,
+    dataSummary,
+  } = useNDVIApiMonitoring();
+
+  // Real-time data from Supabase
+  const {
+    ndviData,
+    landData,
+    stats: realtimeStats,
+    isLoading: realtimeLoading,
+    refetch: refetchRealtime,
+  } = useRealTimeNDVIData();
+
+  // Get NDVI data with instant processing
+  const handleGetData = async () => {
+    if (!currentTenant?.id) {
+      toast.error('No tenant context available');
+      return;
+    }
+
+    setIsCreatingRequests(true);
+    try {
+      toast.info('🌱 Processing NDVI for your lands...');
+      
+      // Single API call with instant processing
+      const result = await ndviLandService.processLandsInstantly(currentTenant.id);
+      
+      if (result.success) {
+        // Show success message with details
+        toast.success(
+          `Successfully processed ${result.processed_count} land(s) across ${result.tile_groups} tile(s)`,
+          {
+            description: result.failed_count > 0 
+              ? `${result.failed_count} land(s) failed to process` 
+              : 'NDVI data and vegetation images are now available'
+          }
+        );
+
+        // Show specific errors if any
+        if (result.errors.length > 0) {
+          console.error('Processing errors:', result.errors);
+          toast.error('Some lands failed to process', {
+            description: result.errors[0]
+          });
+        }
+      } else {
+        throw new Error('NDVI processing failed for all lands');
+      }
+
+      // Refresh all data to show new NDVI images
+      await Promise.all([
+        refetchHealth(),
+        refetchStats(),
+        refetchRealtime(),
+      ]);
+      
+    } catch (error: any) {
+      console.error('Failed to process NDVI:', error);
+      
+      // Better error messages based on error type
+      const errorMessage = error.message || 'Failed to process NDVI data';
+      
+      if (errorMessage.includes('missing GPS boundary')) {
+        toast.error('Missing Land Boundaries', {
+          description: 'Please add GPS boundaries for your lands in the Farmers section'
+        });
+      } else if (errorMessage.includes('satellite tiles')) {
+        toast.error('Tile Mapping Issue', {
+          description: 'Cannot determine satellite coverage. Please contact support.'
+        });
+      } else if (errorMessage.includes('No lands found')) {
+        toast.error('No Lands Available', {
+          description: 'Please add land parcels in the Farmers section first'
+        });
+      } else {
+        toast.error('NDVI Processing Failed', {
+          description: errorMessage
+        });
+      }
+    } finally {
+      setIsCreatingRequests(false);
+    }
+  };
+
+  return (
+    <PageLayout maxWidth="none" padding="none">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        {/* Hero Header */}
+        <div className="relative overflow-hidden border-b bg-gradient-to-r from-primary/10 via-primary/5 to-background">
+          <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
+          <div className="relative px-4 py-8 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                    <div className="relative p-3 bg-gradient-to-br from-primary to-primary/80 rounded-2xl shadow-lg">
+                      <Satellite className="w-8 h-8 text-primary-foreground" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      Vegetation Intelligence Hub
+                    </h1>
+                    <p className="text-muted-foreground text-sm lg:text-base mt-1">
+                      Real-time satellite monitoring powered by advanced NDVI analytics
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Indicator */}
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border ${
+                    isHealthy 
+                      ? 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-700 dark:text-red-400'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                    <span className="text-sm font-medium">
+                      {healthLoading ? 'Checking...' : isHealthy ? 'System Operational' : 'System Offline'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleGetData}
+                  disabled={isCreatingRequests || !currentTenant?.id}
+                  size="lg"
+                  className="shadow-lg bg-gradient-to-r from-primary to-primary/90 hover:shadow-primary/25"
+                >
+                  <Satellite className={`h-4 w-4 mr-2 ${isCreatingRequests ? 'animate-spin' : ''}`} />
+                  {isCreatingRequests ? 'Processing...' : 'Get NDVI Data'}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    await Promise.all([refetchHealth(), refetchStats(), refetchRealtime()]);
+                    toast.success('Data refreshed');
+                  }}
+                  variant="outline"
+                  size="lg"
+                  className="backdrop-blur-sm border-primary/20"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh View
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+          {/* Overview Cards */}
+          <NDVIOverviewCards 
+            globalStats={globalStats}
+            isLoading={statsLoading || realtimeLoading}
+            isHealthy={isHealthy}
+            realtimeStats={realtimeStats}
+          />
+
+          {/* No Data Alert */}
+          {!realtimeLoading && (!ndviData || ndviData.length === 0) && (
+            <Alert className="border-primary/50 bg-primary/5">
+              <Satellite className="h-4 w-4" />
+              <AlertTitle>No NDVI Data Available</AlertTitle>
+              <AlertDescription>
+                To start monitoring vegetation health:
+                <ol className="list-decimal ml-5 mt-2 space-y-1">
+                  <li>Go to <strong>Farmers</strong> section and add your farmers</li>
+                  <li>Add land parcels with GPS coordinates for each farmer</li>
+                  <li>Request satellite NDVI data for the lands</li>
+                  <li>Return here to view real-time vegetation analytics</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Diagnostics Panel - Queue Status from API */}
+          <NDVIDiagnosticsPanel />
+
+          {/* Insights Panel */}
+          <NDVIInsightsPanel globalStats={globalStats || realtimeStats} />
+
+          {/* Processing Status */}
+          <NDVIProcessingStatus />
+
+          {/* Main Analytics Tabs */}
+          <Card className="border-muted/50 shadow-xl overflow-hidden">
+            <Tabs defaultValue="analytics" className="w-full">
+              <div className="border-b bg-muted/20 px-6 pt-4">
+                <TabsList className="grid w-full max-w-2xl grid-cols-4 h-auto gap-2 bg-transparent p-0">
+                  <TabsTrigger 
+                    value="analytics" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">Analytics</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="performance" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    <span className="hidden sm:inline">Performance</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="trends" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <LineChart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Trends</span>
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="system" 
+                    className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg px-4 py-3 shadow-sm"
+                  >
+                    <Database className="w-4 h-4" />
+                    <span className="hidden sm:inline">System</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="p-6">
+                <TabsContent value="analytics" className="mt-0 space-y-6">
+                  <NDVIAnalyticsDashboard 
+                    globalStats={realtimeStats || globalStats}
+                    ndviData={ndviData}
+                  />
+                </TabsContent>
+
+                <TabsContent value="performance" className="mt-0 space-y-6">
+                  <NDVILandPerformance landData={landData} isLoading={realtimeLoading} />
+                </TabsContent>
+
+                <TabsContent value="trends" className="mt-0 space-y-6">
+                  <div className="text-center py-12">
+                    <BarChart3 className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Historical Trends</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Analyze vegetation health trends over time with advanced predictive analytics
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="system" className="mt-0 space-y-6">
+                  <NDVIApiMonitoring />
+                </TabsContent>
+              </div>
+            </Tabs>
+          </Card>
+        </div>
+      </div>
+    </PageLayout>
+  );
+}

@@ -1,132 +1,222 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Agricultural Tenant Dashboard Design System */
+/* Agricultural Tenant Dashboard Design System - Mobile Optimized */
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
 @layer base {
   :root {
-    /* Agricultural Color Palette - WCAG 2.2 AA Compliant */
-    --background: 45 25% 97%;
-    --foreground: 136 45% 12%; /* Darkened for better contrast */
+    /* Light Mode - Agricultural Color Palette - WCAG 2.2 AA Compliant */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 136 45% 12%; /* Darkened for better contrast */
+    --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 136 45% 12%; /* Darkened for better contrast */
+    --popover-foreground: 222.2 84% 4.9%;
 
     /* Primary: Rich Green (Agricultural Growth) */
-    --primary: 142 70% 30%; /* Darkened slightly for better contrast */
+    --primary: 142 76% 36%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 142 60% 45%;
 
-    /* Secondary: Earth Brown - Enhanced contrast */
-    --secondary: 25 35% 82%; /* Adjusted for better contrast */
-    --secondary-foreground: 136 45% 12%; /* Darkened for better contrast */
+    /* Secondary: Modern Gray */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
 
-    /* Muted: Soft Sage - Enhanced contrast */
-    --muted: 85 15% 90%; /* Darkened slightly for better contrast */
-    --muted-foreground: 136 35% 25%; /* Darkened significantly for better contrast */
+    /* Muted: Neutral Gray */
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    /* Accent: Harvest Gold - Enhanced contrast */
-    --accent: 48 95% 50%; /* Darkened slightly for better contrast */
-    --accent-foreground: 136 45% 12%; /* Darkened for better contrast */
+    /* Accent: Fresh Green */
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 75% 55%; /* Darkened slightly for better contrast */
+    /* Semantic Colors */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 85 15% 85%; /* Darkened for better visibility */
-    --input: 85 15% 85%; /* Darkened for better visibility */
-    --ring: 142 70% 30%; /* Matched with primary */
-
-    --radius: 0.75rem;
-
-    /* Sidebar Theme - Enhanced contrast */
-    --sidebar-background: 136 35% 8%;
-    --sidebar-foreground: 85 15% 88%; /* Lightened for better contrast */
-    --sidebar-primary: 142 70% 50%; /* Lightened for better contrast */
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 136 25% 15%;
-    --sidebar-accent-foreground: 85 15% 88%; /* Lightened for better contrast */
-    --sidebar-border: 136 25% 20%;
-    --sidebar-ring: 142 70% 50%; /* Matched with sidebar-primary */
-
-    /* Dashboard Specific Colors - Enhanced contrast */
-    --success: 120 70% 40%; /* Darkened for better contrast */
+    --success: 142 76% 36%;
     --success-foreground: 0 0% 98%;
-    --warning: 48 95% 45%; /* Darkened for better contrast */
-    --warning-foreground: 136 45% 12%; /* Darkened for better contrast */
-    --info: 210 70% 50%; /* Darkened for better contrast */
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+
+    --info: 221.2 83.2% 53.3%;
     --info-foreground: 0 0% 98%;
 
-    /* Agricultural Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 70% 30%), hsl(142 60% 40%));
-    --gradient-earth: linear-gradient(135deg, hsl(25 35% 60%), hsl(35 45% 50%));
-    --gradient-harvest: linear-gradient(135deg, hsl(48 95% 50%), hsl(42 85% 60%));
-    --gradient-growth: linear-gradient(135deg, hsl(120 70% 40%), hsl(142 70% 30%));
+    /* Border and Input */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 142 76% 36%;
 
-    /* Shadows */
-    --shadow-soft: 0 2px 8px hsl(136 25% 25% / 0.1);
-    --shadow-medium: 0 4px 16px hsl(136 25% 25% / 0.15);
-    --shadow-strong: 0 8px 32px hsl(136 25% 25% / 0.2);
-    --shadow-glow: 0 0 24px hsl(142 70% 30% / 0.3);
+    --radius: 0.5rem;
 
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Sidebar Theme - Always Light */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 142 76% 36%;
+
+    /* Extended Color Palette */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    /* State Variants */
+    --background-hover: 210 40% 98%;
+    --background-active: 210 40% 95%;
+    --background-disabled: 210 40% 93%;
+    
+    /* Text Variants */
+    --text-subtle: 215.4 16.3% 46.9%;
+    --text-disabled: 215.4 16.3% 65%;
+    --text-muted: 215.4 16.3% 56.9%;
+
+    /* Status Colors */
+    --status-active: 142 76% 36%;
+    --status-inactive: 215.4 16.3% 46.9%;
+    --status-pending: 38 92% 50%;
+    --status-error: 0 84.2% 60.2%;
+
+    /* Button Variants */
+    --button-primary: 142 76% 36%;
+    --button-primary-hover: 142 76% 32%;
+    --button-primary-active: 142 76% 28%;
+    --button-secondary: 210 40% 96%;
+    --button-secondary-hover: 210 40% 92%;
+    --button-secondary-active: 210 40% 88%;
+
+    /* Gradients - Light */
+    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
+    --gradient-earth: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 28%));
+    --gradient-harvest: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 40%));
+    --gradient-growth: linear-gradient(135deg, hsl(199 89% 48%), hsl(199 89% 38%));
+
+    /* Shadows - Light */
+    --shadow-soft: 0 2px 8px hsl(142 76% 36% / 0.08);
+    --shadow-medium: 0 4px 16px hsl(142 76% 36% / 0.12);
+    --shadow-strong: 0 8px 24px hsl(142 76% 36% / 0.16);
+    --shadow-glow: 0 0 24px hsl(142 76% 36% / 0.4);
   }
 
   .dark {
-    --background: 136 35% 8%;
-    --foreground: 85 15% 90%; /* Lightened for better contrast */
+    /* Dark Mode - Modern Gray Theme (Not Pure Black) */
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
 
-    --card: 136 25% 10%; /* Lightened slightly for better contrast */
-    --card-foreground: 85 15% 90%; /* Lightened for better contrast */
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 136 25% 10%; /* Lightened slightly for better contrast */
-    --popover-foreground: 85 15% 90%; /* Lightened for better contrast */
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 142 60% 50%; /* Lightened for better contrast */
-    --primary-foreground: 136 35% 8%;
-    --primary-glow: 142 50% 60%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 224 71% 4%;
 
-    --secondary: 136 25% 20%; /* Lightened for better contrast */
-    --secondary-foreground: 85 15% 90%; /* Lightened for better contrast */
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 213 31% 91%;
 
-    --muted: 136 25% 18%; /* Lightened for better contrast */
-    --muted-foreground: 85 15% 75%; /* Lightened significantly for better contrast */
+    --muted: 215 28% 17%;
+    --muted-foreground: 217 11% 65%;
 
-    --accent: 48 85% 55%; /* Lightened for better contrast */
-    --accent-foreground: 136 35% 8%;
+    --accent: 142 70% 45%;
+    --accent-foreground: 224 71% 4%;
 
-    --destructive: 0 65% 60%; /* Lightened for better contrast */
-    --destructive-foreground: 85 15% 90%; /* Lightened for better contrast */
+    /* Semantic Colors - Dark Mode */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 213 31% 91%;
 
-    --border: 136 25% 25%; /* Lightened for better visibility */
-    --input: 136 25% 25%; /* Lightened for better visibility */
-    --ring: 142 60% 50%; /* Matched with primary */
+    --success: 142 70% 45%;
+    --success-foreground: 224 71% 4%;
 
-    --sidebar-background: 136 35% 6%;
-    --sidebar-foreground: 85 15% 90%; /* Lightened for better contrast */
-    --sidebar-primary: 142 60% 55%; /* Lightened for better contrast */
-    --sidebar-primary-foreground: 136 35% 8%;
-    --sidebar-accent: 136 25% 12%;
-    --sidebar-accent-foreground: 85 15% 90%; /* Lightened for better contrast */
-    --sidebar-border: 136 25% 15%;
-    --sidebar-ring: 142 60% 55%; /* Matched with sidebar-primary */
+    --warning: 38 92% 50%;
+    --warning-foreground: 224 71% 4%;
 
-    /* Dark mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 60% 50%), hsl(142 50% 60%));
-    --gradient-earth: linear-gradient(135deg, hsl(25 25% 40%), hsl(35 35% 30%));
-    --gradient-harvest: linear-gradient(135deg, hsl(48 85% 55%), hsl(42 75% 65%));
-    --gradient-growth: linear-gradient(135deg, hsl(120 60% 40%), hsl(142 60% 50%));
+    --info: 221.2 83.2% 53.3%;
+    --info-foreground: 213 31% 91%;
 
-    /* Dark shadows */
-    --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.3);
-    --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.4);
-    --shadow-strong: 0 8px 32px hsl(0 0% 0% / 0.5);
-    --shadow-glow: 0 0 24px hsl(142 60% 50% / 0.4);
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 142 70% 45%;
+
+    /* Sidebar Theme - Still Light in Dark Mode for better UX */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 142 76% 36%;
+
+    /* Extended Color Palette - Dark */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+
+    /* State Variants - Dark */
+    --background-hover: 215 28% 20%;
+    --background-active: 215 28% 25%;
+    --background-disabled: 215 28% 15%;
+    
+    /* Text Variants - Dark */
+    --text-subtle: 217 11% 65%;
+    --text-disabled: 217 11% 45%;
+    --text-muted: 217 11% 55%;
+
+    /* Status Colors - Dark */
+    --status-active: 142 70% 45%;
+    --status-inactive: 217 11% 65%;
+    --status-pending: 38 92% 50%;
+    --status-error: 0 63% 31%;
+
+    /* Button Variants - Dark */
+    --button-primary: 142 70% 45%;
+    --button-primary-hover: 142 70% 50%;
+    --button-primary-active: 142 70% 40%;
+    --button-secondary: 215 28% 17%;
+    --button-secondary-hover: 215 28% 22%;
+    --button-secondary-active: 215 28% 27%;
+
+    /* Gradients - Dark */
+    --gradient-primary: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 35%));
+    --gradient-earth: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 70% 35%));
+    --gradient-harvest: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 40%));
+    --gradient-growth: linear-gradient(135deg, hsl(199 89% 48%), hsl(199 89% 38%));
+
+    /* Shadows - Dark */
+    --shadow-soft: 0 2px 8px hsl(0 0% 0% / 0.16);
+    --shadow-medium: 0 4px 16px hsl(0 0% 0% / 0.24);
+    --shadow-strong: 0 8px 24px hsl(0 0% 0% / 0.32);
+    --shadow-glow: 0 0 24px hsl(142 70% 45% / 0.4);
+    /* Modern 2025 SaaS Design Enhancements */
+    --gradient-modern-primary: linear-gradient(135deg, hsl(142 70% 45% / 0.9), hsl(142 70% 35% / 0.7));
+    --gradient-modern-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
+    --shadow-neumorphic: 5px 5px 10px hsl(0 0% 0% / 0.08), -5px -5px 10px hsl(0 0% 100% / 0.05);
+    --shadow-glow-modern: 0 0 30px hsl(142 70% 45% / 0.15);
   }
 }
 
@@ -135,64 +225,232 @@
     @apply border-border;
   }
 
+  html, body, #root {
+    @apply h-full w-full;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+  }
+
+  /* Mobile-first responsive typography */
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+
+  /* Improve mobile touch targets */
+  button, [role="button"] {
+    min-height: 44px;
+  }
+
+  @media (max-width: 640px) {
+    button, [role="button"] {
+      min-height: 40px;
+    }
   }
 }
 
 @layer utilities {
-  /* Enhanced Animations */
+  /* Mobile-optimized animations */
   .animate-fade-in {
-    animation: fadeIn 0.4s ease-out;
+    animation: fadeIn 0.3s ease-out;
   }
   
   .animate-scale-in {
-    animation: scaleIn 0.3s ease-out;
+    animation: scaleIn 0.2s ease-out;
   }
   
   .hover-scale {
-    @apply transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98];
+    @apply transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99];
   }
 
-  /* Gradient Backgrounds */
-  .bg-gradient-primary {
-    background: var(--gradient-primary);
+  /* Mobile-optimized background utilities */
+  .bg-hover {
+    background-color: hsl(var(--background-hover));
   }
   
-  .bg-gradient-earth {
-    background: var(--gradient-earth);
-  }
-  
-  .bg-gradient-harvest {
-    background: var(--gradient-harvest);
-  }
-  
-  .bg-gradient-growth {
-    background: var(--gradient-growth);
+  .bg-active {
+    background-color: hsl(var(--background-active));
   }
 
-  /* Enhanced Shadows */
+  .bg-disabled {
+    background-color: hsl(var(--background-disabled));
+  }
+
+  /* Mobile-optimized text utilities */
+  .text-subtle {
+    color: hsl(var(--text-subtle));
+  }
+  
+  .text-disabled {
+    color: hsl(var(--text-disabled));
+  }
+
+  .text-muted {
+    color: hsl(var(--text-muted));
+  }
+
+  /* Mobile-optimized semantic colors */
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  
+  .text-success {
+    color: hsl(var(--success));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .bg-info {
+    background-color: hsl(var(--info));
+  }
+  
+  .text-info {
+    color: hsl(var(--info));
+  }
+
+  /* Mobile-optimized status colors */
+  .bg-status-active {
+    background-color: hsl(var(--status-active));
+  }
+
+  .text-status-active {
+    color: hsl(var(--status-active));
+  }
+
+  .bg-status-inactive {
+    background-color: hsl(var(--status-inactive));
+  }
+
+  .text-status-inactive {
+    color: hsl(var(--status-inactive));
+  }
+
+  /* Mobile-optimized button variants */
+  .btn-primary {
+    background-color: hsl(var(--button-primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .btn-primary:hover {
+    background-color: hsl(var(--button-primary-hover));
+  }
+
+  .btn-secondary {
+    background-color: hsl(var(--button-secondary));
+    color: hsl(var(--secondary-foreground));
+  }
+
+  .btn-secondary:hover {
+    background-color: hsl(var(--button-secondary-hover));
+  }
+
+  /* Mobile-optimized shadows */
   .shadow-soft {
-    box-shadow: var(--shadow-soft);
+    box-shadow: 0 1px 4px hsl(var(--foreground) / 0.08);
   }
   
   .shadow-medium {
-    box-shadow: var(--shadow-medium);
+    box-shadow: 0 2px 8px hsl(var(--foreground) / 0.12);
   }
   
   .shadow-strong {
-    box-shadow: var(--shadow-strong);
+    box-shadow: 0 4px 16px hsl(var(--foreground) / 0.16);
+  }
+
+  /* Mobile-optimized scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
   }
   
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 2px;
+  }
+
+  /* Mobile-responsive containers */
+  .container-responsive {
+    @apply w-full max-w-none px-2 sm:px-4 lg:px-6 xl:px-8;
+  }
+
+  .content-padding {
+    @apply p-2 sm:p-4 lg:p-6;
+  }
+
+  .mobile-padding {
+    @apply p-2 sm:p-3 lg:p-4;
+  }
+
+  /* Touch-friendly interactive elements */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Mobile-optimized card spacing */
+  .card-mobile {
+    @apply p-3 sm:p-4 lg:p-6 rounded-lg sm:rounded-xl;
+  }
+
+  /* Mobile navigation improvements */
+  .nav-mobile {
+    @apply text-sm sm:text-base;
+  }
+
+  /* Responsive grid utilities */
+  .grid-mobile {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  .grid-mobile-2 {
+    @apply grid grid-cols-1 sm:grid-cols-2;
+  }
+
+  /* Mobile-first breakpoint utilities */
+  .xs-hidden {
+    @apply hidden;
+  }
+
+  @media (min-width: 475px) {
+    .xs-block {
+      @apply block;
+    }
+    
+    .xs-hidden {
+      @apply block;
+    }
+  }
+
+  /* Mobile form optimizations */
+  .form-mobile input, .form-mobile textarea, .form-mobile select {
+    @apply text-base; /* Prevents zoom on iOS */
   }
 }
 
+/* Enhanced keyframes for mobile */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -203,10 +461,48 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+/* Mobile-specific media queries */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    @apply hidden;
+  }
+  
+  .mobile-full {
+    @apply w-full;
+  }
+
+  .mobile-compact {
+    @apply text-sm leading-tight;
+  }
+
+  /* Optimize sidebar for mobile */
+  [data-sidebar="sidebar"] {
+    @apply w-60;
+  }
+
+  [data-sidebar="sidebar"][data-state="collapsed"] {
+    @apply w-14;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-optimized {
+    @apply px-4 py-3;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  .desktop-enhanced {
+    @apply px-6 py-4;
   }
 }

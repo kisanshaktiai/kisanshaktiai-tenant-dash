@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { toast } from 'sonner';
+import { globalErrorHandler, ErrorContext } from '@/services/GlobalErrorHandler';
 
 export interface AppError {
   message: string;
@@ -9,38 +9,56 @@ export interface AppError {
   statusCode?: number;
 }
 
-export const useErrorHandler = () => {
-  const handleError = useCallback((error: unknown, fallbackMessage = 'An unexpected error occurred') => {
-    console.error('Error occurred:', error);
-
-    let errorMessage = fallbackMessage;
+export const useErrorHandler = (defaultContext: ErrorContext = {}) => {
+  const handleError = useCallback((
+    error: unknown, 
+    fallbackMessage = 'An unexpected error occurred',
+    context: ErrorContext = {}
+  ) => {
+    const mergedContext = { ...defaultContext, ...context };
     
-    if (error && typeof error === 'object') {
-      if ('message' in error && typeof error.message === 'string') {
-        errorMessage = error.message;
-      } else if ('error' in error && typeof (error as any).error === 'string') {
-        errorMessage = (error as any).error;
-      }
-    }
+    const errorReport = globalErrorHandler.handleError(error, mergedContext, {
+      showToast: true,
+      severity: 'medium',
+      suppressDuplicates: true
+    });
 
-    toast.error(errorMessage);
-    return { message: errorMessage, handled: true };
-  }, []);
+    return { 
+      message: errorReport.message, 
+      handled: true,
+      errorId: errorReport.id 
+    };
+  }, [defaultContext]);
 
   const handleAsyncError = useCallback(async <T>(
     asyncFn: () => Promise<T>,
-    fallbackMessage?: string
+    fallbackMessage?: string,
+    context: ErrorContext = {}
   ): Promise<T | null> => {
     try {
       return await asyncFn();
     } catch (error) {
-      handleError(error, fallbackMessage);
+      handleError(error, fallbackMessage, context);
       return null;
     }
   }, [handleError]);
 
+  const handleCriticalError = useCallback((
+    error: unknown,
+    context: ErrorContext = {}
+  ) => {
+    const mergedContext = { ...defaultContext, ...context };
+    
+    return globalErrorHandler.handleError(error, mergedContext, {
+      showToast: true,
+      severity: 'critical',
+      suppressDuplicates: false
+    });
+  }, [defaultContext]);
+
   return {
     handleError,
     handleAsyncError,
+    handleCriticalError,
   };
 };
