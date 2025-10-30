@@ -110,9 +110,25 @@ export const OnboardingGuardOptimized: React.FC<OnboardingGuardOptimizedProps> =
     return <>{children}</>;
   }
 
-  if (isComplete === false) {
-    console.log('OnboardingGuardOptimized: Redirecting to onboarding for tenant:', currentTenant.id);
+  // Bidirectional redirect logic
+  const currentPath = window.location.pathname;
+  
+  // If onboarding is incomplete and not on onboarding page, redirect there
+  if (isComplete === false && currentPath !== '/onboarding') {
+    console.log('OnboardingGuardOptimized: Onboarding NOT complete, redirecting to /onboarding');
     return <Navigate to="/onboarding" replace />;
+  }
+
+  // If onboarding IS complete and user is on onboarding page, redirect to dashboard
+  if (isComplete === true && currentPath === '/onboarding') {
+    console.log('OnboardingGuardOptimized: Onboarding complete but on onboarding page, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  // Allow through if onboarding is complete
+  if (isComplete === true) {
+    console.log('OnboardingGuardOptimized: Onboarding complete, allowing through');
+    return <>{children}</>;
   }
 
   console.log('OnboardingGuardOptimized: Allowing through for tenant:', currentTenant.id, 'onboarding status:', isComplete);

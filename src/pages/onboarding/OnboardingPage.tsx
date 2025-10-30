@@ -11,6 +11,7 @@ import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { OnboardingBypass } from '@/components/onboarding/OnboardingBypass';
 import { Building2, RefreshCw, Settings, Bug } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
@@ -145,6 +146,22 @@ const OnboardingPage = () => {
         <div className="sr-only">Loading onboarding data...</div>
       </div>
     );
+  }
+
+  // Check if onboarding is already completed
+  if (onboardingData?.workflow?.status === 'completed') {
+    console.log('OnboardingPage: Onboarding already completed, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  // Check if all steps are completed
+  const allStepsCompleted = onboardingData?.steps?.every(
+    (step: any) => step.step_status === 'completed'
+  );
+
+  if (allStepsCompleted && onboardingData?.steps?.length > 0) {
+    console.log('OnboardingPage: All steps completed, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   // Show bypass options when there's an error or no data

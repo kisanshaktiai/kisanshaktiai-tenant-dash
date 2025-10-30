@@ -16,6 +16,9 @@ fontService.initializeFont();
 // Import layout
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 
+// Import guards
+import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
+
 // Import pages
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
@@ -75,7 +78,11 @@ function App() {
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   
                   {/* Main app routes with layout */}
-                  <Route path="/app" element={<EnhancedTenantLayout />}>
+                  <Route path="/app" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedTenantLayout />
+                    </OnboardingGuardOptimized>
+                  }>
                     <Route index element={<Navigate to="/app/dashboard" replace />} />
                     <Route path="dashboard" element={<EnhancedDashboard />} />
                     <Route path="farmers" element={<FarmersPage />} />

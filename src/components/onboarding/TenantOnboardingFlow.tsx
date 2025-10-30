@@ -20,6 +20,7 @@ import { tenantProfileService } from '@/services/TenantProfileService';
 import { toast } from 'sonner';
 import type { OnboardingStep } from '@/services/EnhancedOnboardingService';
 import { calculateWorkflowProgress } from '@/utils/onboardingDataMapper';
+import { useNavigate } from 'react-router-dom';
 
 const stepComponents = {
   'Business Verification': BusinessVerificationStep,
@@ -61,6 +62,7 @@ const TenantOnboardingFlow: React.FC = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [preloadedSteps, setPreloadedSteps] = useState<Set<number>>(new Set());
   const currentStepRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Enable real-time updates
   useOnboardingRealtime();
@@ -74,6 +76,18 @@ const TenantOnboardingFlow: React.FC = () => {
   const steps = onboardingData?.steps || [];
   const workflow = onboardingData?.workflow;
   const currentStep = steps[currentStepIndex];
+
+  // Check if workflow is already completed
+  const isWorkflowCompleted = workflow?.status === 'completed';
+
+  // Redirect if onboarding is already completed
+  useEffect(() => {
+    if (isWorkflowCompleted && workflow) {
+      console.log('TenantOnboardingFlow: Workflow already completed, redirecting to dashboard');
+      toast.success('Onboarding already completed!');
+      navigate('/app/dashboard', { replace: true });
+    }
+  }, [isWorkflowCompleted, workflow, navigate]);
 
   // Add summary step if not present and we have real steps
   const allSteps = [...steps];
@@ -132,9 +146,12 @@ const TenantOnboardingFlow: React.FC = () => {
     if (firstIncompleteIndex !== -1 && firstIncompleteIndex !== currentStepIndex) {
       setCurrentStepIndex(firstIncompleteIndex);
     } else if (firstIncompleteIndex === -1) {
-      setCurrentStepIndex(allSteps.length - 1);
+      // All steps completed - redirect to dashboard
+      console.log('TenantOnboardingFlow: All steps completed, redirecting to dashboard');
+      toast.success('Onboarding completed successfully!');
+      navigate('/app/dashboard', { replace: true });
     }
-  }, [allSteps, currentStepIndex]);
+  }, [allSteps, currentStepIndex, navigate]);
 
   const handleStepComplete = async (stepData?: any) => {
     if (!currentStep || !currentTenant?.id) return;
@@ -144,6 +161,13 @@ const TenantOnboardingFlow: React.FC = () => {
       if (currentStep.step_name === 'Summary' && workflow) {
         await completeWorkflowMutation.mutateAsync(workflow.id);
         await refetch();
+        
+        // Redirect after workflow completion
+        console.log('TenantOnboardingFlow: Workflow completed, redirecting to dashboard');
+        toast.success('🎉 Welcome to your dashboard!');
+        setTimeout(() => {
+          navigate('/app/dashboard', { replace: true });
+        }, 1000);
         return;
       }
 
