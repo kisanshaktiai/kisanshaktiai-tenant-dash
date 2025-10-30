@@ -51,7 +51,7 @@ const MissingStepsPanel = ({ onRetry }: { onRetry: () => void }) => (
   </div>
 );
 
-export const TenantOnboardingFlow: React.FC = () => {
+const TenantOnboardingFlow: React.FC = () => {
   const { currentTenant } = useAppSelector((state) => state.tenant);
   const { data: onboardingData, isLoading, error, refetch } = useOnboardingQuery();
   const completeStepMutation = useCompleteStep();
@@ -432,3 +432,5 @@ export const TenantOnboardingFlow: React.FC = () => {
     </div>
   );
 };
+
+export default TenantOnboardingFlow;

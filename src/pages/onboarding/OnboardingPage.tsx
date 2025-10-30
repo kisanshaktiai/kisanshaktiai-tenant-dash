@@ -14,9 +14,7 @@ import { Building2, RefreshCw, Settings, Bug } from 'lucide-react';
 
 // Lazy load the onboarding flow
 const TenantOnboardingFlow = React.lazy(() => 
-  import('@/components/onboarding/TenantOnboardingFlow').then(module => ({
-    default: module.TenantOnboardingFlow
-  }))
+  import('@/components/onboarding/TenantOnboardingFlow')
 );
 
 const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, isValidating, isRefreshing }: { 
