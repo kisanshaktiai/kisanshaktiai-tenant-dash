@@ -5222,15 +5222,25 @@ export type Database = {
         Row: {
           auto_renew: boolean
           billing_interval: Database["public"]["Enums"]["billing_interval"]
+          cancellation_reason: string | null
           created_at: string
           end_date: string | null
           farmer_id: string
+          grace_period_ends_at: string | null
           id: string
+          last_payment_amount: number | null
+          last_payment_date: string | null
           metadata: Json | null
+          next_billing_date: string | null
+          paid_by_tenant: boolean | null
+          paying_tenant_id: string | null
           payment_method: Json | null
+          payment_method_id: string | null
           plan_id: string
           start_date: string
           status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           tenant_id: string
           tenant_subscription_id: string | null
           trial_end_date: string | null
@@ -5239,15 +5249,25 @@ export type Database = {
         Insert: {
           auto_renew?: boolean
           billing_interval?: Database["public"]["Enums"]["billing_interval"]
+          cancellation_reason?: string | null
           created_at?: string
           end_date?: string | null
           farmer_id: string
+          grace_period_ends_at?: string | null
           id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
           metadata?: Json | null
+          next_billing_date?: string | null
+          paid_by_tenant?: boolean | null
+          paying_tenant_id?: string | null
           payment_method?: Json | null
+          payment_method_id?: string | null
           plan_id: string
           start_date?: string
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tenant_id: string
           tenant_subscription_id?: string | null
           trial_end_date?: string | null
@@ -5256,15 +5276,25 @@ export type Database = {
         Update: {
           auto_renew?: boolean
           billing_interval?: Database["public"]["Enums"]["billing_interval"]
+          cancellation_reason?: string | null
           created_at?: string
           end_date?: string | null
           farmer_id?: string
+          grace_period_ends_at?: string | null
           id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
           metadata?: Json | null
+          next_billing_date?: string | null
+          paid_by_tenant?: boolean | null
+          paying_tenant_id?: string | null
           payment_method?: Json | null
+          payment_method_id?: string | null
           plan_id?: string
           start_date?: string
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tenant_id?: string
           tenant_subscription_id?: string | null
           trial_end_date?: string | null
@@ -5284,6 +5314,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "ndvi_full_view"
             referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "farmer_subscriptions_paying_tenant_id_fkey"
+            columns: ["paying_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "farmer_subscriptions_plan_id_fkey"
@@ -13222,51 +13259,75 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          billing_interval: string | null
           created_at: string | null
           description: string | null
           features: Json | null
           id: string
           is_active: boolean | null
           is_custom: boolean | null
+          is_public: boolean | null
           limits: Json | null
           name: string
+          plan_category: string | null
           plan_type: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually: number | null
           price_monthly: number | null
           price_quarterly: number | null
+          sort_order: number | null
+          stripe_price_id_annually: string | null
+          stripe_price_id_monthly: string | null
+          stripe_product_id: string | null
           tenant_id: string | null
+          trial_days: number | null
           updated_at: string | null
         }
         Insert: {
+          billing_interval?: string | null
           created_at?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
           is_custom?: boolean | null
+          is_public?: boolean | null
           limits?: Json | null
           name: string
+          plan_category?: string | null
           plan_type: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually?: number | null
           price_monthly?: number | null
           price_quarterly?: number | null
+          sort_order?: number | null
+          stripe_price_id_annually?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_product_id?: string | null
           tenant_id?: string | null
+          trial_days?: number | null
           updated_at?: string | null
         }
         Update: {
+          billing_interval?: string | null
           created_at?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
           is_custom?: boolean | null
+          is_public?: boolean | null
           limits?: Json | null
           name?: string
+          plan_category?: string | null
           plan_type?: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually?: number | null
           price_monthly?: number | null
           price_quarterly?: number | null
+          sort_order?: number | null
+          stripe_price_id_annually?: string | null
+          stripe_price_id_monthly?: string | null
+          stripe_product_id?: string | null
           tenant_id?: string | null
+          trial_days?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -14562,14 +14623,23 @@ export type Database = {
           auto_renew: boolean | null
           billing_address: Json | null
           billing_interval: Database["public"]["Enums"]["billing_interval"]
+          cancellation_feedback: string | null
+          cancellation_reason: string | null
           created_at: string | null
           current_period_end: string | null
           current_period_start: string | null
+          grace_period_ends_at: string | null
           id: string
+          last_payment_amount: number | null
+          last_payment_date: string | null
           metadata: Json | null
+          next_billing_date: string | null
           payment_method: Json | null
+          payment_method_id: string | null
           plan_id: string | null
           status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           tenant_id: string | null
           updated_at: string | null
         }
@@ -14577,14 +14647,23 @@ export type Database = {
           auto_renew?: boolean | null
           billing_address?: Json | null
           billing_interval: Database["public"]["Enums"]["billing_interval"]
+          cancellation_feedback?: string | null
+          cancellation_reason?: string | null
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          grace_period_ends_at?: string | null
           id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
           metadata?: Json | null
+          next_billing_date?: string | null
           payment_method?: Json | null
+          payment_method_id?: string | null
           plan_id?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tenant_id?: string | null
           updated_at?: string | null
         }
@@ -14592,14 +14671,23 @@ export type Database = {
           auto_renew?: boolean | null
           billing_address?: Json | null
           billing_interval?: Database["public"]["Enums"]["billing_interval"]
+          cancellation_feedback?: string | null
+          cancellation_reason?: string | null
           created_at?: string | null
           current_period_end?: string | null
           current_period_start?: string | null
+          grace_period_ends_at?: string | null
           id?: string
+          last_payment_amount?: number | null
+          last_payment_date?: string | null
           metadata?: Json | null
+          next_billing_date?: string | null
           payment_method?: Json | null
+          payment_method_id?: string | null
           plan_id?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           tenant_id?: string | null
           updated_at?: string | null
         }
@@ -14668,6 +14756,8 @@ export type Database = {
         Row: {
           activated_at: string | null
           archived_at: string | null
+          billing_address: Json | null
+          billing_email: string | null
           branding_updated_at: string | null
           branding_version: number | null
           business_address: Json | null
@@ -14691,10 +14781,12 @@ export type Database = {
           owner_email: string | null
           owner_name: string | null
           owner_phone: string | null
+          payment_terms: string | null
           reactivated_at: string | null
           settings: Json | null
           slug: string
           status: Database["public"]["Enums"]["tenant_status"] | null
+          stripe_customer_id: string | null
           subdomain: string | null
           subscription_end_date: string | null
           subscription_plan:
@@ -14702,6 +14794,7 @@ export type Database = {
             | null
           subscription_start_date: string | null
           suspended_at: string | null
+          tax_id: string | null
           trial_ends_at: string | null
           type: Database["public"]["Enums"]["tenant_type"]
           updated_at: string | null
@@ -14710,6 +14803,8 @@ export type Database = {
         Insert: {
           activated_at?: string | null
           archived_at?: string | null
+          billing_address?: Json | null
+          billing_email?: string | null
           branding_updated_at?: string | null
           branding_version?: number | null
           business_address?: Json | null
@@ -14733,10 +14828,12 @@ export type Database = {
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          payment_terms?: string | null
           reactivated_at?: string | null
           settings?: Json | null
           slug: string
           status?: Database["public"]["Enums"]["tenant_status"] | null
+          stripe_customer_id?: string | null
           subdomain?: string | null
           subscription_end_date?: string | null
           subscription_plan?:
@@ -14744,6 +14841,7 @@ export type Database = {
             | null
           subscription_start_date?: string | null
           suspended_at?: string | null
+          tax_id?: string | null
           trial_ends_at?: string | null
           type: Database["public"]["Enums"]["tenant_type"]
           updated_at?: string | null
@@ -14752,6 +14850,8 @@ export type Database = {
         Update: {
           activated_at?: string | null
           archived_at?: string | null
+          billing_address?: Json | null
+          billing_email?: string | null
           branding_updated_at?: string | null
           branding_version?: number | null
           business_address?: Json | null
@@ -14775,10 +14875,12 @@ export type Database = {
           owner_email?: string | null
           owner_name?: string | null
           owner_phone?: string | null
+          payment_terms?: string | null
           reactivated_at?: string | null
           settings?: Json | null
           slug?: string
           status?: Database["public"]["Enums"]["tenant_status"] | null
+          stripe_customer_id?: string | null
           subdomain?: string | null
           subscription_end_date?: string | null
           subscription_plan?:
@@ -14786,6 +14888,7 @@ export type Database = {
             | null
           subscription_start_date?: string | null
           suspended_at?: string | null
+          tax_id?: string | null
           trial_ends_at?: string | null
           type?: Database["public"]["Enums"]["tenant_type"]
           updated_at?: string | null
