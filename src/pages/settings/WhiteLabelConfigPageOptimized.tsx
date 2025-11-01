@@ -201,18 +201,10 @@ const WhiteLabelConfigPageOptimized = () => {
   
   // Flag to track if initial load is complete
   const [isInitialized, setIsInitialized] = useState(false);
-  
-  // Log for debugging
-  useEffect(() => {
-    console.log('White Label Config Page - Current settings:', settings);
-    console.log('White Label Config Page - Loading state:', isLoading);
-  }, [settings, isLoading]);
 
-  // Merge settings with defaults when they arrive
+  // Merge settings with defaults when they arrive - optimized for performance
   useEffect(() => {
     if (settings && !isInitialized) {
-      console.log('Loading white label settings from database:', settings);
-      
       // Handle mobile_theme properly - check if it exists and has the nested structure
       let processedMobileTheme = getDefaultConfig().mobile_theme;
       
@@ -223,7 +215,6 @@ const WhiteLabelConfigPageOptimized = () => {
         if (mobileThemeData.core && mobileThemeData.neutral && 
             mobileThemeData.status && mobileThemeData.support) {
           // It's already in the nested format from DB, use it as is
-          // But still ensure we have all flat properties for compatibility
           processedMobileTheme = {
             ...getDefaultConfig().mobile_theme,
             ...mobileThemeData,
@@ -237,14 +228,12 @@ const WhiteLabelConfigPageOptimized = () => {
             border_radius: mobileThemeData.border_radius,
             shadows: mobileThemeData.shadows
           };
-          console.log('Using nested mobile_theme from database:', processedMobileTheme);
         } else {
           // It's in flat format, merge with defaults
           processedMobileTheme = {
             ...getDefaultConfig().mobile_theme,
             ...mobileThemeData
           };
-          console.log('Using flat mobile_theme merged with defaults:', processedMobileTheme);
         }
       }
       
@@ -263,11 +252,10 @@ const WhiteLabelConfigPageOptimized = () => {
         } : getDefaultConfig().email_templates
       };
       
-      console.log('Final merged config with mobile_theme:', mergedConfig.mobile_theme);
       setLocalConfig(mergedConfig);
       setIsInitialized(true);
     }
-  }, [settings]); // Fixed: Removed isInitialized from dependencies to prevent infinite loop
+  }, [settings, isInitialized]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -361,8 +349,6 @@ const WhiteLabelConfigPageOptimized = () => {
           email_templates: localConfig.email_templates
         };
       }
-      
-      console.log('Saving white label config with mobile_theme:', updatePayload.mobile_theme);
       
       await updateSettings(updatePayload);
       

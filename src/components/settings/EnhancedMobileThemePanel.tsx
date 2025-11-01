@@ -254,12 +254,6 @@ const presetThemes = [
 const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
   if (!flatTheme) return defaultTheme;
   
-  console.log('Converting theme - Input structure:', {
-    hasCore: !!flatTheme.core,
-    hasFlat: !!flatTheme.primary_color,
-    keys: Object.keys(flatTheme)
-  });
-  
   // Priority 1: Use nested structure if ALL required sections exist and are valid
   if (flatTheme.core && flatTheme.neutral && flatTheme.status && flatTheme.support &&
       Object.keys(flatTheme.core).length >= 6 &&
@@ -267,7 +261,6 @@ const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
       Object.keys(flatTheme.status).length >= 4 &&
       Object.keys(flatTheme.support).length >= 2) {
     
-    console.log('Using nested structure from database');
     // Validate HSL format and fallback to defaults if invalid
     const validateAndFallback = (value: any, fallback: string): string => {
       if (typeof value !== 'string') return fallback;
@@ -309,19 +302,14 @@ const convertFlatToModern2025Theme = (flatTheme: any): Modern2025Theme => {
   }
   
   // Priority 2: Convert from flat structure (legacy format)
-  console.log('Converting from flat structure');
   
   // Helper to convert hex to HSL if needed
   const convertToHSL = (color: string | undefined): string => {
     if (!color) return '';
     // If already in HSL format
     if (/^\d{1,3}\s+\d{1,3}%\s+\d{1,3}%$/.test(color)) return color;
-    // If it's a hex color, we'd need a converter (for now, return default)
-    if (color.startsWith('#')) {
-      console.warn(`Hex color ${color} needs conversion to HSL`);
-      return '';
-    }
-    return color;
+    // If it's a hex color, return empty (will use default)
+    return '';
   };
   
   return {
@@ -396,31 +384,19 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
-  // Initialize theme from config when it changes
+  // Initialize theme from config when it changes - optimized to prevent re-renders
   useEffect(() => {
-    console.log('EnhancedMobileThemePanel - Config received:', config);
-    console.log('EnhancedMobileThemePanel - Mobile theme data:', config?.mobile_theme);
-    
     if (config?.mobile_theme && Object.keys(config.mobile_theme).length > 0) {
-      console.log('Loading mobile theme from config');
-      console.log('Theme structure keys:', Object.keys(config.mobile_theme));
-      console.log('Has core?', !!config.mobile_theme.core);
-      console.log('Core data:', config.mobile_theme.core);
-      
       // Convert flat structure to Modern2025Theme if needed
       const convertedTheme = convertFlatToModern2025Theme(config.mobile_theme);
-      console.log('Converted theme for display:', convertedTheme);
       
       // Verify the converted theme has valid data
       if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
-        console.log('Setting theme with valid data');
         setCurrentTheme(convertedTheme);
       } else {
-        console.warn('Converted theme missing required data, using default');
         setCurrentTheme(defaultTheme);
       }
     } else if (config?.app_store_config?.mobile_theme) {
-      console.log('Loading mobile theme from app_store_config:', config.app_store_config.mobile_theme);
       const convertedTheme = convertFlatToModern2025Theme(config.app_store_config.mobile_theme);
       if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
         setCurrentTheme(convertedTheme);
@@ -428,10 +404,9 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
         setCurrentTheme(defaultTheme);
       }
     } else {
-      console.log('No saved theme found, using default theme');
       setCurrentTheme(defaultTheme);
     }
-  }, [config]);
+  }, [config?.mobile_theme, config?.app_store_config?.mobile_theme]); // More specific dependencies
 
   const validateTheme = (theme: Modern2025Theme): string[] => {
     const errors: string[] = [];
