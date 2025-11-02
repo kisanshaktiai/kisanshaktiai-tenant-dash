@@ -12,6 +12,7 @@ import PricingManagement from './components/PricingManagement';
 import EnhancedBulkImport from './components/EnhancedBulkImport';
 import EnhancedProductAnalytics from './components/EnhancedProductAnalytics';
 import AddProductModal from './components/AddProductModal';
+import MasterDataImportTab from './components/MasterDataImportTab';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProductsPage() {
@@ -84,11 +85,12 @@ export default function ProductsPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6">
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
           <TabsTrigger value="import">Bulk Import</TabsTrigger>
+          <TabsTrigger value="master-import">Master Catalog</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -110,6 +112,10 @@ export default function ProductsPage() {
 
         <TabsContent value="import">
           <EnhancedBulkImport />
+        </TabsContent>
+
+        <TabsContent value="master-import">
+          <MasterDataImportTab />
         </TabsContent>
 
         <TabsContent value="analytics">
