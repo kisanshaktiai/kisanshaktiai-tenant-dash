@@ -202,7 +202,7 @@ export const AddLandModal: React.FC<AddLandModalProps> = ({
                   value={formData.ownership_type}
                   onValueChange={(value) => setFormData({ ...formData, ownership_type: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="ownership_type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -274,7 +274,7 @@ export const AddLandModal: React.FC<AddLandModalProps> = ({
                   value={formData.soil_type}
                   onValueChange={(value) => setFormData({ ...formData, soil_type: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="soil_type">
                     <SelectValue placeholder="Select soil type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -295,7 +295,7 @@ export const AddLandModal: React.FC<AddLandModalProps> = ({
                   value={formData.irrigation_type}
                   onValueChange={(value) => setFormData({ ...formData, irrigation_type: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="irrigation_type">
                     <SelectValue placeholder="Select irrigation" />
                   </SelectTrigger>
                   <SelectContent>
@@ -313,7 +313,7 @@ export const AddLandModal: React.FC<AddLandModalProps> = ({
                   value={formData.water_source}
                   onValueChange={(value) => setFormData({ ...formData, water_source: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="water_source">
                     <SelectValue placeholder="Select water source" />
                   </SelectTrigger>
                   <SelectContent>

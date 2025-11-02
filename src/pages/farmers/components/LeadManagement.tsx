@@ -207,7 +207,7 @@ export const LeadManagement = () => {
                 <CardTitle>Lead Management</CardTitle>
                 <div className="flex gap-2">
                   <Select defaultValue="all">
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger id="lead_stage_filter" className="w-32">
                       <SelectValue placeholder="Stage" />
                     </SelectTrigger>
                     <SelectContent>
