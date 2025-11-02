@@ -314,7 +314,7 @@ class ProductImportService {
           description: product.description,
           images: product.images || [],
           price_per_unit: finalPrice,
-          unit_of_measurement: product.unit_of_measure,
+          unit_type: product.unit_of_measure,
           stock_quantity: options.defaultStock || 0,
           is_organic: product.organic_certified || false,
           is_active: options.setAsActive !== undefined ? options.setAsActive : true,
