@@ -170,9 +170,9 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 gap-0 flex flex-col">
         {/* Header with Gradient */}
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b">
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -186,10 +186,11 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {/* Statistics Cards */}
-          <div className="px-6 pt-4">
-            <div className="grid grid-cols-4 gap-3">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex flex-col h-full">
+            {/* Statistics Cards */}
+            <div className="px-6 pt-4">
+              <div className="grid grid-cols-4 gap-3">
               <div className="relative overflow-hidden rounded-xl border-2 border-border bg-gradient-to-br from-card to-card/50 p-4 transition-all hover:shadow-lg hover:border-primary/50">
                 <div className="flex items-center justify-between">
                   <div>
@@ -248,9 +249,9 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
             </div>
           </div>
 
-          {/* Import Options - Collapsible */}
-          {type === 'product' && (
-            <div className="px-6 pt-4">
+            {/* Import Options - Collapsible */}
+            {type === 'product' && (
+              <div className="px-6 pt-4">
               <Collapsible open={optionsExpanded} onOpenChange={setOptionsExpanded}>
                 <CollapsibleTrigger asChild>
                   <Button
@@ -389,12 +390,12 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
                     </div>
                   </div>
                 </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
+                </Collapsible>
+              </div>
+            )}
 
-          {/* Search and Filter */}
-          <div className="px-6 pt-4 space-y-3">
+            {/* Search and Filter */}
+            <div className="px-6 pt-4 space-y-3">
             <div className="flex items-center gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -441,9 +442,9 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
             </div>
           </div>
 
-          {/* Items List */}
-          <div className="flex-1 px-6 pt-3 pb-4">
-            <ScrollArea className="h-[400px] rounded-xl border-2 border-border bg-accent/30 p-3">
+            {/* Items List */}
+            <div className="px-6 pt-3 pb-4 flex-1 min-h-0">
+              <ScrollArea className="h-[300px] rounded-xl border-2 border-border bg-accent/30 p-3">
               {isLoadingPreview ? (
                 <div className="flex flex-col items-center justify-center py-20">
                   <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -516,12 +517,13 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
                   ))}
                 </div>
               )}
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <DialogFooter className="px-6 py-4 border-t bg-gradient-to-r from-accent/30 to-transparent">
+        {/* Footer - Always Visible */}
+        <DialogFooter className="px-6 py-4 border-t bg-gradient-to-r from-accent/30 to-transparent flex-shrink-0">
           <div className="flex items-center justify-between w-full">
             <p className="text-sm text-muted-foreground">
               Ready to import <span className="font-bold text-foreground">{stats.new + stats.update}</span> items
