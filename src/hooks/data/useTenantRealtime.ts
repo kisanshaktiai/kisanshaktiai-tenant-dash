@@ -14,12 +14,9 @@ export const useTenantRealtime = () => {
 
   useEffect(() => {
     if (!currentTenant?.id) {
-      console.log('useTenantRealtime: No tenant available, skipping realtime setup');
       setIsConnected(false);
       return;
     }
-
-    console.log('Setting up tenant real-time connections for:', currentTenant.id);
     
     const setupChannels = () => {
       // Farmers channel
@@ -144,7 +141,6 @@ export const useTenantRealtime = () => {
       // Subscribe to channels
       channels.forEach((channel) => {
         channel.subscribe((status) => {
-          console.log(`Channel ${channel.topic} status:`, status);
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
@@ -160,7 +156,6 @@ export const useTenantRealtime = () => {
     const channels = setupChannels();
 
     return () => {
-      console.log('Cleaning up tenant real-time connections');
       channels.forEach((channel) => {
         supabase.removeChannel(channel);
       });

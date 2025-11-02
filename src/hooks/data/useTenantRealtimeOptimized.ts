@@ -62,8 +62,6 @@ export const useTenantRealtimeOptimized = () => {
       setIsConnected(false);
       return;
     }
-
-    console.log('Setting up optimized tenant real-time connections for:', currentTenant.id);
     
     const setupChannels = () => {
       // Single channel for all tenant data to reduce connection overhead
@@ -114,7 +112,6 @@ export const useTenantRealtimeOptimized = () => {
       // Subscribe to channels
       channels.forEach((channel) => {
         channel.subscribe((status) => {
-          console.log(`Optimized channel ${channel.topic} status:`, status);
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
@@ -130,8 +127,6 @@ export const useTenantRealtimeOptimized = () => {
     const channels = setupChannels();
 
     return () => {
-      console.log('Cleaning up optimized tenant real-time connections');
-      
       // Clear any pending invalidations
       if (invalidationTimeoutRef.current) {
         clearTimeout(invalidationTimeoutRef.current);

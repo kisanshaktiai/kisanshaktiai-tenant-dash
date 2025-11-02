@@ -43,7 +43,7 @@ class UserProfileService extends BaseApiService {
         .from('user_profiles')
         .select('*')
         .eq('farmer_id', userId)
-        .single();
+        .maybeSingle();
 
       return { data, error };
     });
@@ -100,7 +100,7 @@ class UserProfileService extends BaseApiService {
         })
         .eq('farmer_id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       return { data, error };
     });

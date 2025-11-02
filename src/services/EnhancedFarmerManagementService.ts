@@ -230,7 +230,7 @@ class EnhancedFarmerManagementService extends BaseApiService {
           // Don't fail the entire operation, log the error
         }
       } else {
-        console.log('user_profiles verified successfully:', profile);
+        // User profile verified successfully
       }
 
       return {
@@ -302,7 +302,6 @@ class EnhancedFarmerManagementService extends BaseApiService {
       throw error;
     }
 
-    console.log('User profile created via fallback:', data);
     return data;
   }
 

@@ -44,30 +44,18 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
     if (!farmer?.id) return;
 
     const fetchAdditionalData = async () => {
-      // Fetch user profile and farmer name with priority
-      const [farmerResult, profileResult] = await Promise.all([
+      // Fetch farmer data
+      const [farmerResult] = await Promise.all([
         supabase
           .from('farmers')
           .select('farmer_name, farmer_code')
           .eq('id', farmer.id)
-          .single(),
-        supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', farmer.id)
           .single()
       ]);
       
-      // Priority: display_name > full_name > farmer_name > farmer_code
+      // Priority: farmer_name > farmer_code
       let displayName = farmerResult.data?.farmer_code || 'Farmer';
-      if (profileResult.data) {
-        setUserProfile(profileResult.data);
-        displayName = profileResult.data.display_name || 
-                     profileResult.data.full_name || 
-                     farmerResult.data?.farmer_name || 
-                     farmerResult.data?.farmer_code || 
-                     'Farmer';
-      } else if (farmerResult.data?.farmer_name) {
+      if (farmerResult.data?.farmer_name) {
         displayName = farmerResult.data.farmer_name;
       }
       
