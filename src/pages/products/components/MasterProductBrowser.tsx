@@ -238,7 +238,7 @@ export default function MasterProductBrowser() {
                       </div>
 
                       <div className="flex flex-wrap gap-1.5">
-                        {product.is_organic && (
+                        {product.organic_certified && (
                           <Badge variant="outline" className="text-xs border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10">
                             Organic
                           </Badge>

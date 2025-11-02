@@ -33,10 +33,10 @@ export interface MasterProduct {
   description?: string;
   images?: any;
   price_per_unit?: number;
-  unit_of_measurement?: string;
-  is_organic?: boolean;
-  certifications?: any;
-  specifications?: any;
+  unit_of_measure?: string;
+  organic_certified?: boolean;
+  quality_certifications?: any;
+  packaging_options?: any;
   metadata?: any;
   company?: MasterCompany;
   category?: MasterProductCategory;
@@ -46,7 +46,7 @@ export interface MasterDataFilters {
   company_id?: string;
   category_id?: string;
   product_type?: string;
-  is_organic?: boolean;
+  organic_certified?: boolean;
   search?: string;
   min_price?: number;
   max_price?: number;
@@ -109,8 +109,8 @@ class MasterDataService {
       .from('master_products')
       .select(`
         id, sku, name, brand, product_type, description, images, 
-        price_per_unit, unit_of_measurement, is_organic, certifications, 
-        specifications, metadata, company_id, category_id,
+        price_per_unit, unit_of_measure, organic_certified, 
+        quality_certifications, packaging_options, metadata, company_id, category_id,
         company:company_id(id, name, company_type),
         category:category_id(id, name, slug)
       `, { count: 'exact' });
@@ -120,7 +120,7 @@ class MasterDataService {
     if (filters.company_id) filterConditions.company_id = filters.company_id;
     if (filters.category_id) filterConditions.category_id = filters.category_id;
     if (filters.product_type) filterConditions.product_type = filters.product_type;
-    if (filters.is_organic !== undefined) filterConditions.is_organic = filters.is_organic;
+    if (filters.organic_certified !== undefined) filterConditions.organic_certified = filters.organic_certified;
 
     // Apply match filters
     if (Object.keys(filterConditions).length > 0) {
