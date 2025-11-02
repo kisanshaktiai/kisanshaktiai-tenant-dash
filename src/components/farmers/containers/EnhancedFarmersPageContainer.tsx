@@ -53,13 +53,20 @@ export const EnhancedFarmersPageContainer: React.FC = () => {
       return;
     }
 
+    // Clean phone number: remove spaces, hyphens, parentheses, and plus signs
+    const cleanPhone = phoneNumber?.replace(/[\s\-\(\)\+]/g, '');
+    
+    // Ensure phone number has country code (default to 91 for India if not present)
+    const formattedPhone = cleanPhone?.startsWith('91') ? cleanPhone : `91${cleanPhone}`;
+
     switch (method) {
       case 'call':
-        window.open(`tel:${phoneNumber}`);
+        window.open(`tel:${phoneNumber}`, '_self');
         toast.success(`Opening call for ${farmer.farmer_code}`);
         break;
       case 'message':
-        window.open(`https://wa.me/${phoneNumber}`);
+        // Use wa.me format without the www subdomain and open in new tab
+        window.open(`https://wa.me/${formattedPhone}`, '_blank', 'noopener,noreferrer');
         toast.success(`Opening WhatsApp for ${farmer.farmer_code}`);
         break;
     }
