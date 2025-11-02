@@ -17,7 +17,6 @@ export const useTenantAuthOptimized = () => {
   const fetchUserTenants = useCallback(async (userId: string) => {
     // Prevent concurrent fetches
     if (fetchingRef.current) {
-      console.log('useTenantAuthOptimized: Fetch already in progress, skipping');
       return;
     }
 
@@ -25,8 +24,6 @@ export const useTenantAuthOptimized = () => {
       fetchingRef.current = true;
       dispatch(setLoading(true));
       dispatch(setError(null));
-      
-      console.log('useTenantAuthOptimized: Fetching tenant data for user:', userId);
       
       // Get user-tenant relationships with full tenant data
       const { data: userTenantsData, error: userTenantsError } = await supabase
@@ -47,12 +44,11 @@ export const useTenantAuthOptimized = () => {
         .eq('is_active', true);
 
       if (userTenantsError) {
-        console.error('useTenantAuthOptimized: Error fetching user tenants:', userTenantsError);
+        console.error('useTenantAuthOptimized: Error fetching tenants:', userTenantsError);
         throw userTenantsError;
       }
 
       if (!userTenantsData || userTenantsData.length === 0) {
-        console.log('useTenantAuthOptimized: User has no active tenants');
         dispatch(setUserTenants([]));
         dispatch(setCurrentTenant(null));
         return;
@@ -60,7 +56,7 @@ export const useTenantAuthOptimized = () => {
 
       // Transform and validate tenant data
       const transformedUserTenants = userTenantsData
-        .filter(ut => ut.tenant) // Only include records with valid tenant data
+        .filter(ut => ut.tenant)
         .map(userTenant => ({
           ...userTenant,
           tenant: {
@@ -83,24 +79,20 @@ export const useTenantAuthOptimized = () => {
           }
         }));
 
-      console.log('useTenantAuthOptimized: Processed user tenants:', transformedUserTenants);
       dispatch(setUserTenants(transformedUserTenants));
 
       // Set current tenant (prefer primary, fallback to first available)
       if (!currentTenant && transformedUserTenants.length > 0) {
         const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
         if (primaryTenant?.tenant) {
-          console.log('useTenantAuthOptimized: Setting current tenant:', primaryTenant.tenant);
           dispatch(setCurrentTenant(primaryTenant.tenant));
-          
-          // Store tenant ID in localStorage for session persistence
           localStorage.setItem('currentTenantId', primaryTenant.tenant.id);
         }
       }
 
       setIsInitialized(true);
     } catch (error) {
-      console.error('useTenantAuthOptimized: Error in fetchUserTenants:', error);
+      console.error('useTenantAuthOptimized: Fetch error:', error);
       dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
     } finally {
       dispatch(setLoading(false));
@@ -111,20 +103,17 @@ export const useTenantAuthOptimized = () => {
   const switchTenant = useCallback(async (tenantId: string) => {
     const targetUserTenant = userTenants.find(ut => ut.tenant_id === tenantId);
     if (targetUserTenant?.tenant) {
-      console.log('useTenantAuthOptimized: Switching to tenant:', targetUserTenant.tenant);
       dispatch(setCurrentTenant(targetUserTenant.tenant));
       localStorage.setItem('currentTenantId', tenantId);
     }
   }, [userTenants, dispatch]);
 
   const clearTenantSession = useCallback(() => {
-    console.log('useTenantAuthOptimized: Clearing tenant session');
     dispatch(clearTenantData());
     localStorage.removeItem('currentTenantId');
     setIsInitialized(false);
     fetchingRef.current = false;
     
-    // Clear any pending initialization
     if (initializationTimeoutRef.current) {
       clearTimeout(initializationTimeoutRef.current);
     }
@@ -145,8 +134,6 @@ export const useTenantAuthOptimized = () => {
         return;
       }
 
-      // Fetch tenant data immediately (removed debounce)
-      console.log('useTenantAuthOptimized: Initializing tenant data for user:', user.id);
       fetchUserTenants(user.id);
     }
 
@@ -161,15 +148,12 @@ export const useTenantAuthOptimized = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('useTenantAuthOptimized: Setting up real-time subscriptions for user:', user.id);
-
     let debounceTimer: NodeJS.Timeout;
 
     const debouncedRefresh = () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         if (!fetchingRef.current) {
-          console.log('useTenantAuthOptimized: Real-time tenant data change detected, refreshing');
           fetchUserTenants(user.id);
         }
       }, 1000);
@@ -195,7 +179,6 @@ export const useTenantAuthOptimized = () => {
           table: 'tenants',
         },
         (payload) => {
-          console.log('useTenantAuthOptimized: Real-time tenant update detected:', payload.eventType);
           const payloadId = (payload.new as any)?.id || (payload.old as any)?.id;
           if (currentTenant && payloadId && payloadId === currentTenant.id) {
             debouncedRefresh();
@@ -205,7 +188,6 @@ export const useTenantAuthOptimized = () => {
       .subscribe();
 
     return () => {
-      console.log('useTenantAuthOptimized: Cleaning up real-time subscriptions');
       if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
