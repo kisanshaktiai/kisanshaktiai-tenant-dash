@@ -319,7 +319,7 @@ class ProductImportService {
           is_organic: product.organic_certified || false,
           is_active: options.setAsActive !== undefined ? options.setAsActive : true,
           is_featured: options.setAsFeatured || false,
-          certifications: product.quality_certifications || [],
+          certification_details: product.quality_certifications || [],
           specifications: {},
           master_product_id: product.id,
           company_id: product.company_id,
