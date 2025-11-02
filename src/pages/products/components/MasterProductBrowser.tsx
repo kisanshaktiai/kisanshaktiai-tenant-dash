@@ -13,6 +13,7 @@ import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { useAppSelector } from '@/store/hooks';
 import ImportPreviewModal from './ImportPreviewModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 export default function MasterProductBrowser() {
   const { currentTenant } = useTenantIsolation();
@@ -61,27 +62,29 @@ export default function MasterProductBrowser() {
   const selectedProductsList = productsData?.products.filter(p => selectedProducts.has(p.id)) || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <CardTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Filter className="h-5 w-5 text-primary" />
+            </div>
+            <span className="text-xl">Smart Filters</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <div className="relative group">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
                 <Input
                   id="search-products"
                   name="search"
                   placeholder="Search by name, SKU, or brand..."
                   value={filters.search || ''}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-9"
+                  className="pl-9 border-2 transition-all focus:border-primary hover:border-primary/50"
                 />
               </div>
             </div>
@@ -90,7 +93,7 @@ export default function MasterProductBrowser() {
               value={filters.company_id || 'all'}
               onValueChange={(value) => setFilters({ ...filters, company_id: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger id="company-filter">
+              <SelectTrigger id="company-filter" className="border-2 hover:border-primary/50 transition-all">
                 <SelectValue placeholder="All Companies" />
               </SelectTrigger>
               <SelectContent>
@@ -107,7 +110,7 @@ export default function MasterProductBrowser() {
               value={filters.category_id || 'all'}
               onValueChange={(value) => setFilters({ ...filters, category_id: value === 'all' ? undefined : value })}
             >
-              <SelectTrigger id="category-filter">
+              <SelectTrigger id="category-filter" className="border-2 hover:border-primary/50 transition-all">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -124,104 +127,130 @@ export default function MasterProductBrowser() {
       </Card>
 
       {/* Products Grid */}
-      <Card>
-        <CardHeader>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Checkbox
                 id="select-all-products"
                 checked={selectedProducts.size > 0 && selectedProducts.size === productsData?.products.length}
                 onCheckedChange={handleSelectAll}
+                className="transition-transform hover:scale-110"
               />
-              <label htmlFor="select-all-products" className="text-sm font-medium cursor-pointer">
+              <label htmlFor="select-all-products" className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors">
                 Select All
               </label>
               {selectedProducts.size > 0 && (
-                <Badge variant="secondary">{selectedProducts.size} selected</Badge>
+                <Badge variant="default" className="animate-scale-in">
+                  {selectedProducts.size} selected
+                </Badge>
               )}
             </div>
             <Button
               onClick={() => setShowPreview(true)}
               disabled={selectedProducts.size === 0}
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all shadow-md hover:shadow-lg"
             >
               <Download className="mr-2 h-4 w-4" />
-              Import Selected ({selectedProducts.size})
+              Import ({selectedProducts.size})
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center py-20">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+              <p className="text-sm text-muted-foreground">Loading products...</p>
             </div>
           ) : (
             <ScrollArea className="h-[600px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {productsData?.products.map(product => (
-                  <Card key={product.id} className="hover:shadow-md transition-shadow">
+                  <Card 
+                    key={product.id} 
+                    className={cn(
+                      "group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
+                      "border-2 hover:border-primary/50",
+                      selectedProducts.has(product.id) && "border-primary shadow-lg shadow-primary/20"
+                    )}
+                  >
                     <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
                         <Checkbox
                           id={`product-${product.id}`}
                           checked={selectedProducts.has(product.id)}
                           onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                          className="mt-0.5 transition-transform hover:scale-110"
                         />
-                        <div className="flex-1 ml-3">
-                          <h4 className="font-semibold text-sm line-clamp-2">{product.name}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">{product.brand}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                            {product.name}
+                          </h4>
+                          <p className="text-xs text-muted-foreground mt-1 font-medium">{product.brand}</p>
                         </div>
                       </div>
 
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">SKU:</span>
-                          <span className="font-mono">{product.sku}</span>
+                      <div className="space-y-2 text-xs bg-accent/30 p-3 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground font-medium">SKU</span>
+                          <span className="font-mono font-semibold text-foreground">{product.sku}</span>
                         </div>
                         {product.price_per_unit && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Price:</span>
-                            <span className="font-semibold">₹{product.price_per_unit}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground font-medium">Price</span>
+                            <span className="font-bold text-primary">₹{product.price_per_unit}</span>
                           </div>
                         )}
                         {product.company && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Company:</span>
-                            <span className="truncate ml-2">{product.company.name}</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground font-medium">Company</span>
+                            <span className="truncate ml-2 font-semibold text-foreground">{product.company.name}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {product.is_organic && (
-                          <Badge variant="outline" className="text-xs">Organic</Badge>
+                          <Badge variant="outline" className="text-xs border-green-500/50 text-green-600 dark:text-green-400 bg-green-500/10">
+                            Organic
+                          </Badge>
                         )}
                         {product.product_type && (
-                          <Badge variant="secondary" className="text-xs">{product.product_type}</Badge>
+                          <Badge variant="secondary" className="text-xs font-semibold">
+                            {product.product_type}
+                          </Badge>
                         )}
                       </div>
                     </CardContent>
+                    
+                    {/* Hover gradient effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </Card>
                 ))}
               </div>
 
               {productsData && productsData.totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
+                <div className="flex items-center justify-center gap-3 mt-8 pb-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
+                    className="hover:bg-primary/5 hover:border-primary transition-all disabled:opacity-50"
                   >
                     Previous
                   </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {page} of {productsData.totalPages}
-                  </span>
+                  <div className="px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                    <span className="text-sm font-semibold text-primary">
+                      Page {page} of {productsData.totalPages}
+                    </span>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(p => Math.min(productsData.totalPages, p + 1))}
                     disabled={page === productsData.totalPages}
+                    className="hover:bg-primary/5 hover:border-primary transition-all disabled:opacity-50"
                   >
                     Next
                   </Button>
