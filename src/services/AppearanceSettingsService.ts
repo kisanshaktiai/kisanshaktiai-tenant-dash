@@ -210,8 +210,6 @@ class AppearanceSettingsService {
   applyThemeColors(settings: AppearanceSettings) {
     const root = document.documentElement;
     
-    console.log('Applying mobile-optimized theme colors:', settings);
-    
     try {
       // Convert and sanitize HEX colors to HSL format
       const primaryHsl = sanitizeHsl(hexToHsl(settings.primary_color));
@@ -323,11 +321,8 @@ class AppearanceSettingsService {
       if (settings.custom_css) {
         this.applyCustomCSS(settings.custom_css);
       }
-      
-      console.log('Mobile-optimized theme colors applied successfully');
     } catch (error) {
       console.error('Error applying theme colors:', error);
-      // Apply fallback colors
       this.applyFallbackColors();
     }
   }
@@ -354,8 +349,6 @@ class AppearanceSettingsService {
 
   resetThemeColors() {
     const root = document.documentElement;
-    
-    console.log('Resetting all theme colors');
     
     // Remove all custom properties
     const propertiesToRemove = [
