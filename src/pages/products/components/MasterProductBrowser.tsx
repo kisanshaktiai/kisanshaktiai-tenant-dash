@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,42 @@ import { useAppSelector } from '@/store/hooks';
 import ImportPreviewModal from './ImportPreviewModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function MasterProductBrowser() {
   const { currentTenant } = useTenantIsolation();
   const { user } = useAppSelector(state => state.auth);
+  const queryClient = useQueryClient();
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [showPreview, setShowPreview] = useState(false);
   const [filters, setFilters] = useState<MasterDataFilters>({});
   const [page, setPage] = useState(1);
+
+  // Real-time subscription for master products
+  useEffect(() => {
+    const channel = supabase
+      .channel('master-products-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'master_products'
+        },
+        (payload) => {
+          console.log('Master product change detected:', payload);
+          // Invalidate all master product queries
+          queryClient.invalidateQueries({ queryKey: ['master-products'] });
+          queryClient.invalidateQueries({ queryKey: ['master-companies'] });
+          queryClient.invalidateQueries({ queryKey: ['master-categories'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Fetch companies for filter
   const { data: companies } = useQuery({
