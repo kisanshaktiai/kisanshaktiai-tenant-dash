@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { validateWhiteLabelConfig, sanitizeWhiteLabelConfig } from '@/lib/whitelabel-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -383,30 +383,54 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  
+  // Track the last applied theme to prevent redundant updates
+  const lastAppliedThemeRef = useRef<string>('');
 
-  // Initialize theme from config when it changes - optimized to prevent re-renders
-  useEffect(() => {
+  // Memoize the source theme to prevent unnecessary conversions
+  const sourceTheme = useMemo(() => {
     if (config?.mobile_theme && Object.keys(config.mobile_theme).length > 0) {
-      // Convert flat structure to Modern2025Theme if needed
-      const convertedTheme = convertFlatToModern2025Theme(config.mobile_theme);
-      
-      // Verify the converted theme has valid data
-      if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
-        setCurrentTheme(convertedTheme);
-      } else {
-        setCurrentTheme(defaultTheme);
-      }
+      return config.mobile_theme;
     } else if (config?.app_store_config?.mobile_theme) {
-      const convertedTheme = convertFlatToModern2025Theme(config.app_store_config.mobile_theme);
-      if (convertedTheme && convertedTheme.core && convertedTheme.core.primary) {
-        setCurrentTheme(convertedTheme);
-      } else {
-        setCurrentTheme(defaultTheme);
-      }
-    } else {
-      setCurrentTheme(defaultTheme);
+      return config.app_store_config.mobile_theme;
     }
-  }, [config?.mobile_theme, config?.app_store_config?.mobile_theme]); // More specific dependencies
+    return null;
+  }, [config?.mobile_theme, config?.app_store_config?.mobile_theme]);
+
+  // Initialize theme from config - OPTIMIZED with JSON comparison to prevent re-renders
+  useEffect(() => {
+    // Skip if no source theme (will use default)
+    if (!sourceTheme) {
+      const defaultThemeJson = JSON.stringify(defaultTheme);
+      if (lastAppliedThemeRef.current !== defaultThemeJson) {
+        setCurrentTheme(defaultTheme);
+        lastAppliedThemeRef.current = defaultThemeJson;
+      }
+      return;
+    }
+
+    // Convert flat structure to Modern2025Theme
+    const convertedTheme = convertFlatToModern2025Theme(sourceTheme);
+    
+    // Verify the converted theme has valid data
+    if (!convertedTheme?.core?.primary) {
+      const defaultThemeJson = JSON.stringify(defaultTheme);
+      if (lastAppliedThemeRef.current !== defaultThemeJson) {
+        setCurrentTheme(defaultTheme);
+        lastAppliedThemeRef.current = defaultThemeJson;
+      }
+      return;
+    }
+
+    // Compare with last applied theme using JSON stringification
+    const newThemeJson = JSON.stringify(convertedTheme);
+    
+    // Only update if the theme has actually changed
+    if (lastAppliedThemeRef.current !== newThemeJson) {
+      setCurrentTheme(convertedTheme);
+      lastAppliedThemeRef.current = newThemeJson;
+    }
+  }, [sourceTheme]);
 
   const validateTheme = (theme: Modern2025Theme): string[] => {
     const errors: string[] = [];
@@ -501,8 +525,6 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
   };
 
   const saveTheme = () => {
-    console.log('Saving theme - Current theme structure:', currentTheme);
-    
     const errors = validateTheme(currentTheme);
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -512,7 +534,6 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
 
     // Convert to flat structure for database storage
     const flatTheme = convertModern2025ThemeToFlat(currentTheme);
-    console.log('Converted to flat structure for DB:', flatTheme);
     
     // Save the flat structure that includes both old flat fields and new nested structure
     const themeToSave = {
@@ -528,7 +549,9 @@ export const EnhancedMobileThemePanel: React.FC<EnhancedMobileThemePanelProps> =
       shadows: currentTheme.shadows
     };
     
-    console.log('Final theme to save:', themeToSave);
+    // Update the ref to prevent re-initialization after save
+    lastAppliedThemeRef.current = JSON.stringify(currentTheme);
+    
     updateConfig('mobile_theme', '', themeToSave);
     updateConfig('api_version', '', 'v1');
     updateConfig('is_validated', '', true);
