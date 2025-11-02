@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -201,60 +201,70 @@ const WhiteLabelConfigPageOptimized = () => {
   
   // Flag to track if initial load is complete
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Track last applied settings to prevent unnecessary updates
+  const lastAppliedSettingsRef = useRef<string>('');
 
   // Merge settings with defaults when they arrive - optimized for performance
   useEffect(() => {
-    if (settings && !isInitialized) {
-      // Handle mobile_theme properly - check if it exists and has the nested structure
-      let processedMobileTheme = getDefaultConfig().mobile_theme;
-      
-      if (settings.mobile_theme) {
-        const mobileThemeData = settings.mobile_theme as any;
-        
-        // Check if mobile_theme has the nested structure (core, neutral, status, support)
-        if (mobileThemeData.core && mobileThemeData.neutral && 
-            mobileThemeData.status && mobileThemeData.support) {
-          // It's already in the nested format from DB, use it as is
-          processedMobileTheme = {
-            ...getDefaultConfig().mobile_theme,
-            ...mobileThemeData,
-            // Preserve nested structure
-            core: mobileThemeData.core,
-            neutral: mobileThemeData.neutral,
-            status: mobileThemeData.status,
-            support: mobileThemeData.support,
-            typography: mobileThemeData.typography,
-            spacing: mobileThemeData.spacing,
-            border_radius: mobileThemeData.border_radius,
-            shadows: mobileThemeData.shadows
-          };
-        } else {
-          // It's in flat format, merge with defaults
-          processedMobileTheme = {
-            ...getDefaultConfig().mobile_theme,
-            ...mobileThemeData
-          };
-        }
-      }
-      
-      const mergedConfig = {
-        ...getDefaultConfig(),
-        ...settings,
-        mobile_theme: processedMobileTheme,
-        // Deep merge pwa_config
-        ...(settings.pwa_config || {}),
-        // Deep merge mobile_ui_config
-        ...(settings.mobile_ui_config || {}),
-        // Merge email templates if they exist (handle as 'any' type)
-        email_templates: (settings as any).email_templates ? {
-          ...getDefaultConfig().email_templates,
-          ...(settings as any).email_templates
-        } : getDefaultConfig().email_templates
-      };
-      
-      setLocalConfig(mergedConfig);
-      setIsInitialized(true);
+    if (!settings || isInitialized) return;
+    
+    // Check if settings have actually changed using JSON comparison
+    const settingsJson = JSON.stringify(settings);
+    if (lastAppliedSettingsRef.current === settingsJson) {
+      return; // No changes, skip update
     }
+    
+    // Handle mobile_theme properly - check if it exists and has the nested structure
+    let processedMobileTheme = getDefaultConfig().mobile_theme;
+    
+    if (settings.mobile_theme) {
+      const mobileThemeData = settings.mobile_theme as any;
+      
+      // Check if mobile_theme has the nested structure (core, neutral, status, support)
+      if (mobileThemeData.core && mobileThemeData.neutral && 
+          mobileThemeData.status && mobileThemeData.support) {
+        // It's already in the nested format from DB, use it as is
+        processedMobileTheme = {
+          ...getDefaultConfig().mobile_theme,
+          ...mobileThemeData,
+          // Preserve nested structure
+          core: mobileThemeData.core,
+          neutral: mobileThemeData.neutral,
+          status: mobileThemeData.status,
+          support: mobileThemeData.support,
+          typography: mobileThemeData.typography,
+          spacing: mobileThemeData.spacing,
+          border_radius: mobileThemeData.border_radius,
+          shadows: mobileThemeData.shadows
+        };
+      } else {
+        // It's in flat format, merge with defaults
+        processedMobileTheme = {
+          ...getDefaultConfig().mobile_theme,
+          ...mobileThemeData
+        };
+      }
+    }
+    
+    const mergedConfig = {
+      ...getDefaultConfig(),
+      ...settings,
+      mobile_theme: processedMobileTheme,
+      // Deep merge pwa_config
+      ...(settings.pwa_config || {}),
+      // Deep merge mobile_ui_config
+      ...(settings.mobile_ui_config || {}),
+      // Merge email templates if they exist (handle as 'any' type)
+      email_templates: (settings as any).email_templates ? {
+        ...getDefaultConfig().email_templates,
+        ...(settings as any).email_templates
+      } : getDefaultConfig().email_templates
+    };
+    
+    setLocalConfig(mergedConfig);
+    setIsInitialized(true);
+    lastAppliedSettingsRef.current = settingsJson;
   }, [settings, isInitialized]);
 
   // Cleanup on unmount
@@ -354,10 +364,8 @@ const WhiteLabelConfigPageOptimized = () => {
       
       setHasUnsavedChanges(false);
       
-      // Force refresh to show real DB values in preview
-      setTimeout(() => {
-        // Settings will auto-refresh from query cache
-      }, 100);
+      // Update the last applied settings ref to prevent re-initialization
+      lastAppliedSettingsRef.current = JSON.stringify(settings);
     } catch (error: any) {
       console.error('Save error:', error);
       // Show validation errors if any

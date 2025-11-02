@@ -36,14 +36,10 @@ export const useWhiteLabelSettingsOptimized = () => {
       if (error) {
         if (error.code === 'PGRST116') {
           // No config exists, return null
-          console.log('No white label config found for tenant:', tenantId);
           return null;
         }
         throw error;
       }
-
-      console.log('Fetched white label config from DB:', data);
-      console.log('Mobile theme from DB:', (data as any)?.mobile_theme);
       
       // Check schema compatibility
       if (data && !isCompatible((data as any).schema_version, CURRENT_SCHEMA_VERSION)) {
@@ -65,10 +61,10 @@ export const useWhiteLabelSettingsOptimized = () => {
       return fetchWhiteLabelConfig(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
-    staleTime: 5 * 60 * 1000, // Reduced to 5 minutes to prevent stale data issues
-    gcTime: 10 * 60 * 1000, // Reduced cache time to 10 minutes
+    staleTime: 10 * 60 * 1000, // Keep fresh for 10 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: 'always', // Changed to always refetch on mount
+    refetchOnMount: false, // Prevent refetch on every mount - use cache
     refetchInterval: false,
     retry: 1,
     retryDelay: 1000,
@@ -79,9 +75,6 @@ export const useWhiteLabelSettingsOptimized = () => {
   const updateSettings = useMutation({
     mutationFn: async (updates: Partial<WhiteLabelConfig>) => {
       if (!currentTenant?.id) throw new Error('No tenant selected');
-      
-      console.log('Update payload before processing:', updates);
-      console.log('Mobile theme in update payload:', updates.mobile_theme);
       
       // Get current user for audit metadata
       const { data: { user } } = await supabase.auth.getUser();
@@ -103,8 +96,6 @@ export const useWhiteLabelSettingsOptimized = () => {
       
       // Sanitize configuration before saving
       const sanitizedPayload = sanitizeWhiteLabelConfig(payload as WhiteLabelConfig);
-      
-      console.log('Final sanitized payload to save to DB:', sanitizedPayload);
 
       // Check if config exists
       const { data: existing } = await supabase

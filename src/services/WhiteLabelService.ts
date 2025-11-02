@@ -210,8 +210,6 @@ class WhiteLabelService {
         tenant_id: tenantId,
         ...colorData,
       });
-      
-      console.log('Synced colors to white label config for mobile app:', colorData);
     } catch (error) {
       console.error('Failed to sync colors to white label:', error);
       // Don't throw - this is a best-effort sync
