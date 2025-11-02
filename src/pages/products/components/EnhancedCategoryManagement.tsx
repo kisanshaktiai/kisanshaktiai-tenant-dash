@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,9 @@ import {
   Download,
   ArrowUp,
   ArrowDown,
-  Settings
+  Settings,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
@@ -41,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -95,6 +98,29 @@ export default function EnhancedCategoryManagement() {
       })) as Category[];
     },
   });
+
+  // Real-time subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('product_categories_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'product_categories',
+          filter: `tenant_id=eq.${getTenantId()}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['categories', getTenantId()] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [getTenantId, queryClient]);
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -255,80 +281,107 @@ export default function EnhancedCategoryManagement() {
       const isExpanded = expandedCategories.has(category.id);
       
       return (
-        <div key={category.id} className="space-y-2">
+        <div key={category.id} className="space-y-1">
           <div 
-            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+            className={cn(
+              "group flex items-center justify-between p-3 rounded-lg transition-all duration-200",
+              "hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/40",
+              "border border-transparent hover:border-primary/20",
+              !category.is_active && "opacity-60"
+            )}
             style={{ marginLeft: `${level * 20}px` }}
           >
-            <div className="flex items-center gap-3">
-              {hasChildren && (
+            <div className="flex items-center gap-3 flex-1">
+              {hasChildren ? (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => toggleExpanded(category.id)}
+                  className={cn(
+                    "p-1.5 h-auto rounded-md transition-all duration-200",
+                    "hover:bg-primary/10 hover:scale-110"
+                  )}
                 >
                   {isExpanded ? (
                     <FolderOpen className="h-4 w-4 text-primary" />
                   ) : (
-                    <Folder className="h-4 w-4 text-muted-foreground" />
+                    <Folder className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
                   )}
                 </Button>
-              )}
-              
-              {!hasChildren && (
-                <div className="w-10 flex justify-center">
-                  <Folder className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <div className="w-9 flex justify-center">
+                  <Folder className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               )}
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{category.name}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-sm group-hover:text-primary transition-colors">
+                    {category.name}
+                  </span>
                   {!category.is_active && (
-                    <Badge variant="secondary">Inactive</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Inactive
+                    </Badge>
                   )}
                   {category.product_count && category.product_count > 0 && (
-                    <Badge variant="outline">{category.product_count} products</Badge>
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs font-semibold group-hover:border-primary group-hover:text-primary transition-colors"
+                    >
+                      {category.product_count} products
+                    </Badge>
                   )}
                 </div>
                 {category.description && (
-                  <p className="text-sm text-muted-foreground">{category.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                    {category.description}
+                  </p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => moveCategory(category.id, 'up')}
                 disabled={category.sort_order === 0}
+                className="h-8 w-8 p-0 hover:bg-primary/10"
               >
-                <ArrowUp className="h-4 w-4" />
+                <ArrowUp className="h-3.5 w-3.5" />
               </Button>
               
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => moveCategory(category.id, 'down')}
+                className="h-8 w-8 p-0 hover:bg-primary/10"
               >
-                <ArrowDown className="h-4 w-4" />
+                <ArrowDown className="h-3.5 w-3.5" />
               </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-primary/10"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleEdit(category)}>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem 
+                    onClick={() => handleEdit(category)}
+                    className="cursor-pointer"
+                  >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => deleteMutation.mutate(category.id)}
-                    className="text-destructive"
+                    className="text-destructive cursor-pointer"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -339,7 +392,7 @@ export default function EnhancedCategoryManagement() {
           </div>
           
           {hasChildren && isExpanded && (
-            <div>
+            <div className="animate-fade-in">
               {renderCategoryTree(category.children!, level + 1)}
             </div>
           )}
@@ -372,62 +425,95 @@ export default function EnhancedCategoryManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card>
-        <CardHeader>
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trees className="h-5 w-5" />
-              Product Categories
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Trees className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl">Product Categories</h2>
+                <p className="text-sm text-muted-foreground font-normal mt-0.5">
+                  Organize your products into hierarchical categories
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hover:bg-primary/5 hover:border-primary transition-all"
+              >
                 <Upload className="h-4 w-4 mr-2" />
                 Import
               </Button>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="hover:bg-primary/5 hover:border-primary transition-all"
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingCategory(null)}>
+                  <Button 
+                    onClick={() => setEditingCategory(null)}
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Category
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {editingCategory ? 'Edit Category' : 'Create New Category'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingCategory 
-                        ? 'Update the category information below.'
-                        : 'Add a new category to organize your products.'
-                      }
-                    </DialogDescription>
+                  <DialogHeader className="border-b pb-4 bg-gradient-to-r from-primary/5 to-transparent -mx-6 -mt-6 px-6 pt-6 pb-4 mb-4 rounded-t-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-lg bg-primary/10">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <DialogTitle className="text-xl">
+                          {editingCategory ? 'Edit Category' : 'Create New Category'}
+                        </DialogTitle>
+                        <DialogDescription className="mt-1">
+                          {editingCategory 
+                            ? 'Update the category information below.'
+                            : 'Add a new category to organize your products.'
+                          }
+                        </DialogDescription>
+                      </div>
+                    </div>
                   </DialogHeader>
                   
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Category Name</Label>
+                        <Label htmlFor="name" className="text-sm font-semibold">
+                          Category Name *
+                        </Label>
                         <Input
                           id="name"
                           value={formData.name}
                           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="e.g., Fertilizers"
                           required
+                          className="border-2 focus:border-primary transition-colors"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="parent_id">Parent Category</Label>
+                        <Label htmlFor="parent_id" className="text-sm font-semibold">
+                          Parent Category
+                        </Label>
                         <select
                           id="parent_id"
                           value={formData.parent_id}
                           onChange={(e) => setFormData(prev => ({ ...prev, parent_id: e.target.value }))}
-                          className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                          className={cn(
+                            "w-full px-3 py-2 border-2 border-input bg-background rounded-lg text-sm",
+                            "focus:border-primary focus:outline-none transition-colors"
+                          )}
                         >
                           <option value="">No Parent (Top Level)</option>
                           {categories?.filter(cat => cat.id !== editingCategory?.id).map((category) => (
@@ -440,56 +526,90 @@ export default function EnhancedCategoryManagement() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
+                      <Label htmlFor="description" className="text-sm font-semibold">
+                        Description
+                      </Label>
                       <Textarea
                         id="description"
                         value={formData.description}
                         onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="Brief description of the category"
                         rows={3}
+                        className="border-2 focus:border-primary transition-colors resize-none"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="sort_order">Sort Order</Label>
+                        <Label htmlFor="sort_order" className="text-sm font-semibold">
+                          Sort Order
+                        </Label>
                         <Input
                           id="sort_order"
                           type="number"
                           value={formData.sort_order}
                           onChange={(e) => setFormData(prev => ({ ...prev, sort_order: Number(e.target.value) }))}
+                          className="border-2 focus:border-primary transition-colors"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="icon_url">Icon URL</Label>
+                        <Label htmlFor="icon_url" className="text-sm font-semibold">
+                          Icon URL
+                        </Label>
                         <Input
                           id="icon_url"
                           value={formData.icon_url}
                           onChange={(e) => setFormData(prev => ({ ...prev, icon_url: e.target.value }))}
                           placeholder="Optional icon URL"
+                          className="border-2 focus:border-primary transition-colors"
                         />
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="is_active"
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                      />
-                      <Label htmlFor="is_active">Active</Label>
+                    <div className={cn(
+                      "flex items-center justify-between p-4 rounded-lg",
+                      "bg-gradient-to-r from-primary/5 to-transparent border border-primary/20"
+                    )}>
+                      <div className="flex items-center space-x-3">
+                        <Switch
+                          id="is_active"
+                          checked={formData.is_active}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                        />
+                        <Label htmlFor="is_active" className="text-sm font-semibold cursor-pointer">
+                          Active Status
+                        </Label>
+                      </div>
+                      <Badge variant={formData.is_active ? "default" : "secondary"}>
+                        {formData.is_active ? "Active" : "Inactive"}
+                      </Badge>
                     </div>
 
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={resetForm}>
+                    <DialogFooter className="border-t pt-4 gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={resetForm}
+                        className="hover:bg-destructive/5 hover:border-destructive transition-all"
+                      >
                         Cancel
                       </Button>
                       <Button 
                         type="submit" 
                         disabled={createMutation.isPending || updateMutation.isPending}
+                        className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
                       >
-                        {editingCategory ? 'Update' : 'Create'} Category
+                        {createMutation.isPending || updateMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {editingCategory ? 'Updating...' : 'Creating...'}
+                          </>
+                        ) : (
+                          <>
+                            {editingCategory ? 'Update' : 'Create'} Category
+                          </>
+                        )}
                       </Button>
                     </DialogFooter>
                   </form>
@@ -497,26 +617,27 @@ export default function EnhancedCategoryManagement() {
               </Dialog>
             </div>
           </CardTitle>
-          <CardDescription>
-            Organize your products into hierarchical categories
-          </CardDescription>
         </CardHeader>
       </Card>
 
       {/* Search */}
-      <Card>
+      <Card className="border-0 shadow-md">
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search categories..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
+                className="pl-10 border-2 focus:border-primary transition-colors h-10"
               />
             </div>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="hover:bg-primary/5 hover:border-primary transition-all h-10"
+            >
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
@@ -525,19 +646,24 @@ export default function EnhancedCategoryManagement() {
       </Card>
 
       {/* Categories Tree */}
-      <Card>
+      <Card className="border-0 shadow-md">
         <CardContent className="p-6">
-          <div className="space-y-4">
+          <div className="space-y-2">
             {categoryTree.length > 0 ? (
               renderCategoryTree(categoryTree)
             ) : (
-              <div className="text-center py-12">
-                <Trees className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <div className="text-center py-16">
+                <div className="inline-flex p-4 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 mb-4">
+                  <Trees className="h-12 w-12 text-primary" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2">No categories found</h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-muted-foreground mb-6">
                   {searchTerm ? 'No categories match your search.' : 'Create your first category to organize your products.'}
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button 
+                  onClick={() => setIsDialogOpen(true)}
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Category
                 </Button>
