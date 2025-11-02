@@ -72,11 +72,14 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
 
       setPreviews(previewData);
     } catch (error: any) {
+      console.error('Preview error:', error);
       toast({
         title: 'Preview failed',
-        description: error.message,
+        description: error.message || 'Failed to load import preview. Please check console for details.',
         variant: 'destructive',
       });
+      // Set empty previews on error so UI doesn't hang
+      setPreviews([]);
     } finally {
       setIsLoadingPreview(false);
     }
@@ -534,7 +537,7 @@ export default function ImportPreviewModal({ type, items, onClose, onSuccess }: 
               </Button>
               <Button
                 onClick={handleImport}
-                disabled={isLoadingPreview || isImporting || previews.length === 0}
+                disabled={isLoadingPreview || isImporting || (stats.new + stats.update === 0)}
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all"
               >
                 {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

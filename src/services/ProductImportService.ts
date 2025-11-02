@@ -91,8 +91,8 @@ class ProductImportService {
       const existing = existingMap.get(category.id);
       previews.push({
         masterItem: category,
-        action: existing ? 'update' : 'create',
-        conflicts: existing ? [`Category already exists: ${existing.name}`] : undefined,
+        action: existing ? 'skip' : 'create',
+        conflicts: existing ? [`Already imported to your catalog: ${existing.name}`] : undefined,
       });
     }
 
@@ -104,10 +104,32 @@ class ProductImportService {
     products: MasterProduct[],
     options: ImportOptions = {}
   ): Promise<ImportPreview[]> {
+    // First check for already imported products by master_product_id
+    const { data: alreadyImported } = await supabase
+      .from('products')
+      .select('id, name, sku, master_product_id')
+      .eq('tenant_id', tenantId)
+      .in('master_product_id', products.map(p => p.id));
+
+    const importedMap = new Map(
+      alreadyImported?.map(p => [p.master_product_id, p]) || []
+    );
+
     const duplicates = await this.checkProductDuplicates(tenantId, products);
     const previews: ImportPreview[] = [];
 
     for (const product of products) {
+      // Check if already imported from master catalog
+      const alreadyImportedProduct = importedMap.get(product.id);
+      if (alreadyImportedProduct) {
+        previews.push({
+          masterItem: product,
+          action: 'skip',
+          conflicts: [`Already imported to your catalog: ${alreadyImportedProduct.name}`],
+        });
+        continue;
+      }
+
       const duplicate = duplicates.get(product.id);
       let action: 'create' | 'update' | 'skip' = 'create';
       const conflicts: string[] = [];

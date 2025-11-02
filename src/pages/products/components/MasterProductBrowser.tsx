@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -63,13 +63,44 @@ export default function MasterProductBrowser() {
     queryFn: () => masterDataService.getCategories(),
   });
 
+  // Fetch already imported products
+  const { data: importedProductIds } = useQuery({
+    queryKey: ['imported-products', currentTenant?.id],
+    queryFn: async () => {
+      if (!currentTenant) return new Set<string>();
+      const { data, error } = await supabase
+        .from('products')
+        .select('master_product_id')
+        .eq('tenant_id', currentTenant.id)
+        .not('master_product_id', 'is', null);
+      
+      if (error) throw error;
+      return new Set(data?.map(p => p.master_product_id).filter(Boolean) || []);
+    },
+    enabled: !!currentTenant,
+  });
+
   // Fetch products
   const { data: productsData, isLoading } = useQuery({
     queryKey: ['master-products', filters, page],
     queryFn: () => masterDataService.getProducts(filters, page, 20),
   });
 
+  // Filter out already imported products
+  const availableProducts = useMemo(() => {
+    if (!productsData?.products || !importedProductIds) return productsData?.products || [];
+    return productsData.products.filter(p => !importedProductIds.has(p.id));
+  }, [productsData?.products, importedProductIds]);
+
+  const importedCount = useMemo(() => {
+    if (!productsData?.products || !importedProductIds) return 0;
+    return productsData.products.filter(p => importedProductIds.has(p.id)).length;
+  }, [productsData?.products, importedProductIds]);
+
   const handleSelectProduct = (productId: string, checked: boolean) => {
+    // Prevent selecting already imported products
+    if (importedProductIds?.has(productId)) return;
+    
     const newSelected = new Set(selectedProducts);
     if (checked) {
       newSelected.add(productId);
@@ -80,14 +111,14 @@ export default function MasterProductBrowser() {
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked && productsData?.products) {
-      setSelectedProducts(new Set(productsData.products.map(p => p.id)));
+    if (checked && availableProducts) {
+      setSelectedProducts(new Set(availableProducts.map(p => p.id)));
     } else {
       setSelectedProducts(new Set());
     }
   };
 
-  const selectedProductsList = productsData?.products.filter(p => selectedProducts.has(p.id)) || [];
+  const selectedProductsList = availableProducts.filter(p => selectedProducts.has(p.id)) || [];
 
   return (
     <div className="space-y-6">
@@ -161,16 +192,21 @@ export default function MasterProductBrowser() {
             <div className="flex items-center gap-3">
               <Checkbox
                 id="select-all-products"
-                checked={selectedProducts.size > 0 && selectedProducts.size === productsData?.products.length}
+                checked={selectedProducts.size > 0 && selectedProducts.size === availableProducts.length}
                 onCheckedChange={handleSelectAll}
                 className="transition-transform hover:scale-110"
               />
               <label htmlFor="select-all-products" className="text-sm font-semibold cursor-pointer hover:text-primary transition-colors">
-                Select All
+                Select All Available
               </label>
               {selectedProducts.size > 0 && (
                 <Badge variant="default" className="animate-scale-in">
                   {selectedProducts.size} selected
+                </Badge>
+              )}
+              {importedCount > 0 && (
+                <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30">
+                  {importedCount} already imported
                 </Badge>
               )}
             </div>
@@ -193,25 +229,37 @@ export default function MasterProductBrowser() {
           ) : (
             <ScrollArea className="h-[600px] pr-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {productsData?.products.map(product => (
+                {productsData?.products.map(product => {
+                  const isImported = importedProductIds?.has(product.id);
+                  return (
                   <Card 
                     key={product.id} 
                     className={cn(
-                      "group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1",
-                      "border-2 hover:border-primary/50",
-                      selectedProducts.has(product.id) && "border-primary shadow-lg shadow-primary/20"
+                      "group relative overflow-hidden transition-all duration-300",
+                      !isImported && "hover:shadow-xl hover:-translate-y-1 border-2 hover:border-primary/50",
+                      selectedProducts.has(product.id) && "border-primary shadow-lg shadow-primary/20",
+                      isImported && "opacity-60 border-2 border-purple-500/30 bg-purple-500/5"
                     )}
                   >
                     <CardContent className="p-4 space-y-3">
+                      {isImported && (
+                        <Badge className="absolute top-2 right-2 bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/50 z-10">
+                          Already Imported
+                        </Badge>
+                      )}
                       <div className="flex items-start gap-3">
                         <Checkbox
                           id={`product-${product.id}`}
                           checked={selectedProducts.has(product.id)}
                           onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                           className="mt-0.5 transition-transform hover:scale-110"
+                          disabled={isImported}
                         />
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                          <h4 className={cn(
+                            "font-semibold text-sm line-clamp-2 transition-colors",
+                            !isImported && "group-hover:text-primary"
+                          )}>
                             {product.name}
                           </h4>
                           <p className="text-xs text-muted-foreground mt-1 font-medium">{product.brand}</p>
@@ -252,9 +300,11 @@ export default function MasterProductBrowser() {
                     </CardContent>
                     
                     {/* Hover gradient effect */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    {!isImported && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    )}
                   </Card>
-                ))}
+                )})}
               </div>
 
               {productsData && productsData.totalPages > 1 && (

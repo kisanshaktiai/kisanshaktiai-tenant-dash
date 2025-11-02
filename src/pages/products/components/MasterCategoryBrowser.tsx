@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,12 +10,15 @@ import { masterDataService, type MasterProductCategory } from '@/services/Master
 import ImportPreviewModal from './ImportPreviewModal';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useTenantIsolation } from '@/hooks/useTenantIsolation';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CategoryTreeItemProps {
   category: MasterProductCategory & { children?: any[] };
   level: number;
   selectedCategories: Set<string>;
   onToggleSelect: (categoryId: string, checked: boolean) => void;
+  importedCategoryIds?: Set<string>;
 }
 
 const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
@@ -23,19 +26,22 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
   level,
   selectedCategories,
   onToggleSelect,
+  importedCategoryIds,
 }) => {
   const [expanded, setExpanded] = useState(level === 0);
   const [isHovered, setIsHovered] = useState(false);
   const hasChildren = category.children && category.children.length > 0;
   const isSelected = selectedCategories.has(category.id);
+  const isImported = importedCategoryIds?.has(category.id);
 
   return (
     <div className="space-y-0.5">
       <div
         className={cn(
           "group flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all duration-200",
-          "hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/40",
+          !isImported && "hover:bg-gradient-to-r hover:from-accent/80 hover:to-accent/40",
           isSelected && "bg-primary/5 border-l-2 border-primary",
+          isImported && "opacity-60 bg-purple-500/5",
           "cursor-pointer"
         )}
         style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
@@ -65,19 +71,27 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
           checked={isSelected}
           onCheckedChange={(checked) => onToggleSelect(category.id, checked as boolean)}
           className="transition-transform hover:scale-110"
+          disabled={isImported}
         />
 
         <label
           htmlFor={`category-${category.id}`}
           className={cn(
             "flex-1 text-sm font-medium cursor-pointer transition-colors",
-            isSelected ? "text-primary" : "text-foreground group-hover:text-primary"
+            isSelected ? "text-primary" : "text-foreground",
+            !isImported && "group-hover:text-primary"
           )}
         >
           {category.name}
         </label>
 
-        {hasChildren && (
+        {isImported && (
+          <Badge className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/50">
+            Imported
+          </Badge>
+        )}
+
+        {hasChildren && !isImported && (
           <Badge 
             variant={isHovered ? "default" : "secondary"} 
             className={cn(
@@ -99,6 +113,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
               level={level + 1}
               selectedCategories={selectedCategories}
               onToggleSelect={onToggleSelect}
+              importedCategoryIds={importedCategoryIds}
             />
           ))}
         </div>
@@ -108,8 +123,26 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({
 };
 
 export default function MasterCategoryBrowser() {
+  const { currentTenant } = useTenantIsolation();
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [showPreview, setShowPreview] = useState(false);
+
+  // Fetch already imported categories
+  const { data: importedCategoryIds } = useQuery({
+    queryKey: ['imported-categories', currentTenant?.id],
+    queryFn: async () => {
+      if (!currentTenant) return new Set<string>();
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('master_category_id')
+        .eq('tenant_id', currentTenant.id)
+        .not('master_category_id', 'is', null);
+      
+      if (error) throw error;
+      return new Set(data?.map(c => c.master_category_id).filter(Boolean) || []);
+    },
+    enabled: !!currentTenant,
+  });
 
   const { data: categoryTree, isLoading } = useQuery({
     queryKey: ['master-category-tree'],
@@ -121,7 +154,21 @@ export default function MasterCategoryBrowser() {
     queryFn: () => masterDataService.getCategories(),
   });
 
+  // Filter out already imported categories
+  const availableCategories = useMemo(() => {
+    if (!allCategories || !importedCategoryIds) return allCategories || [];
+    return allCategories.filter(c => !importedCategoryIds.has(c.id));
+  }, [allCategories, importedCategoryIds]);
+
+  const importedCount = useMemo(() => {
+    if (!allCategories || !importedCategoryIds) return 0;
+    return allCategories.filter(c => importedCategoryIds.has(c.id)).length;
+  }, [allCategories, importedCategoryIds]);
+
   const handleToggleSelect = (categoryId: string, checked: boolean) => {
+    // Prevent selecting already imported categories
+    if (importedCategoryIds?.has(categoryId)) return;
+    
     const newSelected = new Set(selectedCategories);
     if (checked) {
       newSelected.add(categoryId);
@@ -132,8 +179,8 @@ export default function MasterCategoryBrowser() {
   };
 
   const handleSelectAll = () => {
-    if (allCategories) {
-      setSelectedCategories(new Set(allCategories.map(c => c.id)));
+    if (availableCategories) {
+      setSelectedCategories(new Set(availableCategories.map(c => c.id)));
     }
   };
 
@@ -141,7 +188,7 @@ export default function MasterCategoryBrowser() {
     setSelectedCategories(new Set());
   };
 
-  const selectedCategoriesList = allCategories?.filter(c => selectedCategories.has(c.id)) || [];
+  const selectedCategoriesList = availableCategories.filter(c => selectedCategories.has(c.id)) || [];
 
   return (
     <div className="space-y-6">
@@ -154,11 +201,18 @@ export default function MasterCategoryBrowser() {
               </div>
               <div>
                 <CardTitle className="text-xl">Category Catalog</CardTitle>
-                {selectedCategories.size > 0 && (
-                  <Badge variant="default" className="mt-1 animate-scale-in">
-                    {selectedCategories.size} selected
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {selectedCategories.size > 0 && (
+                    <Badge variant="default" className="animate-scale-in">
+                      {selectedCategories.size} selected
+                    </Badge>
+                  )}
+                  {importedCount > 0 && (
+                    <Badge variant="secondary" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30">
+                      {importedCount} already imported
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
@@ -206,6 +260,7 @@ export default function MasterCategoryBrowser() {
                     level={0}
                     selectedCategories={selectedCategories}
                     onToggleSelect={handleToggleSelect}
+                    importedCategoryIds={importedCategoryIds}
                   />
                 ))}
               </div>
