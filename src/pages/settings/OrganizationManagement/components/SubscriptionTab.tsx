@@ -5,11 +5,16 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useOrganizationSubscription } from '@/hooks/organization/useOrganizationSubscription';
 import { useOrganizationMetrics } from '@/hooks/organization/useOrganizationMetrics';
+import { TenantSubscriptionTab } from './TenantSubscriptionTab';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreditCard, Users, Store, Package, TrendingUp } from 'lucide-react';
 import PlanComparisonTable from './PlanComparisonTable';
 
 const SubscriptionTab = () => {
+  return <TenantSubscriptionTab />;
+};
+
+const SubscriptionTabOld = () => {
   const { subscription, isLoading: subLoading } = useOrganizationSubscription();
   const { metrics, isLoading: metricsLoading } = useOrganizationMetrics();
 

@@ -5527,6 +5527,7 @@ export type Database = {
           stripe_subscription_id: string | null
           tenant_id: string
           tenant_subscription_id: string | null
+          trial_days: number | null
           trial_end_date: string | null
           updated_at: string
         }
@@ -5554,6 +5555,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           tenant_id: string
           tenant_subscription_id?: string | null
+          trial_days?: number | null
           trial_end_date?: string | null
           updated_at?: string
         }
@@ -5581,6 +5583,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           tenant_id?: string
           tenant_subscription_id?: string | null
+          trial_days?: number | null
           trial_end_date?: string | null
           updated_at?: string
         }
@@ -10679,6 +10682,92 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_intents: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          dummy_payment_data: Json | null
+          error_message: string | null
+          expires_at: string | null
+          farmer_id: string | null
+          id: string
+          payment_method: string | null
+          plan_id: string
+          status: string | null
+          subscription_type: string
+          tenant_id: string | null
+          transaction_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          dummy_payment_data?: Json | null
+          error_message?: string | null
+          expires_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id: string
+          status?: string | null
+          subscription_type: string
+          tenant_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          dummy_payment_data?: Json | null
+          error_message?: string | null
+          expires_at?: string | null
+          farmer_id?: string | null
+          id?: string
+          payment_method?: string | null
+          plan_id?: string
+          status?: string | null
+          subscription_type?: string
+          tenant_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_intents_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "farmers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_farmer_id_fkey"
+            columns: ["farmer_id"]
+            isOneToOne: false
+            referencedRelation: "ndvi_full_view"
+            referencedColumns: ["farmer_id"]
+          },
+          {
+            foreignKeyName: "payment_intents_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           account_last4: string | null
@@ -14269,14 +14358,17 @@ export type Database = {
         Row: {
           billing_interval: string | null
           created_at: string | null
+          created_by_tenant_id: string | null
           description: string | null
           features: Json | null
           id: string
           is_active: boolean | null
           is_custom: boolean | null
+          is_custom_plan: boolean | null
           is_public: boolean | null
           limits: Json | null
           name: string
+          parent_plan_id: string | null
           plan_category: string | null
           plan_type: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually: number | null
@@ -14293,14 +14385,17 @@ export type Database = {
         Insert: {
           billing_interval?: string | null
           created_at?: string | null
+          created_by_tenant_id?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
           is_custom?: boolean | null
+          is_custom_plan?: boolean | null
           is_public?: boolean | null
           limits?: Json | null
           name: string
+          parent_plan_id?: string | null
           plan_category?: string | null
           plan_type: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually?: number | null
@@ -14317,14 +14412,17 @@ export type Database = {
         Update: {
           billing_interval?: string | null
           created_at?: string | null
+          created_by_tenant_id?: string | null
           description?: string | null
           features?: Json | null
           id?: string
           is_active?: boolean | null
           is_custom?: boolean | null
+          is_custom_plan?: boolean | null
           is_public?: boolean | null
           limits?: Json | null
           name?: string
+          parent_plan_id?: string | null
           plan_category?: string | null
           plan_type?: Database["public"]["Enums"]["subscription_plan_type"]
           price_annually?: number | null
@@ -14339,6 +14437,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "subscription_plans_created_by_tenant_id_fkey"
+            columns: ["created_by_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plans_parent_plan_id_fkey"
+            columns: ["parent_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subscription_plans_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -15432,6 +15544,63 @@ export type Database = {
           },
         ]
       }
+      tenant_farmer_pricing: {
+        Row: {
+          base_plan_id: string
+          created_at: string | null
+          custom_features: Json | null
+          custom_limits: Json | null
+          custom_price_annually: number | null
+          custom_price_monthly: number | null
+          custom_price_quarterly: number | null
+          id: string
+          is_active: boolean | null
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_plan_id: string
+          created_at?: string | null
+          custom_features?: Json | null
+          custom_limits?: Json | null
+          custom_price_annually?: number | null
+          custom_price_monthly?: number | null
+          custom_price_quarterly?: number | null
+          id?: string
+          is_active?: boolean | null
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_plan_id?: string
+          created_at?: string | null
+          custom_features?: Json | null
+          custom_limits?: Json | null
+          custom_price_annually?: number | null
+          custom_price_monthly?: number | null
+          custom_price_quarterly?: number | null
+          id?: string
+          is_active?: boolean | null
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_farmer_pricing_base_plan_id_fkey"
+            columns: ["base_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_farmer_pricing_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_feature_overrides: {
         Row: {
           created_at: string | null
@@ -15802,6 +15971,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           tenant_id: string | null
+          trial_days: number | null
           updated_at: string | null
         }
         Insert: {
@@ -15826,6 +15996,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tenant_id?: string | null
+          trial_days?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -15850,6 +16021,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           tenant_id?: string | null
+          trial_days?: number | null
           updated_at?: string | null
         }
         Relationships: [
