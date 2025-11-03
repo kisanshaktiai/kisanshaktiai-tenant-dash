@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useOrganizationBranding } from '@/hooks/organization/useOrganizationBranding';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Palette, Upload, Image } from 'lucide-react';
+import { Palette, Type } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import LogoUploadWithCrop from './LogoUploadWithCrop';
+import ColorPreviewWithAccessibility from './ColorPreviewWithAccessibility';
 
 const BrandingTab = () => {
   const { branding, isLoading, updateBranding, uploadLogo, isUpdating, isUploading } = useOrganizationBranding();
@@ -82,61 +84,37 @@ const BrandingTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Visual Identity */}
+      {/* Logo Upload with Drag & Drop */}
+      <LogoUploadWithCrop
+        currentLogoUrl={branding?.logo_url}
+        onUpload={uploadLogo}
+        isUploading={isUploading}
+      />
+
+      {/* App Name */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Image className="h-5 w-5 text-primary" />
-            Visual Identity
+            <Type className="h-5 w-5 text-primary" />
+            Application Name
           </CardTitle>
           <CardDescription>
-            Upload your organization's logo and branding assets
+            Customize the display name of your application
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="logo">Organization Logo</Label>
-              <div className="mt-2 flex items-center gap-4">
-                {branding?.logo_url && (
-                  <div className="h-20 w-20 rounded-lg border overflow-hidden bg-muted">
-                    <img
-                      src={branding.logo_url}
-                      alt="Logo"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex-1">
-                  <Input
-                    id="logo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="cursor-pointer"
-                    disabled={isUploading}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    PNG, JPG up to 5MB. Recommended: 512x512px
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="appName">App Name</Label>
-              <Input
-                id="appName"
-                value={appName}
-                onChange={(e) => setAppName(e.target.value)}
-                placeholder="Your App Name"
-              />
-            </div>
-
-            <Button onClick={handleBrandingUpdate} disabled={isUpdating}>
-              {isUpdating ? 'Saving...' : 'Save Branding'}
-            </Button>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="appName">App Name</Label>
+            <Input
+              id="appName"
+              value={appName}
+              onChange={(e) => setAppName(e.target.value)}
+              placeholder="Your App Name"
+            />
           </div>
+          <Button onClick={handleBrandingUpdate} disabled={isUpdating}>
+            {isUpdating ? 'Saving...' : 'Save App Name'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -239,10 +217,20 @@ const BrandingTab = () => {
         </CardContent>
       </Card>
 
+      {/* Color Preview & Accessibility */}
+      <ColorPreviewWithAccessibility
+        primaryColor={colors.primary_color}
+        secondaryColor={colors.secondary_color}
+        accentColor={colors.accent_color}
+      />
+
       {/* Typography */}
       <Card>
         <CardHeader>
-          <CardTitle>Typography</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Type className="h-5 w-5 text-primary" />
+            Typography
+          </CardTitle>
           <CardDescription>
             Choose the font family for your application
           </CardDescription>
@@ -257,9 +245,22 @@ const BrandingTab = () => {
               placeholder="e.g., Inter, Roboto, Poppins"
             />
             <p className="text-xs text-muted-foreground">
-              Enter a Google Font name or system font
+              Enter a Google Font name or system font. Popular choices: Inter, Roboto, Poppins, Open Sans
             </p>
           </div>
+          
+          {/* Font Preview */}
+          {fontFamily && (
+            <div className="p-4 rounded-lg border bg-muted/50 space-y-2">
+              <p className="text-xs text-muted-foreground">Preview:</p>
+              <div style={{ fontFamily: fontFamily }}>
+                <p className="text-2xl font-bold">The quick brown fox</p>
+                <p className="text-base">jumps over the lazy dog</p>
+                <p className="text-sm text-muted-foreground">0123456789</p>
+              </div>
+            </div>
+          )}
+          
           <Button onClick={handleBrandingUpdate} disabled={isUpdating}>
             {isUpdating ? 'Saving...' : 'Save Typography'}
           </Button>

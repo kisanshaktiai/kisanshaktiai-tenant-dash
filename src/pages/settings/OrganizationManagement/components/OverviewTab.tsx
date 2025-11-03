@@ -14,6 +14,7 @@ import { useOrganizationProfile } from '@/hooks/organization/useOrganizationProf
 import { useOrganizationMetrics } from '@/hooks/organization/useOrganizationMetrics';
 import { useOrganizationSubscription } from '@/hooks/organization/useOrganizationSubscription';
 import { Skeleton } from '@/components/ui/skeleton';
+import ActivityTimeline from './ActivityTimeline';
 
 const OverviewTab = () => {
   const { profile, isLoading: profileLoading } = useOrganizationProfile();
@@ -152,43 +153,62 @@ const OverviewTab = () => {
         </CardContent>
       </Card>
 
-      {/* AI Insights */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            AI-Powered Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-blue-500/20">
-                <TrendingUp className="h-4 w-4 text-blue-500" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Growth Opportunity</p>
-                <p className="text-sm text-muted-foreground">
-                  Your farmer engagement is 23% higher than average. Consider expanding your product catalog.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-orange-500/20">
-                <Shield className="h-4 w-4 text-orange-500" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-sm">Security Recommendation</p>
-                <p className="text-sm text-muted-foreground">
-                  Enable two-factor authentication for all admin users to improve security posture.
-                </p>
+      {/* Two Column Layout for AI Insights and Activity */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* AI Insights */}
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              AI-Powered Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 hover-scale cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-blue-500/20 animate-pulse">
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">Growth Opportunity</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your farmer engagement is 23% higher than average. Consider expanding your product catalog.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 hover-scale cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-orange-500/20 animate-pulse">
+                  <Shield className="h-4 w-4 text-orange-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">Security Recommendation</p>
+                  <p className="text-sm text-muted-foreground">
+                    Enable two-factor authentication for all admin users to improve security posture.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 hover-scale cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-green-500/20 animate-pulse">
+                  <Package className="h-4 w-4 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-sm">Inventory Optimization</p>
+                  <p className="text-sm text-muted-foreground">
+                    3 products are low in stock. Consider restocking to maintain availability.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activity Timeline */}
+        <ActivityTimeline />
+      </div>
     </div>
   );
 };
