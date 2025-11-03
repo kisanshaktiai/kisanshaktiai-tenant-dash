@@ -35,7 +35,7 @@ import NDVIPage from '@/pages/NDVIPage';
 import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
 
 // Settings sub-pages
-import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
+import OrganizationManagement from '@/pages/settings/OrganizationManagement';
 import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
 import WhiteLabelConfigPageOptimized from '@/pages/settings/WhiteLabelConfigPageOptimized';
@@ -94,7 +94,7 @@ function App() {
                     <Route path="dealers" element={<DealersPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/organization" element={<EnhancedOrganizationPage />} />
+                    <Route path="settings/organization" element={<OrganizationManagement />} />
                     <Route path="settings/users" element={<EnhancedUsersPage />} />
                     <Route path="settings/appearance" element={<AppearancePage />} />
                     <Route path="settings/white-label" element={<WhiteLabelConfigPageOptimized />} />
