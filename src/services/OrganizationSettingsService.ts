@@ -28,7 +28,7 @@ class OrganizationSettingsService {
       .from('organization_settings')
       .select('*')
       .eq('tenant_id', tenantId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching organization settings:', error);

@@ -33,9 +33,9 @@ export const useOrganizationAnalytics = () => {
         .from('organization_analytics')
         .select('*')
         .eq('tenant_id', getTenantId())
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       return data as OrganizationAnalytics | null;
     },
     staleTime: 60 * 1000, // 1 minute

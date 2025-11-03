@@ -38,9 +38,9 @@ export const useOrganizationSubscription = () => {
           plan:subscription_plans(*)
         `)
         .eq('tenant_id', getTenantId())
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       return data as any;
     },
     staleTime: 5 * 60 * 1000,
