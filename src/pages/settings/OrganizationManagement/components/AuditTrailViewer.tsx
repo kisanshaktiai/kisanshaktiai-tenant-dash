@@ -74,14 +74,14 @@ export const AuditTrailViewer = () => {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Select
-              value={filters.action_type}
-              onValueChange={(value) => setFilters({ ...filters, action_type: value })}
+              value={filters.action_type || undefined}
+              onValueChange={(value) => setFilters({ ...filters, action_type: value === 'all' ? '' : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by action" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Actions</SelectItem>
+                <SelectItem value="all">All Actions</SelectItem>
                 <SelectItem value="create">Create</SelectItem>
                 <SelectItem value="update">Update</SelectItem>
                 <SelectItem value="delete">Delete</SelectItem>
@@ -90,14 +90,14 @@ export const AuditTrailViewer = () => {
           </div>
           <div>
             <Select
-              value={filters.table_name}
-              onValueChange={(value) => setFilters({ ...filters, table_name: value })}
+              value={filters.table_name || undefined}
+              onValueChange={(value) => setFilters({ ...filters, table_name: value === 'all' ? '' : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Filter by table" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Tables</SelectItem>
+                <SelectItem value="all">All Tables</SelectItem>
                 <SelectItem value="tenants">Profile</SelectItem>
                 <SelectItem value="tenant_branding">Branding</SelectItem>
                 <SelectItem value="tenant_features">Features</SelectItem>
