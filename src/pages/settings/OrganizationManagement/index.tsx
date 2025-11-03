@@ -21,6 +21,7 @@ import BrandingTab from './components/BrandingTab';
 import FeaturesTab from './components/FeaturesTab';
 import SecurityTab from './components/SecurityTab';
 import SubscriptionTab from './components/SubscriptionTab';
+import AdvancedAnalyticsTab from './components/AdvancedAnalyticsTab';
 
 const OrganizationManagement = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -88,7 +89,7 @@ const OrganizationManagement = () => {
 
         {/* Modern Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 h-auto p-1 bg-muted/50">
+          <TabsList className="grid w-full grid-cols-7 h-auto p-1 bg-muted/50">
             <TabsTrigger 
               value="overview" 
               className="flex items-center gap-2 data-[state=active]:bg-background"
@@ -131,6 +132,13 @@ const OrganizationManagement = () => {
               <CreditCard className="h-4 w-4" />
               <span className="hidden sm:inline">Billing</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="flex items-center gap-2 data-[state=active]:bg-background"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Analytics</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -155,6 +163,10 @@ const OrganizationManagement = () => {
 
           <TabsContent value="subscription" className="space-y-6">
             <SubscriptionTab />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <AdvancedAnalyticsTab />
           </TabsContent>
         </Tabs>
       </div>

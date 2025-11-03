@@ -839,6 +839,65 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_insights: {
+        Row: {
+          created_at: string
+          data_source: Json | null
+          description: string
+          id: string
+          impact_score: number | null
+          insight_type: string
+          is_resolved: boolean | null
+          priority: string
+          recommendation: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_source?: Json | null
+          description: string
+          id?: string
+          impact_score?: number | null
+          insight_type: string
+          is_resolved?: boolean | null
+          priority?: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_source?: Json | null
+          description?: string
+          id?: string
+          impact_score?: number | null
+          insight_type?: string
+          is_resolved?: boolean | null
+          priority?: string
+          recommendation?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_model_metrics: {
         Row: {
           accuracy_score: number | null
@@ -1275,6 +1334,65 @@ export type Database = {
             foreignKeyName: "appearance_settings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          field_name: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          record_id: string
+          table_name: string
+          tenant_id: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id: string
+          table_name: string
+          tenant_id: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          record_id?: string
+          table_name?: string
+          tenant_id?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -10273,6 +10391,74 @@ export type Database = {
             foreignKeyName: "order_items_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_analytics: {
+        Row: {
+          active_dealers: number | null
+          active_farmers: number | null
+          active_products: number | null
+          api_calls_today: number | null
+          calculated_at: string
+          created_at: string
+          engagement_rate: number | null
+          id: string
+          last_activity_at: string | null
+          revenue_impact: number | null
+          storage_used_mb: number | null
+          tenant_id: string
+          total_campaigns: number | null
+          total_dealers: number | null
+          total_farmers: number | null
+          total_products: number | null
+          updated_at: string
+        }
+        Insert: {
+          active_dealers?: number | null
+          active_farmers?: number | null
+          active_products?: number | null
+          api_calls_today?: number | null
+          calculated_at?: string
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          last_activity_at?: string | null
+          revenue_impact?: number | null
+          storage_used_mb?: number | null
+          tenant_id: string
+          total_campaigns?: number | null
+          total_dealers?: number | null
+          total_farmers?: number | null
+          total_products?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active_dealers?: number | null
+          active_farmers?: number | null
+          active_products?: number | null
+          api_calls_today?: number | null
+          calculated_at?: string
+          created_at?: string
+          engagement_rate?: number | null
+          id?: string
+          last_activity_at?: string | null
+          revenue_impact?: number | null
+          storage_used_mb?: number | null
+          tenant_id?: string
+          total_campaigns?: number | null
+          total_dealers?: number | null
+          total_farmers?: number | null
+          total_products?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_analytics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
@@ -19336,6 +19522,10 @@ export type Database = {
       record_failed_login: {
         Args: { p_email: string; p_ip_address?: unknown }
         Returns: Json
+      }
+      refresh_organization_analytics: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
       }
       remove_onboarding_workflow: {
         Args: { p_workflow_id: string }
