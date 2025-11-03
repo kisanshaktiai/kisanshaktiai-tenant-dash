@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import { useOrganizationRealtime } from './useOrganizationRealtime';
 
 export interface OrganizationProfile {
   id: string;
@@ -26,6 +27,8 @@ export const useOrganizationProfile = () => {
   const { getTenantId } = useTenantIsolation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const realtimeStatus = useOrganizationRealtime();
+  const tenantId = getTenantId();
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['organization-profile', getTenantId()],
@@ -82,14 +85,35 @@ export const useOrganizationProfile = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async (updates) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['organization-profile', tenantId] });
+      
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData<OrganizationProfile>(['organization-profile', tenantId]);
+      
+      // Optimistically update
+      if (previousData) {
+        queryClient.setQueryData<OrganizationProfile>(
+          ['organization-profile', tenantId],
+          { ...previousData, ...updates }
+        );
+      }
+      
+      return { previousData };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['organization-profile', tenantId] });
       toast({
         title: 'Success',
         description: 'Organization profile updated successfully',
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context: any) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['organization-profile', tenantId], context.previousData);
+      }
       toast({
         title: 'Error',
         description: error.message || 'Failed to update organization profile',
@@ -104,5 +128,6 @@ export const useOrganizationProfile = () => {
     error,
     updateProfile: updateProfile.mutateAsync,
     isUpdating: updateProfile.isPending,
+    realtimeStatus,
   };
 };

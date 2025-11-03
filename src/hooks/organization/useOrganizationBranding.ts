@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import { useOrganizationRealtime } from './useOrganizationRealtime';
 
 export interface OrganizationBranding {
   id: string;
@@ -23,6 +24,7 @@ export const useOrganizationBranding = () => {
   const { getTenantId } = useTenantIsolation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const realtimeStatus = useOrganizationRealtime();
 
   const { data: branding, isLoading, error } = useQuery({
     queryKey: ['organization-branding', getTenantId()],
@@ -133,5 +135,6 @@ export const useOrganizationBranding = () => {
     uploadLogo: uploadLogo.mutateAsync,
     isUpdating: updateBranding.isPending,
     isUploading: uploadLogo.isPending,
+    realtimeStatus,
   };
 };

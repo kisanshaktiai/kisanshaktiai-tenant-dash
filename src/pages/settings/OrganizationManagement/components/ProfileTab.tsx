@@ -8,10 +8,14 @@ import { useOrganizationProfile } from '@/hooks/organization/useOrganizationProf
 import { useOrganizationSettings } from '@/hooks/organization/useOrganizationSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Building2, Mail, Phone, Globe, MapPin, Clock } from 'lucide-react';
+import { useAutoSave } from '@/hooks/organization/useAutoSave';
+import { SaveIndicator } from './SaveIndicator';
+import { useOrganizationCollaboration } from '@/hooks/organization/useOrganizationCollaboration';
 
 const ProfileTab = () => {
   const { profile, isLoading, updateProfile, isUpdating } = useOrganizationProfile();
   const { settings, updateSettings } = useOrganizationSettings();
+  const collaboration = useOrganizationCollaboration();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -55,6 +59,18 @@ const ProfileTab = () => {
     }
   }, [settings]);
 
+  // Auto-save for profile
+  const { saveStatus: profileSaveStatus } = useAutoSave({
+    data: formData,
+    onSave: async (data) => {
+      if (profile && data.name) {
+        await updateProfile(data);
+      }
+    },
+    delay: 2000,
+    enabled: !!profile,
+  });
+
   const handleProfileUpdate = async () => {
     await updateProfile(formData);
   };
@@ -77,13 +93,18 @@ const ProfileTab = () => {
       {/* Organization Identity */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-primary" />
-            Organization Identity
-          </CardTitle>
-          <CardDescription>
-            Basic information about your organization
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Organization Identity
+              </CardTitle>
+              <CardDescription>
+                Basic information about your organization
+              </CardDescription>
+            </div>
+            <SaveIndicator status={profileSaveStatus} />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
