@@ -25,30 +25,34 @@ export interface OrganizationSubscription {
 }
 
 export const useOrganizationSubscription = () => {
-  const { getTenantId } = useTenantIsolation();
+  const { getTenantId, currentTenant } = useTenantIsolation();
   const queryClient = useQueryClient();
 
   const { data: subscription, isLoading, error } = useQuery({
-    queryKey: ['organization-subscription', getTenantId()],
+    queryKey: ['organization-subscription', currentTenant?.id],
     queryFn: async () => {
+      const tenantId = getTenantId();
       const { data, error } = await supabase
         .from('tenant_subscriptions')
         .select(`
           *,
           plan:subscription_plans(*)
         `)
-        .eq('tenant_id', getTenantId())
+        .eq('tenant_id', tenantId)
         .maybeSingle();
 
       if (error) throw error;
       return data as any;
     },
+    enabled: !!currentTenant?.id,
     staleTime: 5 * 60 * 1000,
   });
 
   // Real-time subscription
   useEffect(() => {
-    const tenantId = getTenantId();
+    if (!currentTenant?.id) return;
+    
+    const tenantId = currentTenant.id;
     const channel = supabase
       .channel(`org-subscription-${tenantId}`)
       .on(
@@ -68,7 +72,7 @@ export const useOrganizationSubscription = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [getTenantId, queryClient]);
+  }, [currentTenant?.id, queryClient]);
 
   return {
     subscription,

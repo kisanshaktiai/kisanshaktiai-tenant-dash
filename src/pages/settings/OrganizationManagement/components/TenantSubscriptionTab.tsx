@@ -14,14 +14,36 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
 export const TenantSubscriptionTab = () => {
-  const { getTenantId } = useTenantIsolation();
+  const { getTenantId, currentTenant } = useTenantIsolation();
   const { user } = useAuth();
-  const { subscription, isLoading: subLoading } = useOrganizationSubscription();
-  const { analytics, isLoading: analyticsLoading } = useOrganizationAnalytics();
+  const { subscription, isLoading: subLoading, error: subError } = useOrganizationSubscription();
+  const { analytics, isLoading: analyticsLoading, error: analyticsError } = useOrganizationAnalytics();
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [paymentIntent, setPaymentIntent] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+
+  // Show error if no tenant
+  if (!currentTenant) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground">No organization found. Please select an organization.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show errors
+  if (subError || analyticsError) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <p className="text-destructive">Error loading subscription data: {(subError || analyticsError)?.message}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const tenantPlans = [
     {

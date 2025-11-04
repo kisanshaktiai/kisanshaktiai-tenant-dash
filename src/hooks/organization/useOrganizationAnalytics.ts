@@ -23,34 +23,39 @@ export interface OrganizationAnalytics {
 }
 
 export const useOrganizationAnalytics = () => {
-  const { getTenantId } = useTenantIsolation();
+  const { getTenantId, currentTenant } = useTenantIsolation();
   const queryClient = useQueryClient();
 
   const { data: analytics, isLoading, error } = useQuery({
-    queryKey: ['organization-analytics', getTenantId()],
+    queryKey: ['organization-analytics', currentTenant?.id],
     queryFn: async () => {
+      const tenantId = getTenantId();
       const { data, error } = await supabase
         .from('organization_analytics')
         .select('*')
-        .eq('tenant_id', getTenantId())
+        .eq('tenant_id', tenantId)
         .maybeSingle();
 
       if (error) throw error;
       return data as OrganizationAnalytics | null;
     },
+    enabled: !!currentTenant?.id,
     staleTime: 60 * 1000, // 1 minute
   });
 
   const refreshAnalytics = useMutation({
     mutationFn: async () => {
+      const tenantId = getTenantId();
       const { error } = await supabase.rpc('refresh_organization_analytics', {
-        p_tenant_id: getTenantId(),
+        p_tenant_id: tenantId,
       });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organization-analytics', getTenantId()] });
+      if (currentTenant?.id) {
+        queryClient.invalidateQueries({ queryKey: ['organization-analytics', currentTenant.id] });
+      }
     },
   });
 
