@@ -17,7 +17,7 @@ export const TenantSubscriptionTab = () => {
   const { getTenantId } = useTenantIsolation();
   const { user } = useAuth();
   const { subscription, isLoading: subLoading } = useOrganizationSubscription();
-  const { analytics } = useOrganizationAnalytics();
+  const { analytics, isLoading: analyticsLoading } = useOrganizationAnalytics();
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [paymentIntent, setPaymentIntent] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -158,7 +158,7 @@ export const TenantSubscriptionTab = () => {
     }).format(amount);
   };
 
-  if (subLoading) {
+  if (subLoading || analyticsLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-32 w-full" />
