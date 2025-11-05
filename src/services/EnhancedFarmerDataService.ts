@@ -458,7 +458,7 @@ class EnhancedFarmerDataService extends BaseApiService {
         created_at: farmerData.created_at,
         tags: tagsResult,
         notes: notesResult,
-        segments: segmentsResult,
+        segments: segmentsResult.map(s => s.segment_name),
         lands: landsResult,
         cropHistory: cropHistoryResult,
         healthAssessments: healthAssessmentsResult,
