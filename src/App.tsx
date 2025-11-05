@@ -16,6 +16,9 @@ fontService.initializeFont();
 // Import layout
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 
+// Import guards
+import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
+
 // Import pages
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
@@ -32,7 +35,7 @@ import NDVIPage from '@/pages/NDVIPage';
 import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
 
 // Settings sub-pages
-import { EnhancedOrganizationPage } from '@/pages/settings/EnhancedOrganizationPage';
+import OrganizationManagement from '@/pages/settings/OrganizationManagement';
 import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
 import AppearancePage from '@/pages/settings/AppearancePage';
 import WhiteLabelConfigPageOptimized from '@/pages/settings/WhiteLabelConfigPageOptimized';
@@ -75,7 +78,11 @@ function App() {
                   <Route path="/onboarding" element={<OnboardingPage />} />
                   
                   {/* Main app routes with layout */}
-                  <Route path="/app" element={<EnhancedTenantLayout />}>
+                  <Route path="/app" element={
+                    <OnboardingGuardOptimized>
+                      <EnhancedTenantLayout />
+                    </OnboardingGuardOptimized>
+                  }>
                     <Route index element={<Navigate to="/app/dashboard" replace />} />
                     <Route path="dashboard" element={<EnhancedDashboard />} />
                     <Route path="farmers" element={<FarmersPage />} />
@@ -87,7 +94,7 @@ function App() {
                     <Route path="dealers" element={<DealersPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/organization" element={<EnhancedOrganizationPage />} />
+                    <Route path="settings/organization" element={<OrganizationManagement />} />
                     <Route path="settings/users" element={<EnhancedUsersPage />} />
                     <Route path="settings/appearance" element={<AppearancePage />} />
                     <Route path="settings/white-label" element={<WhiteLabelConfigPageOptimized />} />

@@ -116,8 +116,6 @@ export const useRealtimeFarmers = (options: FarmersListOptions = {}) => {
           }
         )
         .subscribe((status) => {
-          console.log(`[RealtimeFarmers] Channel ${tableName} status:`, status);
-          
           if (status === 'SUBSCRIBED') {
             connectedChannels++;
             setRealtimeStatus(prev => ({

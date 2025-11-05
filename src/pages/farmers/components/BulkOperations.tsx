@@ -239,7 +239,7 @@ export const BulkOperations: React.FC<BulkOperationsProps> = ({ selectedFarmers 
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Select value={messageType} onValueChange={setMessageType}>
-                    <SelectTrigger>
+                    <SelectTrigger id="messageType">
                       <SelectValue placeholder="Select message type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -251,6 +251,8 @@ export const BulkOperations: React.FC<BulkOperationsProps> = ({ selectedFarmers 
                   </Select>
 
                   <Textarea
+                    id="messageContent"
+                    name="messageContent"
                     placeholder="Enter your message here..."
                     value={messageContent}
                     onChange={(e) => setMessageContent(e.target.value)}
@@ -283,7 +285,7 @@ export const BulkOperations: React.FC<BulkOperationsProps> = ({ selectedFarmers 
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Select value={selectedTag} onValueChange={setSelectedTag}>
-                    <SelectTrigger>
+                    <SelectTrigger id="selectedTag">
                       <SelectValue placeholder="Select or create tag" />
                     </SelectTrigger>
                     <SelectContent>

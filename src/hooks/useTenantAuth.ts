@@ -20,7 +20,6 @@ export const useTenantAuth = () => {
 
   const refreshTenantData = async () => {
     if (!user?.id || isRefreshingRef.current || !authInitialized) {
-      console.log('useTenantAuth: Cannot refresh - conditions not met');
       return;
     }
 
@@ -28,8 +27,6 @@ export const useTenantAuth = () => {
       isRefreshingRef.current = true;
       setLoadingState(true);
       dispatch(setLoading(true));
-      
-      console.log('useTenantAuth: Refreshing tenant data for user:', user.id);
 
       // Create timeout promise to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
@@ -78,15 +75,11 @@ export const useTenantAuth = () => {
           };
         }) || [];
 
-      console.log('useTenantAuth: Found tenants:', tenants.length);
-
       dispatch(setUserTenants(tenants));
 
       if (!currentTenant || !tenants.find(t => t.id === currentTenant.id)) {
         const firstTenant = tenants[0];
         if (firstTenant) {
-          console.log('useTenantAuth: Setting current tenant:', firstTenant.id);
-          
           const tenantForState = {
             id: firstTenant.id,
             name: firstTenant.name,
@@ -103,7 +96,6 @@ export const useTenantAuth = () => {
           
           dispatch(setCurrentTenant(tenantForState));
         } else {
-          console.log('useTenantAuth: No tenants available for user');
           dispatch(setCurrentTenant(null));
         }
       }
@@ -125,15 +117,12 @@ export const useTenantAuth = () => {
   };
 
   const switchTenant = async (tenantId: string) => {
-    console.log('useTenantAuth: Switching to tenant:', tenantId);
-    
     const tenant = userTenants.find(t => t.id === tenantId);
     if (tenant) {
       dispatch(setCurrentTenant(tenant as any));
       enhancedOnboardingService.clearCache();
-      console.log('useTenantAuth: Successfully switched to tenant:', tenantId);
     } else {
-      console.error('useTenantAuth: Tenant not found in user tenants:', tenantId);
+      console.error('useTenantAuth: Tenant not found:', tenantId);
     }
   };
 
@@ -142,7 +131,6 @@ export const useTenantAuth = () => {
       return;
     }
     
-    console.log('useTenantAuth: Clearing tenant session');
     hasClearedRef.current = true;
     dispatch(setCurrentTenant(null));
     dispatch(setUserTenants([]));
@@ -169,12 +157,9 @@ export const useTenantAuth = () => {
       hasUserRef.current = currentUserId;
       
       if (currentUserId && !isInitialized) {
-        console.log('useTenantAuth: User logged in, initializing tenant data');
-        
         // Set maximum initialization timeout
         maxInitTimeoutRef.current = setTimeout(() => {
           if (!isInitialized) {
-            console.log('useTenantAuth: Max timeout reached, forcing initialization');
             setIsInitialized(true);
             setLoadingState(false);
             dispatch(setLoading(false));
@@ -185,7 +170,6 @@ export const useTenantAuth = () => {
           refreshTenantData();
         }, 300);
       } else if (!currentUserId) {
-        console.log('useTenantAuth: User logged out, clearing tenant session');
         clearTenantSession();
       }
     }

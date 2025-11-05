@@ -208,7 +208,7 @@ export const FarmerPipeline = () => {
                 <CardTitle>Farmer Management</CardTitle>
                 <div className="flex gap-2">
                   <Select defaultValue="all">
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger id="pipeline_status_filter" className="w-32">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>

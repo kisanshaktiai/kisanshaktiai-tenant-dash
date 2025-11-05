@@ -26,7 +26,7 @@ export const useComprehensiveFarmerData = (farmerId: string) => {
           };
         }
       } catch (error) {
-        console.log('User profile not found, using farmer data only');
+        // User profile not found, using farmer data only
       }
       
       return farmerData;

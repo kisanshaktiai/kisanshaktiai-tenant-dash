@@ -34,8 +34,7 @@ export const useAppearanceSettings = () => {
     onSuccess: (data) => {
       queryClient.setQueryData(['appearance-settings', currentTenant?.id], data);
       
-      // Apply theme changes immediately
-      console.log('Theme updated successfully, applying colors:', data);
+      // Apply theme changes immediately when user saves
       appearanceSettingsService.applyThemeColors(data);
       
       // Update sessionStorage for persistence
@@ -55,24 +54,13 @@ export const useAppearanceSettings = () => {
     }
   });
 
-  // Apply theme colors when settings are first loaded (only once per tenant)
+  // Store settings in sessionStorage for other components to use (no direct theme application)
   useEffect(() => {
     if (!settings || !currentTenant?.id) return;
     
-    const lastAppliedKey = `theme-applied-${currentTenant.id}`;
-    const lastAppliedTime = sessionStorage.getItem(lastAppliedKey);
-    const now = Date.now();
-    
-    // Only apply if not applied in the last 5 seconds (prevent rapid re-applications)
-    if (!lastAppliedTime || (now - parseInt(lastAppliedTime)) > 5000) {
-      console.log('Settings loaded, applying theme colors:', settings);
-      appearanceSettingsService.applyThemeColors(settings);
-      
-      // Update sessionStorage
-      sessionStorage.setItem('current-theme-settings', JSON.stringify(settings));
-      sessionStorage.setItem(lastAppliedKey, now.toString());
-    }
-  }, [settings?.id, currentTenant?.id]); // Only re-apply when settings ID or tenant changes
+    // Only store in sessionStorage - let ThemeInitializer handle application
+    sessionStorage.setItem('current-theme-settings', JSON.stringify(settings));
+  }, [settings?.id, currentTenant?.id]);
 
   return {
     settings,

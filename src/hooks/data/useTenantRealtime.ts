@@ -14,12 +14,9 @@ export const useTenantRealtime = () => {
 
   useEffect(() => {
     if (!currentTenant?.id) {
-      console.log('useTenantRealtime: No tenant available, skipping realtime setup');
       setIsConnected(false);
       return;
     }
-
-    console.log('Setting up tenant real-time connections for:', currentTenant.id);
     
     const setupChannels = () => {
       // Farmers channel
@@ -97,12 +94,53 @@ export const useTenantRealtime = () => {
           }
         );
 
-      const channels = [farmersChannel, dealersChannel, productsChannel];
+      // Lands channel
+      const landsChannel = supabase
+        .channel(`tenant_lands_${currentTenant.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'lands',
+            filter: `tenant_id=eq.${currentTenant.id}`,
+          },
+          (payload) => {
+            console.log('Lands real-time update:', payload);
+            setLastUpdate(new Date());
+            
+            queryClient.invalidateQueries({ 
+              queryKey: ['enhanced-dashboard', currentTenant.id]
+            });
+          }
+        );
+
+      // Campaigns channel
+      const campaignsChannel = supabase
+        .channel(`tenant_campaigns_${currentTenant.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'campaigns',
+            filter: `tenant_id=eq.${currentTenant.id}`,
+          },
+          (payload) => {
+            console.log('Campaigns real-time update:', payload);
+            setLastUpdate(new Date());
+            
+            queryClient.invalidateQueries({ 
+              queryKey: ['enhanced-dashboard', currentTenant.id]
+            });
+          }
+        );
+
+      const channels = [farmersChannel, dealersChannel, productsChannel, landsChannel, campaignsChannel];
       
       // Subscribe to channels
       channels.forEach((channel) => {
         channel.subscribe((status) => {
-          console.log(`Channel ${channel.topic} status:`, status);
           if (status === 'SUBSCRIBED') {
             setIsConnected(true);
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
@@ -118,7 +156,6 @@ export const useTenantRealtime = () => {
     const channels = setupChannels();
 
     return () => {
-      console.log('Cleaning up tenant real-time connections');
       channels.forEach((channel) => {
         supabase.removeChannel(channel);
       });

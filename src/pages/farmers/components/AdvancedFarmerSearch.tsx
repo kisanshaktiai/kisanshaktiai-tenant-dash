@@ -205,12 +205,12 @@ export function AdvancedFarmerSearch({ onFiltersChange, onExport }: AdvancedFarm
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t">
               {/* Engagement Level */}
               <div className="space-y-2">
-                <Label>Engagement Level</Label>
+                <Label htmlFor="engagement_level_filter">Engagement Level</Label>
                 <Select
                   value={filters.engagement_level || ''}
                   onValueChange={(value) => handleFilterChange('engagement_level', value || undefined)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="engagement_level_filter">
                     <SelectValue placeholder="Select engagement" />
                   </SelectTrigger>
                   <SelectContent>
@@ -224,12 +224,12 @@ export function AdvancedFarmerSearch({ onFiltersChange, onExport }: AdvancedFarm
 
               {/* Churn Risk */}
               <div className="space-y-2">
-                <Label>Churn Risk</Label>
+                <Label htmlFor="churn_risk_filter">Churn Risk</Label>
                 <Select
                   value={filters.churn_risk || ''}
                   onValueChange={(value) => handleFilterChange('churn_risk', value || undefined)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="churn_risk_filter">
                     <SelectValue placeholder="Select churn risk" />
                   </SelectTrigger>
                   <SelectContent>

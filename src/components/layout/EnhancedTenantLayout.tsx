@@ -457,7 +457,7 @@ export const EnhancedTenantLayout: React.FC = () => {
         <div className="flex items-center justify-center h-screen">
           <div className="text-center space-y-4">
             <p className="text-muted-foreground">No organization found. Please complete setup.</p>
-            <Button onClick={() => window.location.href = '/onboarding'}>
+            <Button onClick={() => navigate('/onboarding')}>
               Complete Setup
             </Button>
           </div>

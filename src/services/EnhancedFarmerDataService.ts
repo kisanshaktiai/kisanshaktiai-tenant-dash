@@ -796,11 +796,12 @@ class EnhancedFarmerDataService extends BaseApiService {
 
   async getUserProfile(farmerId: string) {
     try {
+      // Try to find user_profile by farmer_id first
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', farmerId)
-        .single();
+        .eq('farmer_id', farmerId)
+        .maybeSingle();
 
       if (error) {
         console.warn('[EnhancedFarmerDataService] User profile not found:', error);

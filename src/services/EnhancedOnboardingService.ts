@@ -257,6 +257,36 @@ class EnhancedOnboardingService extends BaseApiService {
     }
   }
 
+  /**
+   * Ensures workflow status is consistent with step statuses
+   * If all steps are completed, mark workflow as completed
+   */
+  async ensureWorkflowConsistency(tenantId: string): Promise<void> {
+    try {
+      const workflow = await this.getOnboardingWorkflow(tenantId);
+      if (!workflow) return;
+      
+      const steps = await this.getOnboardingSteps(workflow.id);
+      const allCompleted = steps.every(s => s.step_status === 'completed');
+      
+      // If all steps completed but workflow not marked complete
+      if (allCompleted && workflow.status !== 'completed' && steps.length > 0) {
+        console.log('EnhancedOnboardingService: Fixing workflow status inconsistency');
+        await this.completeWorkflow(workflow.id, tenantId);
+        
+        // Update tenant onboarding_completed flag
+        const { error } = await supabase
+          .from('tenants')
+          .update({ onboarding_completed: true })
+          .eq('id', tenantId);
+          
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('EnhancedOnboardingService: Error ensuring workflow consistency:', error);
+    }
+  }
+
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
     try {
       const workflow = await this.getOnboardingWorkflow(tenantId);
@@ -283,6 +313,9 @@ class EnhancedOnboardingService extends BaseApiService {
   async getOnboardingData(tenantId: string) {
     try {
       console.log('EnhancedOnboardingService: Getting complete onboarding data for tenant:', tenantId);
+      
+      // Ensure consistency before fetching
+      await this.ensureWorkflowConsistency(tenantId);
       
       const workflow = await this.getOnboardingWorkflow(tenantId);
       if (!workflow) {

@@ -128,6 +128,8 @@ export const FarmerNotesSection: React.FC<FarmerNotesSectionProps> = ({ farmerId
           {/* Add Note */}
           <div className="space-y-3">
             <Textarea
+              id="farmerNote"
+              name="farmerNote"
               placeholder="Add a note about this farmer..."
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}

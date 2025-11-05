@@ -43,7 +43,7 @@ class UserProfileService extends BaseApiService {
         .from('user_profiles')
         .select('*')
         .eq('farmer_id', userId)
-        .single();
+        .maybeSingle();
 
       return { data, error };
     });
@@ -58,7 +58,7 @@ class UserProfileService extends BaseApiService {
           role,
           is_primary,
           is_active,
-          tenants:tenant_id (
+          tenants!user_tenants_tenant_id_fkey (
             name,
             logo_url
           )
@@ -100,7 +100,7 @@ class UserProfileService extends BaseApiService {
         })
         .eq('farmer_id', userId)
         .select()
-        .single();
+        .maybeSingle();
 
       return { data, error };
     });

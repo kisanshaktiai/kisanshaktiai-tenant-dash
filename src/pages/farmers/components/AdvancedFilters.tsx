@@ -258,12 +258,12 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ onFiltersChang
           <CollapsibleContent className="space-y-3 mt-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Verification Status</Label>
+                <Label htmlFor="verification_status">Verification Status</Label>
                 <Select
                   value={filters.engagement.verificationStatus}
                   onValueChange={(value) => updateFilters('engagement', 'verificationStatus', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="verification_status">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -277,11 +277,15 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ onFiltersChang
                 <Label>App Opens (Range)</Label>
                 <div className="flex gap-2">
                   <Input
+                    id="app_opens_min"
+                    name="app_opens_min"
                     placeholder="Min"
                     value={filters.engagement.appOpensMin}
                     onChange={(e) => updateFilters('engagement', 'appOpensMin', e.target.value)}
                   />
                   <Input
+                    id="app_opens_max"
+                    name="app_opens_max"
                     placeholder="Max"
                     value={filters.engagement.appOpensMax}
                     onChange={(e) => updateFilters('engagement', 'appOpensMax', e.target.value)}

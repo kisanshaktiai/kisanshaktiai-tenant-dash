@@ -84,8 +84,6 @@ export const useOnboardingRealtime = () => {
 
     // Subscribe and track connection status
     channel.subscribe((channelStatus) => {
-      console.log(`Onboarding channel status:`, channelStatus);
-      
       if (channelStatus === 'SUBSCRIBED') {
         setStatus(prev => ({ 
           ...prev, 

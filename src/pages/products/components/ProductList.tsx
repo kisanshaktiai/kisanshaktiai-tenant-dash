@@ -1,5 +1,4 @@
-
-import EnhancedProductList from './EnhancedProductList';
+import Modern2025ProductInventory from './Modern2025ProductInventory';
 
 export interface ProductListProps {
   searchTerm: string;
@@ -13,10 +12,8 @@ const ProductList: React.FC<ProductListProps> = ({
   onSelectedProductsChange 
 }) => {
   return (
-    <EnhancedProductList
+    <Modern2025ProductInventory
       searchTerm={searchTerm}
-      selectedProducts={selectedProducts}
-      onSelectedProductsChange={onSelectedProductsChange || (() => {})}
     />
   );
 };

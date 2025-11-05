@@ -72,9 +72,9 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Engagement Level</label>
+              <label htmlFor="engagement_level" className="block text-sm font-medium mb-2">Engagement Level</label>
               <Select value={localFilters.engagement_level} onValueChange={(value) => updateFilters('engagement_level', value)}>
-                <SelectTrigger>
+                <SelectTrigger id="engagement_level">
                   <SelectValue placeholder="Select engagement level" />
                 </SelectTrigger>
                 <SelectContent>
@@ -156,7 +156,7 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
               </div>
               <div>
                 <Select value={localFilters.farm_type} onValueChange={(value) => updateFilters('farm_type', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger id="farm_type">
                     <SelectValue placeholder="Farm Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -168,6 +168,8 @@ export const AdvancedSearchModal: React.FC<AdvancedSearchModalProps> = ({
               </div>
               <div>
                 <Input
+                  id="last_active_days"
+                  name="last_active_days"
                   type="number"
                   placeholder="Last active (days)"
                   value={localFilters.last_active_days || ''}

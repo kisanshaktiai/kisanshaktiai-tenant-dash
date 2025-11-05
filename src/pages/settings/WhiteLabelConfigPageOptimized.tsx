@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -202,72 +202,70 @@ const WhiteLabelConfigPageOptimized = () => {
   // Flag to track if initial load is complete
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Log for debugging
-  useEffect(() => {
-    console.log('White Label Config Page - Current settings:', settings);
-    console.log('White Label Config Page - Loading state:', isLoading);
-  }, [settings, isLoading]);
+  // Track last applied settings to prevent unnecessary updates
+  const lastAppliedSettingsRef = useRef<string>('');
 
-  // Merge settings with defaults when they arrive
+  // Merge settings with defaults when they arrive - optimized for performance
   useEffect(() => {
-    if (settings && !isInitialized) {
-      console.log('Loading white label settings from database:', settings);
-      
-      // Handle mobile_theme properly - check if it exists and has the nested structure
-      let processedMobileTheme = getDefaultConfig().mobile_theme;
-      
-      if (settings.mobile_theme) {
-        const mobileThemeData = settings.mobile_theme as any;
-        
-        // Check if mobile_theme has the nested structure (core, neutral, status, support)
-        if (mobileThemeData.core && mobileThemeData.neutral && 
-            mobileThemeData.status && mobileThemeData.support) {
-          // It's already in the nested format from DB, use it as is
-          // But still ensure we have all flat properties for compatibility
-          processedMobileTheme = {
-            ...getDefaultConfig().mobile_theme,
-            ...mobileThemeData,
-            // Preserve nested structure
-            core: mobileThemeData.core,
-            neutral: mobileThemeData.neutral,
-            status: mobileThemeData.status,
-            support: mobileThemeData.support,
-            typography: mobileThemeData.typography,
-            spacing: mobileThemeData.spacing,
-            border_radius: mobileThemeData.border_radius,
-            shadows: mobileThemeData.shadows
-          };
-          console.log('Using nested mobile_theme from database:', processedMobileTheme);
-        } else {
-          // It's in flat format, merge with defaults
-          processedMobileTheme = {
-            ...getDefaultConfig().mobile_theme,
-            ...mobileThemeData
-          };
-          console.log('Using flat mobile_theme merged with defaults:', processedMobileTheme);
-        }
-      }
-      
-      const mergedConfig = {
-        ...getDefaultConfig(),
-        ...settings,
-        mobile_theme: processedMobileTheme,
-        // Deep merge pwa_config
-        ...(settings.pwa_config || {}),
-        // Deep merge mobile_ui_config
-        ...(settings.mobile_ui_config || {}),
-        // Merge email templates if they exist (handle as 'any' type)
-        email_templates: (settings as any).email_templates ? {
-          ...getDefaultConfig().email_templates,
-          ...(settings as any).email_templates
-        } : getDefaultConfig().email_templates
-      };
-      
-      console.log('Final merged config with mobile_theme:', mergedConfig.mobile_theme);
-      setLocalConfig(mergedConfig);
-      setIsInitialized(true);
+    if (!settings || isInitialized) return;
+    
+    // Check if settings have actually changed using JSON comparison
+    const settingsJson = JSON.stringify(settings);
+    if (lastAppliedSettingsRef.current === settingsJson) {
+      return; // No changes, skip update
     }
-  }, [settings]); // Fixed: Removed isInitialized from dependencies to prevent infinite loop
+    
+    // Handle mobile_theme properly - check if it exists and has the nested structure
+    let processedMobileTheme = getDefaultConfig().mobile_theme;
+    
+    if (settings.mobile_theme) {
+      const mobileThemeData = settings.mobile_theme as any;
+      
+      // Check if mobile_theme has the nested structure (core, neutral, status, support)
+      if (mobileThemeData.core && mobileThemeData.neutral && 
+          mobileThemeData.status && mobileThemeData.support) {
+        // It's already in the nested format from DB, use it as is
+        processedMobileTheme = {
+          ...getDefaultConfig().mobile_theme,
+          ...mobileThemeData,
+          // Preserve nested structure
+          core: mobileThemeData.core,
+          neutral: mobileThemeData.neutral,
+          status: mobileThemeData.status,
+          support: mobileThemeData.support,
+          typography: mobileThemeData.typography,
+          spacing: mobileThemeData.spacing,
+          border_radius: mobileThemeData.border_radius,
+          shadows: mobileThemeData.shadows
+        };
+      } else {
+        // It's in flat format, merge with defaults
+        processedMobileTheme = {
+          ...getDefaultConfig().mobile_theme,
+          ...mobileThemeData
+        };
+      }
+    }
+    
+    const mergedConfig = {
+      ...getDefaultConfig(),
+      ...settings,
+      mobile_theme: processedMobileTheme,
+      // Deep merge pwa_config
+      ...(settings.pwa_config || {}),
+      // Deep merge mobile_ui_config
+      ...(settings.mobile_ui_config || {}),
+      // Merge email templates if they exist (handle as 'any' type)
+      email_templates: (settings as any).email_templates ? {
+        ...getDefaultConfig().email_templates,
+        ...(settings as any).email_templates
+      } : getDefaultConfig().email_templates
+    };
+    
+    setLocalConfig(mergedConfig);
+    setIsInitialized(true);
+    lastAppliedSettingsRef.current = settingsJson;
+  }, [settings, isInitialized]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -362,16 +360,12 @@ const WhiteLabelConfigPageOptimized = () => {
         };
       }
       
-      console.log('Saving white label config with mobile_theme:', updatePayload.mobile_theme);
-      
       await updateSettings(updatePayload);
       
       setHasUnsavedChanges(false);
       
-      // Force refresh to show real DB values in preview
-      setTimeout(() => {
-        // Settings will auto-refresh from query cache
-      }, 100);
+      // Update the last applied settings ref to prevent re-initialization
+      lastAppliedSettingsRef.current = JSON.stringify(settings);
     } catch (error: any) {
       console.error('Save error:', error);
       // Show validation errors if any

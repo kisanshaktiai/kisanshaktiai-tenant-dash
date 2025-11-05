@@ -154,12 +154,13 @@ class EnhancedFarmerManagementService extends BaseApiService {
         }
       };
 
-      // Create farmer record with correct schema fields
+      // PHASE 3: Create farmer record with farmer_name explicitly set
       const farmerInsertData = {
         tenant_id: tenantId,
         farmer_code: farmerCode,
         mobile_number: formattedMobile,
         pin_hash: pinHash,
+        farmer_name: farmerData.fullName, // Explicitly set farmer_name for defensive programming
         farming_experience_years: parseInt(farmerData.farmingExperience || '0') || 0,
         total_land_acres: parseFloat(farmerData.totalLandSize || '0') || 0,
         primary_crops: farmerData.primaryCrops || [],
@@ -212,6 +213,26 @@ class EnhancedFarmerManagementService extends BaseApiService {
 
       console.log('Farmer created successfully:', farmer);
 
+      // PHASE 4: Verify user_profiles was created by trigger (post-creation check)
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, farmer_id')
+        .eq('farmer_id', farmer.id)
+        .maybeSingle();
+
+      if (!profile) {
+        console.warn('user_profiles not created automatically, creating manually as fallback...');
+        try {
+          // PHASE 5: Manual fallback if trigger failed
+          await this.createUserProfileForFarmer(farmer, farmerData, formattedMobile);
+        } catch (fallbackError) {
+          console.error('Failed to create user_profile fallback:', fallbackError);
+          // Don't fail the entire operation, log the error
+        }
+      } else {
+        // User profile verified successfully
+      }
+
       return {
         success: true,
         farmer,
@@ -237,6 +258,51 @@ class EnhancedFarmerManagementService extends BaseApiService {
         error: errorMessage,
       };
     }
+  }
+
+  // PHASE 5: Manual sync function as fallback if triggers fail
+  private async createUserProfileForFarmer(farmer: any, farmerData: ComprehensiveFarmerData, formattedMobile: string) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        id: crypto.randomUUID(),
+        farmer_id: farmer.id,
+        mobile_number: formattedMobile,
+        phone_verified: false,
+        full_name: farmerData.fullName,
+        display_name: farmerData.fullName,
+        date_of_birth: farmerData.dateOfBirth || null,
+        gender: farmerData.gender || null,
+        address_line1: farmerData.village || null,
+        address_line2: farmerData.taluka || null,
+        village: farmerData.village || null,
+        taluka: farmerData.taluka || null,
+        district: farmerData.district || null,
+        state: farmerData.state || null,
+        pincode: farmerData.pincode || null,
+        country: 'India',
+        preferred_language: (farmerData.languagePreference || 'en') as any,
+        notification_preferences: {
+          sms: true,
+          email: false,
+          push: true,
+          whatsapp: true
+        },
+        metadata: {
+          farmer_code: farmer.farmer_code,
+          tenant_id: farmer.tenant_id,
+          source: 'farmer_registration_fallback'
+        }
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create user_profile fallback:', error);
+      throw error;
+    }
+
+    return data;
   }
 
   async getFarmerWithAllDetails(farmerId: string, tenantId: string) {

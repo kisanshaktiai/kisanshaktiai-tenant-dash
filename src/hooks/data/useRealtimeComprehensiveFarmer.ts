@@ -53,10 +53,10 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
           .select('*')
           .eq('farmer_id', farmerId)
           .eq('tenant_id', effectiveTenantId)
-          .single();
+          .maybeSingle();
         userProfileData = profileData;
       } catch (err) {
-        console.log('No user profile found for farmer:', farmerId);
+        // Silently handle - user profile is optional
       }
       
       // Merge user_profile data into farmer object if available
@@ -421,7 +421,6 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
       },
       (payload: any) => {
         if (payload.new?.farmer_id === farmerId || payload.old?.farmer_id === farmerId) {
-          console.log('[RealtimeComprehensiveFarmer] User profiles update:', payload);
           invalidateFarmerData();
         }
       }
@@ -429,8 +428,6 @@ export const useRealtimeComprehensiveFarmer = (farmerId: string, tenantId?: stri
 
     // Subscribe to channel
     channel.subscribe((status) => {
-      console.log('[RealtimeComprehensiveFarmer] Channel status:', status);
-      
       if (status === 'SUBSCRIBED') {
         setRealtimeStatus({
           isConnected: true,

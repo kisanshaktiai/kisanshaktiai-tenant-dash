@@ -190,7 +190,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     <div>
                       <Label htmlFor="gender">Gender (Optional)</Label>
                       <Select value={formData.gender} onValueChange={(value) => onFormChange('gender', value)}>
-                        <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
+                        <SelectTrigger id="gender" className={errors.gender ? 'border-red-500' : ''}>
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
@@ -294,7 +294,7 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                   <div>
                     <Label htmlFor="irrigationSource">Irrigation Source</Label>
                     <Select value={formData.irrigationSource} onValueChange={(value) => onFormChange('irrigationSource', value)}>
-                      <SelectTrigger>
+                      <SelectTrigger id="irrigationSource">
                         <SelectValue placeholder="Select irrigation source" />
                       </SelectTrigger>
                       <SelectContent>
@@ -326,6 +326,8 @@ export const ComprehensiveCreateFarmerForm: React.FC<ComprehensiveCreateFarmerFo
                     {/* Add custom crop */}
                     <div className="flex gap-2">
                       <Input
+                        id="cropInput"
+                        name="cropInput"
                         value={cropInput}
                         onChange={(e) => setCropInput(e.target.value)}
                         placeholder="Enter crop name"

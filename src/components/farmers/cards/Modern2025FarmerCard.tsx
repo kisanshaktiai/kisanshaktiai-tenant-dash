@@ -51,33 +51,22 @@ export const Modern2025FarmerCard: React.FC<Modern2025FarmerCardProps> = ({
       if (!farmer.id || !currentTenant) return;
       
       try {
-        // Fetch farmer and user profile data in parallel
-        const [farmerResult, profileResult] = await Promise.all([
+        // Fetch farmer data
+        const [farmerResult] = await Promise.all([
           supabase
             .from('farmers')
             .select('*')
             .eq('id', farmer.id)
             .eq('tenant_id', currentTenant.id)
-            .single(),
-          supabase
-            .from('user_profiles')
-            .select('*')
-            .eq('id', farmer.id)
             .single()
         ]);
 
         if (farmerResult.data) {
           setRealtimeData(farmerResult.data);
           
-          // Priority: display_name > full_name > farmer_name > farmer_code
+          // Priority: farmer_name > farmer_code
           let displayName = farmerResult.data.farmer_code;
-          if (profileResult.data) {
-            setUserProfile(profileResult.data);
-            displayName = profileResult.data.display_name || 
-                         profileResult.data.full_name || 
-                         farmerResult.data.farmer_name || 
-                         farmerResult.data.farmer_code;
-          } else if (farmerResult.data.farmer_name) {
+          if (farmerResult.data.farmer_name) {
             displayName = farmerResult.data.farmer_name;
           }
           

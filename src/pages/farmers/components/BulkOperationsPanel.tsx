@@ -125,6 +125,8 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
             <div>
               <label className="block text-sm font-medium mb-2">Message Content</label>
               <Textarea
+                id="bulkMessageContent"
+                name="bulkMessageContent"
                 placeholder="Enter your message..."
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
