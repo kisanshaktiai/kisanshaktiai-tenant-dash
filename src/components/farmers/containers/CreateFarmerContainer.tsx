@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { CreateFarmerForm } from '../presentation/CreateFarmerForm';
-import { useFarmerManagement } from '@/hooks/useFarmerManagement';
+import { useFarmerManagement } from '@/hooks/business/useFarmerManagement';
 import { FarmerFormData } from '@/hooks/business/useFarmerValidation';
 import { DEFAULT_LOCALE } from '@/lib/i18n';
 
@@ -42,7 +42,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   onSuccess,
 }) => {
   const [formData, setFormData] = useState<FarmerFormData>(initialFormData);
-  const { createFarmer, loading, error } = useFarmerManagement();
+  const { createFarmer, isCreating, createError } = useFarmerManagement();
 
   const handleFormChange = (field: keyof FarmerFormData, value: any) => {
     setFormData({ ...formData, [field]: value });
@@ -61,7 +61,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
   };
 
   // Convert single error string to ValidationErrors format expected by CreateFarmerForm
-  const errors = error ? { general: error } : {};
+  const errors = createError ? { general: createError } : {};
 
   return (
     <CreateFarmerForm
@@ -69,7 +69,7 @@ export const CreateFarmerContainer: React.FC<CreateFarmerContainerProps> = ({
       onClose={onClose}
       formData={formData}
       errors={errors}
-      isSubmitting={loading}
+      isSubmitting={isCreating}
       onFormChange={handleFormChange}
       onSubmit={handleSubmit}
     />
