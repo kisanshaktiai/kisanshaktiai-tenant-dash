@@ -19,7 +19,7 @@ import { FarmerAnalytics } from './components/FarmerAnalytics';
 import { CampaignCenter } from './components/CampaignCenter';
 import { IntegrationHub } from './components/IntegrationHub';
 // import { NDVIHarvestManager } from './components/NDVIHarvestManager'; // Removed - functionality moved to NDVI page
-import type { Farmer } from '@/services/FarmersService';
+import type { Farmer } from '@/services/EnhancedFarmerDataService';
 
 export default function FarmersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { farmersApi, CreateFarmerData } from '@/services/api/farmers';
+import { enhancedFarmerDataService as farmersApi, type ComprehensiveFarmerFormData } from '@/services/EnhancedFarmerDataService';
 import { useAppSelector } from '@/store/hooks';
 
 export const useFarmerManagement = () => {
@@ -29,7 +29,7 @@ export const useFarmerManagement = () => {
     return { currentFarmers: currentCount, maxFarmers };
   };
 
-  const createFarmer = async (formData: CreateFarmerData) => {
+  const createFarmer = async (formData: ComprehensiveFarmerFormData) => {
     if (!currentTenant) {
       throw new Error('No tenant selected');
     }
@@ -122,7 +122,7 @@ export const useFarmerManagement = () => {
         login_attempts: 0,
       };
 
-      const newFarmer = await farmersApi.createFarmer(farmerData, currentTenant.id);
+      const newFarmer = await farmersApi.createFarmer(farmerData);
 
       return {
         success: true,
@@ -141,7 +141,7 @@ export const useFarmerManagement = () => {
     }
   };
 
-  const updateFarmerProfile = async (farmerId: string, updates: Partial<CreateFarmerData>) => {
+  const updateFarmerProfile = async (farmerId: string, updates: Partial<ComprehensiveFarmerFormData>) => {
     if (!currentTenant) throw new Error('No tenant selected');
 
     setLoading(true);
@@ -170,7 +170,7 @@ export const useFarmerManagement = () => {
       }
 
       if (Object.keys(farmerUpdates).length > 0) {
-        await farmersApi.updateFarmer(farmerId, farmerUpdates, currentTenant.id);
+        await farmersApi.updateFarmer(farmerId, currentTenant.id, farmerUpdates);
       }
 
       return { success: true };

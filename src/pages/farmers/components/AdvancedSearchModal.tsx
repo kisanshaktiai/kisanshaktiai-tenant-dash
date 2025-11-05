@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { X, Search, Filter } from 'lucide-react';
-import type { AdvancedSearchFilters } from '@/services/EnhancedFarmerService';
+import type { AdvancedSearchFilters } from '@/services/EnhancedFarmerDataService';
 
 export interface AdvancedSearchModalProps {
   open: boolean;

@@ -18,7 +18,7 @@ import { FarmerLandHoldings } from './FarmerLandHoldings';
 import { FarmerCropHistory } from './FarmerCropHistory';
 import { FarmerInteractionTimeline } from './FarmerInteractionTimeline';
 import { FarmerNotesSection } from './FarmerNotesSection';
-import type { Farmer } from '@/services/FarmersService';
+import type { Farmer } from '@/services/EnhancedFarmerDataService';
 
 interface FarmerProfileProps {
   farmer: Farmer;

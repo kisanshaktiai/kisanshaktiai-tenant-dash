@@ -1,7 +1,7 @@
 
 import { useFarmersQuery } from './useFarmersQuery';
 import { useTenantRealtime } from './useTenantRealtime';
-import type { FarmersListOptions } from '@/services/FarmersService';
+import type { FarmersListOptions } from '@/services/EnhancedFarmerDataService';
 
 export const useRealTimeFarmersQuery = (options: FarmersListOptions = {}) => {
   const farmersQuery = useFarmersQuery(options);

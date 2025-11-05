@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { farmerManagementService, type BulkOperationRequest, type FarmerSegment } from '@/services/FarmerManagementService';
+import { enhancedFarmerDataService as farmerManagementService, type BulkOperationRequest, type FarmerSegment } from '@/services/EnhancedFarmerDataService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
@@ -74,7 +74,7 @@ export const useFarmerSegmentsQuery = () => {
       if (!currentTenant) {
         throw new Error('No tenant selected');
       }
-      return farmerManagementService.getFarmerSegments(currentTenant.id);
+      return farmerManagementService.getFarmerSegments(currentTenant.id) as Promise<FarmerSegment[]>;
     },
     enabled: !!currentTenant,
   });

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { queryKeys } from '@/lib/queryClient';
-import { farmersService, type FarmersListOptions } from '@/services/FarmersService';
+import { enhancedFarmerDataService as farmersService, type FarmersListOptions } from '@/services/EnhancedFarmerDataService';
 
 interface RealtimeStatus {
   isConnected: boolean;

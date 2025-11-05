@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRealtimeFarmer } from '@/hooks/data/useRealtimeFarmers';
 import { useNDVIData } from '@/hooks/data/useNDVIData';
 import { cn } from '@/lib/utils';
-import type { Farmer } from '@/services/FarmersService';
+import type { Farmer } from '@/services/EnhancedFarmerDataService';
 
 interface RealtimeFarmerCardProps {
   farmer: Farmer;
