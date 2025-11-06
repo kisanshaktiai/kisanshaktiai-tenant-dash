@@ -14,7 +14,8 @@ import { LucideIcon,
   Palette,
   UserCog,
   Satellite,
-  ShoppingCart
+  ShoppingCart,
+  ShoppingBag
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -71,6 +72,16 @@ export const navigationConfig: NavigationItem[] = [
     href: '/app/sales',
     icon: ShoppingCart,
     description: 'Order management and sales',
+    category: 'management',
+    badge: 'New',
+    isNew: true
+  },
+  {
+    id: 'cart',
+    title: 'Cart Management',
+    href: '/app/cart',
+    icon: ShoppingBag,
+    description: 'Create orders with drag & drop',
     category: 'management',
     badge: 'New',
     isNew: true
