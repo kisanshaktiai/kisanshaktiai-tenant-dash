@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOrdersQuery } from '@/hooks/data/useOrdersQuery';
 import { useSalesAnalyticsQuery } from '@/hooks/data/useSalesAnalyticsQuery';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +37,7 @@ import { SalesFilters } from './components/SalesFilters';
 import type { OrderFilters } from '@/types/sales';
 
 export default function SalesDashboard() {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'kanban' | 'calendar'>('list');
   const [filters, setFilters] = useState<OrderFilters>({});
 
@@ -90,6 +92,15 @@ export default function SalesDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate('/app/sales/predictive')}
+            className="bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 border-primary/20"
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Predictive Intelligence
+          </Button>
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             Export
