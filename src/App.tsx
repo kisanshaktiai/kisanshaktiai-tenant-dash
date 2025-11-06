@@ -24,7 +24,7 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
 import FarmersPage from '@/pages/FarmersPage';
-import ProductsPage from '@/pages/ProductsPage';
+import ProductsPage from '@/pages/products/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import DealersPage from '@/pages/DealersPage';
