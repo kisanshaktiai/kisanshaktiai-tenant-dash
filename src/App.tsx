@@ -36,6 +36,7 @@ import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
 import SalesDashboard from '@/pages/sales/SalesDashboard';
 import OrderDetailsPage from '@/pages/sales/components/OrderDetailsPage';
 import SalesAnalyticsDashboard from '@/pages/sales/SalesAnalyticsDashboard';
+import { PredictiveSalesDashboard } from '@/pages/sales/PredictiveSalesDashboard';
 import CartManagement from '@/pages/cart/CartManagement';
 
 // Settings sub-pages
@@ -98,6 +99,7 @@ function App() {
                     <Route path="dealers" element={<DealersPage />} />
                     <Route path="sales" element={<SalesDashboard />} />
                     <Route path="sales/analytics" element={<SalesAnalyticsDashboard />} />
+                    <Route path="sales/predictive" element={<PredictiveSalesDashboard />} />
                     <Route path="sales/:orderId" element={<OrderDetailsPage />} />
                     <Route path="cart" element={<CartManagement />} />
                     <Route path="profile" element={<ProfilePage />} />

@@ -3669,86 +3669,143 @@ export type Database = {
       crop_schedules: {
         Row: {
           ai_model: string | null
+          bio_fertilizer_units: number | null
+          bio_pesticide_ml: number | null
           calculated_for_area_acres: number | null
           completed_at: string | null
           country: string | null
           created_at: string | null
           crop_name: string
           crop_variety: string | null
+          expected_gross_revenue: number | null
           expected_harvest_date: string | null
+          expected_market_price_per_quintal: number | null
+          expected_net_profit: number | null
+          expected_yield_per_acre: number | null
+          expected_yield_quintals: number | null
           farmer_id: string
           fertilizer_k_kg: number | null
           fertilizer_n_kg: number | null
           fertilizer_p_kg: number | null
+          fungicide_gm: number | null
           generated_at: string | null
           generation_language: string | null
           generation_params: Json | null
+          growth_regulators: Json | null
+          herbicide_ml: number | null
           id: string
+          insecticide_ml: number | null
           is_active: boolean | null
           land_id: string
           last_weather_update: string | null
+          organic_fertilizer_kg: number | null
+          organic_input_details: Json | null
+          organic_manure_kg: number | null
+          pesticide_requirements: Json | null
+          pgr_hormone_ml: number | null
+          recommended_products: Json | null
           schedule_version: number | null
           seed_quantity_kg: number | null
           sowing_date: string
           tenant_id: string
+          total_estimated_cost: number | null
           total_water_requirement_liters: number | null
           updated_at: string | null
+          vermicompost_kg: number | null
           weather_data: Json | null
         }
         Insert: {
           ai_model?: string | null
+          bio_fertilizer_units?: number | null
+          bio_pesticide_ml?: number | null
           calculated_for_area_acres?: number | null
           completed_at?: string | null
           country?: string | null
           created_at?: string | null
           crop_name: string
           crop_variety?: string | null
+          expected_gross_revenue?: number | null
           expected_harvest_date?: string | null
+          expected_market_price_per_quintal?: number | null
+          expected_net_profit?: number | null
+          expected_yield_per_acre?: number | null
+          expected_yield_quintals?: number | null
           farmer_id: string
           fertilizer_k_kg?: number | null
           fertilizer_n_kg?: number | null
           fertilizer_p_kg?: number | null
+          fungicide_gm?: number | null
           generated_at?: string | null
           generation_language?: string | null
           generation_params?: Json | null
+          growth_regulators?: Json | null
+          herbicide_ml?: number | null
           id?: string
+          insecticide_ml?: number | null
           is_active?: boolean | null
           land_id: string
           last_weather_update?: string | null
+          organic_fertilizer_kg?: number | null
+          organic_input_details?: Json | null
+          organic_manure_kg?: number | null
+          pesticide_requirements?: Json | null
+          pgr_hormone_ml?: number | null
+          recommended_products?: Json | null
           schedule_version?: number | null
           seed_quantity_kg?: number | null
           sowing_date: string
           tenant_id: string
+          total_estimated_cost?: number | null
           total_water_requirement_liters?: number | null
           updated_at?: string | null
+          vermicompost_kg?: number | null
           weather_data?: Json | null
         }
         Update: {
           ai_model?: string | null
+          bio_fertilizer_units?: number | null
+          bio_pesticide_ml?: number | null
           calculated_for_area_acres?: number | null
           completed_at?: string | null
           country?: string | null
           created_at?: string | null
           crop_name?: string
           crop_variety?: string | null
+          expected_gross_revenue?: number | null
           expected_harvest_date?: string | null
+          expected_market_price_per_quintal?: number | null
+          expected_net_profit?: number | null
+          expected_yield_per_acre?: number | null
+          expected_yield_quintals?: number | null
           farmer_id?: string
           fertilizer_k_kg?: number | null
           fertilizer_n_kg?: number | null
           fertilizer_p_kg?: number | null
+          fungicide_gm?: number | null
           generated_at?: string | null
           generation_language?: string | null
           generation_params?: Json | null
+          growth_regulators?: Json | null
+          herbicide_ml?: number | null
           id?: string
+          insecticide_ml?: number | null
           is_active?: boolean | null
           land_id?: string
           last_weather_update?: string | null
+          organic_fertilizer_kg?: number | null
+          organic_input_details?: Json | null
+          organic_manure_kg?: number | null
+          pesticide_requirements?: Json | null
+          pgr_hormone_ml?: number | null
+          recommended_products?: Json | null
           schedule_version?: number | null
           seed_quantity_kg?: number | null
           sowing_date?: string
           tenant_id?: string
+          total_estimated_cost?: number | null
           total_water_requirement_liters?: number | null
           updated_at?: string | null
+          vermicompost_kg?: number | null
           weather_data?: Json | null
         }
         Relationships: [
@@ -16374,7 +16431,112 @@ export type Database = {
             foreignKeyName: "task_completions_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "farmer_upcoming_needs"
+            referencedColumns: ["task_id"]
+          },
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "schedule_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_type: string
+          opened_at: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string | null
+          task_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_type: string
+          opened_at?: string | null
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_type?: string
+          opened_at?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "farmer_upcoming_needs"
+            referencedColumns: ["task_id"]
+          },
+          {
+            foreignKeyName: "task_notifications_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_product_mappings: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_category: string | null
+          product_type: string
+          quantity_multiplier: number | null
+          recommended_product_ids: string[] | null
+          task_type: string
+          tenant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_category?: string | null
+          product_type: string
+          quantity_multiplier?: number | null
+          recommended_product_ids?: string[] | null
+          task_type: string
+          tenant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_category?: string | null
+          product_type?: string
+          quantity_multiplier?: number | null
+          recommended_product_ids?: string[] | null
+          task_type?: string
+          tenant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_product_mappings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -18248,6 +18410,60 @@ export type Database = {
           },
         ]
       }
+      video_tutorials: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          language: string | null
+          subcategory: string | null
+          tags: string[] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_url: string
+          view_count: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          language?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_url: string
+          view_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          language?: string | null
+          subcategory?: string | null
+          tags?: string[] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_url?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
       villages: {
         Row: {
           created_at: string | null
@@ -19640,6 +19856,26 @@ export type Database = {
           },
         ]
       }
+      farmer_upcoming_needs: {
+        Row: {
+          crop_name: string | null
+          crop_variety: string | null
+          days_until_task: number | null
+          estimated_cost: number | null
+          farmer_id: string | null
+          farmer_name: string | null
+          location: string | null
+          mobile_number: string | null
+          resources: Json | null
+          status: string | null
+          task_date: string | null
+          task_id: string | null
+          task_name: string | null
+          task_type: string | null
+          tenant_id: string | null
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -20200,6 +20436,17 @@ export type Database = {
         Args: { workflow_id: string }
         Returns: number
       }
+      calculate_product_demand: {
+        Args: { p_days?: number; p_tenant_id: string }
+        Returns: {
+          avg_cost: number
+          earliest_date: string
+          farmer_count: number
+          product_type: string
+          task_count: number
+          total_quantity: number
+        }[]
+      }
       calculate_vegetation_health_score: {
         Args: {
           p_data_completeness: number
@@ -20620,6 +20867,19 @@ export type Database = {
       get_geometry_bbox: { Args: { geom: unknown }; Returns: number[] }
       get_header_farmer_id: { Args: never; Returns: string }
       get_header_tenant_id: { Args: never; Returns: string }
+      get_inventory_gap: {
+        Args: { p_days?: number; p_tenant_id: string }
+        Returns: {
+          current_stock: number
+          predicted_demand: number
+          product_id: string
+          product_name: string
+          product_type: string
+          reorder_needed: boolean
+          shortfall: number
+          urgency_level: string
+        }[]
+      }
       get_jwt_dealer_id: { Args: never; Returns: string }
       get_jwt_farmer_id: { Args: never; Returns: string }
       get_jwt_tenant_id: { Args: never; Returns: string }
@@ -20946,6 +21206,7 @@ export type Database = {
         Args: { p_email: string; p_ip_address?: unknown }
         Returns: Json
       }
+      refresh_farmer_upcoming_needs: { Args: never; Returns: undefined }
       refresh_organization_analytics: {
         Args: { p_tenant_id: string }
         Returns: undefined
