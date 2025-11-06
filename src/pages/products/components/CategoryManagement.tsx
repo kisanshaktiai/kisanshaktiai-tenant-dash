@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Trees, 
   Plus, 
@@ -21,7 +22,8 @@ import {
   Package,
   MoreVertical,
   Eye,
-  EyeOff
+  EyeOff,
+  BarChart3
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -40,6 +42,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import CategoryAnalytics from './CategoryAnalytics';
 
 interface Category {
   id: string;
@@ -403,217 +406,234 @@ export default function CategoryManagement() {
   const categoryTree = buildCategoryTree(filteredCategories);
 
   return (
-    <div className="space-y-6">
-      <Card className="border-none shadow-soft">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-2xl">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Trees className="h-5 w-5 text-primary" />
-                </div>
-                Product Categories
-              </CardTitle>
-              <CardDescription className="mt-2">
-                Organize your products into hierarchical categories for better navigation
-              </CardDescription>
-            </div>
-            
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => setEditingCategory(null)} size="lg" className="shadow-soft">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingCategory ? 'Edit Category' : 'Create New Category'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingCategory 
-                      ? 'Update the category information below.'
-                      : 'Add a new category to organize your products.'
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Category Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Fertilizers"
-                      required
-                    />
+    <Tabs defaultValue="categories" className="space-y-6">
+      <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsTrigger value="categories" className="flex items-center gap-2">
+          <Trees className="h-4 w-4" />
+          Categories
+        </TabsTrigger>
+        <TabsTrigger value="analytics" className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4" />
+          Analytics
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="categories">
+        <Card className="border-none shadow-soft">
+          <CardHeader className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Trees className="h-5 w-5 text-primary" />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Brief description of the category"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="parent_id">Parent Category</Label>
-                    <select
-                      id="parent_id"
-                      value={formData.parent_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, parent_id: e.target.value }))}
-                      className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
-                    >
-                      <option value="">No Parent (Top Level)</option>
-                      {categories?.filter(cat => cat.id !== editingCategory?.id).map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="sort_order">Sort Order</Label>
-                      <Input
-                        id="sort_order"
-                        type="number"
-                        value={formData.sort_order}
-                        onChange={(e) => setFormData(prev => ({ ...prev, sort_order: Number(e.target.value) }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center space-x-2 pt-6">
-                      <Switch
-                        id="is_active"
-                        checked={formData.is_active}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                      />
-                      <Label htmlFor="is_active">Active</Label>
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={resetForm}>
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                    >
-                      {editingCategory ? 'Update' : 'Create'} Category
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Search and View Controls */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 bg-background"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg shrink-0">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="h-8"
-              >
-                <LayoutGrid className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Grid</span>
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="h-8"
-              >
-                <List className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">List</span>
-              </Button>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <p className="text-xs text-muted-foreground">Total Categories</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {categories?.length || 0}
-              </p>
-            </div>
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-xs text-muted-foreground">Active</p>
-              <p className="text-2xl font-bold text-primary mt-1">
-                {categories?.filter(c => c.is_active).length || 0}
-              </p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <p className="text-xs text-muted-foreground">Top Level</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {categories?.filter(c => !c.parent_id).length || 0}
-              </p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted/50 border">
-              <p className="text-xs text-muted-foreground">Subcategories</p>
-              <p className="text-2xl font-bold text-foreground mt-1">
-                {categories?.filter(c => c.parent_id).length || 0}
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {categoryTree.length > 0 ? (
-            <div className={
-              viewMode === 'grid' 
-                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
-                : 'space-y-3'
-            }>
-              {viewMode === 'grid' 
-                ? categoryTree.map(renderCategoryCard)
-                : categoryTree.map(cat => renderCategoryList(cat, 0))
-              }
-            </div>
-          ) : (
-            <div className="text-center py-16 px-4">
-              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Trees className="h-8 w-8 text-primary" />
+                  Product Categories
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  Organize your products into hierarchical categories for better navigation
+                </CardDescription>
               </div>
-              <h3 className="text-xl font-semibold mb-2">
-                {searchQuery ? 'No categories found' : 'No categories yet'}
-              </h3>
-              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
-                {searchQuery 
-                  ? `No categories match "${searchQuery}". Try a different search.`
-                  : 'Create your first category to organize your products effectively.'
-                }
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => setIsDialogOpen(true)} size="lg" className="shadow-soft">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Category
-                </Button>
-              )}
+              
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setEditingCategory(null)} size="lg" className="shadow-soft">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingCategory ? 'Edit Category' : 'Create New Category'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingCategory 
+                        ? 'Update the category information below.'
+                        : 'Add a new category to organize your products.'
+                      }
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Category Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Fertilizers"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Input
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Brief description of the category"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="parent_id">Parent Category</Label>
+                      <select
+                        id="parent_id"
+                        value={formData.parent_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, parent_id: e.target.value }))}
+                        className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm"
+                      >
+                        <option value="">No Parent (Top Level)</option>
+                        {categories?.filter(cat => cat.id !== editingCategory?.id).map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="sort_order">Sort Order</Label>
+                        <Input
+                          id="sort_order"
+                          type="number"
+                          value={formData.sort_order}
+                          onChange={(e) => setFormData(prev => ({ ...prev, sort_order: Number(e.target.value) }))}
+                        />
+                      </div>
+
+                      <div className="flex items-center space-x-2 pt-6">
+                        <Switch
+                          id="is_active"
+                          checked={formData.is_active}
+                          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                        />
+                        <Label htmlFor="is_active">Active</Label>
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={resetForm}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                      >
+                        {editingCategory ? 'Update' : 'Create'} Category
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+
+            {/* Search and View Controls */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-background"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2 p-1 bg-muted rounded-lg shrink-0">
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Grid</span>
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-8"
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">List</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground">Total Categories</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {categories?.length || 0}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-xs text-muted-foreground">Active</p>
+                <p className="text-2xl font-bold text-primary mt-1">
+                  {categories?.filter(c => c.is_active).length || 0}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground">Top Level</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {categories?.filter(c => !c.parent_id).length || 0}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <p className="text-xs text-muted-foreground">Subcategories</p>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {categories?.filter(c => c.parent_id).length || 0}
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {categoryTree.length > 0 ? (
+              <div className={
+                viewMode === 'grid' 
+                  ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
+                  : 'space-y-3'
+              }>
+                {viewMode === 'grid' 
+                  ? categoryTree.map(renderCategoryCard)
+                  : categoryTree.map(cat => renderCategoryList(cat, 0))
+                }
+              </div>
+            ) : (
+              <div className="text-center py-16 px-4">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Trees className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {searchQuery ? 'No categories found' : 'No categories yet'}
+                </h3>
+                <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                  {searchQuery 
+                    ? `No categories match "${searchQuery}". Try a different search.`
+                    : 'Create your first category to organize your products effectively.'
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setIsDialogOpen(true)} size="lg" className="shadow-soft">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Category
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="analytics">
+        <CategoryAnalytics />
+      </TabsContent>
+    </Tabs>
   );
 }
