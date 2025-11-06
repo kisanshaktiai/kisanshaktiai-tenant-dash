@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, Users, Package, AlertTriangle, Phone, Calendar } from 'lucide-react';
+import { TrendingUp, Users, Package, AlertTriangle, Phone, Calendar, ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import {
   usePredictiveSalesMetrics,
   useTenantDemandForecast,
@@ -14,12 +15,20 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import { format, parseISO } from 'date-fns';
 
 export const PredictiveSalesDashboard = () => {
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<number>(30);
 
-  const { data: metrics, isLoading: metricsLoading } = usePredictiveSalesMetrics(timeRange);
-  const { data: demandForecast, isLoading: demandLoading } = useTenantDemandForecast(timeRange);
-  const { data: inventoryGap, isLoading: inventoryLoading } = useInventoryGap(timeRange);
-  const { data: opportunities, isLoading: opportunitiesLoading } = useProactiveSalesOpportunities(7);
+  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = usePredictiveSalesMetrics(timeRange);
+  const { data: demandForecast, isLoading: demandLoading, refetch: refetchDemand } = useTenantDemandForecast(timeRange);
+  const { data: inventoryGap, isLoading: inventoryLoading, refetch: refetchInventory } = useInventoryGap(timeRange);
+  const { data: opportunities, isLoading: opportunitiesLoading, refetch: refetchOpportunities } = useProactiveSalesOpportunities(7);
+
+  const handleRefresh = () => {
+    refetchMetrics();
+    refetchDemand();
+    refetchInventory();
+    refetchOpportunities();
+  };
 
   const chartData = demandForecast?.map((item) => ({
     productType: item.product_type,
@@ -39,23 +48,75 @@ export const PredictiveSalesDashboard = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/app/dashboard')}
+          className="hover:text-foreground"
+        >
+          Dashboard
+        </Button>
+        <span>/</span>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate('/app/sales')}
+          className="hover:text-foreground"
+        >
+          Sales
+        </Button>
+        <span>/</span>
+        <span className="text-foreground font-medium">Predictive Intelligence</span>
+      </div>
+
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Predictive Sales Intelligence</h1>
-          <p className="text-muted-foreground">Analyze farmer needs and optimize inventory</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-start gap-4">
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => navigate('/app/sales')}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+              Predictive Sales Intelligence
+              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">AI</span>
+            </h1>
+            <p className="text-muted-foreground">Analyze farmer needs and optimize inventory</p>
+          </div>
         </div>
-        <Select value={timeRange.toString()} onValueChange={(v) => setTimeRange(Number(v))}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Time Range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Next 7 Days</SelectItem>
-            <SelectItem value="14">Next 14 Days</SelectItem>
-            <SelectItem value="30">Next 30 Days</SelectItem>
-            <SelectItem value="60">Next 60 Days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefresh}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Button>
+          <Select value={timeRange.toString()} onValueChange={(v) => setTimeRange(Number(v))}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Time Range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Next 7 Days</SelectItem>
+              <SelectItem value="14">Next 14 Days</SelectItem>
+              <SelectItem value="30">Next 30 Days</SelectItem>
+              <SelectItem value="60">Next 60 Days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* KPI Cards */}

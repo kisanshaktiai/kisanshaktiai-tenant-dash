@@ -15,7 +15,8 @@ import { LucideIcon,
   UserCog,
   Satellite,
   ShoppingCart,
-  ShoppingBag
+  ShoppingBag,
+  TrendingUp
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -124,6 +125,16 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart3,
     description: 'Reports and insights',
     category: 'analytics'
+  },
+  {
+    id: 'predictive-sales',
+    title: 'Predictive Sales',
+    href: '/app/sales/predictive',
+    icon: TrendingUp,
+    description: 'AI-powered demand forecasting',
+    category: 'analytics',
+    badge: 'AI',
+    isNew: true
   },
 
   // Integrations
