@@ -153,41 +153,33 @@ export class SalesService extends BaseApiService {
     const total = subtotal - totalDiscount + totalTax + shipping;
 
     // Create order
-    const order = await this.executeQuery<SalesOrder>(async () => {
-      const { data: orderData, error } = await supabase
-        .from('sales_orders')
-        .insert([{
-          farmer_id: data.farmer_id,
-          dealer_id: data.dealer_id,
-          order_type: data.order_type,
-          order_source: data.order_source,
-          order_status: 'pending',
-          payment_status: 'pending',
-          fulfillment_status: 'pending',
-          subtotal_amount: subtotal,
-          tax_amount: totalTax,
-          discount_amount: totalDiscount,
-          shipping_charges: shipping,
-          total_amount: total,
-          delivery_address: data.delivery_address as any,
-          billing_address: data.billing_address as any,
-          payment_method: data.payment_method,
-          notes: data.notes,
-        }])
-        .select()
-        .single();
-      
-      return { data: orderData as unknown as SalesOrder, error };
-    });
+    const { data: orderData, error } = await supabase
+      .from('sales_orders')
+      .insert([{
+        farmer_id: data.farmer_id,
+        dealer_id: data.dealer_id,
+        order_type: data.order_type,
+        order_source: data.order_source,
+        subtotal_amount: subtotal,
+        tax_amount: totalTax,
+        discount_amount: totalDiscount,
+        shipping_charges: shipping,
+        total_amount: total,
+        delivery_address: data.delivery_address as any,
+        billing_address: data.billing_address as any,
+        payment_method: data.payment_method,
+        notes: data.notes,
+      }])
+      .select()
+      .single();
+    
+    if (error) throw this.handleError(error);
+    const order = orderData as unknown as SalesOrder;
 
-    // Create order items
     const orderItems = data.items.map((item) => ({
-      tenant_id: tenantId,
-      farmer_id: data.farmer_id,
-      dealer_id: data.dealer_id,
       order_id: order.id,
       product_id: item.product_id,
-      product_name: '', // Will be filled by trigger
+      product_name: 'Product', // Will be updated by app logic
       unit_price: item.unit_price,
       quantity: item.quantity,
       discount_amount: item.discount_amount || 0,

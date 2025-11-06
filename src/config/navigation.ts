@@ -13,7 +13,8 @@ import { LucideIcon,
   Building2,
   Palette,
   UserCog,
-  Satellite
+  Satellite,
+  ShoppingCart
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -63,6 +64,16 @@ export const navigationConfig: NavigationItem[] = [
     icon: UserCheck,
     description: 'Dealer network management',
     category: 'management'
+  },
+  {
+    id: 'sales',
+    title: 'Sales',
+    href: '/app/sales',
+    icon: ShoppingCart,
+    description: 'Order management and sales',
+    category: 'management',
+    badge: 'New',
+    isNew: true
   },
   {
     id: 'campaigns',

@@ -33,6 +33,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
 import NDVIPage from '@/pages/NDVIPage';
 import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
+import SalesDashboard from '@/pages/sales/SalesDashboard';
 
 // Settings sub-pages
 import OrganizationManagement from '@/pages/settings/OrganizationManagement';
@@ -92,6 +93,7 @@ function App() {
                     <Route path="campaigns" element={<CampaignsPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="dealers" element={<DealersPage />} />
+                    <Route path="sales" element={<SalesDashboard />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="settings/organization" element={<OrganizationManagement />} />
