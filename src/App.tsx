@@ -34,6 +34,8 @@ import NotFound from '@/pages/NotFound';
 import NDVIPage from '@/pages/NDVIPage';
 import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
 import SalesDashboard from '@/pages/sales/SalesDashboard';
+import OrderDetailsPage from '@/pages/sales/components/OrderDetailsPage';
+import SalesAnalyticsDashboard from '@/pages/sales/SalesAnalyticsDashboard';
 
 // Settings sub-pages
 import OrganizationManagement from '@/pages/settings/OrganizationManagement';
@@ -94,6 +96,8 @@ function App() {
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="dealers" element={<DealersPage />} />
                     <Route path="sales" element={<SalesDashboard />} />
+                    <Route path="sales/analytics" element={<SalesAnalyticsDashboard />} />
+                    <Route path="sales/:orderId" element={<OrderDetailsPage />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="settings/organization" element={<OrganizationManagement />} />
