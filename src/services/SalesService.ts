@@ -156,6 +156,8 @@ export class SalesService extends BaseApiService {
     const { data: orderData, error } = await supabase
       .from('sales_orders')
       .insert([{
+        tenant_id: tenantId,
+        order_number: `ORD-${Date.now()}`,
         farmer_id: data.farmer_id,
         dealer_id: data.dealer_id,
         order_type: data.order_type,
@@ -177,6 +179,8 @@ export class SalesService extends BaseApiService {
     const order = orderData as unknown as SalesOrder;
 
     const orderItems = data.items.map((item) => ({
+      tenant_id: tenantId,
+      farmer_id: data.farmer_id,
       order_id: order.id,
       product_id: item.product_id,
       product_name: 'Product', // Will be updated by app logic
