@@ -20,22 +20,18 @@ export interface FarmerUpcomingNeed {
 
 export interface ProductDemand {
   product_type: string;
-  total_quantity: number;
-  task_count: number;
-  farmer_count: number;
-  earliest_date: string;
-  avg_cost: number;
+  predicted_demand: number;
+  urgency_level: string;
 }
 
 export interface InventoryGap {
-  product_id: string;
-  product_name: string;
   product_type: string;
   current_stock: number;
   predicted_demand: number;
-  shortfall: number;
-  reorder_needed: boolean;
-  urgency_level: 'critical' | 'high' | 'medium' | 'low';
+  gap: number;
+  gap_percentage: number;
+  urgency_level: 'urgent' | 'high' | 'medium' | 'low';
+  reorder_needed?: boolean;
 }
 
 export interface SalesOpportunity {
@@ -110,10 +106,11 @@ class PredictiveSalesService extends BaseApiService {
       return { data: data || [], error };
     });
 
-    // Cast urgency_level to proper type
+    // Cast urgency_level to proper type and add reorder flag
     return result.map((item: any) => ({
       ...item,
-      urgency_level: item.urgency_level as 'critical' | 'high' | 'medium' | 'low',
+      urgency_level: item.urgency_level as 'urgent' | 'high' | 'medium' | 'low',
+      reorder_needed: item.gap > 0,
     }));
   }
 

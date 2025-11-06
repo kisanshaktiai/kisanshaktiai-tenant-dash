@@ -32,14 +32,13 @@ export const PredictiveSalesDashboard = () => {
 
   const chartData = demandForecast?.map((item) => ({
     productType: item.product_type,
-    quantity: item.total_quantity,
-    farmers: item.farmer_count,
-    tasks: item.task_count,
+    quantity: item.predicted_demand,
+    urgency: item.urgency_level,
   })) || [];
 
   const getUrgencyColor = (level: string) => {
     switch (level) {
-      case 'critical': return 'bg-destructive text-destructive-foreground';
+      case 'urgent': return 'bg-destructive text-destructive-foreground';
       case 'high': return 'bg-orange-500 text-white';
       case 'medium': return 'bg-yellow-500 text-white';
       default: return 'bg-muted text-muted-foreground';
@@ -198,8 +197,7 @@ export const PredictiveSalesDashboard = () => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="quantity" stroke="hsl(var(--primary))" name="Quantity Needed" />
-                    <Line type="monotone" dataKey="farmers" stroke="hsl(var(--accent))" name="Farmers" />
+                    <Line type="monotone" dataKey="quantity" stroke="hsl(var(--primary))" name="Predicted Demand" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -221,21 +219,19 @@ export const PredictiveSalesDashboard = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-2">Product Type</th>
-                      <th className="text-right p-2">Total Quantity</th>
-                      <th className="text-right p-2">Tasks</th>
-                      <th className="text-right p-2">Farmers</th>
-                      <th className="text-right p-2">Earliest Date</th>
+                      <th className="text-right p-2">Predicted Demand</th>
+                      <th className="text-center p-2">Urgency</th>
                     </tr>
                   </thead>
                   <tbody>
                     {demandForecast?.map((item, index) => (
                       <tr key={index} className="border-b">
                         <td className="p-2 font-medium">{item.product_type}</td>
-                        <td className="text-right p-2">{item.total_quantity.toFixed(2)}</td>
-                        <td className="text-right p-2">{item.task_count}</td>
-                        <td className="text-right p-2">{item.farmer_count}</td>
-                        <td className="text-right p-2">
-                          {item.earliest_date ? format(parseISO(item.earliest_date), 'MMM dd') : '-'}
+                        <td className="text-right p-2">{item.predicted_demand.toFixed(2)}</td>
+                        <td className="text-center p-2">
+                          <span className={`px-2 py-1 rounded text-xs ${getUrgencyColor(item.urgency_level)}`}>
+                            {item.urgency_level}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -267,13 +263,13 @@ export const PredictiveSalesDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {inventoryGap?.map((item) => (
-                      <tr key={item.product_id} className="border-b">
-                        <td className="p-2 font-medium">{item.product_name}</td>
+                    {inventoryGap?.map((item, index) => (
+                      <tr key={index} className="border-b">
+                        <td className="p-2 font-medium">{item.product_type}</td>
                         <td className="text-right p-2">{item.current_stock.toFixed(2)}</td>
                         <td className="text-right p-2">{item.predicted_demand.toFixed(2)}</td>
-                        <td className={`text-right p-2 font-medium ${item.shortfall < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                          {item.shortfall > 0 ? '+' : ''}{item.shortfall.toFixed(2)}
+                        <td className={`text-right p-2 font-medium ${item.gap > 0 ? 'text-destructive' : 'text-green-600'}`}>
+                          {item.gap > 0 ? '-' : '+'}{Math.abs(item.gap).toFixed(2)}
                         </td>
                         <td className="text-center p-2">
                           <span className={`px-2 py-1 rounded text-xs ${getUrgencyColor(item.urgency_level)}`}>
@@ -284,7 +280,7 @@ export const PredictiveSalesDashboard = () => {
                           {item.reorder_needed ? (
                             <Button size="sm" variant="destructive">Reorder</Button>
                           ) : (
-                            <Button size="sm" variant="outline">Ready</Button>
+                            <Button size="sm" variant="outline">Adequate</Button>
                           )}
                         </td>
                       </tr>

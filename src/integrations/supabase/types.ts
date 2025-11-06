@@ -20439,12 +20439,9 @@ export type Database = {
       calculate_product_demand: {
         Args: { p_days?: number; p_tenant_id: string }
         Returns: {
-          avg_cost: number
-          earliest_date: string
-          farmer_count: number
+          predicted_demand: number
           product_type: string
-          task_count: number
-          total_quantity: number
+          urgency_level: string
         }[]
       }
       calculate_vegetation_health_score: {
@@ -20641,6 +20638,10 @@ export type Database = {
         Returns: boolean
       }
       expire_old_invites: { Args: never; Returns: number }
+      extract_numeric_quantity: {
+        Args: { resources: Json; task_type: string }
+        Returns: number
+      }
       find_intersecting_districts: {
         Args: { tile_geom: unknown }
         Returns: {
@@ -20871,12 +20872,10 @@ export type Database = {
         Args: { p_days?: number; p_tenant_id: string }
         Returns: {
           current_stock: number
+          gap: number
+          gap_percentage: number
           predicted_demand: number
-          product_id: string
-          product_name: string
           product_type: string
-          reorder_needed: boolean
-          shortfall: number
           urgency_level: string
         }[]
       }
