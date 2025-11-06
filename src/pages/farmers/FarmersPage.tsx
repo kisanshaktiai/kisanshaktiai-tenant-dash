@@ -16,7 +16,6 @@ import { FarmerStats } from './components/FarmerStats';
 import { FarmerProfile } from './components/FarmerProfile';
 import { AdvancedFilters } from './components/AdvancedFilters';
 import { FarmerAnalytics } from './components/FarmerAnalytics';
-import { CampaignCenter } from './components/CampaignCenter';
 import { IntegrationHub } from './components/IntegrationHub';
 // import { NDVIHarvestManager } from './components/NDVIHarvestManager'; // Removed - functionality moved to NDVI page
 import type { Farmer } from '@/services/EnhancedFarmerDataService';
@@ -124,7 +123,7 @@ export default function FarmersPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
           <TabsTrigger value="directory" className="flex items-center gap-2">
             <Users className="h-4 w-4 hidden sm:block" />
             Directory
@@ -143,7 +142,6 @@ export default function FarmersPage() {
           </TabsTrigger>
           <TabsTrigger value="leads">Lead Mgmt</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
@@ -185,10 +183,6 @@ export default function FarmersPage() {
 
         <TabsContent value="analytics">
           <FarmerAnalytics />
-        </TabsContent>
-
-        <TabsContent value="campaigns">
-          <CampaignCenter />
         </TabsContent>
 
         <TabsContent value="integrations">
