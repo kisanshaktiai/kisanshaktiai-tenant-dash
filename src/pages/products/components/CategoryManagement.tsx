@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,9 +13,24 @@ import {
   Edit, 
   Trash2, 
   FolderOpen,
-  Folder
+  Folder,
+  LayoutGrid,
+  List,
+  Search,
+  TrendingUp,
+  Package,
+  MoreVertical,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +57,8 @@ export default function CategoryManagement() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -169,7 +186,7 @@ export default function CategoryManagement() {
     }
   };
 
-  const buildCategoryTree = (categories: Category[], parentId: string | null = null): Category[] => {
+  const buildCategoryTree = (categories: Category[], parentId: string | null = null): any[] => {
     return categories
       .filter(cat => cat.parent_id === parentId)
       .map(cat => ({
@@ -178,56 +195,196 @@ export default function CategoryManagement() {
       }));
   };
 
-  const renderCategoryTree = (categories: any[], level = 0) => {
-    return categories.map((category) => (
-      <div key={category.id} className="space-y-2">
-        <div 
-          className="flex items-center justify-between p-3 border rounded-lg"
-          style={{ marginLeft: `${level * 20}px` }}
-        >
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    if (!searchQuery.trim()) return categories;
+    
+    const query = searchQuery.toLowerCase();
+    return categories.filter(cat => 
+      cat.name.toLowerCase().includes(query) ||
+      cat.description?.toLowerCase().includes(query)
+    );
+  }, [categories, searchQuery]);
+
+  const renderCategoryCard = (category: any) => (
+    <Card 
+      key={category.id} 
+      className="group relative overflow-hidden hover:shadow-medium transition-all duration-300 hover:-translate-y-1"
+    >
+      <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
+      
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            {category.children?.length > 0 ? (
-              <FolderOpen className="h-4 w-4 text-primary" />
-            ) : (
-              <Folder className="h-4 w-4 text-muted-foreground" />
-            )}
+            <div className={`p-2.5 rounded-lg transition-colors ${
+              category.children?.length > 0 
+                ? 'bg-primary/10 text-primary' 
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {category.children?.length > 0 ? (
+                <FolderOpen className="h-5 w-5" />
+              ) : (
+                <Folder className="h-5 w-5" />
+              )}
+            </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{category.name}</span>
-                {!category.is_active && (
-                  <Badge variant="secondary">Inactive</Badge>
-                )}
-              </div>
-              {category.description && (
-                <p className="text-sm text-muted-foreground">{category.description}</p>
+              <CardTitle className="text-lg">{category.name}</CardTitle>
+              {category.children?.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {category.children.length} subcategories
+                </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleEdit(category)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => deleteMutation.mutate(category.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover z-50">
+              <DropdownMenuItem onClick={() => handleEdit(category)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Category
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {category.is_active ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Activate
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => deleteMutation.mutate(category.id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {category.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {category.description}
+          </p>
+        )}
+        
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Package className="h-3.5 w-3.5" />
+              <span>0 products</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Order: {category.sort_order}</span>
+            </div>
+          </div>
+          
+          <Badge 
+            variant={category.is_active ? "default" : "secondary"}
+            className="text-xs"
+          >
+            {category.is_active ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderCategoryList = (category: any, level = 0) => (
+    <div key={category.id} className="space-y-2">
+      <div 
+        className="group relative flex items-center justify-between p-4 rounded-lg border bg-card hover:shadow-soft transition-all duration-200"
+        style={{ marginLeft: `${level * 24}px` }}
+      >
+        <div className="flex items-center gap-4 flex-1">
+          <div className={`p-2 rounded-md transition-colors ${
+            category.children?.length > 0 
+              ? 'bg-primary/10 text-primary' 
+              : 'bg-muted text-muted-foreground'
+          }`}>
+            {category.children?.length > 0 ? (
+              <FolderOpen className="h-4 w-4" />
+            ) : (
+              <Folder className="h-4 w-4" />
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-medium text-sm truncate">{category.name}</h4>
+              <Badge 
+                variant={category.is_active ? "default" : "secondary"}
+                className="text-xs shrink-0"
+              >
+                {category.is_active ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+            {category.description && (
+              <p className="text-xs text-muted-foreground truncate">
+                {category.description}
+              </p>
+            )}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5" />
+              <span>0 products</span>
+            </div>
+            {category.children?.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" />
+                <span>{category.children.length} subs</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>#{category.sort_order}</span>
+            </div>
           </div>
         </div>
-        {category.children?.length > 0 && (
-          <div>
-            {renderCategoryTree(category.children, level + 1)}
-          </div>
-        )}
+
+        <div className="flex items-center gap-2 ml-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleEdit(category)}
+            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteMutation.mutate(category.id)}
+            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    ));
-  };
+      
+      {category.children?.length > 0 && (
+        <div className="space-y-2">
+          {category.children.map((child: any) => renderCategoryList(child, level + 1))}
+        </div>
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -243,20 +400,28 @@ export default function CategoryManagement() {
     );
   }
 
-  const categoryTree = buildCategoryTree(categories || []);
+  const categoryTree = buildCategoryTree(filteredCategories);
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trees className="h-5 w-5" />
-              Product Categories
+      <Card className="border-none shadow-soft">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Trees className="h-5 w-5 text-primary" />
+                </div>
+                Product Categories
+              </CardTitle>
+              <CardDescription className="mt-2">
+                Organize your products into hierarchical categories for better navigation
+              </CardDescription>
             </div>
+            
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setEditingCategory(null)}>
+                <Button onClick={() => setEditingCategory(null)} size="lg" className="shadow-soft">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Category
                 </Button>
@@ -348,29 +513,105 @@ export default function CategoryManagement() {
                 </form>
               </DialogContent>
             </Dialog>
-          </CardTitle>
-          <CardDescription>
-            Organize your products into hierarchical categories for better navigation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {categoryTree.length > 0 ? (
-              renderCategoryTree(categoryTree)
-            ) : (
-              <div className="text-center py-12">
-                <Trees className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No categories found</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first category to organize your products.
-                </p>
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Category
-                </Button>
-              </div>
-            )}
           </div>
+
+          {/* Search and View Controls */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg shrink-0">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="h-8"
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Grid</span>
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-8"
+              >
+                <List className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">List</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <p className="text-xs text-muted-foreground">Total Categories</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {categories?.length || 0}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-xs text-muted-foreground">Active</p>
+              <p className="text-2xl font-bold text-primary mt-1">
+                {categories?.filter(c => c.is_active).length || 0}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <p className="text-xs text-muted-foreground">Top Level</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {categories?.filter(c => !c.parent_id).length || 0}
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/50 border">
+              <p className="text-xs text-muted-foreground">Subcategories</p>
+              <p className="text-2xl font-bold text-foreground mt-1">
+                {categories?.filter(c => c.parent_id).length || 0}
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {categoryTree.length > 0 ? (
+            <div className={
+              viewMode === 'grid' 
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' 
+                : 'space-y-3'
+            }>
+              {viewMode === 'grid' 
+                ? categoryTree.map(renderCategoryCard)
+                : categoryTree.map(cat => renderCategoryList(cat, 0))
+              }
+            </div>
+          ) : (
+            <div className="text-center py-16 px-4">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Trees className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">
+                {searchQuery ? 'No categories found' : 'No categories yet'}
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                {searchQuery 
+                  ? `No categories match "${searchQuery}". Try a different search.`
+                  : 'Create your first category to organize your products effectively.'
+                }
+              </p>
+              {!searchQuery && (
+                <Button onClick={() => setIsDialogOpen(true)} size="lg" className="shadow-soft">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Category
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
