@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
+import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
@@ -32,7 +33,19 @@ const Index = () => {
 
   // If not authenticated, redirect to auth page
   if (!user || !session) {
+    console.log('Index: No user or session, redirecting to auth');
     return <Navigate to="/auth" replace />;
+  }
+
+  // Verify session is still valid
+  if (session && checkTimeout) {
+    const sessionExpiresAt = new Date(session.expires_at || 0);
+    const isExpired = sessionExpiresAt <= new Date();
+    
+    if (isExpired) {
+      console.log('Index: Session expired, redirecting to auth');
+      return <Navigate to="/auth" replace />;
+    }
   }
 
   // Wait for tenant initialization (with timeout)

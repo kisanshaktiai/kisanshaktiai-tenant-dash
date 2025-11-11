@@ -21,11 +21,40 @@ export const useTenantAuthOptimized = () => {
       return;
     }
 
+    fetchingRef.current = true;
+
     try {
       console.log('useTenantAuthOptimized: Fetching tenants for user:', userId);
-      fetchingRef.current = true;
       dispatch(setLoading(true));
       dispatch(setError(null));
+
+      // CRITICAL: Verify session exists and is valid before fetching
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('useTenantAuthOptimized: No valid session found:', sessionError);
+        
+        // Try to refresh session
+        console.log('useTenantAuthOptimized: Attempting to refresh session...');
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshedSession) {
+          console.error('useTenantAuthOptimized: Session refresh failed:', refreshError);
+          throw new Error('Session invalid - please log in again');
+        }
+        
+        console.log('useTenantAuthOptimized: Session refreshed successfully');
+      }
+
+      // Verify auth.uid() is accessible by calling the database helper function
+      const { data: uidCheck, error: uidError } = await supabase.rpc('get_current_user_id');
+      
+      if (uidError || !uidCheck) {
+        console.error('useTenantAuthOptimized: auth.uid() not accessible:', uidError);
+        throw new Error('Authentication state not synchronized - please try again');
+      }
+      
+      console.log('useTenantAuthOptimized: auth.uid() verified:', uidCheck);
       
       // Get user-tenant relationships with full tenant data
       const { data: userTenantsData, error: userTenantsError } = await supabase

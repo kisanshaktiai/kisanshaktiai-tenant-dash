@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,14 +67,42 @@ const Auth = () => {
         title: "Sign in failed",
         description: error.message,
       });
-    } else {
+      setIsLoading(false);
+      return;
+    }
+
+    // CRITICAL: Verify session is established before navigating
+    try {
+      console.log('Auth: Verifying session after sign in...');
+      
+      // Wait for session to be fully written to localStorage
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify session exists
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('Auth: Session not established after sign in');
+        setError('Session not established. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Auth: Session verified, user:', session.user.id);
+      
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
+
+      // Navigate to dashboard (the user context will load tenant data)
+      navigate('/app/dashboard');
+    } catch (err) {
+      console.error('Auth: Error verifying session:', err);
+      setError('Failed to verify session. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
