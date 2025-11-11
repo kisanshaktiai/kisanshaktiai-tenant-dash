@@ -13,6 +13,8 @@ import { fontService } from '@/services/FontService';
 // Initialize font service on app startup
 fontService.initializeFont();
 
+import { ContextErrorBoundary } from '@/components/error/ContextErrorBoundary';
+
 // Import layout
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 
@@ -79,8 +81,14 @@ function App() {
                   <Route path="/setup-password" element={<SetupPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   
-                  {/* Onboarding - outside layout */}
-                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  {/* Onboarding - outside layout but needs context */}
+                  <Route path="/onboarding" element={
+                    <ContextErrorBoundary>
+                      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                        <OnboardingPage />
+                      </React.Suspense>
+                    </ContextErrorBoundary>
+                  } />
                   
                   {/* Main app routes with layout */}
                   <Route path="/app" element={
