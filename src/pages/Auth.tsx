@@ -34,7 +34,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      console.log('Auth: User authenticated, redirecting from auth page');
+      // Redirect to index to let it determine correct destination
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -71,34 +73,57 @@ const Auth = () => {
       return;
     }
 
-    // CRITICAL: Verify session is established before navigating
+    // CRITICAL: Ensure JWT is fully synchronized before navigating
     try {
-      console.log('Auth: Verifying session after sign in...');
+      console.log('Auth: Verifying and synchronizing session after sign in...');
       
       // Wait for session to be fully written to localStorage
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Verify session exists
-      const { data: { session } } = await supabase.auth.getSession();
+      // Force session refresh to ensure JWT is synchronized
+      console.log('Auth: Refreshing session to sync JWT...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (!session) {
-        console.error('Auth: Session not established after sign in');
-        setError('Session not established. Please try again.');
+      if (refreshError || !refreshedSession) {
+        console.error('Auth: Session refresh failed:', refreshError);
+        setError('Failed to establish session. Please try again.');
         setIsLoading(false);
         return;
       }
 
-      console.log('Auth: Session verified, user:', session.user.id);
+      console.log('Auth: Session synchronized, user:', refreshedSession.user.id);
+      
+      // Verify JWT is working by checking auth.uid()
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const { data: uidCheck, error: uidError } = await supabase.rpc('get_current_user_id');
+      
+      if (uidError || !uidCheck) {
+        console.error('Auth: JWT not synchronized, retrying...', uidError);
+        // One more wait and retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: retryCheck } = await supabase.rpc('get_current_user_id');
+        if (!retryCheck) {
+          console.error('Auth: JWT sync failed after retry');
+          setError('Authentication sync issue. Please try signing in again.');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      console.log('Auth: JWT verified, auth.uid() working');
       
       toast({
         title: "Welcome back!",
         description: "You have successfully signed in.",
       });
 
-      // Navigate to dashboard (the user context will load tenant data)
-      navigate('/app/dashboard');
+      // Small delay before navigation to ensure everything is ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Navigate to index (it will handle routing based on tenant status)
+      navigate('/');
     } catch (err) {
-      console.error('Auth: Error verifying session:', err);
+      console.error('Auth: Error in session verification:', err);
       setError('Failed to verify session. Please try again.');
     } finally {
       setIsLoading(false);

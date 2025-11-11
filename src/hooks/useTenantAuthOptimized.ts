@@ -28,33 +28,48 @@ export const useTenantAuthOptimized = () => {
       dispatch(setLoading(true));
       dispatch(setError(null));
 
-      // CRITICAL: Verify session exists and is valid before fetching
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // CRITICAL: Ensure JWT token is synchronized before any database calls
+      // Step 1: Get current session
+      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
-        console.error('useTenantAuthOptimized: No valid session found:', sessionError);
-        
-        // Try to refresh session
-        console.log('useTenantAuthOptimized: Attempting to refresh session...');
-        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshedSession) {
-          console.error('useTenantAuthOptimized: Session refresh failed:', refreshError);
-          throw new Error('Session invalid - please log in again');
-        }
-        
-        console.log('useTenantAuthOptimized: Session refreshed successfully');
+        console.error('useTenantAuthOptimized: No valid session:', sessionError);
+        throw new Error('No active session - please log in');
       }
 
-      // Verify auth.uid() is accessible by calling the database helper function
+      // Step 2: ALWAYS refresh the session to ensure JWT is fresh and synchronized
+      console.log('useTenantAuthOptimized: Refreshing session to sync JWT...');
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error('useTenantAuthOptimized: Session refresh failed:', refreshError);
+        throw new Error('Session refresh failed - please log in again');
+      }
+      
+      console.log('useTenantAuthOptimized: Session refreshed, JWT synchronized');
+      
+      // Step 3: Wait a moment for JWT to propagate to all requests
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Step 4: Verify auth.uid() is now accessible
       const { data: uidCheck, error: uidError } = await supabase.rpc('get_current_user_id');
       
       if (uidError || !uidCheck) {
-        console.error('useTenantAuthOptimized: auth.uid() not accessible:', uidError);
-        throw new Error('Authentication state not synchronized - please try again');
+        console.error('useTenantAuthOptimized: auth.uid() still not accessible:', uidError);
+        
+        // One more retry with longer wait
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const { data: retryUidCheck, error: retryUidError } = await supabase.rpc('get_current_user_id');
+        
+        if (retryUidError || !retryUidCheck) {
+          console.error('useTenantAuthOptimized: auth.uid() retry failed:', retryUidError);
+          throw new Error('Authentication not synchronized - please refresh the page');
+        }
+        
+        console.log('useTenantAuthOptimized: auth.uid() verified on retry:', retryUidCheck);
+      } else {
+        console.log('useTenantAuthOptimized: auth.uid() verified:', uidCheck);
       }
-      
-      console.log('useTenantAuthOptimized: auth.uid() verified:', uidCheck);
       
       // Get user-tenant relationships with full tenant data
       const { data: userTenantsData, error: userTenantsError } = await supabase
@@ -161,14 +176,16 @@ export const useTenantAuthOptimized = () => {
     }
 
     if (!isInitialized && !loading && !fetchingRef.current) {
-      // Try to restore current tenant from localStorage
-      const storedTenantId = localStorage.getItem('currentTenantId');
-      if (storedTenantId && currentTenant?.id === storedTenantId) {
-        setIsInitialized(true);
-        return;
-      }
+      // Add delay to allow auth state to fully stabilize
+      console.log('useTenantAuthOptimized: Scheduling tenant fetch after auth stabilization...');
+      const initTimeout = setTimeout(() => {
+        if (!fetchingRef.current && !isInitialized) {
+          console.log('useTenantAuthOptimized: Fetching tenant data now');
+          fetchUserTenants(user.id);
+        }
+      }, 500); // Wait 500ms for auth to fully stabilize
 
-      fetchUserTenants(user.id);
+      return () => clearTimeout(initTimeout);
     }
 
     return () => {
