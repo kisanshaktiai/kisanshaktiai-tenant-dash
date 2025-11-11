@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const useTenantAuthOptimized = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, loading } = useAppSelector((state) => state.tenant);
+  const { currentTenant, userTenants, loading, error } = useAppSelector((state) => state.tenant);
   const [isInitialized, setIsInitialized] = useState(false);
   
   // Prevent multiple simultaneous fetches
@@ -17,10 +17,12 @@ export const useTenantAuthOptimized = () => {
   const fetchUserTenants = useCallback(async (userId: string) => {
     // Prevent concurrent fetches
     if (fetchingRef.current) {
+      console.log('useTenantAuthOptimized: Fetch already in progress, skipping');
       return;
     }
 
     try {
+      console.log('useTenantAuthOptimized: Fetching tenants for user:', userId);
       fetchingRef.current = true;
       dispatch(setLoading(true));
       dispatch(setError(null));
@@ -80,16 +82,19 @@ export const useTenantAuthOptimized = () => {
         }));
 
       dispatch(setUserTenants(transformedUserTenants));
+      console.log('useTenantAuthOptimized: Fetched tenants:', transformedUserTenants.length);
 
       // Set current tenant (prefer primary, fallback to first available)
       if (!currentTenant && transformedUserTenants.length > 0) {
         const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
         if (primaryTenant?.tenant) {
+          console.log('useTenantAuthOptimized: Setting current tenant:', primaryTenant.tenant.id);
           dispatch(setCurrentTenant(primaryTenant.tenant));
           localStorage.setItem('currentTenantId', primaryTenant.tenant.id);
         }
       }
 
+      console.log('useTenantAuthOptimized: Initialization complete');
       setIsInitialized(true);
     } catch (error) {
       console.error('useTenantAuthOptimized: Fetch error:', error);
@@ -197,6 +202,7 @@ export const useTenantAuthOptimized = () => {
     currentTenant,
     userTenants,
     loading: loading || !isInitialized,
+    error,
     isMultiTenant: userTenants.length > 1,
     switchTenant,
     refreshTenantData: user ? () => fetchUserTenants(user.id) : async () => {},

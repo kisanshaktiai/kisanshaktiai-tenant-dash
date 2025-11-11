@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, Suspense } from 'react';
+import React, { useEffect, useRef, Suspense, useState } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
@@ -75,9 +75,10 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, loading: tenantLoading, initializeOnboarding } = useTenantContextOptimized();
+  const { currentTenant, loading: tenantLoading, initializeOnboarding, error: tenantError, retryFetch } = useTenantContextOptimized();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [showTimeout, setShowTimeout] = useState(false);
   
   // Real-time connection
   const { isConnected } = useOnboardingRealtime();
@@ -96,20 +97,67 @@ const OnboardingPage = () => {
     refetch
   } = useOnboardingWithValidation();
 
+  // Set a timeout to prevent infinite loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (tenantLoading || onboardingLoading) {
+        console.warn('OnboardingPage: Loading timeout reached');
+        setShowTimeout(true);
+      }
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [tenantLoading, onboardingLoading]);
+
   console.log('OnboardingPage: Current state:', {
     user: user?.id,
     currentTenant: currentTenant?.id,
     tenantLoading,
+    tenantError,
     onboardingLoading,
     hasOnboardingData: !!onboardingData,
-    onboardingError: onboardingError?.message
+    onboardingError: onboardingError?.message,
+    showTimeout
   });
 
   // Check if we should show bypass options instead of loading/error states
   const shouldShowBypass = user && currentTenant && !tenantLoading && !onboardingLoading && (!onboardingData || onboardingError);
 
+  // Show tenant error with retry option
+  if (tenantError && showTimeout) {
+    console.log('OnboardingPage: Tenant error detected, showing error state');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Unable to Load Tenant Data</h3>
+            <p className="text-muted-foreground text-sm mb-6">
+              {tenantError}
+            </p>
+            <div className="space-y-2">
+              <Button onClick={retryFetch} className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+              <Button onClick={() => window.location.href = '/app/dashboard'} variant="outline" className="w-full">
+                Go to Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!user) {
     console.log('OnboardingPage: No user, showing skeleton');
+    if (showTimeout) {
+      console.warn('OnboardingPage: No user after timeout, redirecting to auth');
+      return <Navigate to="/auth" replace />;
+    }
     return (
       <div role="main" aria-live="polite" aria-label="Setting up your onboarding">
         <OnboardingSkeleton />
@@ -120,6 +168,30 @@ const OnboardingPage = () => {
 
   if (tenantLoading) {
     console.log('OnboardingPage: Tenant loading, showing skeleton');
+    if (showTimeout) {
+      console.warn('OnboardingPage: Tenant loading timeout, showing error');
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center">
+              <h3 className="text-lg font-semibold mb-2">Loading is taking longer than expected</h3>
+              <p className="text-muted-foreground text-sm mb-6">
+                Please refresh the page or try again later.
+              </p>
+              <div className="space-y-2">
+                <Button onClick={retryFetch} className="w-full">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+                <Button onClick={() => window.location.reload()} variant="outline" className="w-full">
+                  Refresh Page
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div role="main" aria-live="polite" aria-label="Loading tenant data">
         <OnboardingSkeleton />
@@ -130,6 +202,10 @@ const OnboardingPage = () => {
 
   if (!currentTenant) {
     console.log('OnboardingPage: No current tenant, showing skeleton');
+    if (showTimeout) {
+      console.warn('OnboardingPage: No tenant after timeout, redirecting to dashboard');
+      return <Navigate to="/app/dashboard" replace />;
+    }
     return (
       <div role="main" aria-live="polite" aria-label="Setting up tenant">
         <OnboardingSkeleton />
@@ -140,6 +216,19 @@ const OnboardingPage = () => {
 
   if (onboardingLoading) {
     console.log('OnboardingPage: Onboarding loading, showing skeleton');
+    if (showTimeout) {
+      console.warn('OnboardingPage: Onboarding loading timeout');
+      return (
+        <MissingStepsPanel
+          onRetry={() => refetch()}
+          onValidate={validate}
+          onForceRefresh={forceRefresh}
+          onDebugInfo={getDebugInfo}
+          isValidating={isValidating}
+          isRefreshing={isRefreshing}
+        />
+      );
+    }
     return (
       <div role="main" aria-live="polite" aria-label="Loading onboarding data">
         <OnboardingSkeleton />

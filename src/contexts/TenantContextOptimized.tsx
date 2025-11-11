@@ -13,6 +13,7 @@ interface TenantContextValue {
   clearTenantSession: () => void;
   isInitialized: boolean;
   initializeOnboarding: (tenantId: string) => Promise<any>;
+  retryFetch: () => Promise<void>;
 }
 
 const TenantContextOptimized = createContext<TenantContextValue | undefined>(undefined);
@@ -39,17 +40,23 @@ export const TenantProviderOptimized: React.FC<{ children: React.ReactNode }> = 
     }
   };
   
+  const retryFetch = async () => {
+    console.log('TenantContextOptimized: Retry fetch requested');
+    await tenantAuth.refreshTenantData();
+  };
+  
   const value: TenantContextValue = {
     currentTenant: tenantAuth.currentTenant,
     userTenants: tenantAuth.userTenants,
     loading: tenantAuth.loading,
-    error: null,
+    error: tenantAuth.error || null,
     isMultiTenant: tenantAuth.isMultiTenant,
     switchTenant: tenantAuth.switchTenant,
     refreshTenantData: tenantAuth.refreshTenantData,
     clearTenantSession: tenantAuth.clearTenantSession,
     isInitialized: tenantAuth.isInitialized,
     initializeOnboarding,
+    retryFetch,
   };
 
   return (
