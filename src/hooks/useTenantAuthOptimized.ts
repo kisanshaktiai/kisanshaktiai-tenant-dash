@@ -28,47 +28,67 @@ export const useTenantAuthOptimized = () => {
       dispatch(setLoading(true));
       dispatch(setError(null));
 
-      // CRITICAL: Ensure JWT token is synchronized before any database calls
-      // Step 1: Get current session
-      let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // CRITICAL FIX: Force session refresh to ensure JWT is synchronized
+      console.log('useTenantAuthOptimized: Forcing session refresh to sync JWT...');
+      const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (sessionError || !session) {
-        console.error('useTenantAuthOptimized: No valid session:', sessionError);
-        throw new Error('No active session - please log in');
-      }
-
-      // Step 2: ALWAYS refresh the session to ensure JWT is fresh and synchronized
-      console.log('useTenantAuthOptimized: Refreshing session to sync JWT...');
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !refreshedSession) {
+      if (refreshError) {
         console.error('useTenantAuthOptimized: Session refresh failed:', refreshError);
-        throw new Error('Session refresh failed - please log in again');
+        dispatch(setError('Session refresh failed. Please try logging in again.'));
+        throw new Error(`Session refresh failed: ${refreshError.message}`);
       }
-      
-      console.log('useTenantAuthOptimized: Session refreshed, JWT synchronized');
-      
-      // Step 3: Wait a moment for JWT to propagate to all requests
-      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Step 4: Verify auth.uid() is now accessible
-      const { data: uidCheck, error: uidError } = await supabase.rpc('get_current_user_id');
-      
-      if (uidError || !uidCheck) {
-        console.error('useTenantAuthOptimized: auth.uid() still not accessible:', uidError);
-        
-        // One more retry with longer wait
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const { data: retryUidCheck, error: retryUidError } = await supabase.rpc('get_current_user_id');
-        
-        if (retryUidError || !retryUidCheck) {
-          console.error('useTenantAuthOptimized: auth.uid() retry failed:', retryUidError);
-          throw new Error('Authentication not synchronized - please refresh the page');
+      if (!sessionData?.session) {
+        console.error('useTenantAuthOptimized: No session after refresh');
+        dispatch(setError('No active session. Please log in again.'));
+        throw new Error('No session after refresh');
+      }
+
+      console.log('useTenantAuthOptimized: Session refreshed successfully');
+
+      // Wait for JWT to be fully synchronized (increased to 800ms for stability)
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Verify JWT is working with retry logic and exponential backoff
+      let authCheckRetries = 0;
+      const maxAuthRetries = 5;
+      let authWorking = false;
+
+      while (authCheckRetries < maxAuthRetries && !authWorking) {
+        try {
+          const { data: jwtStatus, error: jwtError } = await supabase.rpc('debug_jwt_status');
+          
+          if (jwtError) {
+            console.error(`useTenantAuthOptimized: JWT status check failed (attempt ${authCheckRetries + 1}):`, jwtError);
+          } else {
+            console.log('useTenantAuthOptimized: JWT status:', jwtStatus);
+            
+            if (jwtStatus && jwtStatus[0]?.jwt_present && jwtStatus[0]?.current_user_id === userId) {
+              console.log('useTenantAuthOptimized: JWT verification successful');
+              authWorking = true;
+              break;
+            }
+          }
+
+          authCheckRetries++;
+          if (authCheckRetries < maxAuthRetries) {
+            const backoffDelay = Math.min(1000 * Math.pow(2, authCheckRetries), 3000); // Exponential backoff, max 3s
+            console.log(`useTenantAuthOptimized: Retrying JWT check in ${backoffDelay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          } else {
+            throw new Error('JWT not synchronized after multiple attempts');
+          }
+        } catch (error) {
+          console.error('useTenantAuthOptimized: Error during auth check:', error);
+          authCheckRetries++;
+          if (authCheckRetries < maxAuthRetries) {
+            const backoffDelay = Math.min(1000 * Math.pow(2, authCheckRetries), 3000);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          } else {
+            dispatch(setError('Authentication synchronization failed. Please refresh the page.'));
+            throw error;
+          }
         }
-        
-        console.log('useTenantAuthOptimized: auth.uid() verified on retry:', retryUidCheck);
-      } else {
-        console.log('useTenantAuthOptimized: auth.uid() verified:', uidCheck);
       }
       
       // Get user-tenant relationships with full tenant data

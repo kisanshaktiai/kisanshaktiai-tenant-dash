@@ -11,6 +11,7 @@ export const useAuth = () => {
   const subscriptionRef = useRef<any>(null);
   const isMountedRef = useRef(true);
   const initTimeoutRef = useRef<NodeJS.Timeout>();
+  const sessionReadyRef = useRef(false);
 
   const handleAuthStateChange = useCallback((event: string, session: any) => {
     if (!isMountedRef.current) {
@@ -30,22 +31,26 @@ export const useAuth = () => {
         console.log('useAuth: Setting initial session', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
+        sessionReadyRef.current = !!session;
         break;
       case 'SIGNED_IN':
         console.log('useAuth: User signed in', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
+        sessionReadyRef.current = true;
         break;
       case 'SIGNED_OUT':
         console.log('useAuth: User signed out');
         dispatch(logout());
         dispatch(clearTenantData());
         localStorage.removeItem('supabase.auth.token');
+        sessionReadyRef.current = false;
         break;
       case 'TOKEN_REFRESHED':
         console.log('useAuth: Token refreshed, updating session', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
+        sessionReadyRef.current = true;
         break;
       case 'USER_UPDATED':
         console.log('useAuth: User updated', session?.user?.id);
@@ -55,6 +60,7 @@ export const useAuth = () => {
         console.log('useAuth: Other auth event:', event);
         if (session) {
           dispatch(setSession(session));
+          sessionReadyRef.current = true;
         }
     }
   }, [dispatch]);
@@ -293,6 +299,26 @@ export const useAuth = () => {
     return now >= expiresAt;
   }, [session?.expires_at]);
 
+  // Helper function to check if session is ready
+  const isSessionReady = useCallback(() => {
+    return sessionReadyRef.current && !!session && !!user;
+  }, [session, user]);
+
+  // Helper function to wait for session to be ready
+  const waitForSessionReady = useCallback(async (timeout = 5000): Promise<boolean> => {
+    const startTime = Date.now();
+    
+    while (!isSessionReady()) {
+      if (Date.now() - startTime > timeout) {
+        console.error('useAuth: Timeout waiting for session to be ready');
+        return false;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    return true;
+  }, [isSessionReady]);
+
   return {
     user,
     session,
@@ -306,5 +332,7 @@ export const useAuth = () => {
     refreshSession,
     isSessionExpired,
     clearError: () => dispatch(clearError()),
+    isSessionReady,
+    waitForSessionReady,
   };
 };
