@@ -7,49 +7,47 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { user, session, loading: authLoading, initialized: authInitialized } = useAuth();
-  const { currentTenant, loading: tenantLoading, isInitialized: tenantInitialized, userTenants } = useTenantContextOptimized();
-  const [checkTimeout, setCheckTimeout] = useState(false);
+  const { user, session, isSessionExpired, signOut } = useAuth();
+  const { currentTenant, loading: tenantLoading, error: tenantError, isInitialized: tenantInitialized, userTenants } = useTenantContextOptimized();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Set timeout to prevent infinite loading
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setCheckTimeout(true);
+      console.log('Index: Loading timeout reached');
+      setLoadingTimeout(true);
     }, 5000);
     return () => clearTimeout(timeout);
   }, []);
 
   // Show loading spinner while checking auth status
-  if (!authInitialized || authLoading) {
+  if (!user) {
+    console.log('Index: No user authenticated, showing loading');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, redirect to auth page
+  // Redirect to auth if no user or session
   if (!user || !session) {
     console.log('Index: No user or session, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
 
-  // Verify session is still valid
-  if (session && checkTimeout) {
-    const sessionExpiresAt = new Date(session.expires_at || 0);
-    const isExpired = sessionExpiresAt <= new Date();
-    
-    if (isExpired) {
-      console.log('Index: Session expired, redirecting to auth');
-      return <Navigate to="/auth" replace />;
-    }
+  // Check if session has expired
+  if (isSessionExpired()) {
+    console.log('Index: Session expired, redirecting to auth');
+    signOut(); // Clean up expired session
+    return <Navigate to="/auth" replace />;
   }
 
   // Wait for tenant initialization (with timeout)
-  if (!tenantInitialized && !checkTimeout) {
+  if (tenantLoading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -60,24 +58,34 @@ const Index = () => {
     );
   }
 
-  // After timeout or initialization, check tenant status
-  if (tenantInitialized || checkTimeout) {
-    // Has tenants and current tenant is set - go to dashboard
-    if (currentTenant) {
-      return <Navigate to="/app/dashboard" replace />;
-    }
+  // Redirect based on tenant data availability
+  console.log('Index: Tenant context state ->', {
+    currentTenant: currentTenant?.id,
+    userTenants: userTenants.length,
+    loading: tenantLoading,
+    error: tenantError,
+    loadingTimeout,
+  });
 
-    // Has tenants but no current tenant set - let dashboard handle it
-    if (userTenants && userTenants.length > 0 && !currentTenant) {
-      console.log('Index: Tenants exist but none selected, redirecting to dashboard');
-      return <Navigate to="/app/dashboard" replace />;
-    }
+  if (currentTenant) {
+    console.log('Index: Has current tenant, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
-    // User has no tenants - redirect to onboarding to complete setup
-    if (!userTenants || userTenants.length === 0) {
-      console.log('Index: No tenants found, redirecting to onboarding');
-      return <Navigate to="/onboarding" replace />;
-    }
+  if (userTenants.length > 0 && !currentTenant) {
+    console.log('Index: Has tenants but no current tenant selected, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  // If loading has timed out or there's an error, show a recovery option
+  if ((loadingTimeout || tenantError) && !tenantLoading) {
+    console.log('Index: Loading timeout or error detected');
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (userTenants.length === 0 && !tenantLoading) {
+    console.log('Index: No tenants found, redirecting to onboarding');
+    return <Navigate to="/onboarding" replace />;
   }
 
   // Fallback to dashboard
