@@ -76,31 +76,16 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 );
 
 const OnboardingPage = () => {
+  // CRITICAL: All hooks must be called at top level - no conditional hooks!
   const { user } = useAppSelector((state) => state.auth);
   const { isReady: jwtReady, error: jwtError } = useJWTReady();
+  const { currentTenant, loading: tenantLoading, initializeOnboarding, error: tenantError, retryFetch } = useTenantContextOptimized();
   
-  // Safe context access with fallback
-  let contextValue;
-  try {
-    contextValue = useTenantContextOptimized();
-  } catch (error) {
-    console.error('OnboardingPage: Context not available:', error);
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <h3 className="text-lg font-semibold mb-2">Loading...</h3>
-            <p className="text-muted-foreground text-sm mb-4">
-              Initializing application context
-            </p>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // If user is authenticated and tenant onboarding is complete, redirect to dashboard
+  if (user && currentTenant?.onboarding_completed && jwtReady) {
+    console.log('OnboardingPage: Tenant onboarding already completed, redirecting to dashboard');
+    return <Navigate to="/app/dashboard" replace />;
   }
-  
-  const { currentTenant, loading: tenantLoading, initializeOnboarding, error: tenantError, retryFetch } = contextValue;
 
   // CRITICAL: Block until JWT is ready
   if (user && !jwtReady) {
