@@ -76,18 +76,67 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 );
 
 const OnboardingPage = () => {
-  // CRITICAL: All hooks must be called at top level - no conditional hooks!
+  // ⚠️ CRITICAL: ALL HOOKS MUST BE CALLED AT THE TOP - NO CONDITIONAL HOOKS!
+  // React Rule of Hooks: Hooks must be called in the same order every render
+  
+  // 1. Redux selectors (FIRST)
   const { user } = useAppSelector((state) => state.auth);
+  
+  // 2. All custom hooks (BEFORE any returns)
   const { isReady: jwtReady, error: jwtError } = useJWTReady();
   const { currentTenant, loading: tenantLoading, initializeOnboarding, error: tenantError, retryFetch } = useTenantContextOptimized();
+  const { isConnected } = useOnboardingRealtime();
+  const { 
+    onboardingData, 
+    isLoading: onboardingLoading, 
+    error: onboardingError,
+    validate,
+    isValidating,
+    forceRefresh,
+    isRefreshing,
+    getDebugInfo,
+    debugInfo,
+    refetch
+  } = useOnboardingWithValidation();
   
-  // If user is authenticated and tenant onboarding is complete, redirect to dashboard
+  // 3. Refs and state
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const [showTimeout, setShowTimeout] = useState(false);
+
+  // 4. All effects
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (tenantLoading || onboardingLoading) {
+        console.warn('OnboardingPage: Loading timeout reached');
+        setShowTimeout(true);
+      }
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [tenantLoading, onboardingLoading]);
+
+  // ✅ NOW safe to do conditional rendering after ALL hooks are called
+  console.log('OnboardingPage: Current state:', {
+    user: user?.id,
+    currentTenant: currentTenant?.id,
+    onboardingCompleted: currentTenant?.onboarding_completed,
+    tenantLoading,
+    tenantError,
+    onboardingLoading,
+    jwtReady,
+    hasOnboardingData: !!onboardingData,
+    onboardingError: onboardingError?.message,
+    showTimeout
+  });
+
+  // If tenant onboarding is complete, redirect to dashboard
   if (user && currentTenant?.onboarding_completed && jwtReady) {
     console.log('OnboardingPage: Tenant onboarding already completed, redirecting to dashboard');
     return <Navigate to="/app/dashboard" replace />;
   }
 
-  // CRITICAL: Block until JWT is ready
+  // Block until JWT is ready
   if (user && !jwtReady) {
     if (jwtError) {
       console.error('OnboardingPage: JWT synchronization failed:', jwtError);
@@ -110,49 +159,6 @@ const OnboardingPage = () => {
       </div>
     );
   }
-  const mainContentRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
-  const [showTimeout, setShowTimeout] = useState(false);
-  
-  // Real-time connection
-  const { isConnected } = useOnboardingRealtime();
-  
-  // Use the enhanced onboarding hook with validation
-  const { 
-    onboardingData, 
-    isLoading: onboardingLoading, 
-    error: onboardingError,
-    validate,
-    isValidating,
-    forceRefresh,
-    isRefreshing,
-    getDebugInfo,
-    debugInfo,
-    refetch
-  } = useOnboardingWithValidation();
-
-  // Set a timeout to prevent infinite loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (tenantLoading || onboardingLoading) {
-        console.warn('OnboardingPage: Loading timeout reached');
-        setShowTimeout(true);
-      }
-    }, 8000);
-
-    return () => clearTimeout(timeout);
-  }, [tenantLoading, onboardingLoading]);
-
-  console.log('OnboardingPage: Current state:', {
-    user: user?.id,
-    currentTenant: currentTenant?.id,
-    tenantLoading,
-    tenantError,
-    onboardingLoading,
-    hasOnboardingData: !!onboardingData,
-    onboardingError: onboardingError?.message,
-    showTimeout
-  });
 
   // Check if we should show bypass options instead of loading/error states
   const shouldShowBypass = user && currentTenant && !tenantLoading && !onboardingLoading && (!onboardingData || onboardingError);
