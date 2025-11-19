@@ -4,13 +4,15 @@ import { useAppSelector } from '@/store/hooks';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useOnboardingRealtime } from '@/hooks/useOnboardingRealtime';
 import { useOnboardingWithValidation } from '@/hooks/useOnboardingWithValidation';
+import { useJWTReady } from '@/hooks/useJWTReady';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LiveIndicator } from '@/components/ui/LiveIndicator';
 import { OnboardingSkeleton } from '@/components/ui/OnboardingSkeleton';
 import { OnboardingBypass } from '@/components/onboarding/OnboardingBypass';
-import { Building2, RefreshCw, Settings, Bug } from 'lucide-react';
+import { SessionRecovery } from '@/components/auth/SessionRecovery';
+import { Building2, RefreshCw, Settings, Bug, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 // Lazy load the onboarding flow
@@ -75,6 +77,7 @@ const MissingStepsPanel = ({ onRetry, onValidate, onForceRefresh, onDebugInfo, i
 
 const OnboardingPage = () => {
   const { user } = useAppSelector((state) => state.auth);
+  const { isReady: jwtReady, error: jwtError } = useJWTReady();
   
   // Safe context access with fallback
   let contextValue;
@@ -98,6 +101,30 @@ const OnboardingPage = () => {
   }
   
   const { currentTenant, loading: tenantLoading, initializeOnboarding, error: tenantError, retryFetch } = contextValue;
+
+  // CRITICAL: Block until JWT is ready
+  if (user && !jwtReady) {
+    if (jwtError) {
+      console.error('OnboardingPage: JWT synchronization failed:', jwtError);
+      return <SessionRecovery error={jwtError} onRetry={retryFetch} />;
+    }
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-muted/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Synchronizing Authentication</h3>
+            <p className="text-muted-foreground text-sm">
+              Preparing your workspace securely...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const mainContentRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [showTimeout, setShowTimeout] = useState(false);

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
-import { supabase } from '@/integrations/supabase/client';
+import { jwtSyncService } from '@/services/JWTSyncService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,6 +19,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreparingWorkspace, setIsPreparingWorkspace] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,58 +76,32 @@ const Auth = () => {
 
     // CRITICAL: Ensure JWT is fully synchronized before navigating
     try {
-      console.log('Auth: Verifying and synchronizing session after sign in...');
+      console.log('[Auth] Sign-in successful, synchronizing JWT...');
       
-      // Wait for session to be fully written to localStorage
-      await new Promise(resolve => setTimeout(resolve, 300));
+      setIsPreparingWorkspace(true);
       
-      // Force session refresh to ensure JWT is synchronized
-      console.log('Auth: Refreshing session to sync JWT...');
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      // Wait for JWT to be ready using the centralized service
+      await jwtSyncService.ensureJWTReady();
       
-      if (refreshError || !refreshedSession) {
-        console.error('Auth: Session refresh failed:', refreshError);
-        setError('Failed to establish session. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      console.log('Auth: Session synchronized, user:', refreshedSession.user.id);
-      
-      // Verify JWT is working by checking auth.uid()
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const { data: uidCheck, error: uidError } = await supabase.rpc('get_current_user_id');
-      
-      if (uidError || !uidCheck) {
-        console.error('Auth: JWT not synchronized, retrying...', uidError);
-        // One more wait and retry
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const { data: retryCheck } = await supabase.rpc('get_current_user_id');
-        if (!retryCheck) {
-          console.error('Auth: JWT sync failed after retry');
-          setError('Authentication sync issue. Please try signing in again.');
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      console.log('Auth: JWT verified, auth.uid() working');
+      console.log('[Auth] JWT synchronized successfully, navigating...');
       
       toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
+        title: 'Welcome back!',
+        description: 'Loading your workspace...',
       });
-
-      // Small delay before navigation to ensure everything is ready
-      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Navigate to index (it will handle routing based on tenant status)
       navigate('/');
-    } catch (err) {
-      console.error('Auth: Error in session verification:', err);
-      setError('Failed to verify session. Please try again.');
+    } catch (syncError) {
+      console.error('[Auth] JWT synchronization failed:', syncError);
+      setError('Failed to synchronize authentication. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Authentication Sync Failed",
+        description: "Please try signing in again.",
+      });
     } finally {
       setIsLoading(false);
+      setIsPreparingWorkspace(false);
     }
   };
 

@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
-import { supabase } from '@/integrations/supabase/client';
+import { useJWTReady } from '@/hooks/useJWTReady';
+import { SessionRecovery } from '@/components/auth/SessionRecovery';
 import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { user, session, isSessionExpired, signOut } = useAuth();
-  const { currentTenant, loading: tenantLoading, error: tenantError, isInitialized: tenantInitialized, userTenants } = useTenantContextOptimized();
+  const { currentTenant, loading: tenantLoading, error: tenantError, userTenants } = useTenantContextOptimized();
+  const { isReady: jwtReady, error: jwtError } = useJWTReady();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Set timeout to prevent infinite loading
@@ -42,12 +44,29 @@ const Index = () => {
   // Check if session has expired
   if (isSessionExpired()) {
     console.log('Index: Session expired, redirecting to auth');
-    signOut(); // Clean up expired session
+    signOut();
     return <Navigate to="/auth" replace />;
   }
 
+  // CRITICAL: Wait for JWT to be ready before making routing decisions
+  if (user && !jwtReady) {
+    if (jwtError) {
+      console.error('Index: JWT synchronization failed:', jwtError);
+      return <SessionRecovery error={jwtError} />;
+    }
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Synchronizing authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Wait for tenant initialization (with timeout)
-  if (tenantLoading && !loadingTimeout) {
+  if (tenantLoading && !loadingTimeout && jwtReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -83,7 +102,7 @@ const Index = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
-  if (userTenants.length === 0 && !tenantLoading) {
+  if (userTenants.length === 0 && !tenantLoading && jwtReady) {
     console.log('Index: No tenants found, redirecting to onboarding');
     return <Navigate to="/onboarding" replace />;
   }
