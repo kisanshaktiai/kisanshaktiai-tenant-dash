@@ -130,8 +130,8 @@ const OnboardingPage = () => {
     showTimeout
   });
 
-  // If tenant onboarding is complete, redirect to dashboard
-  if (user && currentTenant?.onboarding_completed && jwtReady) {
+  // If tenant onboarding is complete, redirect to dashboard immediately
+  if (currentTenant?.onboarding_completed && jwtReady) {
     console.log('OnboardingPage: Tenant onboarding already completed, redirecting to dashboard');
     return <Navigate to="/app/dashboard" replace />;
   }

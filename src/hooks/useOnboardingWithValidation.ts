@@ -58,7 +58,8 @@ export const useOnboardingWithValidation = () => {
         throw error;
       }
     },
-    enabled: !!currentTenant?.id && jwtReady,
+    // Only run if onboarding is NOT completed
+    enabled: !!currentTenant?.id && jwtReady && !currentTenant?.onboarding_completed,
     staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
