@@ -10,6 +10,12 @@ class OnboardingValidationService {
       // Check if workflow exists
       const workflow = await enhancedOnboardingService.getOnboardingWorkflow(tenantId);
       
+      // If workflow is completed, no validation needed
+      if (workflow && workflow.status === 'completed') {
+        console.log('OnboardingValidationService: Workflow already completed, skipping validation');
+        return { isValid: true, repaired: false, issues: [] };
+      }
+      
       if (!workflow) {
         console.log('OnboardingValidationService: No workflow found, initializing...');
         await enhancedOnboardingService.initializeOnboardingWorkflow(tenantId);
