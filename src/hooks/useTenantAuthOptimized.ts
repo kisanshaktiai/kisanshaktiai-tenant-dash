@@ -3,12 +3,14 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setLoading, setError, clearTenantData } from '@/store/slices/tenantSlice';
 import { supabase } from '@/integrations/supabase/client';
+import { useJWTReady } from './useJWTReady';
 
 export const useTenantAuthOptimized = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants, loading, error } = useAppSelector((state) => state.tenant);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isReady: jwtReady } = useJWTReady();
   
   // Prevent multiple simultaneous fetches
   const fetchingRef = useRef(false);
@@ -27,69 +29,6 @@ export const useTenantAuthOptimized = () => {
       console.log('useTenantAuthOptimized: Fetching tenants for user:', userId);
       dispatch(setLoading(true));
       dispatch(setError(null));
-
-      // CRITICAL FIX: Force session refresh to ensure JWT is synchronized
-      console.log('useTenantAuthOptimized: Forcing session refresh to sync JWT...');
-      const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError) {
-        console.error('useTenantAuthOptimized: Session refresh failed:', refreshError);
-        dispatch(setError('Session refresh failed. Please try logging in again.'));
-        throw new Error(`Session refresh failed: ${refreshError.message}`);
-      }
-
-      if (!sessionData?.session) {
-        console.error('useTenantAuthOptimized: No session after refresh');
-        dispatch(setError('No active session. Please log in again.'));
-        throw new Error('No session after refresh');
-      }
-
-      console.log('useTenantAuthOptimized: Session refreshed successfully');
-
-      // Wait for JWT to be fully synchronized (increased to 800ms for stability)
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Verify JWT is working with retry logic and exponential backoff
-      let authCheckRetries = 0;
-      const maxAuthRetries = 5;
-      let authWorking = false;
-
-      while (authCheckRetries < maxAuthRetries && !authWorking) {
-        try {
-          const { data: jwtStatus, error: jwtError } = await supabase.rpc('debug_jwt_status');
-          
-          if (jwtError) {
-            console.error(`useTenantAuthOptimized: JWT status check failed (attempt ${authCheckRetries + 1}):`, jwtError);
-          } else {
-            console.log('useTenantAuthOptimized: JWT status:', jwtStatus);
-            
-            if (jwtStatus && jwtStatus[0]?.jwt_present && jwtStatus[0]?.current_user_id === userId) {
-              console.log('useTenantAuthOptimized: JWT verification successful');
-              authWorking = true;
-              break;
-            }
-          }
-
-          authCheckRetries++;
-          if (authCheckRetries < maxAuthRetries) {
-            const backoffDelay = Math.min(1000 * Math.pow(2, authCheckRetries), 3000); // Exponential backoff, max 3s
-            console.log(`useTenantAuthOptimized: Retrying JWT check in ${backoffDelay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          } else {
-            throw new Error('JWT not synchronized after multiple attempts');
-          }
-        } catch (error) {
-          console.error('useTenantAuthOptimized: Error during auth check:', error);
-          authCheckRetries++;
-          if (authCheckRetries < maxAuthRetries) {
-            const backoffDelay = Math.min(1000 * Math.pow(2, authCheckRetries), 3000);
-            await new Promise(resolve => setTimeout(resolve, backoffDelay));
-          } else {
-            dispatch(setError('Authentication synchronization failed. Please refresh the page.'));
-            throw error;
-          }
-        }
-      }
       
       // Get user-tenant relationships with full tenant data
       const { data: userTenantsData, error: userTenantsError } = await supabase
