@@ -10393,6 +10393,7 @@ export type Database = {
           cloud_coverage: number | null
           collection_id: string | null
           computed_at: string | null
+          confidence_level: string | null
           coverage: number | null
           coverage_percentage: number | null
           created_at: string
@@ -10412,6 +10413,7 @@ export type Database = {
           ndvi_value: number | null
           ndwi_value: number | null
           processing_level: string | null
+          quality_score: number | null
           satellite_source: string | null
           savi_value: number | null
           scene_id: string | null
@@ -10427,6 +10429,7 @@ export type Database = {
           cloud_coverage?: number | null
           collection_id?: string | null
           computed_at?: string | null
+          confidence_level?: string | null
           coverage?: number | null
           coverage_percentage?: number | null
           created_at?: string
@@ -10446,6 +10449,7 @@ export type Database = {
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
+          quality_score?: number | null
           satellite_source?: string | null
           savi_value?: number | null
           scene_id?: string | null
@@ -10461,6 +10465,7 @@ export type Database = {
           cloud_coverage?: number | null
           collection_id?: string | null
           computed_at?: string | null
+          confidence_level?: string | null
           coverage?: number | null
           coverage_percentage?: number | null
           created_at?: string
@@ -10480,6 +10485,7 @@ export type Database = {
           ndvi_value?: number | null
           ndwi_value?: number | null
           processing_level?: string | null
+          quality_score?: number | null
           satellite_source?: string | null
           savi_value?: number | null
           scene_id?: string | null
