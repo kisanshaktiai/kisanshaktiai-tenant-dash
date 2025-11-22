@@ -33,21 +33,45 @@ export const useNDVIApiMonitoring = () => {
     staleTime: 60000,
   });
 
-  // Stats - manual refresh only (v4.1.0)
-  const { data: globalStats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+  // Stats - manual refresh only (v5.1.0)
+  const { data: globalStats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
     queryKey: ['ndvi-stats', currentTenant?.id],
-    queryFn: () => renderNDVIService.getStats(currentTenant?.id),
+    queryFn: async () => {
+      if (!currentTenant?.id) {
+        throw new Error('No tenant ID available');
+      }
+      return renderNDVIService.getStats(currentTenant.id);
+    },
     enabled: !!currentTenant?.id,
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 or client errors
+      if (error?.message?.includes('404') || error?.message?.includes('400')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
-  // NDVI data summary - manual refresh only (v4.1.0 - uses ndvi_micro_tiles)
-  const { data: dataSummary, isLoading: dataSummaryLoading, refetch: refetchData } = useQuery({
+  // NDVI data summary - manual refresh only (v5.1.0)
+  const { data: dataSummary, isLoading: dataSummaryLoading, error: dataError, refetch: refetchData } = useQuery({
     queryKey: ['ndvi-data-summary', currentTenant?.id],
-    queryFn: () => renderNDVIService.getNDVIData(currentTenant?.id || ''),
+    queryFn: async () => {
+      if (!currentTenant?.id) {
+        throw new Error('No tenant ID available');
+      }
+      return renderNDVIService.getNDVIData(currentTenant.id);
+    },
     enabled: !!currentTenant?.id,
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('404') || error?.message?.includes('400')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
     staleTime: 120000,
+    refetchOnWindowFocus: false,
   });
 
   return {
@@ -55,8 +79,10 @@ export const useNDVIApiMonitoring = () => {
     healthLoading,
     globalStats,
     statsLoading,
+    statsError,
     dataSummary,
     dataSummaryLoading,
+    dataError,
     isHealthy: healthData?.status === 'running' || healthData?.status === 'healthy' || healthData?.status === 'ok',
     isWarming,
     // Manual refresh functions
