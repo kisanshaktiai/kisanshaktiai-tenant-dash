@@ -10403,6 +10403,7 @@ export type Database = {
           land_id: string
           max_ndvi: number | null
           mean_ndvi: number | null
+          median_ndvi: number | null
           metadata: Json | null
           min_ndvi: number | null
           ndvi_max: number | null
@@ -10436,6 +10437,7 @@ export type Database = {
           land_id: string
           max_ndvi?: number | null
           mean_ndvi?: number | null
+          median_ndvi?: number | null
           metadata?: Json | null
           min_ndvi?: number | null
           ndvi_max?: number | null
@@ -10469,6 +10471,7 @@ export type Database = {
           land_id?: string
           max_ndvi?: number | null
           mean_ndvi?: number | null
+          median_ndvi?: number | null
           metadata?: Json | null
           min_ndvi?: number | null
           ndvi_max?: number | null
