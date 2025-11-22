@@ -13620,6 +13620,75 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_buckets: {
+        Row: {
+          created_at: string | null
+          function_name: string
+          id: string
+          identifier: string
+          last_request: string | null
+          metadata: Json | null
+          request_count: number
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          function_name: string
+          id?: string
+          identifier: string
+          last_request?: string | null
+          metadata?: Json | null
+          request_count?: number
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          identifier?: string
+          last_request?: string | null
+          metadata?: Json | null
+          request_count?: number
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      rate_limit_tracking: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          id: string
+          identifier: string
+          request_count: number
+          updated_at: string | null
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          identifier: string
+          request_count?: number
+          updated_at?: string | null
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          identifier?: string
+          request_count?: number
+          updated_at?: string | null
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           created_at: string
@@ -15054,6 +15123,48 @@ export type Database = {
           severity?: string
           tenant_id?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          attempted_tenant_id: string | null
+          created_at: string | null
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown
+          operation: string | null
+          table_name: string | null
+          user_agent: string | null
+          user_id: string | null
+          user_tenant_id: string | null
+        }
+        Insert: {
+          attempted_tenant_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          operation?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_tenant_id?: string | null
+        }
+        Update: {
+          attempted_tenant_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          operation?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_tenant_id?: string | null
         }
         Relationships: []
       }
@@ -17831,6 +17942,7 @@ export type Database = {
           created_by: string | null
           custom_domain: string | null
           deleted_at: string | null
+          domain_config: Json | null
           established_date: string | null
           id: string
           is_default: boolean | null
@@ -17884,6 +17996,7 @@ export type Database = {
           created_by?: string | null
           custom_domain?: string | null
           deleted_at?: string | null
+          domain_config?: Json | null
           established_date?: string | null
           id?: string
           is_default?: boolean | null
@@ -17937,6 +18050,7 @@ export type Database = {
           created_by?: string | null
           custom_domain?: string | null
           deleted_at?: string | null
+          domain_config?: Json | null
           established_date?: string | null
           id?: string
           is_default?: boolean | null
@@ -20845,7 +20959,7 @@ export type Database = {
         Args: { keep_count?: number; table_name: string }
         Returns: number
       }
-      cleanup_old_rate_limits: { Args: never; Returns: number }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
       cluster_lands_for_ndvi: {
         Args: {
           p_max_cluster_area_km2?: number
@@ -21379,6 +21493,15 @@ export type Database = {
           tile_id: string
         }[]
       }
+      get_user_storage_usage: {
+        Args: { user_id: string }
+        Returns: {
+          bucket_name: string
+          file_count: number
+          total_size_bytes: number
+          total_size_mb: number
+        }[]
+      }
       get_user_tenant_id: { Args: { _user_id: string }; Returns: string }
       get_user_tenant_relationships: {
         Args: {
@@ -21432,6 +21555,7 @@ export type Database = {
         }
         Returns: Json
       }
+      is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_authenticated_admin: { Args: never; Returns: boolean }
       is_bootstrap_completed: { Args: never; Returns: boolean }
       is_bootstrap_required: { Args: never; Returns: boolean }
@@ -21440,6 +21564,7 @@ export type Database = {
       is_invite_valid: { Args: { invite_token: string }; Returns: boolean }
       is_moderator: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      is_tenant_active: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_admin:
         | { Args: never; Returns: boolean }
         | { Args: { _tenant_id: string }; Returns: boolean }
@@ -21539,6 +21664,7 @@ export type Database = {
       mark_invitation_accepted: { Args: { token: string }; Returns: boolean }
       mark_invitation_clicked: { Args: { token: string }; Returns: boolean }
       mark_invite_used: { Args: { invite_token: string }; Returns: boolean }
+      migrate_tenant_domains: { Args: never; Returns: undefined }
       migrate_theme_data_to_appearance_settings: {
         Args: never
         Returns: undefined
@@ -22262,6 +22388,10 @@ export type Database = {
       }
       user_has_tenant_access: {
         Args: { tenant_uuid: string }
+        Returns: boolean
+      }
+      user_owns_schedule: {
+        Args: { _schedule_id: string; _user_id: string }
         Returns: boolean
       }
       validate_admin_registration_token: {

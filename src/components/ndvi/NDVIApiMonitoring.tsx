@@ -57,6 +57,20 @@ export const NDVIApiMonitoring: React.FC = () => {
 
   const healthStatus = healthLoading ? 'checking' : (isHealthy ? 'healthy' : 'unhealthy');
   
+  // Safe fallback for stats to prevent TypeScript errors
+  const safeStats = globalStats || {
+    total_requests: 0,
+    queued: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0,
+    total_lands_processed: 0,
+    average_ndvi: 0,
+    max_ndvi: 0,
+    min_ndvi: 0,
+    timestamp: new Date().toISOString(),
+  };
+  
   const syncTiles = async () => {
     setIsSyncing(true);
     try {
@@ -95,12 +109,12 @@ export const NDVIApiMonitoring: React.FC = () => {
     }
   };
 
-  const requestDistribution = globalStats ? [
-    { name: 'Completed', value: globalStats.completed, color: COLORS.success },
-    { name: 'Failed', value: globalStats.failed, color: COLORS.failed },
-    { name: 'Queued', value: globalStats.queued, color: COLORS.pending },
-    { name: 'Processing', value: globalStats.processing, color: COLORS.processing },
-  ] : [];
+  const requestDistribution = [
+    { name: 'Completed', value: safeStats.completed, color: COLORS.success },
+    { name: 'Failed', value: safeStats.failed, color: COLORS.failed },
+    { name: 'Queued', value: safeStats.queued, color: COLORS.pending },
+    { name: 'Processing', value: safeStats.processing, color: COLORS.processing },
+  ];
 
   if (statsLoading || healthLoading || isWarming) {
     return (
@@ -177,7 +191,7 @@ export const NDVIApiMonitoring: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Total Requests</p>
-              <p className="text-3xl font-bold mt-2">{globalStats?.total_requests || 0}</p>
+              <p className="text-3xl font-bold mt-2">{safeStats.total_requests}</p>
             </div>
             <Activity className="w-10 h-10 text-primary opacity-20" />
           </div>
@@ -188,8 +202,8 @@ export const NDVIApiMonitoring: React.FC = () => {
             <div>
               <p className="text-sm text-muted-foreground">Success Rate</p>
               <p className="text-3xl font-bold mt-2 text-green-500">
-                {globalStats?.completed && globalStats?.total_requests ? 
-                  `${((globalStats.completed / globalStats.total_requests) * 100).toFixed(1)}%` : '0%'}
+                {safeStats.completed && safeStats.total_requests ? 
+                  `${((safeStats.completed / safeStats.total_requests) * 100).toFixed(1)}%` : '0%'}
               </p>
             </div>
             <TrendingUp className="w-10 h-10 text-green-500 opacity-20" />
@@ -200,7 +214,7 @@ export const NDVIApiMonitoring: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Queue Status</p>
-              <p className="text-3xl font-bold mt-2">{(globalStats?.queued || 0) + (globalStats?.processing || 0)}</p>
+              <p className="text-3xl font-bold mt-2">{safeStats.queued + safeStats.processing}</p>
             </div>
             <Clock className="w-10 h-10 text-blue-500 opacity-20" />
           </div>
@@ -210,7 +224,7 @@ export const NDVIApiMonitoring: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Failed Jobs</p>
-              <p className="text-3xl font-bold mt-2">{globalStats?.failed || 0}</p>
+              <p className="text-3xl font-bold mt-2">{safeStats.failed}</p>
             </div>
             <Database className="w-10 h-10 text-purple-500 opacity-20" />
           </div>
@@ -286,11 +300,11 @@ export const NDVIApiMonitoring: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Active Jobs</span>
-                <span className="text-2xl font-bold">{(globalStats?.queued || 0) + (globalStats?.processing || 0)}</span>
+                <span className="text-2xl font-bold">{safeStats.queued + safeStats.processing}</span>
               </div>
-              <Progress value={((((globalStats?.queued || 0) + (globalStats?.processing || 0)) / Math.max(globalStats?.total_requests || 1, 1)) * 100)} />
+              <Progress value={(((safeStats.queued + safeStats.processing) / Math.max(safeStats.total_requests, 1)) * 100)} />
               <p className="text-sm text-muted-foreground">
-                {((((globalStats?.queued || 0) + (globalStats?.processing || 0)) / Math.max(globalStats?.total_requests || 1, 1) * 100)).toFixed(1)}% of total requests
+                {(((safeStats.queued + safeStats.processing) / Math.max(safeStats.total_requests, 1) * 100)).toFixed(1)}% of total requests
               </p>
             </div>
           </Card>
@@ -303,19 +317,19 @@ export const NDVIApiMonitoring: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Completed</span>
-                  <Badge variant="default" className="bg-green-500">{globalStats?.completed || 0}</Badge>
+                  <Badge variant="default" className="bg-green-500">{safeStats.completed}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Failed</span>
-                  <Badge variant="destructive">{globalStats?.failed || 0}</Badge>
+                  <Badge variant="destructive">{safeStats.failed}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Queued</span>
-                  <Badge variant="secondary">{globalStats?.queued || 0}</Badge>
+                  <Badge variant="secondary">{safeStats.queued}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Processing</span>
-                  <Badge variant="outline">{globalStats?.processing || 0}</Badge>
+                  <Badge variant="outline">{safeStats.processing}</Badge>
                 </div>
               </div>
             </Card>
@@ -327,12 +341,12 @@ export const NDVIApiMonitoring: React.FC = () => {
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Success Rate</span>
                     <span className="text-sm font-medium">
-                      {globalStats?.completed && globalStats?.total_requests ? 
-                        `${((globalStats.completed / globalStats.total_requests) * 100).toFixed(1)}%` : '0%'}
+                      {safeStats.completed && safeStats.total_requests ? 
+                        `${((safeStats.completed / safeStats.total_requests) * 100).toFixed(1)}%` : '0%'}
                     </span>
                   </div>
-                  <Progress value={globalStats?.completed && globalStats?.total_requests ? 
-                    (globalStats.completed / globalStats.total_requests) * 100 : 0} />
+                  <Progress value={safeStats.completed && safeStats.total_requests ? 
+                    (safeStats.completed / safeStats.total_requests) * 100 : 0} />
                 </div>
               </div>
             </Card>

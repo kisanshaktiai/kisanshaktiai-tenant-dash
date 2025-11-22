@@ -332,7 +332,7 @@ export class NDVILandService {
   }
 
   /**
-   * Process lands instantly using the Python API v4.1.0
+   * Process lands instantly using the Python API v5.1
    * This is the main method to trigger NDVI processing with instant results
    */
   async processLandsInstantly(tenantId: string, farmerId?: string): Promise<{
@@ -359,8 +359,11 @@ export class NDVILandService {
       const { data: lands, error } = await query;
 
       if (error) {
+        console.error('❌ Error fetching lands:', error);
         throw new Error(`Failed to fetch lands: ${error.message}`);
       }
+
+      console.log(`📊 Query result: ${lands?.length || 0} lands found`);
 
       if (!lands || lands.length === 0) {
         throw new Error('No lands found. Please add land parcels in the Farmers section.');
@@ -408,31 +411,33 @@ export class NDVILandService {
             farmer_id: farmerId,
             metadata: {
               land_names: group.land_names,
-              api_version: '4.1.0',
+              api_version: '5.1.0',
             }
           });
 
-          // Check for failed status from API
-          if (response.status === 'failed' && response.instant_result?.error) {
-            const apiError = response.instant_result.error;
+          console.log(`📡 API Response for tile ${tileId}:`, response);
+
+          // v5.1 API returns { success: true/false, status: "completed/failed", instant_result: {...} }
+          if (!response.success || response.status === 'failed') {
+            const apiError = response.instant_result?.error || response.message || 'Unknown error';
             console.error(`❌ API Error for tile ${tileId}:`, apiError);
             errors.push(`Tile ${tileId}: ${apiError}`);
             totalFailed += group.land_ids.length;
             continue;
           }
 
-          if (response.status === 'success') {
-            const processedCount = response.instant_result?.processed_count || 0;
+          if (response.success && response.status === 'completed') {
+            const processedCount = response.instant_result?.processed_count || response.land_count || 0;
             totalProcessed += processedCount;
             
-            const failedLands = response.instant_result?.failed || [];
-            totalFailed += failedLands.length;
+            const failedCount = response.instant_result?.failed_count || 0;
+            totalFailed += failedCount;
             
-            if (failedLands.length > 0) {
-              errors.push(`Tile ${tileId}: Failed to process ${failedLands.length} land(s)`);
+            if (failedCount > 0) {
+              errors.push(`Tile ${tileId}: Failed to process ${failedCount} land(s)`);
             }
             
-            console.log(`✅ Tile ${tileId}: ${processedCount} processed, ${failedLands.length} failed`);
+            console.log(`✅ Tile ${tileId}: ${processedCount} processed, ${failedCount} failed`);
           }
         } catch (err: any) {
           console.error(`❌ Failed to process tile ${tileId}:`, err);
