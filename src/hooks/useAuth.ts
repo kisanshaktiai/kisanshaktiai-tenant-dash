@@ -4,60 +4,45 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSession, setLoading, setError, logout, clearError } from '@/store/slices/authSlice';
 import { clearTenantData } from '@/store/slices/tenantSlice';
 
+// Global singleton to prevent multiple initializations across components
+let globalAuthInitialized = false;
+let globalAuthSubscription: any = null;
+
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const { user, session, loading, initialized, error } = useAppSelector((state) => state.auth);
-  const initializationRef = useRef(false);
-  const subscriptionRef = useRef<any>(null);
   const isMountedRef = useRef(true);
-  const initTimeoutRef = useRef<NodeJS.Timeout>();
   const sessionReadyRef = useRef(false);
 
   const handleAuthStateChange = useCallback((event: string, session: any) => {
-    if (!isMountedRef.current) {
-      return;
-    }
-    
-    console.log('useAuth: Auth state change ->', event, 'Session:', session?.user?.id || 'none');
-    
-    // Clear any pending initialization timeout
-    if (initTimeoutRef.current) {
-      clearTimeout(initTimeoutRef.current);
-      initTimeoutRef.current = undefined;
-    }
+    if (!isMountedRef.current) return;
     
     switch (event) {
       case 'INITIAL_SESSION':
-        console.log('useAuth: Setting initial session', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
         sessionReadyRef.current = !!session;
         break;
       case 'SIGNED_IN':
-        console.log('useAuth: User signed in', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
         sessionReadyRef.current = true;
         break;
       case 'SIGNED_OUT':
-        console.log('useAuth: User signed out');
         dispatch(logout());
         dispatch(clearTenantData());
         localStorage.removeItem('supabase.auth.token');
         sessionReadyRef.current = false;
         break;
       case 'TOKEN_REFRESHED':
-        console.log('useAuth: Token refreshed, updating session', session?.user?.id);
         dispatch(setSession(session));
         dispatch(clearError());
         sessionReadyRef.current = true;
         break;
       case 'USER_UPDATED':
-        console.log('useAuth: User updated', session?.user?.id);
         dispatch(setSession(session));
         break;
       default:
-        console.log('useAuth: Other auth event:', event);
         if (session) {
           dispatch(setSession(session));
           sessionReadyRef.current = true;
@@ -68,85 +53,45 @@ export const useAuth = () => {
   useEffect(() => {
     isMountedRef.current = true;
 
-    if (initializationRef.current) {
+    // Only initialize once globally
+    if (globalAuthInitialized) {
       return;
     }
-
-    initializationRef.current = true;
+    globalAuthInitialized = true;
 
     const initializeAuth = async () => {
       try {
-        console.log('useAuth: Starting initialization...');
         dispatch(setLoading(true));
         
-        // Set up auth state listener first
+        // Set up auth state listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
-        subscriptionRef.current = subscription;
+        globalAuthSubscription = subscription;
 
-        // Get initial session with shorter timeout
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => {
-          initTimeoutRef.current = setTimeout(() => reject(new Error('Session timeout')), 3000);
-        });
+        // Get initial session with timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 2000)
+        );
 
         try {
           const { data: { session: initialSession }, error: sessionError } = await Promise.race([
-            sessionPromise,
+            supabase.auth.getSession(),
             timeoutPromise
           ]) as any;
-
-          if (initTimeoutRef.current) {
-            clearTimeout(initTimeoutRef.current);
-            initTimeoutRef.current = undefined;
-          }
           
           if (sessionError) {
-            console.error('useAuth: Session error:', sessionError);
-            if (isMountedRef.current) {
-              dispatch(setError(sessionError.message));
-              dispatch(setSession(null));
-            }
-          } else {
-            console.log('useAuth: Initial session retrieved', initialSession?.user?.id || 'no user');
-            if (isMountedRef.current) {
-              dispatch(setSession(initialSession));
-              
-              // If session exists but is expired, try to refresh
-              if (initialSession && initialSession.expires_at) {
-                const expiresAt = initialSession.expires_at * 1000;
-                const now = Date.now();
-                if (now >= expiresAt - 60000) { // Refresh if expires in less than 1 minute
-                  console.log('useAuth: Session near expiry, refreshing...');
-                  const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-                  if (!refreshError && refreshData.session) {
-                    console.log('useAuth: Session refreshed successfully');
-                    dispatch(setSession(refreshData.session));
-                  }
-                }
-              }
-            }
-          }
-        } catch (error: any) {
-          console.warn('useAuth: Session timeout or error:', error.message);
-          // Session timeout - continue without session
-          if (isMountedRef.current) {
+            dispatch(setError(sessionError.message));
             dispatch(setSession(null));
+          } else {
+            dispatch(setSession(initialSession));
           }
+        } catch {
+          dispatch(setSession(null));
         }
 
-        // Always clear loading after initialization attempt
-        if (isMountedRef.current) {
-          dispatch(setLoading(false));
-        }
-        
-        console.log('useAuth: Initialization complete');
-
+        dispatch(setLoading(false));
       } catch (error) {
-        console.error('useAuth: Initialization error:', error);
-        if (isMountedRef.current) {
-          dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
-          dispatch(setLoading(false));
-        }
+        dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
+        dispatch(setLoading(false));
       }
     };
 
@@ -154,18 +99,6 @@ export const useAuth = () => {
 
     return () => {
       isMountedRef.current = false;
-      
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe();
-        subscriptionRef.current = null;
-      }
-      
-      if (initTimeoutRef.current) {
-        clearTimeout(initTimeoutRef.current);
-        initTimeoutRef.current = undefined;
-      }
-      
-      initializationRef.current = false;
     };
   }, [dispatch, handleAuthStateChange]);
 
