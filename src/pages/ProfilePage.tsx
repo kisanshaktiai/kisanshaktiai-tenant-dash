@@ -6,6 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 import {
   Building2,
   Mail,
@@ -91,15 +94,15 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="container max-w-7xl py-8 px-4 md:px-6">
+      <PageLayout maxWidth="7xl">
         <Modern2025ProfileSkeleton />
-      </div>
+      </PageLayout>
     );
   }
 
   if (error || !profile) {
     return (
-      <div className="container max-w-7xl py-8 px-4 md:px-6">
+      <PageLayout maxWidth="7xl">
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Shield className="h-12 w-12 text-destructive mb-4" />
@@ -111,7 +114,7 @@ const ProfilePage = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </PageLayout>
     );
   }
 
@@ -119,21 +122,14 @@ const ProfilePage = () => {
   const roleLabel = profile.tenant_role?.replace('tenant_', '').replace('_', ' ').toUpperCase() || 'MEMBER';
 
   return (
-    <div className="container max-w-7xl py-8 px-4 md:px-6 space-y-8">
-      {/* Modern Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3">
-          <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full" />
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            Profile Settings
-          </h1>
-        </div>
-        <p className="text-muted-foreground text-lg ml-15">
-          Manage your personal information and tenant account settings
-        </p>
-      </div>
+    <PageLayout maxWidth="7xl">
+      <PageHeader
+        title="Profile Settings"
+        description="Manage your personal information and tenant account settings"
+      />
 
-      {/* Profile Hero Card */}
+      <PageContent spacing="lg">
+        {/* Profile Hero Card */}
       <Card className="border-border/40 bg-gradient-to-br from-card via-card to-card/50 backdrop-blur-sm shadow-xl overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
         <CardContent className="relative p-8">
@@ -551,7 +547,8 @@ const ProfilePage = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 };
 
