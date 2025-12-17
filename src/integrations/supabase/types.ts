@@ -1602,6 +1602,7 @@ export type Database = {
       }
       app_versions: {
         Row: {
+          app_key: string
           breaking_changes: Json | null
           bugs_fixed: Json | null
           build_hash: string
@@ -1618,6 +1619,7 @@ export type Database = {
           version: string
         }
         Insert: {
+          app_key: string
           breaking_changes?: Json | null
           bugs_fixed?: Json | null
           build_hash: string
@@ -1634,6 +1636,7 @@ export type Database = {
           version: string
         }
         Update: {
+          app_key?: string
           breaking_changes?: Json | null
           bugs_fixed?: Json | null
           build_hash?: string

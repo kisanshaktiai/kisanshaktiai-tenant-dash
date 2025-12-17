@@ -1,8 +1,8 @@
 /**
  * Service for interacting with the NDVI Land API on Render
- * Base URL: https://ndvi-land-api.onrender.com
+ * Uses centralized API configuration for URL management
  * 
- * New API Endpoints:
+ * API Endpoints:
  * - GET /health - Health check
  * - POST /ndvi/requests - Create NDVI request
  * - GET /ndvi/requests - List all requests
@@ -15,7 +15,13 @@
  * - POST /ndvi/queue/retry/{id} - Retry failed request
  */
 
-const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
+import { API_CONFIG, getNdviApiUrl } from '@/config/api.config';
+import { inputValidator, isValidUuid } from '@/services/security/InputValidationService';
+import { withRetry, rateLimitService } from '@/services/security/RateLimitService';
+import { secureLogger } from '@/services/security/SecureLogger';
+
+// Use configurable API URL
+const RENDER_API_BASE_URL = API_CONFIG.NDVI_API.BASE_URL;
 
 export interface HealthStatus {
   status: string;

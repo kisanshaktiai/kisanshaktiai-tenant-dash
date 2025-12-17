@@ -1,27 +1,67 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Centralized CORS configuration
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, x-tenant-id',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-  'Access-Control-Max-Age': '86400', // 24 hours
-  'Access-Control-Allow-Credentials': 'true',
-};
+// Allowed origins for CORS - whitelist approach for security
+const ALLOWED_ORIGINS = [
+  'https://lovable.dev',
+  'https://*.lovable.app',
+  'https://*.supabase.co',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:8080',
+];
 
-// Helper function to handle CORS preflight
-export function handleCorsOptions(): Response {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
+// Check if origin is allowed
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  
+  // In development, allow localhost
+  if (origin.startsWith('http://localhost:')) return true;
+  
+  return ALLOWED_ORIGINS.some(pattern => {
+    if (pattern.includes('*')) {
+      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+      return regex.test(origin);
+    }
+    return pattern === origin;
   });
 }
 
-// Apply CORS headers to any response
-export function withCors(response: Response): Response {
+// Get CORS headers with dynamic origin
+function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
+  const origin = isOriginAllowed(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0];
+  
+  return {
+    'Access-Control-Allow-Origin': origin || '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, x-tenant-id',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Allow-Credentials': 'true',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+  };
+}
+
+// Legacy export for backward compatibility
+export const corsHeaders = getCorsHeaders(null);
+
+// Helper function to handle CORS preflight with origin validation
+export function handleCorsOptions(request?: Request): Response {
+  const origin = request?.headers.get('origin') || null;
+  return new Response(null, {
+    status: 204,
+    headers: getCorsHeaders(origin),
+  });
+}
+
+// Apply CORS headers to any response with origin validation
+export function withCors(response: Response, request?: Request): Response {
+  const origin = request?.headers.get('origin') || null;
+  const headers = getCorsHeaders(origin);
+  
   const newHeaders = new Headers(response.headers);
-  Object.entries(corsHeaders).forEach(([key, value]) => {
+  Object.entries(headers).forEach(([key, value]) => {
     newHeaders.set(key, value);
   });
   
