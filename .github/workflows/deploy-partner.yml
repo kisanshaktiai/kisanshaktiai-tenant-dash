@@ -1,4 +1,4 @@
-name: Deploy Partner App (Hostinger)
+name: Deploy Partner (Hostinger)
 
 on:
   push:
@@ -8,62 +8,34 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     env:
-      HOST: ${{ secrets.HOST_SFTP_HOST }}
-      PORT: ${{ secrets.HOST_SFTP_PORT }}
-      USER: ${{ secrets.HOST_SFTP_USER }}
+      HOST: ${{ secrets.PARTNER_SFTP_HOST }}
+      PORT: ${{ secrets.PARTNER_SFTP_PORT }}
+      USER: ${{ secrets.PARTNER_SFTP_USER }}
       REMOTE_DIR: /public_html/partner
 
     steps:
-      - name: ?? Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: ?? Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: ?? Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run build
 
-      - name: ??? Build production app
-        env:
-          NODE_ENV: production
-          VITE_APP_VERSION: ${{ github.sha }}
-        run: npm run build
-
-      - name: ?? Setup SSH
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SFTP_KEY_B64 }}" | base64 --decode > ~/.ssh/id_rsa
+          echo "${{ secrets.PARTNER_SFTP_KEY_B64 }}" | base64 --decode > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -p $PORT $HOST >> ~/.ssh/known_hosts
 
-      - name: ?? Deploy to Hostinger (rsync)
+      - name: Deploy
         run: |
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_rsa -p $PORT" \
-            --exclude=".git*" \
-            --exclude="node_modules" \
             ./dist/ \
             $USER@$HOST:$REMOTE_DIR/
-
-      - name: ?? Fix permissions
-        run: |
-          ssh -i ~/.ssh/id_rsa -p $PORT $USER@$HOST << EOF
-          cd $REMOTE_DIR
-          find . -type d -exec chmod 755 {} \;
-          find . -type f -exec chmod 644 {} \;
-          EOF
-
-      - name: ✅ Verify deployment
-        run: |
-          echo "Checking partner subdomain..."
-          curl -I https://partner.kisanshaktiai.in || true
-      
-      - name: 🎉 Deployment success
-        run: echo "Partner app deployed successfully"
-
