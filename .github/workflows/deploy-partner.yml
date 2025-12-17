@@ -56,14 +56,17 @@ jobs:
       # --------------------------------------------------
       # Deploy via SFTP (forced-command SAFE)
       # --------------------------------------------------
-      - name: Deploy via SFTP
+      - name: Deploy via SFTP (SSH key)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           protocol: sftp
           server: ${{ secrets.PARTNER_SFTP_HOST }}
           port: ${{ secrets.PARTNER_SFTP_PORT }}
           username: ${{ secrets.PARTNER_SFTP_USER }}
-          password: ""   # IMPORTANT: empty when using SSH key
+      
+          # 🔑 THIS IS THE FIX
+          private-key: ${{ secrets.PARTNER_SFTP_KEY }}
+      
           local-dir: ./dist/
           server-dir: ${{ secrets.PARTNER_HOST_REMOTE_DIR }}/
           exclude: |
