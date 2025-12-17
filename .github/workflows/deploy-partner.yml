@@ -59,10 +59,11 @@ jobs:
           find . -type f -exec chmod 644 {} \;
           EOF
 
-      - name: ? Verify deployment
+      - name: ✅ Verify deployment
         run: |
           echo "Checking partner subdomain..."
           curl -I https://partner.kisanshaktiai.in || true
+      
+      - name: 🎉 Deployment success
+        run: echo "Partner app deployed successfully"
 
-      - name: ?? Deployment success
-        run: echo "? Partner app deployed successfully"
