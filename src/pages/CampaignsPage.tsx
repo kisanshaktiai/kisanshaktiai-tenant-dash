@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppSelector } from '@/store/hooks';
 import { campaignService } from '@/services/CampaignService';
 import { CampaignWizard } from '@/components/campaigns/CampaignWizard';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 import {
   Plus,
   Target,
@@ -120,21 +123,20 @@ const CampaignsPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Campaign Center</h1>
-          <p className="text-muted-foreground">
-            Create and manage marketing campaigns for your farmer network
-          </p>
-        </div>
-        <Button onClick={() => setShowWizard(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Campaign
-        </Button>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Campaign Center"
+        description="Create and manage marketing campaigns for your farmer network"
+        actions={
+          <Button onClick={() => setShowWizard(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Campaign
+          </Button>
+        }
+      />
 
-      {/* Campaign Stats */}
+      <PageContent>
+        {/* Campaign Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -530,7 +532,8 @@ const CampaignsPage = () => {
           onSave={loadCampaigns}
         />
       )}
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 };
 

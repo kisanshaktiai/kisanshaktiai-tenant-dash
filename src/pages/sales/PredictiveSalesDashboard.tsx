@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, Users, Package, AlertTriangle, Phone, Calendar, ArrowLeft, Download, RefreshCw } from 'lucide-react';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 import {
   usePredictiveSalesMetrics,
   useTenantDemandForecast,
@@ -46,79 +49,56 @@ export const PredictiveSalesDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Breadcrumb Navigation */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/app/dashboard')}
-          className="hover:text-foreground"
-        >
-          Dashboard
-        </Button>
-        <span>/</span>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/app/sales')}
-          className="hover:text-foreground"
-        >
-          Sales
-        </Button>
-        <span>/</span>
-        <span className="text-foreground font-medium">Predictive Intelligence</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-start gap-4">
+    <PageLayout>
+      <PageHeader
+        title="Predictive Sales Intelligence"
+        description="Analyze farmer needs and optimize inventory"
+        badge={{ text: 'AI', variant: 'default' }}
+        backButton={
           <Button 
             variant="outline" 
-            size="icon"
+            size="sm"
             onClick={() => navigate('/app/sales')}
+            className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
+            Back to Sales
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              Predictive Sales Intelligence
-              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">AI</span>
-            </h1>
-            <p className="text-muted-foreground">Analyze farmer needs and optimize inventory</p>
+        }
+        actions={
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Select value={timeRange.toString()} onValueChange={(v) => setTimeRange(Number(v))}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Time Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Next 7 Days</SelectItem>
+                <SelectItem value="14">Next 14 Days</SelectItem>
+                <SelectItem value="30">Next 30 Days</SelectItem>
+                <SelectItem value="60">Next 60 Days</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleRefresh}
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Select value={timeRange.toString()} onValueChange={(v) => setTimeRange(Number(v))}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Time Range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Next 7 Days</SelectItem>
-              <SelectItem value="14">Next 14 Days</SelectItem>
-              <SelectItem value="30">Next 30 Days</SelectItem>
-              <SelectItem value="60">Next 60 Days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+        }
+      />
 
-      {/* KPI Cards */}
+      <PageContent>
+        {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -344,6 +324,7 @@ export const PredictiveSalesDashboard = () => {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 };
