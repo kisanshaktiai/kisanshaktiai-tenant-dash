@@ -23457,6 +23457,10 @@ export type Database = {
       }
       unlockrows: { Args: { "": string }; Returns: number }
       update_community_trending_score: { Args: never; Returns: undefined }
+      update_tenant_verification: {
+        Args: { p_tenant_id: string; p_verification_data: Json }
+        Returns: boolean
+      }
       update_tiles_for_land: { Args: { p_land_id: string }; Returns: undefined }
       update_user_presence: {
         Args: {
@@ -23475,6 +23479,38 @@ export type Database = {
           table_name: string
         }
         Returns: string
+      }
+      upsert_tenant_branding: {
+        Args: {
+          p_accent_color?: string
+          p_app_name?: string
+          p_background_color?: string
+          p_font_family?: string
+          p_logo_url?: string
+          p_primary_color?: string
+          p_secondary_color?: string
+          p_tenant_id: string
+          p_text_color?: string
+        }
+        Returns: boolean
+      }
+      upsert_tenant_features: {
+        Args: {
+          p_advanced_analytics?: boolean
+          p_basic_analytics?: boolean
+          p_custom_reports?: boolean
+          p_farmer_management?: boolean
+          p_iot_integration?: boolean
+          p_mobile_app?: boolean
+          p_predictive_analytics?: boolean
+          p_satellite_imagery?: boolean
+          p_sms_notifications?: boolean
+          p_tenant_id: string
+          p_voice_calls?: boolean
+          p_weather_forecast?: boolean
+          p_whatsapp_integration?: boolean
+        }
+        Returns: boolean
       }
       user_has_tenant_access: {
         Args: { tenant_uuid: string }

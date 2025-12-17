@@ -171,53 +171,60 @@ const TenantOnboardingFlow: React.FC = () => {
         return;
       }
 
-      // Save data to appropriate tenant tables based on step
-      switch (currentStep.step_name) {
-        case 'Business Verification':
-          if (stepData) {
-            await tenantProfileService.updateBusinessVerification(currentTenant.id, stepData);
-          }
-          break;
+      // Save data to appropriate tenant tables based on step (skip if marked as skipped)
+      const isSkipped = stepData?.skipped === true;
+      
+      if (!isSkipped) {
+        switch (currentStep.step_name) {
+          case 'Business Verification':
+            if (stepData && stepData.gstNumber) {
+              await tenantProfileService.updateBusinessVerification(currentTenant.id, stepData);
+            }
+            break;
 
-        case 'Subscription Plan':
-          if (stepData?.selectedPlan) {
-            await tenantProfileService.updateTenantBasics(currentTenant.id, {
-              name: currentTenant.name,
-              subscription_plan: stepData.selectedPlan
-            } as any);
-          }
-          break;
+          case 'Subscription Plan':
+            if (stepData?.selectedPlan) {
+              await tenantProfileService.updateTenantBasics(currentTenant.id, {
+                name: currentTenant.name,
+                subscription_plan: stepData.selectedPlan
+              } as any);
+            }
+            break;
 
-        case 'Branding Configuration':
-          if (stepData) {
-            await tenantProfileService.upsertBranding(currentTenant.id, stepData);
-          }
-          break;
+          case 'Branding Configuration':
+            if (stepData && stepData.app_name) {
+              await tenantProfileService.upsertBranding(currentTenant.id, stepData);
+            }
+            break;
 
-        case 'Feature Selection':
-          if (stepData?.selectedFeatures) {
-            await tenantProfileService.upsertFeatures(currentTenant.id, stepData.selectedFeatures);
-          }
-          break;
+          case 'Feature Selection':
+            if (stepData?.selectedFeatures) {
+              await tenantProfileService.upsertFeatures(currentTenant.id, stepData.selectedFeatures);
+            }
+            break;
 
-        case 'Data Import':
-          if (stepData && !stepData.skipped) {
-            await tenantProfileService.createDataMigrationJob(currentTenant.id, stepData);
-          }
-          break;
+          case 'Data Import':
+            if (stepData && !stepData.skipped) {
+              await tenantProfileService.createDataMigrationJob(currentTenant.id, stepData);
+            }
+            break;
 
-        case 'Team Setup':
-          if (stepData?.invites?.length > 0) {
-            await tenantProfileService.inviteTeamMembers(currentTenant.id, stepData.invites);
-          }
-          break;
+          case 'Team Setup':
+            if (stepData?.invites?.length > 0) {
+              await tenantProfileService.inviteTeamMembers(currentTenant.id, stepData.invites);
+            }
+            break;
+        }
       }
 
-      // Complete the step
+      // Complete the step (or mark as skipped)
       await completeStepMutation.mutateAsync({
         stepId: currentStep.id,
-        stepData
+        stepData: isSkipped ? { skipped: true } : stepData
       });
+
+      // Show success message
+      toast.success(isSkipped ? 'Step skipped' : `${currentStep.step_name} completed!`);
 
       // Move to next step if available
       if (currentStepIndex < allSteps.length - 1) {
