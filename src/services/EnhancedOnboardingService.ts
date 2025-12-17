@@ -3,6 +3,9 @@ import { BaseApiService } from './core/BaseApiService';
 import { supabase } from '@/integrations/supabase/client';
 import { onboardingTemplateService } from './OnboardingTemplateService';
 
+const IS_DEV = import.meta.env.DEV;
+const log = IS_DEV ? console.log.bind(console) : () => {};
+
 export interface OnboardingWorkflow {
   id: string;
   tenant_id: string;
@@ -38,9 +41,21 @@ export interface OnboardingStep {
 
 class EnhancedOnboardingService extends BaseApiService {
   protected basePath = '/onboarding';
-  private cache = new Map<string, any>();
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_TTL = 30000; // 30 seconds
 
-  // Transform database step to frontend format
+  private getCached<T>(key: string): T | null {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data as T;
+    }
+    return null;
+  }
+
+  private setCache(key: string, data: any): void {
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
   private transformDbStepToFrontend(dbStep: any): OnboardingStep {
     const stepData = typeof dbStep.step_data === 'object' ? dbStep.step_data : {};
     const displayName = stepData.display_name || onboardingTemplateService.getDisplayNameForStep(dbStep.step_name);
@@ -49,7 +64,7 @@ class EnhancedOnboardingService extends BaseApiService {
       id: dbStep.id,
       workflow_id: dbStep.workflow_id,
       step_order: dbStep.step_number,
-      step_name: displayName, // Use display name for frontend
+      step_name: displayName,
       step_type: stepData.step_type || 'standard',
       step_config: stepData.step_config || {},
       step_data: stepData,
@@ -66,19 +81,18 @@ class EnhancedOnboardingService extends BaseApiService {
   }
 
   async getOnboardingWorkflow(tenantId: string): Promise<OnboardingWorkflow | null> {
+    const cacheKey = `workflow-${tenantId}`;
+    const cached = this.getCached<OnboardingWorkflow>(cacheKey);
+    if (cached) return cached;
+
     try {
-      console.log('EnhancedOnboardingService: Fetching workflow for tenant:', tenantId);
-      
       const { data, error } = await supabase
         .from('onboarding_workflows')
         .select('*')
         .eq('tenant_id', tenantId)
         .maybeSingle();
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error fetching workflow:', error);
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
       
       if (data) {
         const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
@@ -97,11 +111,10 @@ class EnhancedOnboardingService extends BaseApiService {
           updated_at: data.updated_at
         };
 
-        console.log('EnhancedOnboardingService: Found workflow:', workflow.id);
+        this.setCache(cacheKey, workflow);
         return workflow;
       }
       
-      console.log('EnhancedOnboardingService: No workflow found for tenant:', tenantId);
       return null;
     } catch (error) {
       console.error('EnhancedOnboardingService: Failed to fetch workflow:', error);
@@ -111,9 +124,6 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async createOnboardingWorkflow(tenantId: string, workflowData: Partial<OnboardingWorkflow>): Promise<OnboardingWorkflow> {
     try {
-      console.log('EnhancedOnboardingService: Creating workflow for tenant:', tenantId);
-      
-      // Get tenant subscription plan for template selection
       const { data: tenantData } = await supabase
         .from('tenants')
         .select('subscription_plan')
@@ -140,10 +150,7 @@ class EnhancedOnboardingService extends BaseApiService {
         .select()
         .single();
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error creating workflow:', error);
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
       
       const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};
       
@@ -161,7 +168,7 @@ class EnhancedOnboardingService extends BaseApiService {
         updated_at: data.updated_at
       };
 
-      console.log('EnhancedOnboardingService: Created workflow:', workflow.id);
+      this.setCache(`workflow-${tenantId}`, workflow);
       return workflow;
     } catch (error) {
       console.error('EnhancedOnboardingService: Failed to create workflow:', error);
@@ -170,22 +177,21 @@ class EnhancedOnboardingService extends BaseApiService {
   }
 
   async getOnboardingSteps(workflowId: string): Promise<OnboardingStep[]> {
+    const cacheKey = `steps-${workflowId}`;
+    const cached = this.getCached<OnboardingStep[]>(cacheKey);
+    if (cached) return cached;
+
     try {
-      console.log('EnhancedOnboardingService: Fetching steps for workflow:', workflowId);
-      
       const { data, error } = await supabase
         .from('onboarding_steps')
         .select('*')
         .eq('workflow_id', workflowId)
         .order('step_number');
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error fetching steps:', error);
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
       
       const steps = (data || []).map(step => this.transformDbStepToFrontend(step));
-      console.log('EnhancedOnboardingService: Retrieved steps:', steps.length);
+      this.setCache(cacheKey, steps);
       
       return steps;
     } catch (error) {
@@ -196,8 +202,6 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async completeStep(stepId: string, stepData: any, tenantId?: string): Promise<OnboardingStep> {
     try {
-      console.log('EnhancedOnboardingService: Completing step:', { stepId, tenantId });
-      
       const { data, error } = await supabase
         .from('onboarding_steps')
         .update({
@@ -210,9 +214,11 @@ class EnhancedOnboardingService extends BaseApiService {
         .select()
         .single();
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error completing step:', error);
-        throw new Error(error.message);
+      if (error) throw new Error(error.message);
+      
+      // Invalidate cache
+      if (data?.workflow_id) {
+        this.cache.delete(`steps-${data.workflow_id}`);
       }
       
       return this.transformDbStepToFrontend(data);
@@ -224,8 +230,6 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async updateStepStatus(stepId: string, status: OnboardingStep['step_status'], stepData?: any, tenantId?: string) {
     try {
-      console.log('EnhancedOnboardingService: Updating step status:', { stepId, status, tenantId });
-      
       const updateData: any = {
         step_status: status,
         step_data: stepData || {},
@@ -245,9 +249,11 @@ class EnhancedOnboardingService extends BaseApiService {
         .select()
         .single();
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error updating step status:', error);
-        throw new Error(error.message);
+      if (error) throw new Error(error.message);
+      
+      // Invalidate cache
+      if (data?.workflow_id) {
+        this.cache.delete(`steps-${data.workflow_id}`);
       }
       
       return this.transformDbStepToFrontend(data);
@@ -257,10 +263,6 @@ class EnhancedOnboardingService extends BaseApiService {
     }
   }
 
-  /**
-   * Ensures workflow status is consistent with step statuses
-   * If all steps are completed, mark workflow as completed
-   */
   async ensureWorkflowConsistency(tenantId: string): Promise<void> {
     try {
       const workflow = await this.getOnboardingWorkflow(tenantId);
@@ -269,18 +271,13 @@ class EnhancedOnboardingService extends BaseApiService {
       const steps = await this.getOnboardingSteps(workflow.id);
       const allCompleted = steps.every(s => s.step_status === 'completed');
       
-      // If all steps completed but workflow not marked complete
       if (allCompleted && workflow.status !== 'completed' && steps.length > 0) {
-        console.log('EnhancedOnboardingService: Fixing workflow status inconsistency');
         await this.completeWorkflow(workflow.id, tenantId);
         
-        // Update tenant onboarding_completed flag
-        const { error } = await supabase
+        await supabase
           .from('tenants')
           .update({ onboarding_completed: true })
           .eq('id', tenantId);
-          
-        if (error) throw error;
       }
     } catch (error) {
       console.error('EnhancedOnboardingService: Error ensuring workflow consistency:', error);
@@ -289,43 +286,23 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
     try {
-      // CRITICAL: First check the tenant's onboarding_completed field (source of truth)
       const { data: tenantData, error: tenantError } = await supabase
         .from('tenants')
         .select('onboarding_completed')
         .eq('id', tenantId)
         .single();
       
-      if (tenantError) {
-        console.error('EnhancedOnboardingService: Error fetching tenant:', tenantError);
-        // Fall through to workflow check
-      } else if (tenantData?.onboarding_completed === true) {
-        console.log('EnhancedOnboardingService: Tenant onboarding marked as completed');
+      if (!tenantError && tenantData?.onboarding_completed === true) {
         return true;
       }
       
-      // Fallback: Check workflow and steps
       const workflow = await this.getOnboardingWorkflow(tenantId);
       if (!workflow) return false;
       
-      // If workflow status is completed, return true
-      if (workflow.status === 'completed') {
-        console.log('EnhancedOnboardingService: Workflow status is completed');
-        return true;
-      }
+      if (workflow.status === 'completed') return true;
       
       const steps = await this.getOnboardingSteps(workflow.id);
-      const completedSteps = steps.filter(step => step.step_status === 'completed');
-      
-      const isComplete = completedSteps.length === steps.length && steps.length > 0;
-      console.log('EnhancedOnboardingService: Onboarding complete check:', {
-        tenantId,
-        totalSteps: steps.length,
-        completedSteps: completedSteps.length,
-        isComplete
-      });
-      
-      return isComplete;
+      return steps.length > 0 && steps.every(step => step.step_status === 'completed');
     } catch (error) {
       console.error('EnhancedOnboardingService: Error checking completion:', error);
       return false;
@@ -334,30 +311,14 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async getOnboardingData(tenantId: string) {
     try {
-      console.log('EnhancedOnboardingService: Getting complete onboarding data for tenant:', tenantId);
-      
-      // Ensure consistency before fetching
       await this.ensureWorkflowConsistency(tenantId);
       
       const workflow = await this.getOnboardingWorkflow(tenantId);
-      if (!workflow) {
-        console.log('EnhancedOnboardingService: No workflow found');
-        return null;
-      }
+      if (!workflow) return null;
       
       const steps = await this.getOnboardingSteps(workflow.id);
       
-      const result = {
-        workflow,
-        steps
-      };
-      
-      console.log('EnhancedOnboardingService: Complete onboarding data:', {
-        workflowId: workflow.id,
-        stepCount: steps.length
-      });
-      
-      return result;
+      return { workflow, steps };
     } catch (error) {
       console.error('EnhancedOnboardingService: Failed to get onboarding data:', error);
       throw new Error(`Failed to get onboarding data: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -366,16 +327,11 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async initializeOnboardingWorkflow(tenantId: string) {
     try {
-      console.log('EnhancedOnboardingService: Initializing workflow for tenant:', tenantId);
-      
-      // Check if workflow already exists
       const existing = await this.getOnboardingWorkflow(tenantId);
       if (existing) {
-        console.log('EnhancedOnboardingService: Workflow already exists, returning existing data');
         return this.getOnboardingData(tenantId);
       }
       
-      // Get tenant subscription plan
       const { data: tenantData } = await supabase
         .from('tenants')
         .select('subscription_plan')
@@ -384,20 +340,15 @@ class EnhancedOnboardingService extends BaseApiService {
 
       const subscriptionPlan = tenantData?.subscription_plan || 'Kisan_Basic';
       
-      // Create new workflow
       const workflow = await this.createOnboardingWorkflow(tenantId, {
         current_step: 1,
         total_steps: 6,
         status: 'pending',
-        metadata: {
-          subscription_plan: subscriptionPlan
-        }
+        metadata: { subscription_plan: subscriptionPlan }
       });
       
-      // Create steps using template service
       await onboardingTemplateService.createStepsFromTemplate(workflow.id, tenantId, subscriptionPlan);
       
-      console.log('EnhancedOnboardingService: Successfully initialized workflow');
       return this.getOnboardingData(tenantId);
     } catch (error) {
       console.error('EnhancedOnboardingService: Failed to initialize workflow:', error);
@@ -407,8 +358,6 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async completeWorkflow(workflowId: string, tenantId?: string) {
     try {
-      console.log('EnhancedOnboardingService: Completing workflow:', workflowId);
-      
       const { data, error } = await supabase
         .from('onboarding_workflows')
         .update({
@@ -419,9 +368,11 @@ class EnhancedOnboardingService extends BaseApiService {
         .select()
         .single();
 
-      if (error) {
-        console.error('EnhancedOnboardingService: Error completing workflow:', error);
-        throw new Error(error.message);
+      if (error) throw new Error(error.message);
+      
+      // Invalidate cache
+      if (tenantId) {
+        this.cache.delete(`workflow-${tenantId}`);
       }
       
       const metadata = typeof data.metadata === 'object' && data.metadata !== null ? data.metadata as Record<string, any> : {};

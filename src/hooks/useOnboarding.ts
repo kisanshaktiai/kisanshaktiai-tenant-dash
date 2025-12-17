@@ -10,23 +10,12 @@ export const useOnboardingQuery = () => {
   return useQuery({
     queryKey: ['onboarding', currentTenant?.id],
     queryFn: async () => {
-      if (!currentTenant?.id) {
-        console.log('useOnboardingQuery: No current tenant available for onboarding query');
-        return null;
-      }
-      
-      console.log('useOnboardingQuery: Fetching onboarding data for tenant:', currentTenant.id);
+      if (!currentTenant?.id) return null;
       
       try {
         const onboardingData = await enhancedOnboardingService.getOnboardingData(currentTenant.id);
         
-        console.log('useOnboardingQuery: Retrieved onboarding data:', {
-          hasWorkflow: !!onboardingData?.workflow,
-          stepCount: onboardingData?.steps?.length || 0
-        });
-        
         if (!onboardingData?.workflow) {
-          console.log('useOnboardingQuery: No workflow found, initializing...');
           return await enhancedOnboardingService.initializeOnboardingWorkflow(currentTenant.id);
         }
         
@@ -38,9 +27,9 @@ export const useOnboardingQuery = () => {
     },
     enabled: !!currentTenant?.id,
     staleTime: 30000,
+    gcTime: 60000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {
-      console.error('useOnboardingQuery: Retry attempt:', { failureCount, error });
       if (error && typeof error.message === 'string' && error.message.includes('tenant')) {
         return false;
       }
@@ -55,39 +44,16 @@ export const useCompleteStep = () => {
   
   return useMutation({
     mutationFn: async ({ stepId, stepData }: { stepId: string; stepData?: any }) => {
-      if (!currentTenant?.id) {
-        throw new Error('No current tenant available');
-      }
-
-      console.log('useCompleteStep: Completing step:', { stepId, stepData, tenantId: currentTenant.id });
+      if (!currentTenant?.id) throw new Error('No current tenant available');
       
       const result = await enhancedOnboardingService.completeStep(stepId, stepData, currentTenant.id);
-      if (!result) {
-        throw new Error('Failed to complete step');
-      }
+      if (!result) throw new Error('Failed to complete step');
       
       return result;
     },
     onSuccess: () => {
-      console.log('useCompleteStep: Step completed successfully, invalidating queries');
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['onboarding', currentTenant?.id] 
-      });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['tenant-status', currentTenant?.id] 
-      });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['tenants'] 
-      });
-      
-      setTimeout(() => {
-        queryClient.refetchQueries({ 
-          queryKey: ['onboarding', currentTenant?.id] 
-        });
-      }, 500);
+      queryClient.invalidateQueries({ queryKey: ['onboarding', currentTenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tenant-status', currentTenant?.id] });
     },
     onError: (error) => {
       console.error('useCompleteStep: Failed to complete step:', error);
@@ -106,31 +72,15 @@ export const useUpdateStepStatus = () => {
       status: 'pending' | 'in_progress' | 'completed' | 'skipped'; 
       stepData?: any 
     }) => {
-      if (!currentTenant?.id) {
-        throw new Error('No current tenant available');
-      }
-
-      console.log('useUpdateStepStatus: Updating step status:', { stepId, status, stepData, tenantId: currentTenant.id });
+      if (!currentTenant?.id) throw new Error('No current tenant available');
       
       const result = await enhancedOnboardingService.updateStepStatus(stepId, status, stepData, currentTenant.id);
-      if (!result) {
-        throw new Error('Failed to update step status');
-      }
+      if (!result) throw new Error('Failed to update step status');
       
       return result;
     },
-    onSuccess: (_, variables) => {
-      console.log('useUpdateStepStatus: Step status updated successfully');
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['onboarding', currentTenant?.id] 
-      });
-      
-      setTimeout(() => {
-        queryClient.refetchQueries({ 
-          queryKey: ['onboarding', currentTenant?.id] 
-        });
-      }, 300);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['onboarding', currentTenant?.id] });
     },
     onError: (error) => {
       console.error('useUpdateStepStatus: Failed to update step status:', error);
@@ -145,16 +95,12 @@ export const useIsOnboardingComplete = () => {
   return useQuery({
     queryKey: ['onboarding-complete', currentTenant?.id],
     queryFn: async () => {
-      if (!currentTenant?.id) {
-        console.log('useIsOnboardingComplete: No tenant ID available');
-        return false;
-      }
-      
-      console.log('useIsOnboardingComplete: Checking completion for tenant:', currentTenant.id);
+      if (!currentTenant?.id) return false;
       return await enhancedOnboardingService.isOnboardingComplete(currentTenant.id);
     },
     enabled: !!currentTenant?.id,
     staleTime: 60000,
+    gcTime: 120000,
   });
 };
 
@@ -164,33 +110,17 @@ export const useCompleteWorkflow = () => {
   
   return useMutation({
     mutationFn: async (workflowId: string) => {
-      if (!currentTenant?.id) {
-        throw new Error('No current tenant available');
-      }
-
-      console.log('useCompleteWorkflow: Completing workflow:', { workflowId, tenantId: currentTenant.id });
+      if (!currentTenant?.id) throw new Error('No current tenant available');
       
       const result = await enhancedOnboardingService.completeWorkflow(workflowId, currentTenant.id);
-      if (!result) {
-        throw new Error('Failed to complete workflow');
-      }
+      if (!result) throw new Error('Failed to complete workflow');
       
       return result;
     },
     onSuccess: () => {
-      console.log('useCompleteWorkflow: Workflow completed successfully');
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['onboarding', currentTenant?.id] 
-      });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['onboarding-complete', currentTenant?.id] 
-      });
-      
-      queryClient.invalidateQueries({ 
-        queryKey: ['tenants'] 
-      });
+      queryClient.invalidateQueries({ queryKey: ['onboarding', currentTenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['onboarding-complete', currentTenant?.id] });
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
     },
     onError: (error) => {
       console.error('useCompleteWorkflow: Failed to complete workflow:', error);
@@ -204,10 +134,7 @@ export const useOnboardingValidation = () => {
   
   return useMutation({
     mutationFn: async () => {
-      if (!currentTenant?.id) {
-        throw new Error('No current tenant available');
-      }
-      
+      if (!currentTenant?.id) throw new Error('No current tenant available');
       return await enhancedOnboardingService.validateOnboardingIntegrity(currentTenant.id);
     },
     onSuccess: (result) => {

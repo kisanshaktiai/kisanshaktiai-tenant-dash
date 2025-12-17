@@ -29,10 +29,8 @@ export const useTenantContextOptimized = () => {
 export const TenantProviderOptimized: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const tenantAuth = useTenantAuthOptimized();
   
-  // Simplified initialization that doesn't trigger tenant data refresh
   const initializeOnboarding = async (tenantId: string) => {
     try {
-      console.log('TenantContextOptimized: Simple onboarding initialization for tenant:', tenantId);
       return { success: true, tenantId };
     } catch (error) {
       console.error('TenantContextOptimized: Error initializing onboarding:', error);
@@ -41,7 +39,6 @@ export const TenantProviderOptimized: React.FC<{ children: React.ReactNode }> = 
   };
   
   const retryFetch = async () => {
-    console.log('TenantContextOptimized: Retry fetch requested');
     await tenantAuth.refreshTenantData();
   };
   
