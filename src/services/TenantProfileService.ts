@@ -70,9 +70,7 @@ class TenantProfileService {
   }
 
   async upsertBranding(tenantId: string, data: TenantBrandingData) {
-    console.log('TenantProfileService: Upserting branding for tenant:', tenantId, data);
-    
-    const { data: result, error } = await supabase.rpc('upsert_tenant_branding', {
+    const { error } = await supabase.rpc('upsert_tenant_branding', {
       p_tenant_id: tenantId,
       p_app_name: data.app_name,
       p_logo_url: data.logo_url || null,
@@ -89,41 +87,32 @@ class TenantProfileService {
       throw error;
     }
     
-    console.log('TenantProfileService: Branding upserted successfully');
     return true;
   }
 
   async upsertFeatures(tenantId: string, data: TenantFeaturesData) {
-    try {
-      console.log('TenantProfileService: Upserting features for tenant:', tenantId, data);
-      
-      const { data: result, error } = await supabase.rpc('upsert_tenant_features', {
-        p_tenant_id: tenantId,
-        p_farmer_management: data.farmer_management ?? true,
-        p_basic_analytics: data.basic_analytics ?? true,
-        p_mobile_app: data.mobile_app ?? true,
-        p_sms_notifications: data.sms_notifications ?? false,
-        p_whatsapp_integration: data.whatsapp_integration ?? false,
-        p_voice_calls: data.voice_calls ?? false,
-        p_advanced_analytics: data.advanced_analytics ?? false,
-        p_predictive_analytics: data.predictive_analytics ?? false,
-        p_custom_reports: data.custom_reports ?? false,
-        p_weather_forecast: data.weather_forecast ?? false,
-        p_satellite_imagery: data.satellite_imagery ?? false,
-        p_iot_integration: data.iot_integration ?? false
-      });
+    const { error } = await supabase.rpc('upsert_tenant_features', {
+      p_tenant_id: tenantId,
+      p_farmer_management: data.farmer_management ?? true,
+      p_basic_analytics: data.basic_analytics ?? true,
+      p_mobile_app: data.mobile_app ?? true,
+      p_sms_notifications: data.sms_notifications ?? false,
+      p_whatsapp_integration: data.whatsapp_integration ?? false,
+      p_voice_calls: data.voice_calls ?? false,
+      p_advanced_analytics: data.advanced_analytics ?? false,
+      p_predictive_analytics: data.predictive_analytics ?? false,
+      p_custom_reports: data.custom_reports ?? false,
+      p_weather_forecast: data.weather_forecast ?? false,
+      p_satellite_imagery: data.satellite_imagery ?? false,
+      p_iot_integration: data.iot_integration ?? false
+    });
 
-      if (error) {
-        console.error('TenantProfileService: Error upserting features:', error);
-        throw error;
-      }
-      
-      console.log('TenantProfileService: Features upserted successfully');
-      return true;
-    } catch (error) {
-      console.error('TenantProfileService: Failed to upsert features:', error);
+    if (error) {
+      console.error('TenantProfileService: Error upserting features:', error);
       throw error;
     }
+    
+    return true;
   }
 
   async createDataMigrationJob(tenantId: string, migrationData: any) {
@@ -164,9 +153,7 @@ class TenantProfileService {
   }
 
   async updateBusinessVerification(tenantId: string, verificationData: any) {
-    console.log('TenantProfileService: Updating business verification for tenant:', tenantId);
-    
-    const { data: result, error } = await supabase.rpc('update_tenant_verification', {
+    const { error } = await supabase.rpc('update_tenant_verification', {
       p_tenant_id: tenantId,
       p_verification_data: {
         gst_number: verificationData.gstNumber,
@@ -182,7 +169,6 @@ class TenantProfileService {
       throw error;
     }
     
-    console.log('TenantProfileService: Verification updated successfully');
     return true;
   }
 

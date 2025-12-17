@@ -104,11 +104,10 @@ const OnboardingPage = () => {
   const queryClient = useQueryClient();
   const [showTimeout, setShowTimeout] = useState(false);
 
-  // 4. All effects
+  // 4. Timeout effect
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (tenantLoading || onboardingLoading) {
-        console.warn('OnboardingPage: Loading timeout reached');
         setShowTimeout(true);
       }
     }, 8000);
@@ -117,29 +116,15 @@ const OnboardingPage = () => {
   }, [tenantLoading, onboardingLoading]);
 
   // ✅ NOW safe to do conditional rendering after ALL hooks are called
-  console.log('OnboardingPage: Current state:', {
-    user: user?.id,
-    currentTenant: currentTenant?.id,
-    onboardingCompleted: currentTenant?.onboarding_completed,
-    tenantLoading,
-    tenantError,
-    onboardingLoading,
-    jwtReady,
-    hasOnboardingData: !!onboardingData,
-    onboardingError: onboardingError?.message,
-    showTimeout
-  });
 
   // If tenant onboarding is complete, redirect to dashboard immediately
   if (currentTenant?.onboarding_completed && jwtReady) {
-    console.log('OnboardingPage: Tenant onboarding already completed, redirecting to dashboard');
     return <Navigate to="/app/dashboard" replace />;
   }
 
   // Block until JWT is ready
   if (user && !jwtReady) {
     if (jwtError) {
-      console.error('OnboardingPage: JWT synchronization failed:', jwtError);
       return <SessionRecovery error={jwtError} onRetry={retryFetch} />;
     }
 
@@ -165,7 +150,6 @@ const OnboardingPage = () => {
 
   // Show tenant error with retry option
   if (tenantError && showTimeout) {
-    console.log('OnboardingPage: Tenant error detected, showing error state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
         <Card className="w-full max-w-md">
@@ -193,23 +177,18 @@ const OnboardingPage = () => {
   }
 
   if (!user) {
-    console.log('OnboardingPage: No user, showing skeleton');
     if (showTimeout) {
-      console.warn('OnboardingPage: No user after timeout, redirecting to auth');
       return <Navigate to="/auth" replace />;
     }
     return (
       <div role="main" aria-live="polite" aria-label="Setting up your onboarding">
         <OnboardingSkeleton />
-        <div className="sr-only">Setting up your onboarding...</div>
       </div>
     );
   }
 
   if (tenantLoading) {
-    console.log('OnboardingPage: Tenant loading, showing skeleton');
     if (showTimeout) {
-      console.warn('OnboardingPage: Tenant loading timeout, showing error');
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-primary/5">
           <Card className="w-full max-w-md">
@@ -235,29 +214,23 @@ const OnboardingPage = () => {
     return (
       <div role="main" aria-live="polite" aria-label="Loading tenant data">
         <OnboardingSkeleton />
-        <div className="sr-only">Loading tenant data...</div>
       </div>
     );
   }
 
   if (!currentTenant) {
-    console.log('OnboardingPage: No current tenant, showing skeleton');
     if (showTimeout) {
-      console.warn('OnboardingPage: No tenant after timeout, redirecting to dashboard');
       return <Navigate to="/app/dashboard" replace />;
     }
     return (
       <div role="main" aria-live="polite" aria-label="Setting up tenant">
         <OnboardingSkeleton />
-        <div className="sr-only">Setting up tenant...</div>
       </div>
     );
   }
 
   if (onboardingLoading) {
-    console.log('OnboardingPage: Onboarding loading, showing skeleton');
     if (showTimeout) {
-      console.warn('OnboardingPage: Onboarding loading timeout');
       return (
         <MissingStepsPanel
           onRetry={() => refetch()}
@@ -272,14 +245,12 @@ const OnboardingPage = () => {
     return (
       <div role="main" aria-live="polite" aria-label="Loading onboarding data">
         <OnboardingSkeleton />
-        <div className="sr-only">Loading onboarding data...</div>
       </div>
     );
   }
 
   // Check if onboarding is already completed
   if (onboardingData?.workflow?.status === 'completed') {
-    console.log('OnboardingPage: Onboarding already completed, redirecting to dashboard');
     return <Navigate to="/app/dashboard" replace />;
   }
 
@@ -289,17 +260,13 @@ const OnboardingPage = () => {
   );
 
   if (allStepsCompleted && onboardingData?.steps?.length > 0) {
-    console.log('OnboardingPage: All steps completed, redirecting to dashboard');
     return <Navigate to="/app/dashboard" replace />;
   }
 
   // Show bypass options when there's an error or no data
   if (shouldShowBypass) {
-    console.log('OnboardingPage: Showing bypass options');
     return <OnboardingBypass />;
   }
-
-  console.log('OnboardingPage: Rendering main onboarding flow');
 
   return (
     <div className="relative" role="main">
