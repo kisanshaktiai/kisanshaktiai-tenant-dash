@@ -1,36 +1,27 @@
-
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setLoading, setError, clearTenantData } from '@/store/slices/tenantSlice';
 import { supabase } from '@/integrations/supabase/client';
-import { useJWTReady } from './useJWTReady';
 
 export const useTenantAuthOptimized = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, initialized: authInitialized } = useAppSelector((state) => state.auth);
   const { currentTenant, userTenants, loading, error } = useAppSelector((state) => state.tenant);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { isReady: jwtReady } = useJWTReady();
   
-  // Prevent multiple simultaneous fetches
   const fetchingRef = useRef(false);
-  const initializationTimeoutRef = useRef<NodeJS.Timeout>();
+  const lastUserIdRef = useRef<string | null>(null);
 
   const fetchUserTenants = useCallback(async (userId: string) => {
-    // Prevent concurrent fetches
-    if (fetchingRef.current) {
-      console.log('useTenantAuthOptimized: Fetch already in progress, skipping');
-      return;
-    }
+    if (fetchingRef.current || lastUserIdRef.current === userId) return;
 
     fetchingRef.current = true;
+    lastUserIdRef.current = userId;
 
     try {
-      console.log('useTenantAuthOptimized: Fetching tenants for user:', userId);
       dispatch(setLoading(true));
       dispatch(setError(null));
       
-      // Get user-tenant relationships with full tenant data
       const { data: userTenantsData, error: userTenantsError } = await supabase
         .from('user_tenants')
         .select(`
@@ -48,18 +39,15 @@ export const useTenantAuthOptimized = () => {
         .eq('user_id', userId)
         .eq('is_active', true);
 
-      if (userTenantsError) {
-        console.error('useTenantAuthOptimized: Error fetching tenants:', userTenantsError);
-        throw userTenantsError;
-      }
+      if (userTenantsError) throw userTenantsError;
 
       if (!userTenantsData || userTenantsData.length === 0) {
         dispatch(setUserTenants([]));
         dispatch(setCurrentTenant(null));
+        setIsInitialized(true);
         return;
       }
 
-      // Transform and validate tenant data
       const transformedUserTenants = userTenantsData
         .filter(ut => ut.tenant)
         .map(userTenant => ({
@@ -85,23 +73,18 @@ export const useTenantAuthOptimized = () => {
         }));
 
       dispatch(setUserTenants(transformedUserTenants));
-      console.log('useTenantAuthOptimized: Fetched tenants:', transformedUserTenants.length);
 
-      // Set current tenant (prefer primary, fallback to first available)
       if (!currentTenant && transformedUserTenants.length > 0) {
         const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
         if (primaryTenant?.tenant) {
-          console.log('useTenantAuthOptimized: Setting current tenant:', primaryTenant.tenant.id);
           dispatch(setCurrentTenant(primaryTenant.tenant));
           localStorage.setItem('currentTenantId', primaryTenant.tenant.id);
         }
       }
 
-      console.log('useTenantAuthOptimized: Initialization complete');
       setIsInitialized(true);
-    } catch (error) {
-      console.error('useTenantAuthOptimized: Fetch error:', error);
-      dispatch(setError(error instanceof Error ? error.message : 'Failed to load tenant data'));
+    } catch (err) {
+      dispatch(setError(err instanceof Error ? err.message : 'Failed to load tenant data'));
     } finally {
       dispatch(setLoading(false));
       fetchingRef.current = false;
@@ -121,38 +104,21 @@ export const useTenantAuthOptimized = () => {
     localStorage.removeItem('currentTenantId');
     setIsInitialized(false);
     fetchingRef.current = false;
-    
-    if (initializationTimeoutRef.current) {
-      clearTimeout(initializationTimeoutRef.current);
-    }
+    lastUserIdRef.current = null;
   }, [dispatch]);
 
-  // Initialize tenant data when user logs in
+  // Initialize tenant data immediately when user is available
   useEffect(() => {
     if (!user) {
       clearTenantSession();
       return;
     }
 
-    if (!isInitialized && !loading && !fetchingRef.current) {
-      // Add delay to allow auth state to fully stabilize
-      console.log('useTenantAuthOptimized: Scheduling tenant fetch after auth stabilization...');
-      const initTimeout = setTimeout(() => {
-        if (!fetchingRef.current && !isInitialized) {
-          console.log('useTenantAuthOptimized: Fetching tenant data now');
-          fetchUserTenants(user.id);
-        }
-      }, 500); // Wait 500ms for auth to fully stabilize
-
-      return () => clearTimeout(initTimeout);
+    // Fetch immediately - no delay needed
+    if (authInitialized && !isInitialized && !fetchingRef.current) {
+      fetchUserTenants(user.id);
     }
-
-    return () => {
-      if (initializationTimeoutRef.current) {
-        clearTimeout(initializationTimeoutRef.current);
-      }
-    };
-  }, [user, isInitialized, loading, fetchUserTenants, clearTenantSession, currentTenant]);
+  }, [user?.id, authInitialized, isInitialized, fetchUserTenants, clearTenantSession]);
 
   // Set up real-time subscriptions for tenant changes (debounced)
   useEffect(() => {

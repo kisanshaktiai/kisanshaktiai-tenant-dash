@@ -1,40 +1,38 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { jwtSyncService } from '@/services/JWTSyncService';
 
 /**
- * Hook that blocks component rendering until JWT is fully synchronized.
- * This prevents database queries from failing due to JWT propagation delays.
- * 
- * @returns {Object} - { isReady: boolean, error: string | null }
+ * Optimized hook for JWT synchronization.
+ * Immediately ready for unauthenticated users.
  */
 export const useJWTReady = () => {
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAppSelector((state) => state.auth);
+  const [isReady, setIsReady] = useState(!user); // Ready immediately if no user
+  const [error, setError] = useState<string | null>(null);
+  const syncAttemptedRef = useRef(false);
 
   useEffect(() => {
-    // No user = no need to wait for JWT
+    // No user = immediately ready
     if (!user) {
-      console.log('[useJWTReady] No user, marking as ready');
       setIsReady(true);
       setError(null);
+      syncAttemptedRef.current = false;
       return;
     }
 
-    console.log('[useJWTReady] User detected, ensuring JWT is ready');
+    // Only sync once per user session
+    if (syncAttemptedRef.current) return;
+    syncAttemptedRef.current = true;
+
     setIsReady(false);
     setError(null);
 
     const ensureReady = async () => {
       try {
         await jwtSyncService.ensureJWTReady();
-        console.log('[useJWTReady] JWT is ready');
         setIsReady(true);
-        setError(null);
       } catch (err) {
-        console.error('[useJWTReady] JWT synchronization failed:', err);
         setError(err instanceof Error ? err.message : 'Failed to synchronize authentication');
         setIsReady(false);
       }
@@ -42,19 +40,9 @@ export const useJWTReady = () => {
 
     ensureReady();
 
-    // Subscribe to JWT state changes
-    const unsubscribe = jwtSyncService.subscribe((ready) => {
-      console.log('[useJWTReady] JWT state changed:', ready);
-      setIsReady(ready);
-      if (!ready) {
-        setError(null);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [user]);
+    const unsubscribe = jwtSyncService.subscribe(setIsReady);
+    return () => unsubscribe();
+  }, [user?.id]);
 
   return { isReady, error };
 };

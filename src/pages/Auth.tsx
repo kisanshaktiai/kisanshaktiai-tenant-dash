@@ -35,8 +35,6 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('Auth: User authenticated, redirecting from auth page');
-      // Redirect to index to let it determine correct destination
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
@@ -74,16 +72,10 @@ const Auth = () => {
       return;
     }
 
-    // CRITICAL: Ensure JWT is fully synchronized before navigating
+    // Ensure JWT is synchronized before navigating
     try {
-      console.log('[Auth] Sign-in successful, synchronizing JWT...');
-      
       setIsPreparingWorkspace(true);
-      
-      // Wait for JWT to be ready using the centralized service
       await jwtSyncService.ensureJWTReady();
-      
-      console.log('[Auth] JWT synchronized successfully, navigating...');
       
       toast({
         title: 'Welcome back!',
@@ -91,8 +83,7 @@ const Auth = () => {
       });
       
       navigate('/');
-    } catch (syncError) {
-      console.error('[Auth] JWT synchronization failed:', syncError);
+    } catch {
       setError('Failed to synchronize authentication. Please try again.');
       toast({
         variant: "destructive",
