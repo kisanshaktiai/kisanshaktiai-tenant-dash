@@ -70,24 +70,26 @@ class TenantProfileService {
   }
 
   async upsertBranding(tenantId: string, data: TenantBrandingData) {
-    const { error } = await supabase
-      .from('tenant_branding')
-      .upsert({
-        tenant_id: tenantId,
-        app_name: data.app_name,
-        logo_url: data.logo_url,
-        primary_color: data.primary_color,
-        secondary_color: data.secondary_color,
-        accent_color: data.accent_color || '#10B981',
-        background_color: data.background_color || '#FFFFFF',
-        text_color: data.text_color || '#1F2937',
-        font_family: data.font_family || 'Inter',
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'tenant_id'
-      });
+    console.log('TenantProfileService: Upserting branding for tenant:', tenantId, data);
+    
+    const { data: result, error } = await supabase.rpc('upsert_tenant_branding', {
+      p_tenant_id: tenantId,
+      p_app_name: data.app_name,
+      p_logo_url: data.logo_url || null,
+      p_primary_color: data.primary_color,
+      p_secondary_color: data.secondary_color,
+      p_accent_color: data.accent_color || '#10B981',
+      p_background_color: data.background_color || '#FFFFFF',
+      p_text_color: data.text_color || '#1F2937',
+      p_font_family: data.font_family || 'Inter'
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('TenantProfileService: Error upserting branding:', error);
+      throw error;
+    }
+    
+    console.log('TenantProfileService: Branding upserted successfully');
     return true;
   }
 
@@ -95,34 +97,21 @@ class TenantProfileService {
     try {
       console.log('TenantProfileService: Upserting features for tenant:', tenantId, data);
       
-      const { error } = await supabase
-        .from('tenant_features')
-        .upsert({
-          tenant_id: tenantId,
-          // Core Features
-          farmer_management: data.farmer_management ?? true,
-          basic_analytics: data.basic_analytics ?? true,
-          mobile_app: data.mobile_app ?? true,
-          
-          // Communication Features
-          sms_notifications: data.sms_notifications ?? false,
-          whatsapp_integration: data.whatsapp_integration ?? false,
-          voice_calls: data.voice_calls ?? false,
-          
-          // Advanced Analytics Features
-          advanced_analytics: data.advanced_analytics ?? false,
-          predictive_analytics: data.predictive_analytics ?? false,
-          custom_reports: data.custom_reports ?? false,
-          
-          // Technology Features
-          weather_forecast: data.weather_forecast ?? false,
-          satellite_imagery: data.satellite_imagery ?? false,
-          iot_integration: data.iot_integration ?? false,
-          
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'tenant_id'
-        });
+      const { data: result, error } = await supabase.rpc('upsert_tenant_features', {
+        p_tenant_id: tenantId,
+        p_farmer_management: data.farmer_management ?? true,
+        p_basic_analytics: data.basic_analytics ?? true,
+        p_mobile_app: data.mobile_app ?? true,
+        p_sms_notifications: data.sms_notifications ?? false,
+        p_whatsapp_integration: data.whatsapp_integration ?? false,
+        p_voice_calls: data.voice_calls ?? false,
+        p_advanced_analytics: data.advanced_analytics ?? false,
+        p_predictive_analytics: data.predictive_analytics ?? false,
+        p_custom_reports: data.custom_reports ?? false,
+        p_weather_forecast: data.weather_forecast ?? false,
+        p_satellite_imagery: data.satellite_imagery ?? false,
+        p_iot_integration: data.iot_integration ?? false
+      });
 
       if (error) {
         console.error('TenantProfileService: Error upserting features:', error);
@@ -175,23 +164,25 @@ class TenantProfileService {
   }
 
   async updateBusinessVerification(tenantId: string, verificationData: any) {
-    const { error } = await supabase
-      .from('tenants')
-      .update({
-        metadata: {
-          verification: {
-            gst_number: verificationData.gstNumber,
-            pan_number: verificationData.panNumber,
-            business_license: verificationData.businessLicense,
-            documents: verificationData.documents || [],
-            verified_at: new Date().toISOString()
-          }
-        },
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', tenantId);
+    console.log('TenantProfileService: Updating business verification for tenant:', tenantId);
+    
+    const { data: result, error } = await supabase.rpc('update_tenant_verification', {
+      p_tenant_id: tenantId,
+      p_verification_data: {
+        gst_number: verificationData.gstNumber,
+        pan_number: verificationData.panNumber,
+        business_license: verificationData.businessLicense,
+        documents: verificationData.documents || [],
+        verified_at: new Date().toISOString()
+      }
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('TenantProfileService: Error updating verification:', error);
+      throw error;
+    }
+    
+    console.log('TenantProfileService: Verification updated successfully');
     return true;
   }
 

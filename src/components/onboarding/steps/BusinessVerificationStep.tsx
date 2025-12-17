@@ -22,15 +22,17 @@ interface BusinessVerificationStepProps {
 
 const businessVerificationSchema = z.object({
   gstNumber: z.string()
-    .min(15, 'GST number must be 15 characters')
-    .max(15, 'GST number must be 15 characters')
-    .regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GST number format'),
+    .min(1, 'GST number is required')
+    .max(15, 'GST number must be 15 characters or less')
+    .optional()
+    .or(z.literal('')),
   panNumber: z.string()
-    .min(10, 'PAN number must be 10 characters')
-    .max(10, 'PAN number must be 10 characters')
-    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN number format'),
+    .min(1, 'PAN number is required')
+    .max(10, 'PAN number must be 10 characters or less')
+    .optional()
+    .or(z.literal('')),
   businessLicense: z.string().optional(),
-  documents: z.array(z.string()).min(1, 'Please upload at least one document')
+  documents: z.array(z.string()).optional()
 });
 
 type BusinessVerificationForm = z.infer<typeof businessVerificationSchema>;
@@ -53,10 +55,13 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
   const onSubmit = async (data: BusinessVerificationForm) => {
     try {
       await onComplete(data);
-      toast.success('Business verification completed successfully!');
     } catch (error) {
       toast.error('Failed to save verification details. Please try again.');
     }
+  };
+
+  const handleSkip = () => {
+    onComplete({ skipped: true });
   };
 
   if (step.step_status === 'completed') {
@@ -96,7 +101,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
                 name="gstNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-medium">GST Number *</FormLabel>
+                    <FormLabel className="text-base font-medium">GST Number</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -118,7 +123,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
                 name="panNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-medium">PAN Number *</FormLabel>
+                    <FormLabel className="text-base font-medium">PAN Number</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -174,7 +179,7 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
                 name="documents"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-base font-medium">Required Documents *</FormLabel>
+                    <FormLabel className="text-base font-medium">Supporting Documents (Optional)</FormLabel>
                     <FormControl>
                       <FileUpload
                         value={field.value}
@@ -204,14 +209,22 @@ export const BusinessVerificationStep: React.FC<BusinessVerificationStepProps> =
           </Card>
         </div>
 
-        <div className="flex justify-end pt-6">
+        <div className="flex justify-between pt-6">
+          <Button 
+            type="button"
+            variant="outline"
+            onClick={handleSkip}
+            disabled={isLoading}
+          >
+            Skip for Now
+          </Button>
           <Button 
             type="submit"
-            disabled={isLoading || !form.formState.isValid}
+            disabled={isLoading}
             className="px-8 py-3 text-base"
             size="lg"
           >
-            {isLoading ? 'Verifying...' : 'Verify & Continue'}
+            {isLoading ? 'Saving...' : 'Save & Continue'}
           </Button>
         </div>
       </form>
