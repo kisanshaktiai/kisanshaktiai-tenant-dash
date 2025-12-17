@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     env:
       HOST: ${{ secrets.PARTNER_SFTP_HOST }}
@@ -16,26 +17,87 @@ jobs:
       REMOTE_DIR: ${{ secrets.PARTNER_HOST_REMOTE_DIR }}
 
     steps:
-      - uses: actions/checkout@v4
+      # --------------------------------------------------
+      # Checkout code
+      # --------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      # --------------------------------------------------
+      # Setup Node
+      # --------------------------------------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - run: npm ci
-      - run: npm run build
+      # --------------------------------------------------
+      # Install & Build
+      # --------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
 
+      - name: Build project
+        run: npm run build
+
+      # --------------------------------------------------
+      # SSH Setup (fail fast if secrets missing)
+      # --------------------------------------------------
       - name: Setup SSH
         run: |
+          set -e
+
+          echo "DEBUG: HOST=$HOST"
+          echo "DEBUG: PORT=$PORT"
+          echo "DEBUG: USER=$USER"
+          echo "DEBUG: REMOTE_DIR=$REMOTE_DIR"
+
+          if [ -z "$HOST" ] || [ -z "$PORT" ] || [ -z "$USER" ] || [ -z "$REMOTE_DIR" ]; then
+            echo "❌ ERROR: One or more required env vars are empty"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.PARTNER_SFTP_KEY_B64 }}" ]; then
+            echo "❌ ERROR: PARTNER_SFTP_KEY_B64 secret is empty"
+            exit 1
+          fi
+
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
           echo "${{ secrets.PARTNER_SFTP_KEY_B64 }}" | base64 --decode > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p $PORT $HOST >> ~/.ssh/known_hosts
 
-      - name: Deploy
+          ssh-keyscan -p "$PORT" "$HOST" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      # --------------------------------------------------
+      # Ensure remote directory exists
+      # --------------------------------------------------
+      - name: Ensure remote directory exists
+        run: |
+          ssh -i ~/.ssh/id_rsa -p "$PORT" \
+            -o StrictHostKeyChecking=no \
+            "$USER@$HOST" "mkdir -p $REMOTE_DIR"
+
+      # --------------------------------------------------
+      # Deploy using rsync
+      # --------------------------------------------------
+      - name: Deploy to Hostinger
         run: |
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_rsa -p $PORT" \
             ./dist/ \
-            $USER@$HOST:$REMOTE_DIR/
+            "$USER@$HOST:$REMOTE_DIR/"
+
+      # --------------------------------------------------
+      # Success message
+      # --------------------------------------------------
+      - name: Deployment success
+        run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Partner app deployed successfully"
+          echo "📁 Remote directory: $REMOTE_DIR"
+          echo "🌍 Subdomain: partner.kisanshaktiai.in"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
