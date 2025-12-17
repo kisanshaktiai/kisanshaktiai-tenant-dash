@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { farmersService } from '@/services/FarmersService';
+import { enhancedFarmerDataService as farmersService } from '@/services/EnhancedFarmerDataService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
 

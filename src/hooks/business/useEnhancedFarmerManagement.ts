@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { enhancedFarmerManagementService, type ComprehensiveFarmerData } from '@/services/EnhancedFarmerManagementService';
+import { enhancedFarmerDataService as enhancedFarmerManagementService, type ComprehensiveFarmerFormData as ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 

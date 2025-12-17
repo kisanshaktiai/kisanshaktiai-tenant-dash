@@ -51,6 +51,14 @@ export const queryKeys = {
   productsList: (tenantId: string, options?: any) => ['products', 'list', tenantId, options] as const,
   product: (productId: string, tenantId: string) => ['products', 'detail', productId, tenantId] as const,
   
+  // Predictive Sales
+  farmerUpcomingNeeds: (tenantId: string, farmerId?: string, days?: number) => ['farmer-upcoming-needs', tenantId, farmerId, days] as const,
+  tenantDemandForecast: (tenantId: string, days?: number) => ['tenant-demand-forecast', tenantId, days] as const,
+  inventoryGap: (tenantId: string, days?: number) => ['inventory-gap', tenantId, days] as const,
+  proactiveSalesOpportunities: (tenantId: string, days?: number) => ['proactive-sales-opportunities', tenantId, days] as const,
+  predictiveSalesMetrics: (tenantId: string, days?: number) => ['predictive-sales-metrics', tenantId, days] as const,
+  farmerContactList: (tenantId: string, productType?: string, days?: number) => ['farmer-contact-list', tenantId, productType, days] as const,
+
   // Other existing keys
   tenants: () => ['tenants'] as const,
   userTenants: (userId: string) => ['user-tenants', userId] as const,

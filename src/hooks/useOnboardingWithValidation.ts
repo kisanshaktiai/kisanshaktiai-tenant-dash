@@ -5,9 +5,11 @@ import { onboardingValidationService } from '@/services/OnboardingValidationServ
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useErrorHandler } from '@/hooks/core/useErrorHandler';
 import { globalErrorHandler } from '@/services/GlobalErrorHandler';
+import { useJWTReady } from './useJWTReady';
 
 export const useOnboardingWithValidation = () => {
   const { currentTenant } = useTenantContextOptimized();
+  const { isReady: jwtReady } = useJWTReady();
   const queryClient = useQueryClient();
   const { handleError } = useErrorHandler({
     component: 'useOnboardingWithValidation'
@@ -56,7 +58,8 @@ export const useOnboardingWithValidation = () => {
         throw error;
       }
     },
-    enabled: !!currentTenant?.id,
+    // Only run if onboarding is NOT completed
+    enabled: !!currentTenant?.id && jwtReady && !currentTenant?.onboarding_completed,
     staleTime: 30000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error: any) => {

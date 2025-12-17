@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { farmersService, type FarmersListOptions, type CreateFarmerData, type UpdateFarmerData } from '@/services/FarmersService';
+import { enhancedFarmerDataService as farmersService, type FarmersListOptions, type CreateFarmerData, type UpdateFarmerData } from '@/services/EnhancedFarmerDataService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';

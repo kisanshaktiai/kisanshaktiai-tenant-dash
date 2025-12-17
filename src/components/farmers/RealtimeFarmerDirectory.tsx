@@ -7,7 +7,7 @@ import { RefreshCw, Wifi, WifiOff, AlertCircle, CheckCircle2 } from 'lucide-reac
 import { useRealtimeFarmers } from '@/hooks/data/useRealtimeFarmers';
 import { RealtimeFarmerCard } from './cards/RealtimeFarmerCard';
 import { format } from 'date-fns';
-import type { Farmer } from '@/services/FarmersService';
+import type { Farmer } from '@/services/EnhancedFarmerDataService';
 
 interface RealtimeFarmerDirectoryProps {
   onSelectFarmer: (farmer: Farmer) => void;

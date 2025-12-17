@@ -13,7 +13,10 @@ import { LucideIcon,
   Building2,
   Palette,
   UserCog,
-  Satellite
+  Satellite,
+  ShoppingCart,
+  ShoppingBag,
+  TrendingUp
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -65,6 +68,26 @@ export const navigationConfig: NavigationItem[] = [
     category: 'management'
   },
   {
+    id: 'sales',
+    title: 'Sales',
+    href: '/app/sales',
+    icon: ShoppingCart,
+    description: 'Order management and sales',
+    category: 'management',
+    badge: 'New',
+    isNew: true
+  },
+  {
+    id: 'cart',
+    title: 'Cart Management',
+    href: '/app/cart',
+    icon: ShoppingBag,
+    description: 'Create orders with drag & drop',
+    category: 'management',
+    badge: 'New',
+    isNew: true
+  },
+  {
     id: 'campaigns',
     title: 'Campaigns',
     href: '/app/campaigns',
@@ -102,6 +125,16 @@ export const navigationConfig: NavigationItem[] = [
     icon: BarChart3,
     description: 'Reports and insights',
     category: 'analytics'
+  },
+  {
+    id: 'predictive-sales',
+    title: 'Predictive Sales',
+    href: '/app/sales/predictive',
+    icon: TrendingUp,
+    description: 'AI-powered demand forecasting',
+    category: 'analytics',
+    badge: 'AI',
+    isNew: true
   },
 
   // Integrations

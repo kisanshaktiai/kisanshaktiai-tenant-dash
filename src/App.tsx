@@ -13,6 +13,8 @@ import { fontService } from '@/services/FontService';
 // Initialize font service on app startup
 fontService.initializeFont();
 
+import { ContextErrorBoundary } from '@/components/error/ContextErrorBoundary';
+
 // Import layout
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 
@@ -24,7 +26,7 @@ import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
 import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
 import FarmersPage from '@/pages/FarmersPage';
-import ProductsPage from '@/pages/ProductsPage';
+import ProductsPage from '@/pages/products/ProductsPage';
 import CampaignsPage from '@/pages/CampaignsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import DealersPage from '@/pages/DealersPage';
@@ -33,6 +35,11 @@ import ProfilePage from '@/pages/ProfilePage';
 import NotFound from '@/pages/NotFound';
 import NDVIPage from '@/pages/NDVIPage';
 import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
+import SalesDashboard from '@/pages/sales/SalesDashboard';
+import OrderDetailsPage from '@/pages/sales/components/OrderDetailsPage';
+import SalesAnalyticsDashboard from '@/pages/sales/SalesAnalyticsDashboard';
+import { PredictiveSalesDashboard } from '@/pages/sales/PredictiveSalesDashboard';
+import CartManagement from '@/pages/cart/CartManagement';
 
 // Settings sub-pages
 import OrganizationManagement from '@/pages/settings/OrganizationManagement';
@@ -74,8 +81,14 @@ function App() {
                   <Route path="/setup-password" element={<SetupPasswordPage />} />
                   <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
                   
-                  {/* Onboarding - outside layout */}
-                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  {/* Onboarding - outside layout but needs context */}
+                  <Route path="/onboarding" element={
+                    <ContextErrorBoundary>
+                      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                        <OnboardingPage />
+                      </React.Suspense>
+                    </ContextErrorBoundary>
+                  } />
                   
                   {/* Main app routes with layout */}
                   <Route path="/app" element={
@@ -92,6 +105,11 @@ function App() {
                     <Route path="campaigns" element={<CampaignsPage />} />
                     <Route path="analytics" element={<AnalyticsPage />} />
                     <Route path="dealers" element={<DealersPage />} />
+                    <Route path="sales" element={<SalesDashboard />} />
+                    <Route path="sales/analytics" element={<SalesAnalyticsDashboard />} />
+                    <Route path="sales/predictive" element={<PredictiveSalesDashboard />} />
+                    <Route path="sales/:orderId" element={<OrderDetailsPage />} />
+                    <Route path="cart" element={<CartManagement />} />
                     <Route path="profile" element={<ProfilePage />} />
                     <Route path="settings" element={<SettingsPage />} />
                     <Route path="settings/organization" element={<OrganizationManagement />} />

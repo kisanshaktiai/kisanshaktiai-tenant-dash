@@ -146,10 +146,10 @@ export default function PricingManagement() {
                       <CardContent>
                         <div className="space-y-2">
                           <div className="text-2xl font-bold">
-                            ₹{selectedProductData.price_per_unit}
+                            ₹{selectedProductData.price_per_unit || 0}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            per {selectedProductData.unit_type}
+                            per {selectedProductData.unit_type || 'unit'}
                           </div>
                           <Badge variant={selectedProductData.is_organic ? "secondary" : "outline"}>
                             {selectedProductData.is_organic ? 'Organic' : 'Non-Organic'}
@@ -165,12 +165,12 @@ export default function PricingManagement() {
                       <CardContent>
                         <div className="space-y-2">
                           <div className="text-2xl font-bold">
-                            {selectedProductData.stock_quantity}
+                            {selectedProductData.stock_quantity || 0}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             units available
                           </div>
-                          {selectedProductData.stock_quantity <= selectedProductData.reorder_point && (
+                          {(selectedProductData.stock_quantity || 0) <= (selectedProductData.reorder_point || 0) && (
                             <Badge variant="destructive">Low Stock</Badge>
                           )}
                         </div>
@@ -182,16 +182,35 @@ export default function PricingManagement() {
                         <CardTitle className="text-sm">Price Update</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2">
-                          <Input
-                            type="number"
-                            placeholder="New price"
-                            className="w-full"
-                          />
-                          <Button size="sm" className="w-full">
-                            Update Price
-                          </Button>
-                        </div>
+                        <form onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const newPrice = parseFloat(formData.get('price') as string);
+                          if (newPrice > 0) {
+                            updatePricingMutation.mutate({ price_per_unit: newPrice });
+                          }
+                        }}>
+                          <div className="space-y-2">
+                            <Input
+                              type="number"
+                              name="price"
+                              step="0.01"
+                              min="0"
+                              placeholder="New price"
+                              defaultValue={selectedProductData.price_per_unit || 0}
+                              className="w-full"
+                              required
+                            />
+                            <Button 
+                              type="submit" 
+                              size="sm" 
+                              className="w-full"
+                              disabled={updatePricingMutation.isPending}
+                            >
+                              {updatePricingMutation.isPending ? 'Updating...' : 'Update Price'}
+                            </Button>
+                          </div>
+                        </form>
                       </CardContent>
                     </Card>
                   </div>

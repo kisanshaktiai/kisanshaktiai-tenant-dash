@@ -3,12 +3,14 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setCurrentTenant, setUserTenants, setLoading, setError, clearTenantData } from '@/store/slices/tenantSlice';
 import { supabase } from '@/integrations/supabase/client';
+import { useJWTReady } from './useJWTReady';
 
 export const useTenantAuthOptimized = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { currentTenant, userTenants, loading } = useAppSelector((state) => state.tenant);
+  const { currentTenant, userTenants, loading, error } = useAppSelector((state) => state.tenant);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { isReady: jwtReady } = useJWTReady();
   
   // Prevent multiple simultaneous fetches
   const fetchingRef = useRef(false);
@@ -17,11 +19,14 @@ export const useTenantAuthOptimized = () => {
   const fetchUserTenants = useCallback(async (userId: string) => {
     // Prevent concurrent fetches
     if (fetchingRef.current) {
+      console.log('useTenantAuthOptimized: Fetch already in progress, skipping');
       return;
     }
 
+    fetchingRef.current = true;
+
     try {
-      fetchingRef.current = true;
+      console.log('useTenantAuthOptimized: Fetching tenants for user:', userId);
       dispatch(setLoading(true));
       dispatch(setError(null));
       
@@ -80,16 +85,19 @@ export const useTenantAuthOptimized = () => {
         }));
 
       dispatch(setUserTenants(transformedUserTenants));
+      console.log('useTenantAuthOptimized: Fetched tenants:', transformedUserTenants.length);
 
       // Set current tenant (prefer primary, fallback to first available)
       if (!currentTenant && transformedUserTenants.length > 0) {
         const primaryTenant = transformedUserTenants.find(ut => ut.is_primary) || transformedUserTenants[0];
         if (primaryTenant?.tenant) {
+          console.log('useTenantAuthOptimized: Setting current tenant:', primaryTenant.tenant.id);
           dispatch(setCurrentTenant(primaryTenant.tenant));
           localStorage.setItem('currentTenantId', primaryTenant.tenant.id);
         }
       }
 
+      console.log('useTenantAuthOptimized: Initialization complete');
       setIsInitialized(true);
     } catch (error) {
       console.error('useTenantAuthOptimized: Fetch error:', error);
@@ -127,14 +135,16 @@ export const useTenantAuthOptimized = () => {
     }
 
     if (!isInitialized && !loading && !fetchingRef.current) {
-      // Try to restore current tenant from localStorage
-      const storedTenantId = localStorage.getItem('currentTenantId');
-      if (storedTenantId && currentTenant?.id === storedTenantId) {
-        setIsInitialized(true);
-        return;
-      }
+      // Add delay to allow auth state to fully stabilize
+      console.log('useTenantAuthOptimized: Scheduling tenant fetch after auth stabilization...');
+      const initTimeout = setTimeout(() => {
+        if (!fetchingRef.current && !isInitialized) {
+          console.log('useTenantAuthOptimized: Fetching tenant data now');
+          fetchUserTenants(user.id);
+        }
+      }, 500); // Wait 500ms for auth to fully stabilize
 
-      fetchUserTenants(user.id);
+      return () => clearTimeout(initTimeout);
     }
 
     return () => {
@@ -197,6 +207,7 @@ export const useTenantAuthOptimized = () => {
     currentTenant,
     userTenants,
     loading: loading || !isInitialized,
+    error,
     isMultiTenant: userTenants.length > 1,
     switchTenant,
     refreshTenantData: user ? () => fetchUserTenants(user.id) : async () => {},

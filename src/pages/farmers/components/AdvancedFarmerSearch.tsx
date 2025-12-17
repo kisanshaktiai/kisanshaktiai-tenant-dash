@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useFarmersQuery } from '@/hooks/data/useFarmersQuery';
 import { useAdvancedFarmerSearchQuery, useFarmerTagsQuery, useFarmerSegmentsQuery } from '@/hooks/data/useEnhancedFarmerQuery';
-import { enhancedFarmerService, type AdvancedSearchFilters } from '@/services/EnhancedFarmerService';
+import { enhancedFarmerDataService as enhancedFarmerService, type AdvancedSearchFilters } from '@/services/EnhancedFarmerDataService';
 import { toast } from 'sonner';
 
 interface AdvancedFarmerSearchProps {

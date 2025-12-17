@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { enhancedFarmerService, type AdvancedSearchFilters, type FarmerTag, type FarmerNote, type FarmerSegment, type FarmerLead } from '@/services/EnhancedFarmerService';
+import { enhancedFarmerDataService as enhancedFarmerService, type AdvancedSearchFilters, type FarmerTag, type FarmerNote, type FarmerSegment, type FarmerLead } from '@/services/EnhancedFarmerDataService';
 import { queryKeys } from '@/lib/queryClient';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
@@ -46,7 +46,7 @@ export const useFarmerSegmentsQuery = () => {
     queryKey: queryKeys.farmerSegments(currentTenant?.id || ''),
     queryFn: () => {
       if (!currentTenant) throw new Error('No tenant selected');
-      return enhancedFarmerService.getFarmerSegments(currentTenant.id);
+      return enhancedFarmerService.getFarmerSegments(currentTenant.id) as Promise<FarmerSegment[]>;
     },
     enabled: !!currentTenant,
   });
@@ -155,7 +155,12 @@ export const useCreateFarmerLeadMutation = () => {
   return useMutation({
     mutationFn: (leadData: { lead_source: string; contact_name: string; phone?: string; email?: string; location?: Record<string, any>; land_size?: number; crops_interested?: string[]; lead_score?: number; status?: string; assigned_to?: string; assigned_at?: string; converted_farmer_id?: string; converted_at?: string; next_follow_up?: string; notes?: string; metadata?: Record<string, any> }) => {
       if (!currentTenant) throw new Error('No tenant selected');
-      return enhancedFarmerService.createFarmerLead(currentTenant.id, leadData);
+      return enhancedFarmerService.createFarmerLead(currentTenant.id, { 
+        ...leadData, 
+        lead_score: leadData.lead_score || 0,
+        status: (leadData.status as any) || 'new',
+        metadata: leadData.metadata || {}
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-leads'] });

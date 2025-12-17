@@ -10,8 +10,7 @@ import { AdvancedSearchModal } from './AdvancedSearchModal';
 import { BulkOperationsPanel } from './BulkOperationsPanel';
 import { useFarmersQuery } from '@/hooks/data/useFarmersQuery';
 import { useFarmerSegmentsQuery } from '@/hooks/data/useEnhancedFarmerQuery';
-import type { Farmer } from '@/services/FarmersService';
-import type { AdvancedSearchFilters } from '@/services/EnhancedFarmerService';
+import type { Farmer, AdvancedSearchFilters } from '@/services/EnhancedFarmerDataService';
 
 interface EnhancedFarmerDirectoryProps {
   onSelectFarmer: (farmer: Farmer) => void;

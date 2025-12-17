@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
+import { jwtSyncService } from '@/services/JWTSyncService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [resetEmail, setResetEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreparingWorkspace, setIsPreparingWorkspace] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      console.log('Auth: User authenticated, redirecting from auth page');
+      // Redirect to index to let it determine correct destination
+      navigate('/', { replace: true });
     }
   }, [user, navigate]);
 
@@ -66,14 +70,39 @@ const Auth = () => {
         title: "Sign in failed",
         description: error.message,
       });
-    } else {
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in.",
-      });
+      setIsLoading(false);
+      return;
     }
-    
-    setIsLoading(false);
+
+    // CRITICAL: Ensure JWT is fully synchronized before navigating
+    try {
+      console.log('[Auth] Sign-in successful, synchronizing JWT...');
+      
+      setIsPreparingWorkspace(true);
+      
+      // Wait for JWT to be ready using the centralized service
+      await jwtSyncService.ensureJWTReady();
+      
+      console.log('[Auth] JWT synchronized successfully, navigating...');
+      
+      toast({
+        title: 'Welcome back!',
+        description: 'Loading your workspace...',
+      });
+      
+      navigate('/');
+    } catch (syncError) {
+      console.error('[Auth] JWT synchronization failed:', syncError);
+      setError('Failed to synchronize authentication. Please try again.');
+      toast({
+        variant: "destructive",
+        title: "Authentication Sync Failed",
+        description: "Please try signing in again.",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsPreparingWorkspace(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {

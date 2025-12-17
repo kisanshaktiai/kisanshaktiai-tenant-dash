@@ -2,6 +2,252 @@
 import { supabase } from '@/integrations/supabase/client';
 import { BaseApiService } from './core/BaseApiService';
 
+// ============= UNIFIED FARMER SERVICE INTERFACES =============
+// This service consolidates FarmersService, EnhancedFarmerManagementService, 
+// EnhancedFarmerService, and FarmerManagementService into one source of truth
+
+// Farmer List Options (from FarmersService)
+export interface FarmersListOptions {
+  search?: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, any>;
+}
+
+export interface FarmersListResponse {
+  data: Farmer[];
+  count: number;
+  error?: string;
+}
+
+// Basic Farmer Interface (from FarmersService)
+export interface Farmer {
+  id: string;
+  tenant_id: string;
+  farmer_code: string | null;
+  farmer_name: string | null;
+  mobile_number: string | null;
+  location: string | null;
+  farming_experience_years: number | null;
+  total_land_acres: number | null;
+  primary_crops: string[] | null;
+  farm_type: string | null;
+  has_irrigation: boolean | null;
+  has_storage: boolean | null;
+  has_tractor: boolean | null;
+  irrigation_type: string | null;
+  is_verified: boolean | null;
+  is_active: boolean | null;
+  total_app_opens: number | null;
+  total_queries: number | null;
+  annual_income_range: string | null;
+  language_preference: string | null;
+  last_app_open: string | null;
+  last_login_at: string | null;
+  app_install_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  metadata: any | null;
+  pin_hash?: string | null;
+}
+
+// Create/Update Farmer Data (from FarmersService)
+export interface CreateFarmerData {
+  tenant_id: string;
+  farmer_code?: string;
+  farmer_name?: string;
+  mobile_number?: string;
+  location?: string;
+  farming_experience_years?: number;
+  total_land_acres?: number;
+  primary_crops?: string[];
+  farm_type?: string;
+  has_irrigation?: boolean;
+  has_storage?: boolean;
+  has_tractor?: boolean;
+  irrigation_type?: string | null;
+  is_verified?: boolean;
+  annual_income_range?: string;
+  language_preference?: string;
+  pin_hash?: string;
+}
+
+export interface UpdateFarmerData {
+  farmer_name?: string;
+  mobile_number?: string;
+  location?: string;
+  farming_experience_years?: number;
+  total_land_acres?: number;
+  primary_crops?: string[];
+  farm_type?: string;
+  has_irrigation?: boolean;
+  has_storage?: boolean;
+  has_tractor?: boolean;
+  irrigation_type?: string | null;
+  is_verified?: boolean;
+  annual_income_range?: string;
+  language_preference?: string;
+}
+
+// Comprehensive Data for New Farmer Creation (from EnhancedFarmerManagementService)
+export interface ComprehensiveFarmerFormData {
+  fullName: string;
+  phone: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  languagePreference?: string;
+  village?: string;
+  taluka?: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
+  farmingExperience?: string;
+  totalLandSize?: string;
+  irrigationSource?: string;
+  hasStorage?: boolean;
+  hasTractor?: boolean;
+  primaryCrops?: string[];
+  pin: string;
+  notes?: string;
+}
+
+export interface CreatedFarmerResult {
+  success: boolean;
+  farmer: any;
+  farmerId: string;
+  farmerCode: string;
+  mobileNumber: string;
+  error?: string;
+}
+
+// Advanced Features (from EnhancedFarmerService)
+export interface AdvancedSearchFilters {
+  search?: string;
+  tags?: string[];
+  segments?: string[];
+  engagement_level?: 'low' | 'medium' | 'high';
+  churn_risk?: 'low' | 'medium' | 'high';
+  location?: {
+    state?: string;
+    district?: string;
+    village?: string;
+  };
+  land_size?: {
+    min?: number;
+    max?: number;
+  };
+  crops?: string[];
+  last_active_days?: number;
+  has_irrigation?: boolean;
+  farm_type?: string;
+  created_date_range?: {
+    start?: string;
+    end?: string;
+  };
+}
+
+// Engagement and Communication (from FarmerManagementService & EnhancedFarmerService)
+export interface FarmerEngagement {
+  id: string;
+  tenant_id: string;
+  farmer_id: string;
+  app_opens_count: number;
+  last_app_open?: string;
+  features_used: string[];
+  communication_responses: number;
+  activity_score: number;
+  churn_risk_score: number;
+  engagement_level: 'low' | 'medium' | 'high';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FarmerCommunication {
+  id: string;
+  tenant_id: string;
+  farmer_id: string;
+  communication_type: 'sms' | 'whatsapp' | 'email' | 'call' | 'app_notification';
+  message_content?: string;
+  sent_at: string;
+  delivered_at?: string;
+  read_at?: string;
+  response_at?: string;
+  status: 'sent' | 'delivered' | 'read' | 'failed' | 'bounced';
+  metadata: Record<string, any>;
+  created_by?: string;
+}
+
+// Lead Management (from EnhancedFarmerService)
+export interface FarmerLead {
+  id: string;
+  tenant_id: string;
+  lead_source: string;
+  contact_name: string;
+  phone?: string;
+  email?: string;
+  location?: Record<string, any>;
+  land_size?: number;
+  crops_interested?: string[];
+  lead_score: number;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal' | 'converted' | 'lost';
+  assigned_to?: string;
+  assigned_at?: string;
+  converted_farmer_id?: string;
+  converted_at?: string;
+  next_follow_up?: string;
+  notes?: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+// Bulk Operations (from EnhancedFarmerService)
+export interface BulkOperation {
+  id: string;
+  tenant_id: string;
+  operation_type: string;
+  target_farmer_ids: string[];
+  operation_data: Record<string, any>;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  processed_count: number;
+  success_count: number;
+  failed_count: number;
+  created_by?: string;
+  created_at: string;
+  completed_at?: string;
+  error_log: any[];
+}
+
+export interface BulkOperationRequest {
+  operation_type: 'message' | 'tag' | 'segment' | 'export';
+  farmer_ids: string[];
+  operation_data: Record<string, any>;
+}
+
+export interface BulkOperationResult {
+  success: number;
+  failed: number;
+  errors: string[];
+}
+
+// Segments (from EnhancedFarmerService)
+export interface FarmerSegment {
+  id: string;
+  tenant_id: string;
+  segment_name: string;
+  segment_criteria: Record<string, any>;
+  description?: string;
+  color: string;
+  created_by?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Comprehensive Farmer Data (aggregated view)
 export interface ComprehensiveFarmerData {
   // Basic farmer info
   id: string;
@@ -212,7 +458,7 @@ class EnhancedFarmerDataService extends BaseApiService {
         created_at: farmerData.created_at,
         tags: tagsResult,
         notes: notesResult,
-        segments: segmentsResult,
+        segments: segmentsResult.map(s => s.segment_name),
         lands: landsResult,
         cropHistory: cropHistoryResult,
         healthAssessments: healthAssessmentsResult,
@@ -320,7 +566,26 @@ class EnhancedFarmerDataService extends BaseApiService {
     }
   }
 
-  async getFarmerSegments(tenantId: string, farmerId: string): Promise<string[]> {
+  async getFarmerSegments(tenantId: string, farmerId?: string): Promise<FarmerSegment[]> {
+    if (!farmerId) {
+      // Return full segments when no farmerId specified
+      const { data, error } = await supabase
+        .from('farmer_segments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true);
+      
+      if (error) {
+        console.warn('farmer_segments table may not exist:', error);
+        return [];
+      }
+      
+      return (data || []).map(segment => ({
+        ...segment,
+        segment_criteria: typeof segment.segment_criteria === 'object' ? 
+          segment.segment_criteria as Record<string, any> : {}
+      }));
+    }
     try {
       // Query without chaining to avoid deep type instantiation
       const query = supabase.from('farmer_segments');
@@ -814,6 +1079,871 @@ class EnhancedFarmerDataService extends BaseApiService {
       return { data: null };
     }
   }
+
+  // ============= METHODS FROM FarmersService =============
+
+  async getFarmers(tenantId: string, options: FarmersListOptions = {}): Promise<FarmersListResponse> {
+    try {
+      let query = supabase
+        .from('farmers')
+        .select('*', { count: 'exact' })
+        .eq('tenant_id', tenantId);
+
+      if (options.search) {
+        query = query.or(`farmer_code.ilike.%${options.search}%,farmer_name.ilike.%${options.search}%,mobile_number.ilike.%${options.search}%,location.ilike.%${options.search}%`);
+      }
+
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+
+      if (options.offset) {
+        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+      }
+
+      const { data, error, count } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return {
+        data: data || [],
+        count: count || 0,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch farmers: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getFarmer(farmerId: string, tenantId: string): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('id', farmerId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to fetch farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async createFarmer(farmerData: CreateFarmerData): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
+        .from('farmers')
+        .insert({
+          ...farmerData,
+          id: crypto.randomUUID(),
+          total_app_opens: 0,
+          total_queries: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to create farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async updateFarmer(farmerId: string, tenantId: string, updates: UpdateFarmerData): Promise<Farmer> {
+    try {
+      const { data, error } = await supabase
+        .from('farmers')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', farmerId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    } catch (error) {
+      throw new Error(`Failed to update farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async deleteFarmer(farmerId: string, tenantId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('farmers')
+        .delete()
+        .eq('id', farmerId)
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      throw new Error(`Failed to delete farmer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getFarmerCount(tenantId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('farmers')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return count || 0;
+    } catch (error) {
+      throw new Error(`Failed to get farmer count: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async generateFarmerCode(tenantSlug: string, count: number): Promise<string> {
+    const farmerNumber = count + 1;
+    const tenantPrefix = tenantSlug.substring(0, 3).toUpperCase();
+    return `${tenantPrefix}${farmerNumber.toString().padStart(6, '0')}`;
+  }
+
+  // ============= METHODS FROM EnhancedFarmerManagementService =============
+
+  private async hashPin(pin: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pin);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  private formatMobileNumber(mobile: string): string {
+    const cleanMobile = mobile.replace(/[^0-9]/g, '');
+    
+    if (cleanMobile.startsWith('91') && cleanMobile.length === 12) {
+      return cleanMobile.substring(2);
+    } else if (cleanMobile.length === 10 && /^[6-9]/.test(cleanMobile)) {
+      return cleanMobile;
+    }
+    
+    return cleanMobile;
+  }
+
+  private async generateFarmerCodeWithFunction(tenantId: string): Promise<string> {
+    try {
+      console.log('Generating farmer code using database function for tenant:', tenantId);
+      
+      const { data, error } = await supabase.rpc('generate_farmer_code', {
+        p_tenant_id: tenantId
+      });
+
+      if (error) {
+        console.error('Error calling generate_farmer_code function:', error);
+        throw error;
+      }
+
+      console.log('Generated farmer code:', data);
+      return data;
+    } catch (error) {
+      console.error('Error generating farmer code:', error);
+      return `KIS${Date.now().toString().slice(-6)}`;
+    }
+  }
+
+  async createComprehensiveFarmer(tenantId: string, farmerData: ComprehensiveFarmerFormData): Promise<CreatedFarmerResult> {
+    try {
+      console.log('Creating comprehensive farmer for tenant:', tenantId);
+      
+      const { data: userTenant, error: accessError } = await supabase
+        .from('user_tenants')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('tenant_id', tenantId)
+        .eq('is_active', true)
+        .single();
+
+      if (accessError || !userTenant) {
+        console.error('User does not have access to tenant:', tenantId, accessError);
+        return {
+          success: false,
+          farmer: null,
+          farmerId: '',
+          farmerCode: '',
+          mobileNumber: '',
+          error: 'You do not have permission to create farmers for this tenant',
+        };
+      }
+
+      const formattedMobile = this.formatMobileNumber(farmerData.phone);
+      const farmerCode = await this.generateFarmerCodeWithFunction(tenantId);
+      const pinHash = await this.hashPin(farmerData.pin);
+
+      const metadata = {
+        personal_info: {
+          full_name: farmerData.fullName,
+          email: farmerData.email || null,
+          date_of_birth: farmerData.dateOfBirth || null,
+          gender: farmerData.gender || null,
+          language_preference: farmerData.languagePreference || 'en',
+        },
+        address_info: {
+          village: farmerData.village || null,
+          taluka: farmerData.taluka || null,
+          district: farmerData.district || null,
+          state: farmerData.state || null,
+          pincode: farmerData.pincode || null,
+        },
+        farming_info: {
+          farming_experience: farmerData.farmingExperience || null,
+          total_land_size: farmerData.totalLandSize || null,
+          irrigation_source: farmerData.irrigationSource || null,
+          has_storage: farmerData.hasStorage || false,
+          has_tractor: farmerData.hasTractor || false,
+        },
+        additional_info: {
+          notes: farmerData.notes || null,
+        }
+      };
+
+      const farmerInsertData = {
+        tenant_id: tenantId,
+        farmer_code: farmerCode,
+        mobile_number: formattedMobile,
+        pin_hash: pinHash,
+        farmer_name: farmerData.fullName,
+        farming_experience_years: parseInt(farmerData.farmingExperience || '0') || 0,
+        total_land_acres: parseFloat(farmerData.totalLandSize || '0') || 0,
+        primary_crops: farmerData.primaryCrops || [],
+        farm_type: 'mixed',
+        has_irrigation: !!farmerData.irrigationSource,
+        has_storage: farmerData.hasStorage || false,
+        has_tractor: farmerData.hasTractor || false,
+        irrigation_type: farmerData.irrigationSource || null,
+        is_verified: false,
+        total_app_opens: 0,
+        total_queries: 0,
+        language_preference: farmerData.languagePreference || 'en',
+        preferred_contact_method: 'mobile',
+        notes: farmerData.notes || null,
+        metadata: metadata
+      };
+
+      const { data: farmer, error: farmerError } = await supabase
+        .from('farmers')
+        .insert(farmerInsertData)
+        .select()
+        .single();
+
+      if (farmerError) {
+        console.error('Database insert error:', farmerError);
+        
+        let errorMessage = 'Failed to create farmer';
+        if (farmerError.code === '42501') {
+          errorMessage = 'Permission denied. Please ensure you have access to this tenant.';
+        } else if (farmerError.code === '23505') {
+          errorMessage = 'A farmer with this mobile number already exists.';
+        } else if (farmerError.message?.includes('mobile_number_check')) {
+          errorMessage = 'Invalid mobile number format. Please enter a valid 10-digit Indian mobile number.';
+        } else if (farmerError.message) {
+          errorMessage = farmerError.message;
+        }
+        
+        return {
+          success: false,
+          farmer: null,
+          farmerId: '',
+          farmerCode: '',
+          mobileNumber: '',
+          error: errorMessage,
+        };
+      }
+
+      // Verify user_profiles was created by trigger
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, farmer_id')
+        .eq('farmer_id', farmer.id)
+        .maybeSingle();
+
+      if (!profile) {
+        console.warn('user_profiles not created automatically, creating manually as fallback...');
+        try {
+          await this.createUserProfileForFarmer(farmer, farmerData, formattedMobile);
+        } catch (fallbackError) {
+          console.error('Failed to create user_profile fallback:', fallbackError);
+        }
+      }
+
+      return {
+        success: true,
+        farmer,
+        farmerId: farmer.id,
+        farmerCode: farmer.farmer_code,
+        mobileNumber: formattedMobile,
+      };
+
+    } catch (error) {
+      console.error('Comprehensive farmer creation failed:', error);
+      
+      let errorMessage = 'Failed to create farmer';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        farmer: null,
+        farmerId: '',
+        farmerCode: '',
+        mobileNumber: '',
+        error: errorMessage,
+      };
+    }
+  }
+
+  private async createUserProfileForFarmer(farmer: any, farmerData: ComprehensiveFarmerFormData, formattedMobile: string) {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        id: crypto.randomUUID(),
+        farmer_id: farmer.id,
+        mobile_number: formattedMobile,
+        phone_verified: false,
+        full_name: farmerData.fullName,
+        display_name: farmerData.fullName,
+        date_of_birth: farmerData.dateOfBirth || null,
+        gender: farmerData.gender || null,
+        address_line1: farmerData.village || null,
+        address_line2: farmerData.taluka || null,
+        village: farmerData.village || null,
+        taluka: farmerData.taluka || null,
+        district: farmerData.district || null,
+        state: farmerData.state || null,
+        pincode: farmerData.pincode || null,
+        country: 'India',
+        preferred_language: (farmerData.languagePreference || 'en') as any,
+        notification_preferences: {
+          sms: true,
+          email: false,
+          push: true,
+          whatsapp: true
+        },
+        metadata: {
+          farmer_code: farmer.farmer_code,
+          tenant_id: farmer.tenant_id,
+          source: 'farmer_registration_fallback'
+        }
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create user_profile fallback:', error);
+      throw error;
+    }
+
+    return data;
+  }
+
+  async getFarmerWithAllDetails(farmerId: string, tenantId: string) {
+    try {
+      const { data: farmer, error } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('id', farmerId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (error) throw error;
+      
+      return farmer;
+    } catch (error) {
+      throw new Error(`Failed to fetch farmer details: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async validateFarmerLogin(mobileNumber: string, pin: string, tenantId: string) {
+    try {
+      const formattedMobile = this.formatMobileNumber(mobileNumber);
+      const pinHash = await this.hashPin(pin);
+
+      const { data: farmer, error } = await supabase
+        .from('farmers')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('mobile_number', formattedMobile)
+        .eq('pin_hash', pinHash)
+        .single();
+
+      if (error || !farmer) {
+        return { success: false, error: 'Invalid mobile number or PIN' };
+      }
+
+      return {
+        success: true,
+        farmer,
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Login failed',
+      };
+    }
+  }
+
+  // ============= METHODS FROM EnhancedFarmerService =============
+
+  async addFarmerTag(tenantId: string, farmerId: string, tagData: { tag_name: string; tag_color?: string; created_by?: string }): Promise<FarmerTag> {
+    const { data, error } = await supabase
+      .from('farmer_tags')
+      .insert({
+        tenant_id: tenantId,
+        farmer_id: farmerId,
+        tag_name: tagData.tag_name,
+        tag_color: tagData.tag_color || '#3B82F6',
+        created_by: tagData.created_by,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteFarmerTag(tagId: string): Promise<void> {
+    const { error } = await supabase
+      .from('farmer_tags')
+      .delete()
+      .eq('id', tagId);
+
+    if (error) throw error;
+  }
+
+  async createFarmerSegment(tenantId: string, segmentData: Omit<FarmerSegment, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerSegment> {
+    const { data, error } = await supabase
+      .from('farmer_segments')
+      .insert({
+        tenant_id: tenantId,
+        segment_name: segmentData.segment_name,
+        segment_criteria: segmentData.segment_criteria,
+        description: segmentData.description,
+        color: segmentData.color || '#10B981',
+        created_by: segmentData.created_by,
+        is_active: segmentData.is_active,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      segment_criteria: typeof data.segment_criteria === 'object' ? 
+        data.segment_criteria as Record<string, any> : {}
+    };
+  }
+
+  async addFarmerNote(tenantId: string, farmerId: string, noteData: { note_content: string; created_by?: string; is_important?: boolean; is_private?: boolean }): Promise<FarmerNote> {
+    const { data, error } = await supabase
+      .from('farmer_notes')
+      .insert({
+        tenant_id: tenantId,
+        farmer_id: farmerId,
+        note_content: noteData.note_content,
+        created_by: noteData.created_by,
+        is_important: noteData.is_important || false,
+        is_private: noteData.is_private || false,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getCommunicationHistory(tenantId: string, farmerId?: string): Promise<FarmerCommunication[]> {
+    let query = supabase
+      .from('farmer_communications')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    if (farmerId) {
+      query = query.eq('farmer_id', farmerId);
+    }
+
+    const { data, error } = await query.order('sent_at', { ascending: false });
+    if (error) throw error;
+    
+    return (data || []).map(comm => ({
+      ...comm,
+      communication_type: comm.communication_type as FarmerCommunication['communication_type'],
+      status: comm.status as FarmerCommunication['status'],
+      metadata: typeof comm.metadata === 'object' ? 
+        comm.metadata as Record<string, any> : {}
+    }));
+  }
+
+  async logCommunication(tenantId: string, communicationData: Omit<FarmerCommunication, 'id' | 'tenant_id' | 'sent_at'>): Promise<FarmerCommunication> {
+    const { data, error } = await supabase
+      .from('farmer_communications')
+      .insert({
+        tenant_id: tenantId,
+        farmer_id: communicationData.farmer_id,
+        communication_type: communicationData.communication_type,
+        message_content: communicationData.message_content,
+        delivered_at: communicationData.delivered_at,
+        read_at: communicationData.read_at,
+        response_at: communicationData.response_at,
+        status: communicationData.status,
+        metadata: communicationData.metadata || {},
+        created_by: communicationData.created_by,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      communication_type: data.communication_type as FarmerCommunication['communication_type'],
+      status: data.status as FarmerCommunication['status'],
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
+  }
+
+  async getFarmerEngagement(tenantId: string, farmerId?: string): Promise<FarmerEngagement[]> {
+    let query = supabase
+      .from('farmer_engagement')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    if (farmerId) {
+      query = query.eq('farmer_id', farmerId);
+    }
+
+    const { data, error } = await query.order('updated_at', { ascending: false });
+    if (error) throw error;
+    
+    return (data || []).map(engagement => ({
+      ...engagement,
+      engagement_level: engagement.engagement_level as FarmerEngagement['engagement_level']
+    }));
+  }
+
+  async updateFarmerEngagement(tenantId: string, farmerId: string, engagementData: Partial<FarmerEngagement>): Promise<FarmerEngagement> {
+    const { data, error } = await supabase
+      .from('farmer_engagement')
+      .upsert({
+        tenant_id: tenantId,
+        farmer_id: farmerId,
+        app_opens_count: engagementData.app_opens_count,
+        last_app_open: engagementData.last_app_open,
+        features_used: engagementData.features_used,
+        communication_responses: engagementData.communication_responses,
+        activity_score: engagementData.activity_score,
+        churn_risk_score: engagementData.churn_risk_score,
+        engagement_level: engagementData.engagement_level,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      engagement_level: data.engagement_level as FarmerEngagement['engagement_level']
+    };
+  }
+
+  async getFarmerLeads(tenantId: string, filters?: { status?: string; assigned_to?: string }): Promise<FarmerLead[]> {
+    let query = supabase
+      .from('farmer_leads')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    if (filters?.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters?.assigned_to) {
+      query = query.eq('assigned_to', filters.assigned_to);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) throw error;
+    
+    return (data || []).map(lead => ({
+      ...lead,
+      status: lead.status as FarmerLead['status'],
+      location: typeof lead.location === 'object' ? 
+        lead.location as Record<string, any> : {},
+      metadata: typeof lead.metadata === 'object' ? 
+        lead.metadata as Record<string, any> : {}
+    }));
+  }
+
+  async createFarmerLead(tenantId: string, leadData: Omit<FarmerLead, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<FarmerLead> {
+    const { data, error } = await supabase
+      .from('farmer_leads')
+      .insert({
+        tenant_id: tenantId,
+        lead_source: leadData.lead_source,
+        contact_name: leadData.contact_name,
+        phone: leadData.phone,
+        email: leadData.email,
+        location: leadData.location || {},
+        land_size: leadData.land_size,
+        crops_interested: leadData.crops_interested,
+        lead_score: leadData.lead_score,
+        status: leadData.status,
+        assigned_to: leadData.assigned_to,
+        assigned_at: leadData.assigned_at,
+        converted_farmer_id: leadData.converted_farmer_id,
+        converted_at: leadData.converted_at,
+        next_follow_up: leadData.next_follow_up,
+        notes: leadData.notes,
+        metadata: leadData.metadata || {},
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as FarmerLead['status'],
+      location: typeof data.location === 'object' ? 
+        data.location as Record<string, any> : {},
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
+  }
+
+  async updateLeadStatus(leadId: string, status: string, metadata?: Record<string, any>): Promise<FarmerLead> {
+    const { data, error } = await supabase
+      .from('farmer_leads')
+      .update({
+        status,
+        ...(metadata && { metadata }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', leadId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as FarmerLead['status'],
+      location: typeof data.location === 'object' ? 
+        data.location as Record<string, any> : {},
+      metadata: typeof data.metadata === 'object' ? 
+        data.metadata as Record<string, any> : {}
+    };
+  }
+
+  async searchFarmersAdvanced(tenantId: string, filters: AdvancedSearchFilters): Promise<any[]> {
+    let query = supabase
+      .from('farmers')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    if (filters.search) {
+      query = query.or(`farmer_code.ilike.%${filters.search}%,primary_crops.cs.{${filters.search}}`);
+    }
+
+    if (filters.has_irrigation !== undefined) {
+      query = query.eq('has_irrigation', filters.has_irrigation);
+    }
+
+    if (filters.farm_type) {
+      query = query.eq('farm_type', filters.farm_type);
+    }
+
+    if (filters.land_size?.min) {
+      query = query.gte('total_land_acres', filters.land_size.min);
+    }
+
+    if (filters.land_size?.max) {
+      query = query.lte('total_land_acres', filters.land_size.max);
+    }
+
+    if (filters.crops?.length) {
+      query = query.overlaps('primary_crops', filters.crops);
+    }
+
+    const { data, error } = await query.limit(100);
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createBulkOperation(tenantId: string, operationData: Omit<BulkOperation, 'id' | 'tenant_id' | 'created_at'>): Promise<BulkOperation> {
+    const { data, error } = await supabase
+      .from('bulk_operations')
+      .insert({
+        tenant_id: tenantId,
+        operation_type: operationData.operation_type,
+        target_farmer_ids: operationData.target_farmer_ids,
+        operation_data: operationData.operation_data,
+        status: operationData.status || 'pending',
+        processed_count: operationData.processed_count || 0,
+        success_count: operationData.success_count || 0,
+        failed_count: operationData.failed_count || 0,
+        created_by: operationData.created_by,
+        completed_at: operationData.completed_at,
+        error_log: operationData.error_log || [],
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as BulkOperation['status'],
+      operation_data: typeof data.operation_data === 'object' ? 
+        data.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(data.error_log) ? data.error_log : []
+    };
+  }
+
+  async getBulkOperations(tenantId: string, limit = 50): Promise<BulkOperation[]> {
+    const { data, error } = await supabase
+      .from('bulk_operations')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    
+    return (data || []).map(op => ({
+      ...op,
+      status: op.status as BulkOperation['status'],
+      operation_data: typeof op.operation_data === 'object' ? 
+        op.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(op.error_log) ? op.error_log : []
+    }));
+  }
+
+  async updateBulkOperationStatus(operationId: string, status: string, progress?: any): Promise<BulkOperation> {
+    const { data, error } = await supabase
+      .from('bulk_operations')
+      .update({
+        status,
+        ...(progress && progress),
+        ...(status === 'completed' && { completed_at: new Date().toISOString() }),
+      })
+      .eq('id', operationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return {
+      ...data,
+      status: data.status as BulkOperation['status'],
+      operation_data: typeof data.operation_data === 'object' ? 
+        data.operation_data as Record<string, any> : {},
+      error_log: Array.isArray(data.error_log) ? data.error_log : []
+    };
+  }
+
+  async exportFarmers(tenantId: string, farmerIds?: string[], format = 'csv'): Promise<Blob> {
+    let query = supabase
+      .from('farmers')
+      .select('*')
+      .eq('tenant_id', tenantId);
+
+    if (farmerIds?.length) {
+      query = query.in('id', farmerIds);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    if (format === 'csv') {
+      const headers = ['Farmer Code', 'Name', 'Mobile', 'Experience (Years)', 'Land Size (Acres)', 'Primary Crops', 'Has Irrigation'];
+      const csvContent = [
+        headers.join(','),
+        ...(data || []).map(farmer => [
+          farmer.farmer_code,
+          farmer.farmer_name,
+          farmer.mobile_number,
+          farmer.farming_experience_years,
+          farmer.total_land_acres,
+          (farmer.primary_crops || []).join(';'),
+          farmer.has_irrigation
+        ].join(','))
+      ].join('\n');
+
+      return new Blob([csvContent], { type: 'text/csv' });
+    }
+
+    return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  }
+
+  async performBulkOperation(tenantId: string, operation: BulkOperationRequest): Promise<BulkOperationResult> {
+    try {
+      console.log('Performing bulk operation:', operation.operation_type, 'for', operation.farmer_ids.length, 'farmers');
+      
+      const bulkOp = await this.createBulkOperation(tenantId, {
+        operation_type: operation.operation_type,
+        target_farmer_ids: operation.farmer_ids,
+        operation_data: operation.operation_data,
+        status: 'processing',
+        error_log: [],
+        failed_count: 0,
+        processed_count: 0,
+        success_count: 0
+      });
+      
+      const failedCount = Math.floor(operation.farmer_ids.length * 0.05);
+      const successCount = operation.farmer_ids.length - failedCount;
+      
+      await this.updateBulkOperationStatus(bulkOp.id, 'completed', {
+        processed_count: operation.farmer_ids.length,
+        success_count: successCount,
+        failed_count: failedCount
+      });
+      
+      return {
+        success: successCount,
+        failed: failedCount,
+        errors: failedCount > 0 ? [`${failedCount} operations failed`] : []
+      };
+    } catch (error) {
+      throw new Error(`Failed to perform bulk operation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Alias for backward compatibility
+  async getEngagementMetrics(tenantId: string, farmerId?: string) {
+    return this.getFarmerEngagement(tenantId, farmerId);
+  }
+
+  async searchFarmers(tenantId: string, params: AdvancedSearchFilters) {
+    return this.searchFarmersAdvanced(tenantId, params);
+  }
 }
 
+// Export singleton instance with all aliases
 export const enhancedFarmerDataService = new EnhancedFarmerDataService();
+
+// Backward compatibility exports
+export const farmersService = enhancedFarmerDataService;
+export const farmersApi = enhancedFarmerDataService;
+export const enhancedFarmerManagementService = enhancedFarmerDataService;
+export const enhancedFarmerService = enhancedFarmerDataService;
+export const farmerManagementService = enhancedFarmerDataService;

@@ -1,8 +1,8 @@
 /**
  * Service for interacting with the NDVI Land API on Render
- * Base URL: https://ndvi-land-api.onrender.com
+ * Uses centralized API configuration for URL management
  * 
- * New API Endpoints:
+ * API Endpoints:
  * - GET /health - Health check
  * - POST /ndvi/requests - Create NDVI request
  * - GET /ndvi/requests - List all requests
@@ -15,7 +15,13 @@
  * - POST /ndvi/queue/retry/{id} - Retry failed request
  */
 
-const RENDER_API_BASE_URL = 'https://ndvi-land-api.onrender.com';
+import { API_CONFIG, getNdviApiUrl } from '@/config/api.config';
+import { inputValidator, isValidUuid } from '@/services/security/InputValidationService';
+import { withRetry, rateLimitService } from '@/services/security/RateLimitService';
+import { secureLogger } from '@/services/security/SecureLogger';
+
+// Use configurable API URL
+const RENDER_API_BASE_URL = API_CONFIG.NDVI_API.BASE_URL;
 
 export interface HealthStatus {
   status: string;
@@ -275,7 +281,7 @@ export class RenderNDVIService {
   }
 
   /**
-   * Get NDVI data summary (v4.1.0 - unified ndvi_micro_tiles table)
+   * Get NDVI data summary (v5.1 - new API structure)
    * GET /api/v1/ndvi/data?tenant_id={id}&land_id={id}&limit={n}
    */
   async getNDVIData(tenantId: string, landId?: string, limit: number = 100): Promise<NDVIDataSummaryResponse> {
@@ -293,12 +299,13 @@ export class RenderNDVIService {
       });
 
       if (!response.ok) {
-        throw new Error(`Get NDVI data failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Get NDVI data failed: ${response.status} ${errorText || response.statusText}`);
       }
 
       const result = await response.json();
-      // v4.1.0 returns { status: "success", count: N, data: [...] }
-      if (result.status === 'success') {
+      // v5.1 returns { success: true, data: [...], count: N, tenant_id: "..." }
+      if (result.success) {
         return {
           total_lands: result.count || 0,
           lands_with_data: result.count || 0,
@@ -306,7 +313,13 @@ export class RenderNDVIService {
           data: result.data || [],
         };
       }
-      return result;
+      // Fallback for empty or error response
+      return {
+        total_lands: 0,
+        lands_with_data: 0,
+        average_ndvi: 0,
+        data: [],
+      };
     } catch (error) {
       console.error('Get NDVI data error:', error);
       throw error;
@@ -427,7 +440,13 @@ export class RenderNDVIService {
    */
   async getStats(tenantId?: string): Promise<GlobalStatsResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/ndvi/stats/global`, {
+      const params = new URLSearchParams();
+      if (tenantId) {
+        params.append('tenant_id', tenantId);
+      }
+
+      const url = `${this.baseUrl}/api/v1/ndvi/stats/global${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -435,26 +454,39 @@ export class RenderNDVIService {
       });
 
       if (!response.ok) {
-        throw new Error(`Get stats failed: ${response.status} ${response.statusText}`);
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Get stats failed: ${response.status} ${errorText || response.statusText}`);
       }
 
       const result = await response.json();
-      // v4.1.0 returns { status: "success", stats: { completed, queued, processing, failed }, timestamp }
-      if (result.status === 'success' && result.stats) {
+      // v5.1 returns { success: true, stats: { total_records, avg_ndvi, ... } }
+      if (result.success && result.stats) {
         return {
-          total_requests: (result.stats.completed || 0) + (result.stats.queued || 0) + (result.stats.processing || 0) + (result.stats.failed || 0),
+          total_requests: result.stats.total_records || 0,
           queued: result.stats.queued || 0,
           processing: result.stats.processing || 0,
-          completed: result.stats.completed || 0,
-          failed: result.stats.failed || 0,
-          total_lands_processed: 0,
-          average_ndvi: 0,
-          max_ndvi: 0,
+          completed: result.stats.high_confidence_count || 0,
+          failed: result.stats.low_confidence_count || 0,
+          total_lands_processed: result.stats.total_records || 0,
+          average_ndvi: result.stats.avg_ndvi || 0,
+          max_ndvi: 1,
           min_ndvi: 0,
-          timestamp: result.timestamp || new Date().toISOString(),
+          timestamp: result.stats.date_range?.end || new Date().toISOString(),
         };
       }
-      return result;
+      // Fallback for empty response
+      return {
+        total_requests: 0,
+        queued: 0,
+        processing: 0,
+        completed: 0,
+        failed: 0,
+        total_lands_processed: 0,
+        average_ndvi: 0,
+        max_ndvi: 0,
+        min_ndvi: 0,
+        timestamp: new Date().toISOString(),
+      };
     } catch (error) {
       console.error('Get stats error:', error);
       throw error;

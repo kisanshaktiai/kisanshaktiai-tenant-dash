@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRealTimeFarmersQuery } from '@/hooks/data/useRealTimeFarmersQuery';
 import { FarmerProfile } from './FarmerProfile';
-import type { Farmer } from '@/services/FarmersService';
+import type { Farmer } from '@/services/EnhancedFarmerDataService';
 
 export const FarmerDirectory = () => {
   const [searchTerm, setSearchTerm] = useState('');

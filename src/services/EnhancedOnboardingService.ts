@@ -289,8 +289,30 @@ class EnhancedOnboardingService extends BaseApiService {
 
   async isOnboardingComplete(tenantId: string): Promise<boolean> {
     try {
+      // CRITICAL: First check the tenant's onboarding_completed field (source of truth)
+      const { data: tenantData, error: tenantError } = await supabase
+        .from('tenants')
+        .select('onboarding_completed')
+        .eq('id', tenantId)
+        .single();
+      
+      if (tenantError) {
+        console.error('EnhancedOnboardingService: Error fetching tenant:', tenantError);
+        // Fall through to workflow check
+      } else if (tenantData?.onboarding_completed === true) {
+        console.log('EnhancedOnboardingService: Tenant onboarding marked as completed');
+        return true;
+      }
+      
+      // Fallback: Check workflow and steps
       const workflow = await this.getOnboardingWorkflow(tenantId);
       if (!workflow) return false;
+      
+      // If workflow status is completed, return true
+      if (workflow.status === 'completed') {
+        console.log('EnhancedOnboardingService: Workflow status is completed');
+        return true;
+      }
       
       const steps = await this.getOnboardingSteps(workflow.id);
       const completedSteps = steps.filter(step => step.step_status === 'completed');
