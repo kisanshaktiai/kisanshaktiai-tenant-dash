@@ -53,6 +53,34 @@ jobs:
           # Prevent nesting dist/dist
           strip_components: 1
 
+      - name: Register version in Supabase
+        if: success()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APP_KEY: ${{ secrets.APP_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_HASH: ${{ steps.version.outputs.build_hash }}
+        run: |
+          curl -X POST "$SUPABASE_URL/rest/v1/app_versions" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{
+              "app_key": "'"$APP_KEY"'",
+              "version": "'"$VERSION"'",
+              "build_hash": "'"$BUILD_HASH"'",
+              "is_current": true,
+              "deployed_at": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
+              "metadata": {
+                "repo": "'"$GITHUB_REPOSITORY"'",
+                "commit": "'"$GITHUB_SHA"'",
+                "actor": "'"$GITHUB_ACTOR"'",
+                "workflow": "'"$GITHUB_WORKFLOW"'"
+              }
+            }'
+
       # --------------------------------------------------
       # Success message
       # --------------------------------------------------
@@ -60,6 +88,6 @@ jobs:
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Partner app deployed successfully"
-          echo "📁 Remote directory: ${{ secrets.PARTNER_REMOTE_DIR }}"
+          echo "App Version Updated"
           echo "🌍 Subdomain: partner.kisanshaktiai.in"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
