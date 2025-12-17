@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
@@ -9,55 +8,59 @@ import { IntlProvider } from '@/components/providers/IntlProvider';
 import { TenantProviderOptimized } from '@/contexts/TenantContextOptimized';
 import { Toaster } from '@/components/ui/sonner';
 import { fontService } from '@/services/FontService';
+import { ContextErrorBoundary } from '@/components/error/ContextErrorBoundary';
+import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
+import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
 
 // Initialize font service on app startup
 fontService.initializeFont();
 
-import { ContextErrorBoundary } from '@/components/error/ContextErrorBoundary';
-
-// Import layout
-import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
-
-// Import guards
-import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
-
-// Import pages
+// Critical path pages - loaded immediately
 import Index from '@/pages/Index';
 import Auth from '@/pages/Auth';
-import EnhancedDashboard from '@/pages/dashboard/EnhancedDashboard';
-import FarmersPage from '@/pages/FarmersPage';
-import ProductsPage from '@/pages/products/ProductsPage';
-import CampaignsPage from '@/pages/CampaignsPage';
-import AnalyticsPage from '@/pages/AnalyticsPage';
-import DealersPage from '@/pages/DealersPage';
-import SettingsPage from '@/pages/SettingsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import NotFound from '@/pages/NotFound';
-import NDVIPage from '@/pages/NDVIPage';
-import SoilAnalysisPage from '@/pages/SoilAnalysisPage';
-import SalesDashboard from '@/pages/sales/SalesDashboard';
-import OrderDetailsPage from '@/pages/sales/components/OrderDetailsPage';
-import SalesAnalyticsDashboard from '@/pages/sales/SalesAnalyticsDashboard';
-import { PredictiveSalesDashboard } from '@/pages/sales/PredictiveSalesDashboard';
-import CartManagement from '@/pages/cart/CartManagement';
+
+// Lazy loaded pages for better initial load
+const EnhancedDashboard = lazy(() => import('@/pages/dashboard/EnhancedDashboard'));
+const FarmersPage = lazy(() => import('@/pages/FarmersPage'));
+const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'));
+const CampaignsPage = lazy(() => import('@/pages/CampaignsPage'));
+const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'));
+const DealersPage = lazy(() => import('@/pages/DealersPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const NDVIPage = lazy(() => import('@/pages/NDVIPage'));
+const SoilAnalysisPage = lazy(() => import('@/pages/SoilAnalysisPage'));
+const SalesDashboard = lazy(() => import('@/pages/sales/SalesDashboard'));
+const OrderDetailsPage = lazy(() => import('@/pages/sales/components/OrderDetailsPage'));
+const SalesAnalyticsDashboard = lazy(() => import('@/pages/sales/SalesAnalyticsDashboard'));
+const PredictiveSalesDashboard = lazy(() => import('@/pages/sales/PredictiveSalesDashboard').then(m => ({ default: m.PredictiveSalesDashboard })));
+const CartManagement = lazy(() => import('@/pages/cart/CartManagement'));
 
 // Settings sub-pages
-import OrganizationManagement from '@/pages/settings/OrganizationManagement';
-import { EnhancedUsersPage } from '@/pages/settings/EnhancedUsersPage';
-import AppearancePage from '@/pages/settings/AppearancePage';
-import WhiteLabelConfigPageOptimized from '@/pages/settings/WhiteLabelConfigPageOptimized';
-import NotificationPage from '@/pages/NotificationPage';
-import SecurityPage from '@/pages/SecurityPage';
-import DataPrivacyPage from '@/pages/DataPrivacyPage';
-import ApiKeysPage from '@/pages/ApiKeysPage';
-import LocalizationPage from '@/pages/LocalizationPage';
+const OrganizationManagement = lazy(() => import('@/pages/settings/OrganizationManagement'));
+const EnhancedUsersPage = lazy(() => import('@/pages/settings/EnhancedUsersPage').then(m => ({ default: m.EnhancedUsersPage })));
+const AppearancePage = lazy(() => import('@/pages/settings/AppearancePage'));
+const WhiteLabelConfigPageOptimized = lazy(() => import('@/pages/settings/WhiteLabelConfigPageOptimized'));
+const NotificationPage = lazy(() => import('@/pages/NotificationPage'));
+const SecurityPage = lazy(() => import('@/pages/SecurityPage'));
+const DataPrivacyPage = lazy(() => import('@/pages/DataPrivacyPage'));
+const ApiKeysPage = lazy(() => import('@/pages/ApiKeysPage'));
+const LocalizationPage = lazy(() => import('@/pages/LocalizationPage'));
 
 // Auth pages
-import TenantRegistrationPage from '@/pages/TenantRegistrationPage';
-import OnboardingPage from '@/pages/OnboardingPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import SetupPasswordPage from '@/pages/SetupPasswordPage';
-import AcceptInvitationPage from '@/pages/AcceptInvitationPage';
+const TenantRegistrationPage = lazy(() => import('@/pages/TenantRegistrationPage'));
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+const SetupPasswordPage = lazy(() => import('@/pages/SetupPasswordPage'));
+const AcceptInvitationPage = lazy(() => import('@/pages/AcceptInvitationPage'));
+
+// Minimal loading fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
 
 function App() {
 
@@ -76,17 +79,17 @@ function App() {
                   {/* Auth routes - outside layout */}
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/login" element={<Navigate to="/auth" replace />} />
-                  <Route path="/register" element={<TenantRegistrationPage />} />
-                  <Route path="/reset-password" element={<ResetPasswordPage />} />
-                  <Route path="/setup-password" element={<SetupPasswordPage />} />
-                  <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
+                  <Route path="/register" element={<Suspense fallback={<PageLoader />}><TenantRegistrationPage /></Suspense>} />
+                  <Route path="/reset-password" element={<Suspense fallback={<PageLoader />}><ResetPasswordPage /></Suspense>} />
+                  <Route path="/setup-password" element={<Suspense fallback={<PageLoader />}><SetupPasswordPage /></Suspense>} />
+                  <Route path="/accept-invitation" element={<Suspense fallback={<PageLoader />}><AcceptInvitationPage /></Suspense>} />
                   
-                  {/* Onboarding - outside layout but needs context */}
+                  {/* Onboarding */}
                   <Route path="/onboarding" element={
                     <ContextErrorBoundary>
-                      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+                      <Suspense fallback={<PageLoader />}>
                         <OnboardingPage />
-                      </React.Suspense>
+                      </Suspense>
                     </ContextErrorBoundary>
                   } />
                   
@@ -97,30 +100,30 @@ function App() {
                     </OnboardingGuardOptimized>
                   }>
                     <Route index element={<Navigate to="/app/dashboard" replace />} />
-                    <Route path="dashboard" element={<EnhancedDashboard />} />
-                    <Route path="farmers" element={<FarmersPage />} />
-                    <Route path="ndvi" element={<NDVIPage />} />
-                    <Route path="soil-analysis" element={<SoilAnalysisPage />} />
-                    <Route path="products" element={<ProductsPage />} />
-                    <Route path="campaigns" element={<CampaignsPage />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                    <Route path="dealers" element={<DealersPage />} />
-                    <Route path="sales" element={<SalesDashboard />} />
-                    <Route path="sales/analytics" element={<SalesAnalyticsDashboard />} />
-                    <Route path="sales/predictive" element={<PredictiveSalesDashboard />} />
-                    <Route path="sales/:orderId" element={<OrderDetailsPage />} />
-                    <Route path="cart" element={<CartManagement />} />
-                    <Route path="profile" element={<ProfilePage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                    <Route path="settings/organization" element={<OrganizationManagement />} />
-                    <Route path="settings/users" element={<EnhancedUsersPage />} />
-                    <Route path="settings/appearance" element={<AppearancePage />} />
-                    <Route path="settings/white-label" element={<WhiteLabelConfigPageOptimized />} />
-                    <Route path="settings/notifications" element={<NotificationPage />} />
-                    <Route path="settings/security" element={<SecurityPage />} />
-                    <Route path="settings/data-privacy" element={<DataPrivacyPage />} />
-                    <Route path="settings/api-keys" element={<ApiKeysPage />} />
-                    <Route path="settings/localization" element={<LocalizationPage />} />
+                    <Route path="dashboard" element={<Suspense fallback={<PageLoader />}><EnhancedDashboard /></Suspense>} />
+                    <Route path="farmers" element={<Suspense fallback={<PageLoader />}><FarmersPage /></Suspense>} />
+                    <Route path="ndvi" element={<Suspense fallback={<PageLoader />}><NDVIPage /></Suspense>} />
+                    <Route path="soil-analysis" element={<Suspense fallback={<PageLoader />}><SoilAnalysisPage /></Suspense>} />
+                    <Route path="products" element={<Suspense fallback={<PageLoader />}><ProductsPage /></Suspense>} />
+                    <Route path="campaigns" element={<Suspense fallback={<PageLoader />}><CampaignsPage /></Suspense>} />
+                    <Route path="analytics" element={<Suspense fallback={<PageLoader />}><AnalyticsPage /></Suspense>} />
+                    <Route path="dealers" element={<Suspense fallback={<PageLoader />}><DealersPage /></Suspense>} />
+                    <Route path="sales" element={<Suspense fallback={<PageLoader />}><SalesDashboard /></Suspense>} />
+                    <Route path="sales/analytics" element={<Suspense fallback={<PageLoader />}><SalesAnalyticsDashboard /></Suspense>} />
+                    <Route path="sales/predictive" element={<Suspense fallback={<PageLoader />}><PredictiveSalesDashboard /></Suspense>} />
+                    <Route path="sales/:orderId" element={<Suspense fallback={<PageLoader />}><OrderDetailsPage /></Suspense>} />
+                    <Route path="cart" element={<Suspense fallback={<PageLoader />}><CartManagement /></Suspense>} />
+                    <Route path="profile" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
+                    <Route path="settings" element={<Suspense fallback={<PageLoader />}><SettingsPage /></Suspense>} />
+                    <Route path="settings/organization" element={<Suspense fallback={<PageLoader />}><OrganizationManagement /></Suspense>} />
+                    <Route path="settings/users" element={<Suspense fallback={<PageLoader />}><EnhancedUsersPage /></Suspense>} />
+                    <Route path="settings/appearance" element={<Suspense fallback={<PageLoader />}><AppearancePage /></Suspense>} />
+                    <Route path="settings/white-label" element={<Suspense fallback={<PageLoader />}><WhiteLabelConfigPageOptimized /></Suspense>} />
+                    <Route path="settings/notifications" element={<Suspense fallback={<PageLoader />}><NotificationPage /></Suspense>} />
+                    <Route path="settings/security" element={<Suspense fallback={<PageLoader />}><SecurityPage /></Suspense>} />
+                    <Route path="settings/data-privacy" element={<Suspense fallback={<PageLoader />}><DataPrivacyPage /></Suspense>} />
+                    <Route path="settings/api-keys" element={<Suspense fallback={<PageLoader />}><ApiKeysPage /></Suspense>} />
+                    <Route path="settings/localization" element={<Suspense fallback={<PageLoader />}><LocalizationPage /></Suspense>} />
                   </Route>
                   
                   {/* Legacy redirects */}
@@ -137,7 +140,7 @@ function App() {
                   <Route path="/settings/appearance" element={<Navigate to="/app/settings/appearance" replace />} />
                   
                   {/* Catch all route */}
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
                 </Routes>
               </div>
               <Toaster />
