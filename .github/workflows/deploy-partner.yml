@@ -12,13 +12,13 @@ jobs:
 
     steps:
       # --------------------------------------------------
-      # Checkout
+      # Checkout source
       # --------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
       # --------------------------------------------------
-      # Node setup
+      # Setup Node.js
       # --------------------------------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,7 +27,7 @@ jobs:
           cache: npm
 
       # --------------------------------------------------
-      # Install & build
+      # Install & Build
       # --------------------------------------------------
       - name: Install dependencies
         run: npm ci
@@ -36,44 +36,22 @@ jobs:
         run: npm run build
 
       # --------------------------------------------------
-      # SSH key setup (NO remote shell usage)
+      # Deploy via SCP (SSH key, forced-command SAFE)
       # --------------------------------------------------
-      - name: Setup SSH key
-        run: |
-          set -e
-
-          if [ -z "${{ secrets.PARTNER_SFTP_KEY_B64 }}" ]; then
-            echo "❌ PARTNER_SFTP_KEY_B64 is missing"
-            exit 1
-          fi
-
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          echo "${{ secrets.PARTNER_SFTP_KEY_B64 }}" | base64 --decode > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      # --------------------------------------------------
-      # Deploy via SFTP (forced-command SAFE)
-      # --------------------------------------------------
-      - name: Deploy via SFTP (SSH key)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy via SCP
+        uses: appleboy/scp-action@v0.1.7
         with:
-          protocol: sftp
-          server: ${{ secrets.PARTNER_SFTP_HOST }}
-          port: ${{ secrets.PARTNER_SFTP_PORT }}
-          username: ${{ secrets.PARTNER_SFTP_USER }}
-      
-          # 🔑 THIS IS THE FIX
-          private-key: ${{ secrets.PARTNER_SFTP_KEY }}
-      
-          local-dir: ./dist/
-          server-dir: ${{ secrets.PARTNER_HOST_REMOTE_DIR }}/
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/*.md
+          host: ${{ secrets.PARTNER_SSH_HOST }}
+          username: ${{ secrets.PARTNER_SSH_USER }}
+          key: ${{ secrets.PARTNER_SSH_KEY }}
+          port: ${{ secrets.PARTNER_SSH_PORT }}
+
+          # Upload build output
+          source: "dist/*"
+          target: ${{ secrets.PARTNER_REMOTE_DIR }}
+
+          # Prevent nesting dist/dist
+          strip_components: 1
 
       # --------------------------------------------------
       # Success message
@@ -82,6 +60,6 @@ jobs:
         run: |
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "✅ Partner app deployed successfully"
-          echo "📁 Remote directory: ${{ secrets.PARTNER_HOST_REMOTE_DIR }}"
+          echo "📁 Remote directory: ${{ secrets.PARTNER_REMOTE_DIR }}"
           echo "🌍 Subdomain: partner.kisanshaktiai.in"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
