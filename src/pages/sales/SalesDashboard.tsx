@@ -28,6 +28,9 @@ import {
   Truck,
   RefreshCw,
 } from 'lucide-react';
+import { PageLayout } from '@/components/layout/PageLayout';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContent } from '@/components/layout/PageContent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrdersTable } from './components/OrdersTable';
 import { OrdersKanban } from './components/OrdersKanban';
@@ -80,39 +83,35 @@ export default function SalesDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20 p-6 space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            Sales Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage orders, track deliveries, and analyze performance
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate('/app/sales/predictive')}
-            className="bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 border-primary/20"
-          >
-            <TrendingUp className="mr-2 h-4 w-4" />
-            Predictive Intelligence
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            New Order
-          </Button>
-        </div>
-      </div>
+    <PageLayout>
+      <PageHeader
+        title="Sales Dashboard"
+        description="Manage orders, track deliveries, and analyze performance"
+        actions={
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/app/sales/predictive')}
+              className="bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 border-primary/20"
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Predictive Intelligence
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Button size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              New Order
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Stats Cards */}
+      <PageContent>
+        {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
@@ -224,6 +223,7 @@ export default function SalesDashboard() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </PageContent>
+    </PageLayout>
   );
 }
