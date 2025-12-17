@@ -1,6 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
+import { API_CONFIG, getSoilApiUrl } from '@/config/api.config';
+import { inputValidator, isValidUuid } from '@/services/security/InputValidationService';
+import { withRetry, rateLimitService } from '@/services/security/RateLimitService';
+import { secureLogger } from '@/services/security/SecureLogger';
 
-const SOIL_API_BASE = 'https://kisanshakti-api.onrender.com';
+// Use configurable API URL from environment
+const SOIL_API_BASE = API_CONFIG.SOIL_API.BASE_URL;
 
 export interface SoilHealthData {
   id: string;
@@ -104,20 +109,22 @@ class SoilAnalysisService {
    */
   async checkHealth(): Promise<{ status: string; message?: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      return await withRetry('soil:health', async () => {
+        const response = await fetch(`${this.baseUrl}/health`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Health check failed: ${response.status}`);
+        }
+
+        return await response.json();
       });
-
-      if (!response.ok) {
-        throw new Error(`Health check failed: ${response.status}`);
-      }
-
-      return await response.json();
     } catch (error) {
-      console.error('Health check error:', error);
+      secureLogger.error('Health check error', { error });
       return { status: 'offline', message: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -127,23 +134,30 @@ class SoilAnalysisService {
    * Uses boundary_polygon_old from the API
    */
   async fetchAndSaveSoilData(landId: string, tenantId: string): Promise<any> {
+    // Validate inputs
+    if (!isValidUuid(landId) || !isValidUuid(tenantId)) {
+      throw new Error('Invalid land ID or tenant ID format');
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${tenantId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          land_ids: [landId]
-        })
+      return await withRetry('soil:save', async () => {
+        const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${encodeURIComponent(tenantId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            land_ids: [landId]
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch and save soil data');
+        }
+
+        return await response.json();
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch and save soil data');
-      }
-
-      return await response.json();
     } catch (error) {
-      console.error('Error fetching soil data:', error);
+      secureLogger.error('Error fetching soil data', { landId, error });
       throw error;
     }
   }
@@ -152,23 +166,35 @@ class SoilAnalysisService {
    * Batch fetch and save soil data for multiple lands
    */
   async batchFetchAndSaveSoilData(landIds: string[], tenantId: string): Promise<any> {
+    // Validate inputs
+    if (!isValidUuid(tenantId)) {
+      throw new Error('Invalid tenant ID format');
+    }
+    
+    const invalidIds = landIds.filter(id => !isValidUuid(id));
+    if (invalidIds.length > 0) {
+      throw new Error(`Invalid land ID format: ${invalidIds.join(', ')}`);
+    }
+
     try {
-      const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${tenantId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          land_ids: landIds
-        })
+      return await withRetry('soil:batch', async () => {
+        const response = await fetch(`${this.baseUrl}/soil/save?tenant_id=${encodeURIComponent(tenantId)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            land_ids: landIds
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to batch fetch soil data');
+        }
+
+        return await response.json();
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to batch fetch soil data');
-      }
-
-      return await response.json();
     } catch (error) {
-      console.error('Error batch fetching soil data:', error);
+      secureLogger.error('Error batch fetching soil data', { landIds, error });
       throw error;
     }
   }
