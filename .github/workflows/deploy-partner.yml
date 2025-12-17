@@ -13,7 +13,7 @@ jobs:
       HOST: ${{ secrets.PARTNER_SFTP_HOST }}
       PORT: ${{ secrets.PARTNER_SFTP_PORT }}
       USER: ${{ secrets.PARTNER_SFTP_USER }}
-      REMOTE_DIR: /public_html/partner
+      REMOTE_DIR: public_html/partner
 
     steps:
       - uses: actions/checkout@v4
