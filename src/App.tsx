@@ -11,6 +11,7 @@ import { fontService } from '@/services/FontService';
 import { ContextErrorBoundary } from '@/components/error/ContextErrorBoundary';
 import { EnhancedTenantLayout } from '@/components/layout/EnhancedTenantLayout';
 import { OnboardingGuardOptimized } from '@/components/guards/OnboardingGuardOptimized';
+import { UpdateBanner } from '@/components/version/UpdateBanner';
 
 // Initialize font service on app startup
 fontService.initializeFont();
@@ -72,6 +73,7 @@ function App() {
           <TenantProviderOptimized>
             <Router>
               <div className="min-h-screen bg-background">
+                <UpdateBanner />
                 <Routes>
                   {/* Root redirect */}
                   <Route path="/" element={<Index />} />
