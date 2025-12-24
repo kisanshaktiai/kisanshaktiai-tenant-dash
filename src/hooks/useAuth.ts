@@ -132,13 +132,12 @@ export const useAuth = () => {
       dispatch(setLoading(true));
       dispatch(clearError());
       
-      const redirectUrl = `${window.location.origin}/`;
-      
+      // Delegate email verification to Central Authentication Service
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: 'https://auth.kisanshaktiai.in/verify-email?target=partner',
           data: metadata,
         },
       });
@@ -184,10 +183,9 @@ export const useAuth = () => {
     try {
       dispatch(clearError());
       
-      const redirectUrl = `${window.location.origin}/reset-password`;
-      
+      // Delegate password reset to Central Authentication Service
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
+        redirectTo: 'https://auth.kisanshaktiai.in/reset-password?target=partner',
       });
 
       if (error) {

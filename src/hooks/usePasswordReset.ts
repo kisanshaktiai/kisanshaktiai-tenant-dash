@@ -10,9 +10,9 @@ export const usePasswordReset = () => {
   const sendPasswordReset = async (email: string) => {
     setIsLoading(true);
     try {
-      // Use the current portal's URL for password reset redirect
+      // Delegate password reset to Central Authentication Service
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: 'https://auth.kisanshaktiai.in/reset-password?target=partner',
       });
 
       if (error) {

@@ -133,16 +133,13 @@ class UserProfileService extends BaseApiService {
     }
   }
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      throw this.handleError(error);
-    }
+  /**
+   * Change password - Redirects to Central Authentication Service
+   * Password changes should be handled through:
+   * https://auth.kisanshaktiai.in/reset-password?target=partner
+   */
+  async changePassword(_currentPassword: string, _newPassword: string): Promise<void> {
+    throw new Error('Password changes are handled by the Central Authentication Service. Please use the forgot password flow.');
   }
 
   async getActiveSessions(userId: string, tenantId: string) {

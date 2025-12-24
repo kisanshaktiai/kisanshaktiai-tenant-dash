@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -53,13 +52,16 @@ const ForgotPasswordPage = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
             <CardDescription>
-              We've sent password reset instructions to {email}
+              You'll receive a secure link to reset your password at {email}
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center">
-            <Link to="/login">
+          <CardContent className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              The password reset will be completed on our secure authentication portal.
+            </p>
+            <Link to="/auth">
               <Button variant="outline" className="w-full">
-                Back to login
+                Back to sign in
               </Button>
             </Link>
           </CardContent>
@@ -74,7 +76,7 @@ const ForgotPasswordPage = () => {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Forgot password</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a reset link
+            Enter your email address and you'll receive a secure link to reset your password
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -97,7 +99,7 @@ const ForgotPasswordPage = () => {
           </form>
           <div className="mt-4 text-center text-sm">
             Remember your password?{' '}
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to="/auth" className="text-primary hover:underline">
               Sign in
             </Link>
           </div>

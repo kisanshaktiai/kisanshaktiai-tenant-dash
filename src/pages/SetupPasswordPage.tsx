@@ -1,25 +1,13 @@
+import { Navigate } from 'react-router-dom';
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
+/**
+ * SetupPasswordPage - Redirects to Central Authentication Service
+ * 
+ * Password setup is now handled by the Central Auth Service.
+ * This page only exists to handle legacy routes.
+ */
 const SetupPasswordPage = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Setup Password</CardTitle>
-          <CardDescription>
-            Create a secure password for your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            This feature is under development.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <Navigate to="/auth" replace />;
 };
 
 export default SetupPasswordPage;

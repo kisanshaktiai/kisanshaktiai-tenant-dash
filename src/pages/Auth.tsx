@@ -281,7 +281,7 @@ const Auth = () => {
                         <Mail className="h-12 w-12 mx-auto text-primary mb-2" />
                         <h3 className="text-lg font-semibold">Forgot Password?</h3>
                         <p className="text-sm text-muted-foreground">
-                          Enter your email address and we'll send you a link to reset your password.
+                          Enter your email address and you'll receive a secure link to reset your password.
                         </p>
                       </div>
                       
@@ -318,10 +318,10 @@ const Auth = () => {
                         <Mail className="h-12 w-12 mx-auto text-success mb-2" />
                         <h3 className="text-lg font-semibold text-success mb-2">Check Your Email</h3>
                         <p className="text-sm text-muted-foreground">
-                          We've sent a password reset link to <strong>{resetEmail}</strong>
+                          You'll receive a secure link to reset your password at <strong>{resetEmail}</strong>
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Didn't receive the email? Check your spam folder or try again.
+                          The reset will be completed on our secure authentication portal.
                         </p>
                       </div>
                       
