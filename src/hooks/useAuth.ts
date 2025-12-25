@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSession, setLoading, setError, logout, clearError } from '@/store/slices/authSlice';
@@ -12,51 +12,46 @@ let globalAuthSubscription: any = null;
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const { user, session, loading, initialized, error } = useAppSelector((state) => state.auth);
-  const isMountedRef = useRef(true);
-  const sessionReadyRef = useRef(false);
 
-  const handleAuthStateChange = useCallback((event: string, session: any) => {
-    if (!isMountedRef.current) return;
-    
-    console.log('[useAuth] Auth state change:', event);
-    
-    switch (event) {
-      case 'INITIAL_SESSION':
-        dispatch(setSession(session));
-        dispatch(clearError());
-        sessionReadyRef.current = !!session;
-        break;
-      case 'SIGNED_IN':
-        dispatch(setSession(session));
-        dispatch(clearError());
-        sessionReadyRef.current = true;
-        break;
-      case 'SIGNED_OUT':
-        dispatch(logout());
-        dispatch(clearTenantData());
-        // Clear auth storage on sign out
-        clearAuthStorage();
-        sessionReadyRef.current = false;
-        break;
-      case 'TOKEN_REFRESHED':
-        dispatch(setSession(session));
-        dispatch(clearError());
-        sessionReadyRef.current = true;
-        break;
-      case 'USER_UPDATED':
-        dispatch(setSession(session));
-        break;
-      default:
-        if (session) {
+  // IMPORTANT: This handler must remain valid even if the component that first
+  // initialized auth later unmounts. It dispatches to Redux only (safe globally).
+  const handleAuthStateChange = useCallback(
+    (event: string, session: any) => {
+      // Avoid logging sensitive auth data; keep event name only.
+      console.log('[useAuth] Auth state change:', event);
+
+      switch (event) {
+        case 'INITIAL_SESSION':
           dispatch(setSession(session));
-          sessionReadyRef.current = true;
-        }
-    }
-  }, [dispatch]);
+          dispatch(clearError());
+          break;
+        case 'SIGNED_IN':
+          dispatch(setSession(session));
+          dispatch(clearError());
+          break;
+        case 'SIGNED_OUT':
+          dispatch(logout());
+          dispatch(clearTenantData());
+          // Clear auth storage on sign out
+          clearAuthStorage();
+          break;
+        case 'TOKEN_REFRESHED':
+          dispatch(setSession(session));
+          dispatch(clearError());
+          break;
+        case 'USER_UPDATED':
+          dispatch(setSession(session));
+          break;
+        default:
+          if (session) {
+            dispatch(setSession(session));
+          }
+      }
+    },
+    [dispatch]
+  );
 
   useEffect(() => {
-    isMountedRef.current = true;
-
     // Only initialize once globally
     if (globalAuthInitialized) {
       return;
@@ -66,25 +61,28 @@ export const useAuth = () => {
     const initializeAuth = async () => {
       try {
         dispatch(setLoading(true));
-        
+
         // Set up auth state listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(handleAuthStateChange);
         globalAuthSubscription = subscription;
 
         // Get initial session with timeout
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Session timeout')), 3000)
         );
 
         try {
-          const { data: { session: initialSession }, error: sessionError } = await Promise.race([
-            supabase.auth.getSession(),
-            timeoutPromise
-          ]) as any;
-          
+          const {
+            data: { session: initialSession },
+            error: sessionError,
+          } =
+            (await Promise.race([supabase.auth.getSession(), timeoutPromise])) as any;
+
           if (sessionError) {
             console.error('[useAuth] Session error:', sessionError);
-            
+
             // Handle stale refresh token errors
             if (isRefreshTokenError(sessionError)) {
               console.log('[useAuth] Clearing stale session data...');
@@ -99,13 +97,13 @@ export const useAuth = () => {
           }
         } catch (error: any) {
           console.error('[useAuth] Init error:', error);
-          
+
           // Handle refresh token errors during initialization
           if (isRefreshTokenError(error)) {
             console.log('[useAuth] Clearing stale tokens during init...');
             clearAuthStorage();
           }
-          
+
           dispatch(setSession(null));
         }
 
@@ -113,6 +111,8 @@ export const useAuth = () => {
       } catch (error) {
         console.error('[useAuth] Fatal init error:', error);
         handleAuthError(error);
+        // Ensure initialized=true so the app doesn't get stuck in a loading loop
+        dispatch(setSession(null));
         dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
         dispatch(setLoading(false));
       }
@@ -120,16 +120,15 @@ export const useAuth = () => {
 
     initializeAuth();
 
-    return () => {
-      isMountedRef.current = false;
-    };
+    // Intentionally no cleanup: subscription is global for the lifetime of the SPA.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, handleAuthStateChange]);
 
   const signIn = async (email: string, password: string) => {
     try {
       dispatch(setLoading(true));
       dispatch(clearError());
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -154,7 +153,7 @@ export const useAuth = () => {
     try {
       dispatch(setLoading(true));
       dispatch(clearError());
-      
+
       // Delegate email verification to Central Authentication Service
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -184,9 +183,9 @@ export const useAuth = () => {
     try {
       dispatch(setLoading(true));
       dispatch(clearError());
-      
+
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         dispatch(setError(error.message));
         return { error };
@@ -205,7 +204,7 @@ export const useAuth = () => {
   const resetPassword = async (email: string) => {
     try {
       dispatch(clearError());
-      
+
       // Delegate password reset to Central Authentication Service
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: 'https://auth.kisanshaktiai.in/reset-password?target=partner',
@@ -227,7 +226,7 @@ export const useAuth = () => {
   const refreshSession = async () => {
     try {
       const { data, error } = await supabase.auth.refreshSession();
-      
+
       if (error) {
         console.error('useAuth: Session refresh failed:', error);
         return { error };
@@ -243,35 +242,39 @@ export const useAuth = () => {
 
   const isSessionExpired = useCallback(() => {
     if (!session?.expires_at) return false;
-    
+
     // expires_at is a Unix timestamp in seconds, convert to milliseconds
-    const expiresAt = typeof session.expires_at === 'number' 
-      ? session.expires_at * 1000 
-      : new Date(session.expires_at).getTime();
+    const expiresAt =
+      typeof session.expires_at === 'number'
+        ? session.expires_at * 1000
+        : new Date(session.expires_at).getTime();
     const now = Date.now();
-    
+
     return now >= expiresAt;
   }, [session?.expires_at]);
 
   // Helper function to check if session is ready
   const isSessionReady = useCallback(() => {
-    return sessionReadyRef.current && !!session && !!user;
+    return !!session && !!user;
   }, [session, user]);
 
   // Helper function to wait for session to be ready
-  const waitForSessionReady = useCallback(async (timeout = 5000): Promise<boolean> => {
-    const startTime = Date.now();
-    
-    while (!isSessionReady()) {
-      if (Date.now() - startTime > timeout) {
-        console.error('useAuth: Timeout waiting for session to be ready');
-        return false;
+  const waitForSessionReady = useCallback(
+    async (timeout = 5000): Promise<boolean> => {
+      const startTime = Date.now();
+
+      while (!isSessionReady()) {
+        if (Date.now() - startTime > timeout) {
+          console.error('useAuth: Timeout waiting for session to be ready');
+          return false;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    return true;
-  }, [isSessionReady]);
+
+      return true;
+    },
+    [isSessionReady]
+  );
 
   return {
     user,
@@ -290,3 +293,4 @@ export const useAuth = () => {
     waitForSessionReady,
   };
 };
+
