@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, LogOut, AlertCircle } from 'lucide-react';
 import { jwtSyncService } from '@/services/JWTSyncService';
 import { supabase } from '@/integrations/supabase/client';
+import { clearAuthStorage } from '@/utils/authCleanup';
 import { useToast } from '@/hooks/use-toast';
 
 interface SessionRecoveryProps {
@@ -60,9 +61,9 @@ export const SessionRecovery = ({ error, onRetry }: SessionRecoveryProps) => {
     try {
       console.log('[SessionRecovery] Signing out for re-login...');
       
-      // Clear local state
+      // Clear all auth data using the centralized utility
       jwtSyncService.reset();
-      localStorage.clear();
+      clearAuthStorage();
       
       // Sign out from Supabase
       await supabase.auth.signOut();
@@ -77,6 +78,7 @@ export const SessionRecovery = ({ error, onRetry }: SessionRecoveryProps) => {
       console.error('[SessionRecovery] Sign out failed:', err);
       
       // Force navigation anyway
+      clearAuthStorage();
       navigate('/auth', { replace: true });
     }
   };

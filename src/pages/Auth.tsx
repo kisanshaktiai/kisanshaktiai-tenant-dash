@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { jwtSyncService } from '@/services/JWTSyncService';
+import { clearAuthStorage } from '@/utils/authCleanup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,12 @@ const Auth = () => {
   // Handle state from navigation (e.g., from password setup)
   const locationState = location.state as { email?: string; message?: string } | null;
 
+  // Clear any stale auth data when arriving at auth page
+  useEffect(() => {
+    // Reset JWT sync state to ensure fresh start
+    jwtSyncService.reset();
+  }, []);
+
   useEffect(() => {
     if (user) {
       navigate('/', { replace: true });
@@ -59,23 +66,37 @@ const Auth = () => {
     setError(null);
     setIsLoading(true);
 
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      setError(error.message);
-      toast({
-        variant: "destructive",
-        title: "Sign in failed",
-        description: error.message,
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    // Ensure JWT is synchronized before navigating
     try {
+      // Clear any stale tokens BEFORE attempting sign in
+      console.log('[Auth] Clearing stale tokens before sign in...');
+      clearAuthStorage();
+      jwtSyncService.reset();
+
+      // Small delay to ensure storage is cleared
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const { error: signInError } = await signIn(email, password);
+      
+      if (signInError) {
+        setError(signInError.message);
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: signInError.message,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Ensure JWT is synchronized before navigating
       setIsPreparingWorkspace(true);
-      await jwtSyncService.ensureJWTReady();
+      
+      try {
+        await jwtSyncService.ensureJWTReady();
+      } catch (jwtError) {
+        console.log('[Auth] JWT sync skipped, continuing with login...');
+        // Don't block login if JWT sync fails - the session is still valid
+      }
       
       toast({
         title: 'Welcome back!',
@@ -83,11 +104,12 @@ const Auth = () => {
       });
       
       navigate('/');
-    } catch {
-      setError('Failed to synchronize authentication. Please try again.');
+    } catch (err) {
+      console.error('[Auth] Sign in error:', err);
+      setError('Failed to sign in. Please try again.');
       toast({
         variant: "destructive",
-        title: "Authentication Sync Failed",
+        title: "Sign In Failed",
         description: "Please try signing in again.",
       });
     } finally {

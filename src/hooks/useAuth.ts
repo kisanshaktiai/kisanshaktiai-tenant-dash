@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSession, setLoading, setError, logout, clearError } from '@/store/slices/authSlice';
 import { clearTenantData } from '@/store/slices/tenantSlice';
+import { clearAuthStorage, isRefreshTokenError, handleAuthError } from '@/utils/authCleanup';
 
 // Global singleton to prevent multiple initializations across components
 let globalAuthInitialized = false;
@@ -16,6 +17,8 @@ export const useAuth = () => {
 
   const handleAuthStateChange = useCallback((event: string, session: any) => {
     if (!isMountedRef.current) return;
+    
+    console.log('[useAuth] Auth state change:', event);
     
     switch (event) {
       case 'INITIAL_SESSION':
@@ -31,7 +34,8 @@ export const useAuth = () => {
       case 'SIGNED_OUT':
         dispatch(logout());
         dispatch(clearTenantData());
-        localStorage.removeItem('supabase.auth.token');
+        // Clear auth storage on sign out
+        clearAuthStorage();
         sessionReadyRef.current = false;
         break;
       case 'TOKEN_REFRESHED':
@@ -69,7 +73,7 @@ export const useAuth = () => {
 
         // Get initial session with timeout
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 2000)
+          setTimeout(() => reject(new Error('Session timeout')), 3000)
         );
 
         try {
@@ -79,17 +83,36 @@ export const useAuth = () => {
           ]) as any;
           
           if (sessionError) {
-            dispatch(setError(sessionError.message));
-            dispatch(setSession(null));
+            console.error('[useAuth] Session error:', sessionError);
+            
+            // Handle stale refresh token errors
+            if (isRefreshTokenError(sessionError)) {
+              console.log('[useAuth] Clearing stale session data...');
+              clearAuthStorage();
+              dispatch(setSession(null));
+            } else {
+              dispatch(setError(sessionError.message));
+              dispatch(setSession(null));
+            }
           } else {
             dispatch(setSession(initialSession));
           }
-        } catch {
+        } catch (error: any) {
+          console.error('[useAuth] Init error:', error);
+          
+          // Handle refresh token errors during initialization
+          if (isRefreshTokenError(error)) {
+            console.log('[useAuth] Clearing stale tokens during init...');
+            clearAuthStorage();
+          }
+          
           dispatch(setSession(null));
         }
 
         dispatch(setLoading(false));
       } catch (error) {
+        console.error('[useAuth] Fatal init error:', error);
+        handleAuthError(error);
         dispatch(setError(error instanceof Error ? error.message : 'Authentication error'));
         dispatch(setLoading(false));
       }

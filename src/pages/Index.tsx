@@ -3,7 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTenantContextOptimized } from '@/contexts/TenantContextOptimized';
 import { useJWTReady } from '@/hooks/useJWTReady';
-import { SessionRecovery } from '@/components/auth/SessionRecovery';
 import { Loader2 } from 'lucide-react';
 
 // Memoized loading component
@@ -39,28 +38,26 @@ const Index = () => {
     // Session expired
     if (isSessionExpired()) return '/auth-expired';
     
-    // JWT not ready
-    if (!jwtReady) return null;
+    // JWT error - don't block, just proceed (session is still valid)
+    // JWT sync is optional optimization, not a requirement
+    if (jwtError) {
+      console.log('[Index] JWT error, but continuing with valid session');
+    }
     
     // Has tenant - go to dashboard
     if (currentTenant || userTenants.length > 0) return '/app/dashboard';
     
-    // Tenant loading
+    // Tenant loading - wait unless timeout
     if (tenantLoading && !loadingTimeout) return null;
     
     // No tenants or error - go to onboarding
     return '/onboarding';
-  }, [initialized, loading, user, session, isSessionExpired, jwtReady, currentTenant, userTenants.length, tenantLoading, loadingTimeout]);
+  }, [initialized, loading, user, session, isSessionExpired, jwtError, currentTenant, userTenants.length, tenantLoading, loadingTimeout]);
 
   // Handle expired session
   if (navigationTarget === '/auth-expired') {
     signOut();
     return <Navigate to="/auth" replace />;
-  }
-
-  // Handle JWT error
-  if (jwtError && !jwtReady) {
-    return <SessionRecovery error={jwtError} />;
   }
 
   // Navigate if target determined
@@ -73,8 +70,9 @@ const Index = () => {
     return <LoadingScreen message="Checking authentication..." />;
   }
 
-  if (!jwtReady) {
-    return <LoadingScreen message="Synchronizing session..." />;
+  // Shorter timeout for JWT - don't show if it's taking too long
+  if (!jwtReady && !jwtError && !loadingTimeout) {
+    return <LoadingScreen message="Preparing workspace..." />;
   }
 
   return <LoadingScreen message="Loading workspace..." />;
