@@ -57,7 +57,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   // If auth is initialized but no user, redirect to login
   if (authInitialized && !user) {
     console.log('AuthGuard: No user after auth initialization, redirecting to login');
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // If we don't have a user yet but auth isn't fully initialized, wait briefly
