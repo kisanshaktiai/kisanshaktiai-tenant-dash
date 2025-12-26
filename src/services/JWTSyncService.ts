@@ -1,8 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+import { isRefreshTokenError, clearAuthStorage } from '@/utils/authCleanup';
 
 /**
  * Optimized JWT synchronization service.
  * Ensures JWT tokens are ready before database queries.
+ * Handles stale token errors gracefully.
  */
 class JWTSyncService {
   private isReady = false;
@@ -18,14 +20,38 @@ class JWTSyncService {
   }
 
   private async verifyJWT(): Promise<void> {
-    const maxRetries = 3;
+    const maxRetries = 2;
+    const isDev = import.meta.env.DEV;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const { data: sessionData, error: refreshError } = await supabase.auth.refreshSession();
+        // First check if we have a valid session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (refreshError || !sessionData?.session) {
-          throw new Error('Session refresh failed');
+        if (sessionError) {
+          if (isRefreshTokenError(sessionError)) {
+            clearAuthStorage();
+            throw new Error('Session expired - please sign in again');
+          }
+          throw sessionError;
+        }
+
+        // No session means user needs to sign in
+        if (!sessionData?.session) {
+          this.isReady = false;
+          this.readyPromise = null;
+          return;
+        }
+
+        // Try to refresh only if we have an existing session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          if (isRefreshTokenError(refreshError)) {
+            clearAuthStorage();
+            throw new Error('Session expired - please sign in again');
+          }
+          // If refresh fails but we have a session, continue with existing session
         }
 
         // Minimal propagation delay - only on retry
@@ -33,18 +59,23 @@ class JWTSyncService {
           await new Promise(resolve => setTimeout(resolve, 200 * attempt));
         }
 
-        // Quick verification
-        const { data, error: jwtError } = await supabase.rpc('debug_jwt_status');
-        
-        if (!jwtError && data?.[0]?.jwt_present && data[0]?.current_user_id) {
+        // Quick verification using session check instead of RPC
+        const currentSession = refreshData?.session || sessionData?.session;
+        if (currentSession?.user?.id) {
+          if (isDev) console.log('[JWTSync] JWT verified');
           this.isReady = true;
           this.readyPromise = null;
           this.notifyListeners(true);
           return;
         }
-
-        attempt++;
-      } catch {
+        
+      } catch (error: any) {
+        if (isRefreshTokenError(error)) {
+          clearAuthStorage();
+          this.readyPromise = null;
+          throw new Error('Session expired - please sign in again');
+        }
+        
         if (attempt >= maxRetries - 1) {
           this.readyPromise = null;
           throw new Error('JWT synchronization failed');

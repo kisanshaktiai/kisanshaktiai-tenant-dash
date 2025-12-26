@@ -1,9 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { jwtSyncService } from '@/services/JWTSyncService';
+import { validateLoginCredentials, validateResetEmail } from '@/utils/authValidation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +34,12 @@ const Auth = () => {
   // Handle state from navigation (e.g., from password setup)
   const locationState = location.state as { email?: string; message?: string } | null;
 
+  // Clear any stale auth data when arriving at auth page
+  useEffect(() => {
+    // Reset JWT sync state to ensure fresh start
+    jwtSyncService.reset();
+  }, []);
+
   useEffect(() => {
     if (user) {
       navigate('/', { replace: true });
@@ -57,37 +64,57 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      setError(error.message);
-      toast({
-        variant: "destructive",
-        title: "Sign in failed",
-        description: error.message,
-      });
-      setIsLoading(false);
+    // Validate inputs with Zod
+    const validation = validateLoginCredentials(email, password);
+    if (validation.success === false) {
+      setError(validation.error);
       return;
     }
 
-    // Ensure JWT is synchronized before navigating
+    setIsLoading(true);
+
     try {
+      // Reset JWT sync state only (NOT auth storage - that causes the race condition)
+      jwtSyncService.reset();
+
+      const { data, error: signInError } = await signIn(validation.data.email, validation.data.password);
+      
+      if (signInError) {
+        setError(signInError.message);
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: signInError.message,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify we got a session before navigating
+      if (!data?.session) {
+        setError('Authentication failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
       setIsPreparingWorkspace(true);
-      await jwtSyncService.ensureJWTReady();
+      
+      // Brief delay to ensure Redux state is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       toast({
         title: 'Welcome back!',
         description: 'Loading your workspace...',
       });
       
-      navigate('/');
+      // Navigate directly to dashboard with replace to prevent back-button issues
+      navigate('/app/dashboard', { replace: true });
     } catch {
-      setError('Failed to synchronize authentication. Please try again.');
+      setError('Failed to sign in. Please try again.');
       toast({
         variant: "destructive",
-        title: "Authentication Sync Failed",
+        title: "Sign In Failed",
         description: "Please try signing in again.",
       });
     } finally {
@@ -99,8 +126,15 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate email with Zod
+    const validation = validateResetEmail(resetEmail);
+    if (validation.success === false) {
+      setError(validation.error);
+      return;
+    }
     
-    const result = await sendPasswordReset(resetEmail);
+    const result = await sendPasswordReset(validation.data.email);
     
     if (result.success) {
       setResetSent(true);
@@ -117,7 +151,14 @@ const Auth = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
+    <>
+      <Helmet>
+        <title>Sign In | AgriTenant Hub - Agricultural Management Platform</title>
+        <meta name="description" content="Sign in to AgriTenant Hub - the comprehensive platform for agricultural organizations to manage farmers, track growth, and drive data-driven decisions." />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="/auth" />
+      </Helmet>
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
         {/* Hero Section */}
         <div className="hidden lg:block space-y-8">
@@ -281,7 +322,7 @@ const Auth = () => {
                         <Mail className="h-12 w-12 mx-auto text-primary mb-2" />
                         <h3 className="text-lg font-semibold">Forgot Password?</h3>
                         <p className="text-sm text-muted-foreground">
-                          Enter your email address and we'll send you a link to reset your password.
+                          Enter your email address and you'll receive a secure link to reset your password.
                         </p>
                       </div>
                       
@@ -318,10 +359,10 @@ const Auth = () => {
                         <Mail className="h-12 w-12 mx-auto text-success mb-2" />
                         <h3 className="text-lg font-semibold text-success mb-2">Check Your Email</h3>
                         <p className="text-sm text-muted-foreground">
-                          We've sent a password reset link to <strong>{resetEmail}</strong>
+                          You'll receive a secure link to reset your password at <strong>{resetEmail}</strong>
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Didn't receive the email? Check your spam folder or try again.
+                          The reset will be completed on our secure authentication portal.
                         </p>
                       </div>
                       
@@ -340,7 +381,8 @@ const Auth = () => {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
