@@ -126,16 +126,23 @@ export const useAuth = () => {
 
       if (error) {
         dispatch(setError(error.message));
+        dispatch(setLoading(false));
         return { data: null, error };
       }
 
+      // CRITICAL: Immediately dispatch session to Redux BEFORE returning
+      // This ensures guards see the session immediately, preventing redirect loops
+      if (data?.session) {
+        dispatch(setSession(data.session));
+      }
+
+      dispatch(setLoading(false));
       return { data, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
       dispatch(setError(errorMessage));
-      return { data: null, error: { message: errorMessage } };
-    } finally {
       dispatch(setLoading(false));
+      return { data: null, error: { message: errorMessage } };
     }
   };
 

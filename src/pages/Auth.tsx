@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { jwtSyncService } from '@/services/JWTSyncService';
-import { clearAuthStorage } from '@/utils/authCleanup';
 import { validateLoginCredentials, validateResetEmail } from '@/utils/authValidation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -76,14 +75,10 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Clear any stale tokens BEFORE attempting sign in
-      clearAuthStorage();
+      // Reset JWT sync state only (NOT auth storage - that causes the race condition)
       jwtSyncService.reset();
 
-      // Small delay to ensure storage is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const { error: signInError } = await signIn(validation.data.email, validation.data.password);
+      const { data, error: signInError } = await signIn(validation.data.email, validation.data.password);
       
       if (signInError) {
         setError(signInError.message);
@@ -96,21 +91,25 @@ const Auth = () => {
         return;
       }
 
-      // Ensure JWT is synchronized before navigating
+      // Verify we got a session before navigating
+      if (!data?.session) {
+        setError('Authentication failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
       setIsPreparingWorkspace(true);
       
-      try {
-        await jwtSyncService.ensureJWTReady();
-      } catch {
-        // Don't block login if JWT sync fails - the session is still valid
-      }
+      // Brief delay to ensure Redux state is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       toast({
         title: 'Welcome back!',
         description: 'Loading your workspace...',
       });
       
-      navigate('/');
+      // Navigate directly to dashboard with replace to prevent back-button issues
+      navigate('/app/dashboard', { replace: true });
     } catch {
       setError('Failed to sign in. Please try again.');
       toast({
