@@ -1,10 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '@/hooks/useAuth';
 import { usePasswordReset } from '@/hooks/usePasswordReset';
 import { jwtSyncService } from '@/services/JWTSyncService';
 import { clearAuthStorage } from '@/utils/authCleanup';
+import { validateLoginCredentials, validateResetEmail } from '@/utils/authValidation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,18 +65,25 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate inputs with Zod
+    const validation = validateLoginCredentials(email, password);
+    if (validation.success === false) {
+      setError(validation.error);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       // Clear any stale tokens BEFORE attempting sign in
-      console.log('[Auth] Clearing stale tokens before sign in...');
       clearAuthStorage();
       jwtSyncService.reset();
 
       // Small delay to ensure storage is cleared
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError } = await signIn(validation.data.email, validation.data.password);
       
       if (signInError) {
         setError(signInError.message);
@@ -93,8 +101,7 @@ const Auth = () => {
       
       try {
         await jwtSyncService.ensureJWTReady();
-      } catch (jwtError) {
-        console.log('[Auth] JWT sync skipped, continuing with login...');
+      } catch {
         // Don't block login if JWT sync fails - the session is still valid
       }
       
@@ -104,8 +111,7 @@ const Auth = () => {
       });
       
       navigate('/');
-    } catch (err) {
-      console.error('[Auth] Sign in error:', err);
+    } catch {
       setError('Failed to sign in. Please try again.');
       toast({
         variant: "destructive",
@@ -121,8 +127,15 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Validate email with Zod
+    const validation = validateResetEmail(resetEmail);
+    if (validation.success === false) {
+      setError(validation.error);
+      return;
+    }
     
-    const result = await sendPasswordReset(resetEmail);
+    const result = await sendPasswordReset(validation.data.email);
     
     if (result.success) {
       setResetSent(true);
@@ -139,7 +152,14 @@ const Auth = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
+    <>
+      <Helmet>
+        <title>Sign In | AgriTenant Hub - Agricultural Management Platform</title>
+        <meta name="description" content="Sign in to AgriTenant Hub - the comprehensive platform for agricultural organizations to manage farmers, track growth, and drive data-driven decisions." />
+        <meta name="robots" content="noindex, nofollow" />
+        <link rel="canonical" href="/auth" />
+      </Helmet>
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-primary/5 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
         {/* Hero Section */}
         <div className="hidden lg:block space-y-8">
@@ -362,7 +382,8 @@ const Auth = () => {
           </Card>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,26 +15,14 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { currentTenant, userTenants, loading: tenantLoading, isInitialized: tenantInitialized } = useTenantAuth();
   const location = useLocation();
 
-  console.log('AuthGuard: State check:', {
-    user: !!user,
-    authLoading,
-    authInitialized,
-    tenantLoading,
-    tenantInitialized,
-    currentTenant: !!currentTenant,
-    userTenantsCount: userTenants.length,
-    pathname: location.pathname
-  });
-
-  // Handle auth errors
+  // Handle auth errors (no sensitive data logged)
   if (authError) {
-    console.error('AuthGuard: Auth error detected:', authError);
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Authentication error: {authError}
+            Authentication error occurred. Please try again.
             <br />
             <button 
               onClick={() => window.location.reload()} 
@@ -56,7 +43,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
   // If auth is initialized but no user, redirect to login
   if (authInitialized && !user) {
-    console.log('AuthGuard: No user after auth initialization, redirecting to login');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
@@ -74,13 +60,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
     // If tenant is initialized but no tenants exist, redirect to tenant registration
     if (tenantInitialized && userTenants.length === 0) {
-      console.log('AuthGuard: No tenants found, redirecting to tenant registration');
       return <Navigate to="/register-tenant" replace />;
     }
 
     // If has tenants but no current tenant set, redirect to onboarding
     if (tenantInitialized && userTenants.length > 0 && !currentTenant) {
-      console.log('AuthGuard: Has tenants but no current tenant, redirecting to onboarding');
       return <Navigate to="/onboarding" replace />;
     }
 

@@ -15,11 +15,9 @@ export const useAuth = () => {
 
   // IMPORTANT: This handler must remain valid even if the component that first
   // initialized auth later unmounts. It dispatches to Redux only (safe globally).
+  // No sensitive data (tokens, emails, session details) is logged.
   const handleAuthStateChange = useCallback(
     (event: string, session: any) => {
-      // Avoid logging sensitive auth data; keep event name only.
-      console.log('[useAuth] Auth state change:', event);
-
       switch (event) {
         case 'INITIAL_SESSION':
           dispatch(setSession(session));
@@ -32,7 +30,6 @@ export const useAuth = () => {
         case 'SIGNED_OUT':
           dispatch(logout());
           dispatch(clearTenantData());
-          // Clear auth storage on sign out
           clearAuthStorage();
           break;
         case 'TOKEN_REFRESHED':
@@ -81,11 +78,8 @@ export const useAuth = () => {
             (await Promise.race([supabase.auth.getSession(), timeoutPromise])) as any;
 
           if (sessionError) {
-            console.error('[useAuth] Session error:', sessionError);
-
-            // Handle stale refresh token errors
+            // Handle stale refresh token errors without logging sensitive details
             if (isRefreshTokenError(sessionError)) {
-              console.log('[useAuth] Clearing stale session data...');
               clearAuthStorage();
               dispatch(setSession(null));
             } else {
@@ -96,11 +90,8 @@ export const useAuth = () => {
             dispatch(setSession(initialSession));
           }
         } catch (error: any) {
-          console.error('[useAuth] Init error:', error);
-
           // Handle refresh token errors during initialization
           if (isRefreshTokenError(error)) {
-            console.log('[useAuth] Clearing stale tokens during init...');
             clearAuthStorage();
           }
 
@@ -109,7 +100,6 @@ export const useAuth = () => {
 
         dispatch(setLoading(false));
       } catch (error) {
-        console.error('[useAuth] Fatal init error:', error);
         handleAuthError(error);
         // Ensure initialized=true so the app doesn't get stuck in a loading loop
         dispatch(setSession(null));
@@ -228,14 +218,12 @@ export const useAuth = () => {
       const { data, error } = await supabase.auth.refreshSession();
 
       if (error) {
-        console.error('useAuth: Session refresh failed:', error);
         return { error };
       }
 
       return { data, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Session refresh failed';
-      console.error('useAuth: Session refresh error:', errorMessage);
       return { error: { message: errorMessage } };
     }
   };
@@ -265,7 +253,6 @@ export const useAuth = () => {
 
       while (!isSessionReady()) {
         if (Date.now() - startTime > timeout) {
-          console.error('useAuth: Timeout waiting for session to be ready');
           return false;
         }
         await new Promise((resolve) => setTimeout(resolve, 100));
