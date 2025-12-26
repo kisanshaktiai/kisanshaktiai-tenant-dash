@@ -17,13 +17,13 @@ const LoadingScreen = ({ message }: { message: string }) => (
 
 const Index = () => {
   const { user, session, initialized, loading, isSessionExpired, signOut } = useAuth();
-  const { currentTenant, loading: tenantLoading, error: tenantError, userTenants } = useTenantContextOptimized();
+  const { currentTenant, loading: tenantLoading, userTenants } = useTenantContextOptimized();
   const { isReady: jwtReady, error: jwtError } = useJWTReady();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Set timeout to prevent infinite loading
   useEffect(() => {
-    const timeout = setTimeout(() => setLoadingTimeout(true), 4000);
+    const timeout = setTimeout(() => setLoadingTimeout(true), 3000);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -38,13 +38,7 @@ const Index = () => {
     // Session expired
     if (isSessionExpired()) return '/auth-expired';
     
-    // JWT error - don't block, just proceed (session is still valid)
-    // JWT sync is optional optimization, not a requirement
-    if (jwtError) {
-      console.log('[Index] JWT error, but continuing with valid session');
-    }
-    
-    // Has tenant - go to dashboard
+    // Has tenant - go to dashboard (don't wait for JWT)
     if (currentTenant || userTenants.length > 0) return '/app/dashboard';
     
     // Tenant loading - wait unless timeout
@@ -52,7 +46,7 @@ const Index = () => {
     
     // No tenants or error - go to onboarding
     return '/onboarding';
-  }, [initialized, loading, user, session, isSessionExpired, jwtError, currentTenant, userTenants.length, tenantLoading, loadingTimeout]);
+  }, [initialized, loading, user, session, isSessionExpired, currentTenant, userTenants.length, tenantLoading, loadingTimeout]);
 
   // Handle expired session
   if (navigationTarget === '/auth-expired') {
@@ -68,11 +62,6 @@ const Index = () => {
   // Show appropriate loading state
   if (!initialized || loading) {
     return <LoadingScreen message="Checking authentication..." />;
-  }
-
-  // Shorter timeout for JWT - don't show if it's taking too long
-  if (!jwtReady && !jwtError && !loadingTimeout) {
-    return <LoadingScreen message="Preparing workspace..." />;
   }
 
   return <LoadingScreen message="Loading workspace..." />;

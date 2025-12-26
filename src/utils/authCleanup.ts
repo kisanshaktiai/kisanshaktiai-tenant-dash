@@ -22,15 +22,17 @@ const AUTH_STORAGE_KEYS = [
  * Clear all authentication data from localStorage and sessionStorage
  */
 export const clearAuthStorage = (): void => {
-  console.log('[AuthCleanup] Clearing all auth storage...');
+  if (import.meta.env.DEV) {
+    console.log('[AuthCleanup] Clearing all auth storage...');
+  }
   
   // Clear specific keys
   AUTH_STORAGE_KEYS.forEach(key => {
     try {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
-    } catch (error) {
-      console.error(`[AuthCleanup] Failed to remove ${key}:`, error);
+    } catch {
+      // Silently fail - not critical
     }
   });
 
@@ -44,9 +46,8 @@ export const clearAuthStorage = (): void => {
       }
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log(`[AuthCleanup] Cleared ${keysToRemove.length} Supabase storage items`);
-  } catch (error) {
-    console.error('[AuthCleanup] Error clearing Supabase storage:', error);
+  } catch {
+    // Silently fail - not critical
   }
 };
 
@@ -73,7 +74,6 @@ export const isRefreshTokenError = (error: any): boolean => {
  * Clear auth storage and redirect to login page
  */
 export const clearAuthAndRedirect = (redirectPath = '/auth'): void => {
-  console.log('[AuthCleanup] Clearing auth and redirecting to:', redirectPath);
   clearAuthStorage();
   window.location.href = redirectPath;
 };
@@ -82,10 +82,7 @@ export const clearAuthAndRedirect = (redirectPath = '/auth'): void => {
  * Handle authentication errors gracefully
  */
 export const handleAuthError = (error: any): void => {
-  console.error('[AuthCleanup] Auth error:', error);
-  
   if (isRefreshTokenError(error)) {
-    console.log('[AuthCleanup] Detected stale refresh token, clearing storage...');
     clearAuthStorage();
   }
 };

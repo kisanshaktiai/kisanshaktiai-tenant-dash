@@ -21,19 +21,15 @@ class JWTSyncService {
 
   private async verifyJWT(): Promise<void> {
     const maxRetries = 2;
+    const isDev = import.meta.env.DEV;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        console.log(`[JWTSync] Verification attempt ${attempt + 1}/${maxRetries}`);
-        
         // First check if we have a valid session
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error('[JWTSync] Session error:', sessionError);
-          
           if (isRefreshTokenError(sessionError)) {
-            console.log('[JWTSync] Stale token detected, clearing storage...');
             clearAuthStorage();
             throw new Error('Session expired - please sign in again');
           }
@@ -42,26 +38,20 @@ class JWTSyncService {
 
         // No session means user needs to sign in
         if (!sessionData?.session) {
-          console.log('[JWTSync] No session found, user needs to sign in');
           this.isReady = false;
           this.readyPromise = null;
-          return; // Don't throw, just return - user is not authenticated
+          return;
         }
 
         // Try to refresh only if we have an existing session
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError) {
-          console.error('[JWTSync] Refresh error:', refreshError);
-          
           if (isRefreshTokenError(refreshError)) {
-            console.log('[JWTSync] Stale refresh token, clearing storage...');
             clearAuthStorage();
             throw new Error('Session expired - please sign in again');
           }
-          
           // If refresh fails but we have a session, continue with existing session
-          console.log('[JWTSync] Refresh failed, using existing session');
         }
 
         // Minimal propagation delay - only on retry
@@ -72,18 +62,14 @@ class JWTSyncService {
         // Quick verification using session check instead of RPC
         const currentSession = refreshData?.session || sessionData?.session;
         if (currentSession?.user?.id) {
-          console.log('[JWTSync] JWT verified successfully');
+          if (isDev) console.log('[JWTSync] JWT verified');
           this.isReady = true;
           this.readyPromise = null;
           this.notifyListeners(true);
           return;
         }
-
-        console.log('[JWTSync] No valid session after verification');
         
       } catch (error: any) {
-        console.error(`[JWTSync] Attempt ${attempt + 1} failed:`, error);
-        
         if (isRefreshTokenError(error)) {
           clearAuthStorage();
           this.readyPromise = null;
@@ -114,7 +100,6 @@ class JWTSyncService {
   }
 
   reset() {
-    console.log('[JWTSync] Resetting state');
     this.isReady = false;
     this.readyPromise = null;
     this.notifyListeners(false);

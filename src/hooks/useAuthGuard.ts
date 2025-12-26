@@ -25,14 +25,13 @@ export const useAuthGuard = () => {
     }
 
     const currentPath = location.pathname;
-    const isPublicRoute = PUBLIC_ROUTES.includes(currentPath) || 
-                         currentPath === '/' ||
-                         !currentPath.startsWith(PROTECTED_ROUTE_PREFIX);
     const isProtectedRoute = currentPath.startsWith(PROTECTED_ROUTE_PREFIX);
 
     // If user is not authenticated and trying to access protected route
     if (!user && !session && isProtectedRoute) {
-      console.log('useAuthGuard: Redirecting to login - no session for protected route');
+      if (import.meta.env.DEV) {
+        console.log('[AuthGuard] No session for protected route, redirecting to /auth');
+      }
       navigate('/auth', { 
         replace: true,
         state: { 
@@ -44,16 +43,19 @@ export const useAuthGuard = () => {
     }
 
     // If user is authenticated and on auth/login page, redirect to dashboard
-    if (user && session && (currentPath === '/auth' || currentPath === '/login' || currentPath === '/')) {
-      console.log('useAuthGuard: Redirecting authenticated user to dashboard');
-      const from = location.state?.from || '/app/dashboard';
-      navigate(from, { replace: true });
+    if (user && session && (currentPath === '/auth' || currentPath === '/login')) {
+      if (import.meta.env.DEV) {
+        console.log('[AuthGuard] Authenticated user on auth page, redirecting to dashboard');
+      }
+      const from = location.state?.from;
+      // Only use 'from' if it's a valid protected route
+      const target = from && from.startsWith('/app') ? from : '/app/dashboard';
+      navigate(target, { replace: true });
       return;
     }
 
-    // Check session expiry
-    if (session?.expires_at) {
-      // expires_at is a Unix timestamp in seconds, convert to milliseconds
+    // Check session expiry for protected routes only
+    if (session?.expires_at && isProtectedRoute) {
       const expiresAt = typeof session.expires_at === 'number' 
         ? session.expires_at * 1000 
         : new Date(session.expires_at).getTime();
@@ -62,7 +64,9 @@ export const useAuthGuard = () => {
 
       // If session is expired or about to expire (within 1 minute)
       if (timeUntilExpiry <= 60000) {
-        console.log('useAuthGuard: Session expired or about to expire, redirecting to login');
+        if (import.meta.env.DEV) {
+          console.log('[AuthGuard] Session expired, redirecting to /auth');
+        }
         navigate('/auth', { 
           replace: true,
           state: { message: 'Your session has expired. Please sign in again.' }
