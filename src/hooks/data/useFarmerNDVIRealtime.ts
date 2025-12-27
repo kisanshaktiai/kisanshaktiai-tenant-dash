@@ -78,43 +78,39 @@ export const useFarmerNDVIRealtime = (farmerId: string, days: number = 90) => {
     queryFn: async () => {
       if (!currentTenant?.id || !farmerId) return { records: [], fullView: [] };
 
-      // Get lands for this farmer
-      const { data: lands } = await supabase
-        .from('lands')
-        .select('id, name')
-        .eq('tenant_id', currentTenant.id)
-        .eq('farmer_id', farmerId);
-
-      if (!lands || lands.length === 0) return { records: [], fullView: [] };
-
-      const landIds = lands.map(l => l.id);
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Get NDVI data
-      const { data: ndviData, error: ndviError } = await supabase
-        .from('ndvi_data')
-        .select('*')
-        .in('land_id', landIds)
-        .gte('date', startDate.toISOString().split('T')[0])
-        .order('date', { ascending: false });
-
-      if (ndviError) throw ndviError;
-
-      // Get from ndvi_full_view
+      // Get from ndvi_full_view first - it has farmer_id directly
       const { data: fullViewData, error: fullViewError } = await supabase
         .from('ndvi_full_view')
         .select('*')
         .eq('farmer_id', farmerId)
         .eq('tenant_id', currentTenant.id)
         .order('date', { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (fullViewError) throw fullViewError;
 
+      // Get land IDs from full view to query ndvi_data
+      const landIds = [...new Set((fullViewData || []).map(r => r.land_id))];
+      
+      let ndviData: NDVIRecord[] = [];
+      if (landIds.length > 0) {
+        const { data: ndviResult, error: ndviError } = await supabase
+          .from('ndvi_data')
+          .select('*')
+          .in('land_id', landIds)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .order('date', { ascending: false });
+
+        if (ndviError) throw ndviError;
+        ndviData = (ndviResult || []) as NDVIRecord[];
+      }
+
       return {
-        records: ndviData as NDVIRecord[],
-        fullView: fullViewData as NDVIFullViewRecord[],
+        records: ndviData,
+        fullView: (fullViewData || []) as NDVIFullViewRecord[],
       };
     },
     enabled: !!currentTenant?.id && !!farmerId,

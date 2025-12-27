@@ -64,31 +64,33 @@ export const useFarmerSoilHealthRealtime = (farmerId: string) => {
     queryFn: async () => {
       if (!currentTenant?.id || !farmerId) return [];
 
-      // First get lands for this farmer
-      const { data: lands } = await supabase
-        .from('lands')
-        .select('id, name')
-        .eq('tenant_id', currentTenant.id)
-        .eq('farmer_id', farmerId);
-
-      if (!lands || lands.length === 0) return [];
-
-      const landIds = lands.map(l => l.id);
-      const landNameMap = new Map(lands.map(l => [l.id, l.name]));
-
-      // Get soil health for those lands
+      // Get soil health directly by farmer_id (table has farmer_id column)
       const { data, error } = await supabase
         .from('soil_health')
         .select('*')
-        .in('land_id', landIds)
+        .eq('tenant_id', currentTenant.id)
+        .eq('farmer_id', farmerId)
         .order('test_date', { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(record => ({
-        ...record,
-        land_name: landNameMap.get(record.land_id),
-      })) as SoilHealthRecord[];
+      // Get land names for display
+      if (data && data.length > 0) {
+        const landIds = [...new Set(data.map(r => r.land_id))];
+        const { data: lands } = await supabase
+          .from('lands')
+          .select('id, name')
+          .in('id', landIds);
+        
+        const landNameMap = new Map((lands || []).map(l => [l.id, l.name]));
+        
+        return data.map(record => ({
+          ...record,
+          land_name: landNameMap.get(record.land_id),
+        })) as SoilHealthRecord[];
+      }
+
+      return [] as SoilHealthRecord[];
     },
     enabled: !!currentTenant?.id && !!farmerId,
     staleTime: 30000,
