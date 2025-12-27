@@ -5,6 +5,27 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://qfklkkzxemsbeniyugiz.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFma2xra3p4ZW1zYmVuaXl1Z2l6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0MjcxNjUsImV4cCI6MjA2ODAwMzE2NX0.dUnGp7wbwYom1FPbn_4EGf3PWjgmr8mXwL2w2SdYOh4";
 
+// Helper to get current tenant ID from session storage or JWT
+const getTenantIdFromStorage = (): string | null => {
+  // Try session storage first (set by Redux store)
+  const storedTenantId = sessionStorage.getItem('currentTenantId');
+  if (storedTenantId) return storedTenantId;
+  
+  // Try localStorage for persisted session
+  try {
+    const sessionData = localStorage.getItem('sb-qfklkkzxemsbeniyugiz-auth-token');
+    if (sessionData) {
+      const parsed = JSON.parse(sessionData);
+      const tenantId = parsed?.user?.user_metadata?.tenant_id;
+      if (tenantId) return tenantId;
+    }
+  } catch (e) {
+    // Ignore parsing errors
+  }
+  
+  return null;
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
@@ -13,5 +34,30 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
+  global: {
+    fetch: (url: RequestInfo | URL, options?: RequestInit) => {
+      // Dynamically inject x-tenant-id header on every request
+      const tenantId = getTenantIdFromStorage();
+      const headers = new Headers(options?.headers);
+      
+      if (tenantId) {
+        headers.set('x-tenant-id', tenantId);
+      }
+      
+      return fetch(url, {
+        ...options,
+        headers,
+      });
+    },
+  },
 });
+
+// Also export a function to set tenant ID in session storage
+export const setCurrentTenantId = (tenantId: string | null) => {
+  if (tenantId) {
+    sessionStorage.setItem('currentTenantId', tenantId);
+  } else {
+    sessionStorage.removeItem('currentTenantId');
+  }
+};

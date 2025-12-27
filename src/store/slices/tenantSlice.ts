@@ -131,6 +131,12 @@ const tenantSlice = createSlice({
   reducers: {
     setCurrentTenant: (state, action: PayloadAction<Tenant | null>) => {
       state.currentTenant = action.payload;
+      // Persist tenant ID to sessionStorage for RLS header injection
+      if (action.payload?.id) {
+        sessionStorage.setItem('currentTenantId', action.payload.id);
+      } else {
+        sessionStorage.removeItem('currentTenantId');
+      }
     },
     setUserTenants: (state, action: PayloadAction<UserTenant[]>) => {
       state.userTenants = action.payload;
@@ -157,6 +163,8 @@ const tenantSlice = createSlice({
       state.subscriptionPlans = [];
       state.onboarding = initialState.onboarding;
       state.error = null;
+      // Clear from sessionStorage
+      sessionStorage.removeItem('currentTenantId');
     },
   },
 });
