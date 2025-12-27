@@ -11,7 +11,7 @@ import {
   User, MapPin, Phone, Calendar, Droplets, Leaf, CircleDot, TrendingUp, 
   Activity, AlertTriangle, Tractor, Warehouse, Timer, Target,
   MessageSquare, Mail, Package, BarChart3, Sprout, TreePine, 
-  FileText, Tag, CheckCircle2, Clock, Hash, Ruler, Wheat, Download, Share2
+  FileText, Tag, CheckCircle2, Clock, Hash, Ruler, Wheat, Download, Share2, Bell
 } from 'lucide-react';
 import { useComprehensiveFarmerData } from '@/hooks/data/useComprehensiveFarmerData';
 import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
@@ -20,6 +20,11 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppSelector } from '@/store/hooks';
 import { AnalyticsDashboardTab } from '../analytics/AnalyticsDashboardTab';
+import { ModernSoilHealthAnalytics } from '../analytics/ModernSoilHealthAnalytics';
+import { ModernNDVIAnalytics } from '../analytics/ModernNDVIAnalytics';
+import { SmartAlertsWithActions } from '../analytics/SmartAlertsWithActions';
+import { useFarmerNDVIRealtime } from '@/hooks/data/useFarmerNDVIRealtime';
+import { toast } from 'sonner';
 
 interface ComprehensiveFarmerDetailModalProps {
   farmer: ComprehensiveFarmerData;
@@ -40,8 +45,43 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
   const [ndviData, setNdviData] = useState<any[]>([]);
   const [farmerName, setFarmerName] = useState<string>('');
   const [userProfile, setUserProfile] = useState<any>(null);
+  
+  // Use realtime NDVI hook for graphical analytics
+  const { 
+    ndviRecords, 
+    fullViewRecords, 
+    summary: ndviSummary, 
+    timeSeries: ndviTimeSeries,
+    isLive: ndviIsLive,
+    refetch: refetchNdvi 
+  } = useFarmerNDVIRealtime(farmer?.id || '');
 
   const farmerData = comprehensiveData || farmer;
+  
+  // Handle communication actions from alerts
+  const handleContactAction = (method: 'sms' | 'whatsapp' | 'call' | 'email', alertContext: string) => {
+    const phone = farmerData?.mobile_number;
+    
+    if (method === 'whatsapp' && phone) {
+      const message = encodeURIComponent(`Hi ${farmerName}, regarding your farm:\n\n${alertContext}`);
+      window.open(`https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${message}`, '_blank');
+      toast.success('Opening WhatsApp...');
+    } else if (method === 'sms' && phone) {
+      const message = encodeURIComponent(`Alert: ${alertContext}`);
+      window.open(`sms:${phone}?body=${message}`, '_blank');
+      toast.success('Opening SMS...');
+    } else if (method === 'call' && phone) {
+      window.open(`tel:${phone}`, '_blank');
+      toast.success('Initiating call...');
+    } else if (method === 'email') {
+      const subject = encodeURIComponent(`Farm Alert for ${farmerName}`);
+      const body = encodeURIComponent(alertContext);
+      window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+      toast.success('Opening email client...');
+    } else {
+      toast.error('Contact information not available');
+    }
+  };
 
   // Fetch additional data from related tables
   useEffect(() => {
@@ -251,8 +291,12 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
 
         <ScrollArea className="h-[calc(95vh-240px)]">
           <div className="px-6 pb-6">
-            <Tabs defaultValue="analytics" className="w-full">
-              <TabsList className="grid w-full grid-cols-8 bg-muted/50">
+            <Tabs defaultValue="alerts" className="w-full">
+              <TabsList className="grid w-full grid-cols-9 bg-muted/50">
+                <TabsTrigger value="alerts" className="gap-1">
+                  <Bell className="w-3 h-3" />
+                  Alerts
+                </TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="lands">Lands</TabsTrigger>
@@ -260,8 +304,19 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 <TabsTrigger value="soil">Soil Health</TabsTrigger>
                 <TabsTrigger value="ndvi">NDVI</TabsTrigger>
                 <TabsTrigger value="engagement">Engagement</TabsTrigger>
-                <TabsTrigger value="communications">Communications</TabsTrigger>
+                <TabsTrigger value="communications">Comms</TabsTrigger>
               </TabsList>
+
+              {/* Smart Alerts Tab - Default */}
+              <TabsContent value="alerts" className="mt-4">
+                <SmartAlertsWithActions 
+                  soilData={soilData}
+                  ndviData={ndviData}
+                  farmerPhone={farmerData?.mobile_number}
+                  farmerName={farmerName}
+                  onContactAction={handleContactAction}
+                />
+              </TabsContent>
 
               {/* New Analytics Dashboard Tab */}
               <TabsContent value="analytics">
@@ -538,104 +593,23 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 </Card>
               </TabsContent>
 
-              <TabsContent value="soil" className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Soil Analysis Data</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {soilData.length > 0 ? (
-                      <div className="space-y-4">
-                        {soilData.map((soil) => (
-                          <div key={soil.id} className="p-4 border rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <CircleDot className="w-4 h-4 text-amber-600" />
-                                <span className="font-medium">
-                                  {soil.test_date ? format(new Date(soil.test_date), 'MMM d, yyyy') : 'N/A'}
-                                </span>
-                              </div>
-                              <Badge variant="outline">{soil.source || 'Lab Test'}</Badge>
-                            </div>
-                            <div className="grid grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">pH Level</p>
-                                <p className="font-semibold">{soil.ph_level?.toFixed(2) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Nitrogen (N)</p>
-                                <p className="font-semibold">{soil.nitrogen_kg_per_ha?.toFixed(1) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Phosphorus (P)</p>
-                                <p className="font-semibold">{soil.phosphorus_kg_per_ha?.toFixed(1) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Potassium (K)</p>
-                                <p className="font-semibold">{soil.potassium_kg_per_ha?.toFixed(1) || 'N/A'}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">No soil analysis data available</p>
-                    )}
-                  </CardContent>
-                </Card>
+              <TabsContent value="soil" className="mt-4">
+                <ModernSoilHealthAnalytics 
+                  soilData={soilData}
+                  onAlertAction={(alertType, action) => console.log('Alert action:', alertType, action)}
+                />
               </TabsContent>
 
-              <TabsContent value="ndvi" className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">NDVI Vegetation Health</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {ndviData.length > 0 ? (
-                      <div className="space-y-4">
-                        {ndviData.map((ndvi) => (
-                          <div key={ndvi.id} className="p-4 border rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <TreePine className="w-4 h-4 text-green-600" />
-                                <span className="font-medium">
-                                  {ndvi.date ? format(new Date(ndvi.date), 'MMM d, yyyy') : 'N/A'}
-                                </span>
-                              </div>
-                              <Badge className={cn(
-                                (ndvi.ndvi_value ?? 0) >= 0.7 ? "bg-green-500" :
-                                (ndvi.ndvi_value ?? 0) >= 0.5 ? "bg-emerald-500" :
-                                (ndvi.ndvi_value ?? 0) >= 0.3 ? "bg-yellow-500" : "bg-red-500"
-                              )}>
-                                NDVI: {ndvi.ndvi_value?.toFixed(3) || 'N/A'}
-                              </Badge>
-                            </div>
-                            <div className="grid grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">EVI</p>
-                                <p className="font-semibold">{ndvi.evi_value?.toFixed(3) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">NDWI</p>
-                                <p className="font-semibold">{ndvi.ndwi_value?.toFixed(3) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">SAVI</p>
-                                <p className="font-semibold">{ndvi.savi_value?.toFixed(3) || 'N/A'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Cloud Cover</p>
-                                <p className="font-semibold">{ndvi.cloud_cover?.toFixed(1) || 0}%</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">No NDVI data available</p>
-                    )}
-                  </CardContent>
-                </Card>
+              <TabsContent value="ndvi" className="mt-4">
+                <ModernNDVIAnalytics 
+                  ndviRecords={ndviRecords || []}
+                  fullViewRecords={fullViewRecords || []}
+                  summary={ndviSummary}
+                  timeSeries={ndviTimeSeries || []}
+                  isLive={ndviIsLive}
+                  isLoading={false}
+                  onRefresh={refetchNdvi}
+                />
               </TabsContent>
 
               <TabsContent value="engagement" className="space-y-4 mt-4">
