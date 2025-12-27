@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -9,6 +9,7 @@ import {
 import { motion } from 'framer-motion';
 import type { FarmerLand } from '@/hooks/data/useFarmerLandsRealtime';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ModernLandCardProps {
   land: FarmerLand;
@@ -30,20 +31,29 @@ const getNDVIGradient = (value: number | null) => {
   return 'from-red-500/20 to-red-600/10';
 };
 
-export const ModernLandCard: React.FC<ModernLandCardProps> = ({ 
-  land, 
-  onView,
-  isHighlighted = false 
-}) => {
-  const ndviStatus = getNDVIStatus(land.last_ndvi_value);
-  const ndviGradient = getNDVIGradient(land.last_ndvi_value);
-  
-  // Format NDVI thumbnail URL - handle relative and absolute URLs
-  const thumbnailUrl = land.ndvi_thumbnail_url 
-    ? (land.ndvi_thumbnail_url.startsWith('http') 
-        ? land.ndvi_thumbnail_url 
-        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public${land.ndvi_thumbnail_url}`)
+const buildNdviThumbnailCandidates = (raw: string | null) => {
+  if (!raw) return [] as string[];
+  if (raw.startsWith('http')) return [raw];
+
+  const trimmed = raw.replace(/^\//, '');
+
+  // If stored as a full storage path but missing host, prefix it.
+  if (trimmed.startsWith('storage/v1/object/public/')) {
+    const base = import.meta.env.VITE_SUPABASE_URL;
+    return base ? [`${base}/${trimmed}`] : [];
+  }
+
+  // Default: interpret as object key inside the ndvi-thumbnails bucket.
+  const primary = supabase.storage.from('ndvi-thumbnails').getPublicUrl(trimmed).data.publicUrl;
+
+  // Common legacy format: "thumbnails/ndvi/<id>.png". If the object key is only "<id>.png", fall back.
+  const filename = trimmed.split('/').pop();
+  const fallback = filename && filename !== trimmed
+    ? supabase.storage.from('ndvi-thumbnails').getPublicUrl(filename).data.publicUrl
     : null;
+
+  return [primary, fallback].filter(Boolean) as string[];
+};
 
   return (
     <motion.div
