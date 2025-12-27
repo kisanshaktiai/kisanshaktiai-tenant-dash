@@ -38,8 +38,8 @@ const buildNdviThumbnailCandidates = (raw: string | null): string[] => {
 
   // If stored as a full storage path but missing host, prefix it.
   if (trimmed.startsWith('storage/v1/object/public/')) {
-    const base = import.meta.env.VITE_SUPABASE_URL;
-    return base ? [`${base}/${trimmed}`] : [];
+    const base = 'https://qfklkkzxemsbeniyugiz.supabase.co';
+    return [`${base}/${trimmed}`];
   }
 
   // Default: interpret as object key inside the ndvi-thumbnails bucket.
