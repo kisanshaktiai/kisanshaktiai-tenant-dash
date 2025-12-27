@@ -28,6 +28,9 @@ export interface FarmerLand {
   last_ndvi_value: number | null;
   last_ndvi_calculation: string | null;
   ndvi_thumbnail_url: string | null;
+  // Status fields
+  is_active: boolean | null;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -80,11 +83,15 @@ export const useFarmerLandsRealtime = (farmerId: string) => {
           last_ndvi_value,
           last_ndvi_calculation,
           ndvi_thumbnail_url,
+          is_active,
+          deleted_at,
           created_at,
           updated_at
         `)
         .eq('tenant_id', currentTenant.id)
         .eq('farmer_id', farmerId)
+        .is('deleted_at', null) // Filter out deleted lands
+        .eq('is_active', true)  // Only active lands
         .order('updated_at', { ascending: false });
 
       if (error) throw error;

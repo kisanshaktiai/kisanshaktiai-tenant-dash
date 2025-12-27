@@ -70,6 +70,31 @@ const getSoilColor = (type: string | null | undefined): string => {
   return colors[type?.toLowerCase() || ''] || 'bg-muted';
 };
 
+// Helper to build proper NDVI thumbnail URL
+const getNdviThumbnailUrl = (url: string | null | undefined, landId: string): string | null => {
+  if (!url) return null;
+  
+  // If it's already a full URL, return it
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  
+  // If it's a relative path, build the full Supabase storage URL
+  const supabaseUrl = 'https://qfklkkzxemsbeniyugiz.supabase.co';
+  
+  // Handle /thumbnails/ndvi/ format
+  if (url.startsWith('/thumbnails/ndvi/')) {
+    return `${supabaseUrl}/storage/v1/object/public/ndvi-thumbnails/${landId}.png`;
+  }
+  
+  // Handle other relative paths
+  if (url.startsWith('/')) {
+    return `${supabaseUrl}/storage/v1/object/public${url}`;
+  }
+  
+  return url;
+};
+
 // Generate a static map preview URL using OpenStreetMap tiles
 const getMapPreviewUrl = (lat?: number, lon?: number, zoom: number = 15): string => {
   if (!lat || !lon) return '';
@@ -223,6 +248,7 @@ export const ModernLandsAnalytics: React.FC<ModernLandsAnalyticsProps> = ({
               >
                 {lands.map((land, idx) => {
                   const ndviStatus = getNdviStatus(land.last_ndvi_value);
+                  const thumbnailUrl = getNdviThumbnailUrl(land.ndvi_thumbnail_url, land.id);
                   
                   return (
                     <motion.div
@@ -243,9 +269,9 @@ export const ModernLandsAnalytics: React.FC<ModernLandsAnalyticsProps> = ({
                       >
                         {/* Thumbnail */}
                         <div className="relative h-40 bg-gradient-to-br from-emerald-500/20 to-blue-500/20">
-                          {land.ndvi_thumbnail_url ? (
+                          {thumbnailUrl ? (
                             <img 
-                              src={land.ndvi_thumbnail_url}
+                              src={thumbnailUrl}
                               alt={getLandName(land, idx)}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -375,6 +401,7 @@ export const ModernLandsAnalytics: React.FC<ModernLandsAnalyticsProps> = ({
               >
                 {lands.map((land, idx) => {
                   const ndviStatus = getNdviStatus(land.last_ndvi_value);
+                  const thumbnailUrl = getNdviThumbnailUrl(land.ndvi_thumbnail_url, land.id);
                   
                   return (
                     <motion.div
@@ -393,9 +420,9 @@ export const ModernLandsAnalytics: React.FC<ModernLandsAnalyticsProps> = ({
                     >
                       {/* Thumbnail */}
                       <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-emerald-500/20 to-blue-500/20">
-                        {land.ndvi_thumbnail_url ? (
+                        {thumbnailUrl ? (
                           <img 
-                            src={land.ndvi_thumbnail_url}
+                            src={thumbnailUrl}
                             alt={getLandName(land, idx)}
                             className="w-full h-full object-cover"
                           />
