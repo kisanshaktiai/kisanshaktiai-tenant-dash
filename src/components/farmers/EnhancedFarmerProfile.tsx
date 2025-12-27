@@ -43,6 +43,26 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
   // Use real-time data if available, otherwise use initial data
   const farmer = realtimeFarmer || initialFarmer;
   
+  // Use real-time soil health data
+  const {
+    soilRecords,
+    summary: soilSummary,
+    isLive: soilIsLive,
+    isLoading: soilLoading,
+    refetch: refetchSoil
+  } = useFarmerSoilHealthRealtime(farmer.id);
+  
+  // Use real-time NDVI data
+  const {
+    ndviRecords,
+    fullViewRecords,
+    summary: ndviSummary,
+    timeSeries: ndviTimeSeries,
+    isLive: ndviIsLive,
+    isLoading: ndviLoading,
+    refetch: refetchNDVI
+  } = useFarmerNDVIRealtime(farmer.id);
+  
   // Use engagement data from comprehensive farmer data
   const engagementScore = farmer.metrics?.engagementScore || 0;
 
@@ -212,13 +232,12 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                       <Leaf className="w-5 h-5 text-primary" />
                       Quick Health Overview
                     </h3>
-                    <FarmerHealthMetrics
-                      farmerId={farmer.id}
-                      tenantId={currentTenant?.id || ''}
-                      soilHealth={undefined}
-                      ndviHistory={[]}
-                      healthAssessments={[]}
-                      isCompact={true}
+                    <ModernSoilHealthCard 
+                      summary={soilSummary}
+                      records={soilRecords}
+                      isLive={soilIsLive}
+                      isLoading={soilLoading}
+                      onRefresh={refetchSoil}
                     />
                   </div>
 
@@ -299,14 +318,24 @@ export const EnhancedFarmerProfile: React.FC<EnhancedFarmerProfileProps> = ({ fa
                 </TabsContent>
 
                 <TabsContent value="health" className="mt-0">
-                  <FarmerHealthMetrics
-                    farmerId={farmer.id}
-                    tenantId={currentTenant?.id || ''}
-                    soilHealth={undefined}
-                    ndviHistory={[]}
-                    healthAssessments={[]}
-                    isCompact={false}
-                  />
+                  <div className="space-y-6">
+                    <ModernSoilHealthCard 
+                      summary={soilSummary}
+                      records={soilRecords}
+                      isLive={soilIsLive}
+                      isLoading={soilLoading}
+                      onRefresh={refetchSoil}
+                    />
+                    <ModernNDVIAnalytics 
+                      ndviRecords={ndviRecords}
+                      fullViewRecords={fullViewRecords}
+                      summary={ndviSummary}
+                      timeSeries={ndviTimeSeries}
+                      isLive={ndviIsLive}
+                      isLoading={ndviLoading}
+                      onRefresh={refetchNDVI}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="lands" className="mt-0">
