@@ -22,6 +22,7 @@ import { useAppSelector } from '@/store/hooks';
 import { AnalyticsDashboardTab } from '../analytics/AnalyticsDashboardTab';
 import { ModernSoilHealthAnalytics } from '../analytics/ModernSoilHealthAnalytics';
 import { ModernNDVIAnalytics } from '../analytics/ModernNDVIAnalytics';
+import { ModernLandsAnalytics } from '../analytics/ModernLandsAnalytics';
 import { SmartAlertsWithActions } from '../analytics/SmartAlertsWithActions';
 import { useFarmerNDVIRealtime } from '@/hooks/data/useFarmerNDVIRealtime';
 import { toast } from 'sonner';
@@ -518,42 +519,11 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                 )}
               </TabsContent>
 
-              <TabsContent value="lands" className="space-y-4 mt-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm">Land Holdings Details</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {farmerData.lands && farmerData.lands.length > 0 ? (
-                      <div className="space-y-4">
-                        {farmerData.lands.map((land, idx) => (
-                          <div key={land.id} className="p-4 border rounded-lg space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-semibold">Plot #{idx + 1}</h4>
-                              <Badge>{land.area_acres.toFixed(2)} acres</Badge>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Soil Type</p>
-                                <p className="font-medium">{land.soil_type || 'Unknown'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Irrigation</p>
-                                <p className="font-medium">{land.irrigation_type || 'Unknown'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Current Crops</p>
-                                <p className="font-medium">{land.crops?.join(', ') || 'None'}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-8">No land parcels added</p>
-                    )}
-                  </CardContent>
-                </Card>
+              <TabsContent value="lands" className="mt-4">
+                <ModernLandsAnalytics 
+                  lands={farmerData.lands || []}
+                  onLandSelect={(landId) => console.log('Selected land:', landId)}
+                />
               </TabsContent>
 
               <TabsContent value="crops" className="space-y-4 mt-4">
