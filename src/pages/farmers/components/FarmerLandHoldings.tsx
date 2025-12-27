@@ -1,118 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Ruler, Droplets, Sprout, Calendar, AlertCircle, Wifi, WifiOff, Plus } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAppSelector } from '@/store/hooks';
-import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Plus, Wifi, WifiOff, Grid3X3, List, AlertCircle } from 'lucide-react';
+import { useFarmerLandsRealtime } from '@/hooks/data/useFarmerLandsRealtime';
+import { ModernLandCard } from '@/components/farmers/cards/ModernLandCard';
 import { AddLandModal } from '@/components/farmers/forms/AddLandModal';
+import { motion } from 'framer-motion';
 
 interface FarmerLandHoldingsProps {
   farmerId: string;
 }
 
-interface Land {
-  id: string;
-  tenant_id: string;
-  farmer_id: string;
-  name: string; // This is the actual field name in DB
-  area_acres: number;
-  area_guntas?: number | null;
-  survey_number?: string | null;
-  village?: string | null;
-  district?: string | null;
-  state?: string | null;
-  soil_type?: string | null;
-  irrigation_type?: string | null;
-  water_source?: string | null;
-  current_crop?: string | null;
-  ownership_type?: string | null;
-  land_documents?: any;
-  boundary?: any;
-  created_at: string;
-  updated_at: string;
-  center_lat?: number | null;
-  center_lon?: number | null;
-}
-
 export const FarmerLandHoldings: React.FC<FarmerLandHoldingsProps> = ({ farmerId }) => {
-  const { currentTenant } = useAppSelector((state) => state.tenant);
-  const queryClient = useQueryClient();
-  const [isRealtime, setIsRealtime] = useState(false);
   const [isAddLandOpen, setIsAddLandOpen] = useState(false);
-
-  // Fetch lands with tenant isolation
-  const { data: lands, isLoading, error, refetch } = useQuery({
-    queryKey: ['farmer-lands', currentTenant?.id, farmerId],
-    queryFn: async () => {
-      if (!currentTenant?.id) throw new Error('No tenant selected');
-      
-      const { data, error } = await supabase
-        .from('lands')
-        .select('*')
-        .eq('tenant_id', currentTenant.id)
-        .eq('farmer_id', farmerId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as Land[];
-    },
-    enabled: !!currentTenant?.id && !!farmerId,
-    staleTime: 10000, // 10 seconds
-    gcTime: 300000, // 5 minutes
-  });
-
-  // Set up real-time subscription
-  useEffect(() => {
-    if (!currentTenant?.id || !farmerId) return;
-
-    const channel = supabase.channel(`lands_${farmerId}_${currentTenant.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'lands',
-          filter: `tenant_id=eq.${currentTenant.id}`,
-        },
-        (payload: any) => {
-          // Check if the change is for this farmer
-          if (payload.new?.farmer_id === farmerId || payload.old?.farmer_id === farmerId) {
-            console.log('[FarmerLandHoldings] Real-time update received:', payload);
-            setIsRealtime(true);
-            // Invalidate query to refetch
-            queryClient.invalidateQueries({
-              queryKey: ['farmer-lands', currentTenant.id, farmerId],
-            });
-            // Reset realtime indicator after 2 seconds
-            setTimeout(() => setIsRealtime(false), 2000);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentTenant, farmerId, queryClient]);
-
-  // Calculate statistics
-  const totalArea = lands?.reduce((sum, land) => sum + (land.area_acres || 0), 0) || 0;
-  const irrigatedArea = lands
-    ?.filter(land => land.irrigation_type && land.irrigation_type !== 'rainfed')
-    .reduce((sum, land) => sum + (land.area_acres || 0), 0) || 0;
-  const uniqueCrops = new Set(lands?.map(land => land.current_crop).filter(Boolean) || []);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  const { lands, stats, isLoading, error, isLive, refetch } = useFarmerLandsRealtime(farmerId);
 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-64 rounded-xl" />
+          ))}
         </div>
       </div>
     );
@@ -120,174 +37,108 @@ export const FarmerLandHoldings: React.FC<FarmerLandHoldingsProps> = ({ farmerId
 
   if (error) {
     return (
-      <Card className="border-destructive">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="w-5 h-5" />
-            <p>Failed to load land holdings</p>
-          </div>
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardContent className="p-6 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-destructive" />
+          <p className="text-destructive">Failed to load land holdings</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with stats and real-time indicator */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold">Land Holdings</h3>
-          {isRealtime ? (
-            <div className="flex items-center gap-1 px-2 py-1 bg-success/10 rounded-full animate-pulse">
-              <Wifi className="w-3 h-3 text-success" />
-              <span className="text-xs text-success font-medium">Live Update</span>
-            </div>
+          <h3 className="text-xl font-semibold">Land Holdings</h3>
+          {isLive ? (
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/30 animate-pulse">
+              <Wifi className="w-3 h-3 mr-1" />
+              Live
+            </Badge>
           ) : (
-            <div className="flex items-center gap-1 px-2 py-1 bg-muted/50 rounded-full">
-              <WifiOff className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Real-time</span>
-            </div>
+            <Badge variant="outline" className="bg-muted">
+              <WifiOff className="w-3 h-3 mr-1" />
+              Synced
+            </Badge>
           )}
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-4 text-sm">
-            <Badge variant="outline">Total: {totalArea.toFixed(2)} acres</Badge>
-            <Badge variant="outline" className="text-blue-600">
-              Irrigated: {irrigatedArea.toFixed(2)} acres
-            </Badge>
-            <Badge variant="outline" className="text-green-600">
-              {uniqueCrops.size} crops
-            </Badge>
+        
+        <div className="flex items-center gap-3">
+          {/* Stats Badges */}
+          <div className="hidden md:flex gap-2">
+            <Badge variant="secondary">{stats.totalAreaAcres.toFixed(1)} acres</Badge>
+            <Badge variant="secondary" className="bg-blue-500/10 text-blue-400">{stats.irrigatedArea.toFixed(1)} irrigated</Badge>
+            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400">{stats.uniqueCrops.length} crops</Badge>
           </div>
-          <Button 
-            size="sm" 
-            onClick={() => setIsAddLandOpen(true)}
-            className="gap-2"
-          >
+          
+          {/* View Toggle */}
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 ${viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <Button onClick={() => setIsAddLandOpen(true)} className="gap-2">
             <Plus className="w-4 h-4" />
             Add Land
           </Button>
         </div>
       </div>
 
-      {/* Land cards */}
-      <div className="grid gap-4">
-        {lands?.map((land) => (
-          <Card key={land.id} className={isRealtime ? 'ring-2 ring-success/50 transition-all' : ''}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="font-medium text-lg">{land.name || `Plot ${land.survey_number || 'N/A'}`}</h4>
-                  <div className="flex items-center gap-2 text-muted-foreground text-sm mt-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>
-                      {land.village || 
-                       land.district || 
-                       land.state ||
-                       'Location not specified'}
-                    </span>
-                  </div>
-                  {land.survey_number && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Survey #: {land.survey_number}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2 items-end">
-                  <Badge 
-                    variant={land.irrigation_type && land.irrigation_type !== 'rainfed' ? 'default' : 'secondary'}
-                  >
-                    {land.irrigation_type === 'drip' && '💧 Drip'}
-                    {land.irrigation_type === 'sprinkler' && '💦 Sprinkler'}
-                    {land.irrigation_type === 'flood' && '🌊 Flood'}
-                    {land.irrigation_type === 'rainfed' && '🌧️ Rainfed'}
-                    {!land.irrigation_type && 'No Irrigation'}
-                  </Badge>
-                  {land.ownership_type && (
-                    <Badge variant="outline" className="text-xs">
-                      {land.ownership_type}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="flex items-center gap-2">
-                  <Ruler className="w-4 h-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Area</p>
-                    <p className="font-medium">{land.area_acres.toFixed(2)} acres</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground">Soil Type</p>
-                  <p className="font-medium">{land.soil_type || 'Unknown'}</p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Sprout className="w-4 h-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Current Crop</p>
-                    <p className="font-medium">{land.current_crop || 'None'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Droplets className={`w-4 h-4 ${land.water_source ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Water Source</p>
-                    <p className="font-medium text-sm">{land.water_source || 'Not specified'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Added</p>
-                    <p className="font-medium text-sm">
-                      {format(new Date(land.created_at), 'MMM dd, yyyy')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional details if available - using boundary field from DB */}
-              {land.boundary && typeof land.boundary === 'object' && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-muted-foreground">Boundary Info</p>
-                  <p className="text-sm mt-1">
-                    {/* Display boundary data if it exists and has properties */}
-                    {JSON.stringify(land.boundary).substring(0, 100)}...
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+      {/* Mobile Stats */}
+      <div className="flex md:hidden gap-2 overflow-x-auto pb-2">
+        <Badge variant="secondary">{stats.totalAreaAcres.toFixed(1)} acres</Badge>
+        <Badge variant="secondary">{stats.irrigatedArea.toFixed(1)} irrigated</Badge>
+        <Badge variant="secondary">{stats.uniqueCrops.length} crops</Badge>
+        {stats.averageNDVI !== null && (
+          <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400">
+            Avg NDVI: {stats.averageNDVI.toFixed(2)}
+          </Badge>
+        )}
       </div>
 
-      {/* Empty state */}
-      {(!lands || lands.length === 0) && (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No land holdings recorded for this farmer</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Click "Add Land" to create a new land parcel
-            </p>
-            <Button 
-              onClick={() => setIsAddLandOpen(true)}
-              className="mt-4 gap-2"
-            >
+      {/* Land Cards Grid */}
+      {lands && lands.length > 0 ? (
+        <motion.div 
+          className={`grid gap-4 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ staggerChildren: 0.1 }}
+        >
+          {lands.map((land) => (
+            <ModernLandCard
+              key={land.id}
+              land={land}
+              isHighlighted={isLive}
+              onView={(id) => console.log('View land:', id)}
+            />
+          ))}
+        </motion.div>
+      ) : (
+        <Card className="border-dashed border-2">
+          <CardContent className="p-12 text-center">
+            <MapPin className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Land Holdings</h3>
+            <p className="text-muted-foreground mb-6">Add your first land parcel to start tracking</p>
+            <Button onClick={() => setIsAddLandOpen(true)} className="gap-2">
               <Plus className="w-4 h-4" />
-              Add Your First Land Parcel
+              Add Your First Land
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Add Land Modal */}
       <AddLandModal
         isOpen={isAddLandOpen}
         onClose={() => setIsAddLandOpen(false)}

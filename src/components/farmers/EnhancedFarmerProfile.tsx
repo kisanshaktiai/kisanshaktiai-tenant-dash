@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  User, MapPin, Calendar, Phone, Mail, Tag, 
-  Activity, TrendingUp, MessageSquare, X, 
-  Edit, Eye, Download, Clock, AlertCircle,
-  Leaf, Beaker, Sprout, ChartBar, Wifi, WifiOff, RefreshCw
+  User, Activity, TrendingUp, X, 
+  Leaf, Beaker, Sprout, ChartBar, Wifi, WifiOff, RefreshCw, Satellite
 } from 'lucide-react';
-import { useRealtimeFarmerNotes } from '@/hooks/data/useRealtimeFarmerNotes';
-import { useRealtimeFarmerEngagement } from '@/hooks/data/useRealtimeFarmerEngagement';
-import { useRealtimeFarmerHealth } from '@/hooks/data/useRealtimeFarmerHealth';
 import { useTenantIsolation } from '@/hooks/useTenantIsolation';
-import { FarmerHealthMetrics } from './analytics/FarmerHealthMetrics';
 import { FarmerCommunicationHistory } from '@/pages/farmers/components/FarmerCommunicationHistory';
 import { FarmerLandHoldings } from '@/pages/farmers/components/FarmerLandHoldings';
 import { FarmerCropHistory } from '@/pages/farmers/components/FarmerCropHistory';
 import { FarmerInteractionTimeline } from '@/pages/farmers/components/FarmerInteractionTimeline';
 import { FarmerNotesSection } from '@/pages/farmers/components/FarmerNotesSection';
+import { ModernSoilHealthCard } from './cards/ModernSoilHealthCard';
+import { ModernNDVIAnalytics } from './analytics/ModernNDVIAnalytics';
+import { useFarmerSoilHealthRealtime } from '@/hooks/data/useFarmerSoilHealthRealtime';
+import { useFarmerNDVIRealtime } from '@/hooks/data/useFarmerNDVIRealtime';
 import type { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { useRealtimeComprehensiveFarmer } from '@/hooks/data/useRealtimeComprehensiveFarmer';
 import { format } from 'date-fns';
