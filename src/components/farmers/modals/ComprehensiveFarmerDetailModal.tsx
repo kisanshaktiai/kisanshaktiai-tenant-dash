@@ -18,6 +18,7 @@ import { ComprehensiveFarmerData } from '@/services/EnhancedFarmerDataService';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppSelector } from '@/store/hooks';
 import { AnalyticsDashboardTab } from '../analytics/AnalyticsDashboardTab';
 
 interface ComprehensiveFarmerDetailModalProps {
@@ -32,6 +33,9 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
   onClose
 }) => {
   const { data: comprehensiveData, isLoading } = useComprehensiveFarmerData(farmer?.id);
+  const { currentTenant } = useAppSelector((state) => state.tenant);
+  const tenantId = currentTenant?.id;
+
   const [soilData, setSoilData] = useState<any[]>([]);
   const [ndviData, setNdviData] = useState<any[]>([]);
   const [farmerName, setFarmerName] = useState<string>('');
@@ -41,7 +45,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
 
   // Fetch additional data from related tables
   useEffect(() => {
-    if (!farmer?.id) return;
+    if (!farmer?.id || !tenantId) return;
 
     const fetchAdditionalData = async () => {
       // Fetch farmer data
@@ -50,54 +54,67 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
           .from('farmers')
           .select('farmer_name, farmer_code')
           .eq('id', farmer.id)
-          .single()
+          .single(),
       ]);
-      
+
       // Priority: farmer_name > farmer_code
       let displayName = farmerResult.data?.farmer_code || 'Farmer';
       if (farmerResult.data?.farmer_name) {
         displayName = farmerResult.data.farmer_name;
       }
-      
+
       setFarmerName(displayName);
 
       // Fetch lands and related data
       const { data: lands } = await supabase
         .from('lands')
         .select('*')
+        .eq('tenant_id', tenantId)
         .eq('farmer_id', farmer.id);
 
-      if (lands) {
-        const landIds = lands.map(l => l.id);
-        
+      if (lands && lands.length > 0) {
+        const landIds = lands.map((l) => l.id);
+
         // Fetch soil analysis data
         try {
           const { data: soil } = await supabase
             .from('soil_health' as any)
             .select('*')
+            .eq('tenant_id', tenantId)
             .in('land_id', landIds)
             .order('test_date', { ascending: false })
             .limit(10);
-          
-          if (soil) setSoilData(soil);
+
+          setSoilData(soil || []);
         } catch (err) {
           console.log('Soil data not available:', err);
+          setSoilData([]);
         }
 
         // Fetch NDVI data
-        const { data: ndvi } = await supabase
-          .from('ndvi_data')
-          .select('*')
-          .in('land_id', landIds)
-          .order('capture_date', { ascending: false})
-          .limit(30);
-        
-        if (ndvi) setNdviData(ndvi);
+        try {
+          const { data: ndvi, error: ndviError } = await supabase
+            .from('ndvi_data')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .in('land_id', landIds)
+            .order('date', { ascending: false })
+            .limit(30);
+
+          if (ndviError) throw ndviError;
+          setNdviData(ndvi || []);
+        } catch (err) {
+          console.log('NDVI data not available:', err);
+          setNdviData([]);
+        }
+      } else {
+        setSoilData([]);
+        setNdviData([]);
       }
     };
 
     fetchAdditionalData();
-  }, [farmer?.id]);
+  }, [farmer?.id, tenantId]);
 
   if (!farmerData) return null;
 
