@@ -3,8 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   MapPin, Ruler, Droplets, Sprout, Leaf, 
-  TrendingUp, TrendingDown, Minus, Eye,
-  Calendar, Waves
+  Eye, Calendar
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { FarmerLand } from '@/hooks/data/useFarmerLandsRealtime';
@@ -31,8 +30,8 @@ const getNDVIGradient = (value: number | null) => {
   return 'from-red-500/20 to-red-600/10';
 };
 
-const buildNdviThumbnailCandidates = (raw: string | null) => {
-  if (!raw) return [] as string[];
+const buildNdviThumbnailCandidates = (raw: string | null): string[] => {
+  if (!raw) return [];
   if (raw.startsWith('http')) return [raw];
 
   const trimmed = raw.replace(/^\//, '');
@@ -55,6 +54,19 @@ const buildNdviThumbnailCandidates = (raw: string | null) => {
   return [primary, fallback].filter(Boolean) as string[];
 };
 
+export const ModernLandCard: React.FC<ModernLandCardProps> = ({ 
+  land, 
+  onView,
+  isHighlighted = false 
+}) => {
+  const ndviStatus = getNDVIStatus(land.last_ndvi_value);
+  const ndviGradient = getNDVIGradient(land.last_ndvi_value);
+
+  const thumbnailCandidates = useMemo(
+    () => buildNdviThumbnailCandidates(land.ndvi_thumbnail_url),
+    [land.ndvi_thumbnail_url]
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -74,13 +86,20 @@ const buildNdviThumbnailCandidates = (raw: string | null) => {
       >
         {/* NDVI Thumbnail or Gradient Background */}
         <div className="relative h-32 sm:h-40 overflow-hidden">
-          {thumbnailUrl ? (
+          {thumbnailCandidates.length > 0 ? (
             <img 
-              src={thumbnailUrl}
+              src={thumbnailCandidates[0]}
               alt={`NDVI map for ${land.name}`}
               className="w-full h-full object-cover"
+              loading="lazy"
               onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
+                const img = e.currentTarget;
+                const fallback = thumbnailCandidates[1];
+                if (fallback && img.src !== fallback) {
+                  img.src = fallback;
+                  return;
+                }
+                img.style.display = 'none';
               }}
             />
           ) : (
