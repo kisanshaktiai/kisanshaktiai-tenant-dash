@@ -15,13 +15,15 @@ interface NDVITimeSeriesChartProps {
 }
 
 export const NDVITimeSeriesChart: React.FC<NDVITimeSeriesChartProps> = ({ data }) => {
-  const chartData = data.map(d => ({
-    date: format(new Date(d.capture_date), 'MMM dd'),
-    NDVI: (d.ndvi * 100).toFixed(1),
-    EVI: d.evi ? (d.evi * 100).toFixed(1) : null,
-    NDWI: d.ndwi ? (d.ndwi * 100).toFixed(1) : null,
-    SAVI: d.savi ? (d.savi * 100).toFixed(1) : null,
-  }));
+  const chartData = data
+    .filter(d => d.capture_date && !isNaN(new Date(d.capture_date).getTime()))
+    .map(d => ({
+      date: format(new Date(d.capture_date), 'MMM dd'),
+      NDVI: (d.ndvi * 100).toFixed(1),
+      EVI: d.evi ? (d.evi * 100).toFixed(1) : null,
+      NDWI: d.ndwi ? (d.ndwi * 100).toFixed(1) : null,
+      SAVI: d.savi ? (d.savi * 100).toFixed(1) : null,
+    }));
 
   return (
     <Card className="border-border/50 bg-gradient-to-br from-background to-muted/5">
