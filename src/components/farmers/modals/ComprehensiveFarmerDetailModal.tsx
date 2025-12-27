@@ -552,7 +552,7 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                               <div className="flex items-center gap-2">
                                 <CircleDot className="w-4 h-4 text-amber-600" />
                                 <span className="font-medium">
-                                  {format(new Date(soil.test_date), 'MMM d, yyyy')}
+                                  {soil.test_date ? format(new Date(soil.test_date), 'MMM d, yyyy') : 'N/A'}
                                 </span>
                               </div>
                               <Badge variant="outline">{soil.source || 'Lab Test'}</Badge>
@@ -564,15 +564,15 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Nitrogen (N)</p>
-                                <p className="font-semibold">{soil.nitrogen_n?.toFixed(1) || 'N/A'}</p>
+                                <p className="font-semibold">{soil.nitrogen_kg_per_ha?.toFixed(1) || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Phosphorus (P)</p>
-                                <p className="font-semibold">{soil.phosphorus_p?.toFixed(1) || 'N/A'}</p>
+                                <p className="font-semibold">{soil.phosphorus_kg_per_ha?.toFixed(1) || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Potassium (K)</p>
-                                <p className="font-semibold">{soil.potassium_k?.toFixed(1) || 'N/A'}</p>
+                                <p className="font-semibold">{soil.potassium_kg_per_ha?.toFixed(1) || 'N/A'}</p>
                               </div>
                             </div>
                           </div>
@@ -599,33 +599,33 @@ export const ComprehensiveFarmerDetailModal: React.FC<ComprehensiveFarmerDetailM
                               <div className="flex items-center gap-2">
                                 <TreePine className="w-4 h-4 text-green-600" />
                                 <span className="font-medium">
-                                  {format(new Date(ndvi.capture_date), 'MMM d, yyyy')}
+                                  {ndvi.date ? format(new Date(ndvi.date), 'MMM d, yyyy') : 'N/A'}
                                 </span>
                               </div>
                               <Badge className={cn(
-                                ndvi.ndvi >= 0.7 ? "bg-green-500" :
-                                ndvi.ndvi >= 0.5 ? "bg-emerald-500" :
-                                ndvi.ndvi >= 0.3 ? "bg-yellow-500" : "bg-red-500"
+                                (ndvi.ndvi_value ?? 0) >= 0.7 ? "bg-green-500" :
+                                (ndvi.ndvi_value ?? 0) >= 0.5 ? "bg-emerald-500" :
+                                (ndvi.ndvi_value ?? 0) >= 0.3 ? "bg-yellow-500" : "bg-red-500"
                               )}>
-                                NDVI: {ndvi.ndvi.toFixed(3)}
+                                NDVI: {ndvi.ndvi_value?.toFixed(3) || 'N/A'}
                               </Badge>
                             </div>
                             <div className="grid grid-cols-4 gap-4 text-sm">
                               <div>
                                 <p className="text-muted-foreground">EVI</p>
-                                <p className="font-semibold">{ndvi.evi?.toFixed(3) || 'N/A'}</p>
+                                <p className="font-semibold">{ndvi.evi_value?.toFixed(3) || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">NDWI</p>
-                                <p className="font-semibold">{ndvi.ndwi?.toFixed(3) || 'N/A'}</p>
+                                <p className="font-semibold">{ndvi.ndwi_value?.toFixed(3) || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">SAVI</p>
-                                <p className="font-semibold">{ndvi.savi?.toFixed(3) || 'N/A'}</p>
+                                <p className="font-semibold">{ndvi.savi_value?.toFixed(3) || 'N/A'}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Cloud Cover</p>
-                                <p className="font-semibold">{ndvi.cloud_coverage?.toFixed(1) || 0}%</p>
+                                <p className="font-semibold">{ndvi.cloud_cover?.toFixed(1) || 0}%</p>
                               </div>
                             </div>
                           </div>
